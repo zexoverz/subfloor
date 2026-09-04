@@ -245,6 +245,41 @@ contract FloorRegistryTest is Test {
         registry.raiseFloor(WETH, USDC, 10_001, 0);
     }
 
+    /// The owner curates which feed a pair is scored against, and that is the only power over a
+    /// floor anyone but the recipient and its guardian has. It is write-once, so it cannot become
+    /// a second unsigned way to weaken every relative floor at once.
+    function test_referenceFeedCannotBeRepointed() public {
+        MockAggregator liar = new MockAggregator(1e8, block.timestamp);
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(FloorRegistry.ReferenceAlreadySet.selector, WETH, USDC, address(feed)));
+        registry.setReferenceFeed(WETH, USDC, address(liar), false, STALENESS_BOUND, 8, 18, 6);
+    }
+
+    /// The staleness bound is part of the immutable config, so it cannot be widened later to
+    /// quietly retire the fail-closed guarantee for a pair.
+    function test_stalenessBoundCannotBeWidenedLater() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(FloorRegistry.ReferenceAlreadySet.selector, WETH, USDC, address(feed)));
+        registry.setReferenceFeed(WETH, USDC, address(feed), false, type(uint32).max, 8, 18, 6);
+    }
+
+    /// A recipient who raised a floor keeps exactly the reference they raised it against.
+    function test_aRaisedFloorKeepsTheReferenceItWasRaisedAgainst() public {
+        vm.prank(alice);
+        registry.raiseFloor(WETH, USDC, 50, 0);
+        (uint256 before,) = registry.effectiveFloor(alice, WETH, USDC);
+
+        MockAggregator liar = new MockAggregator(1e8, block.timestamp);
+        vm.prank(owner);
+        try registry.setReferenceFeed(WETH, USDC, address(liar), false, STALENESS_BOUND, 8, 18, 6) {
+            fail();
+        } catch { }
+
+        (uint256 after_,) = registry.effectiveFloor(alice, WETH, USDC);
+        assertEq(after_, before, "the owner could not move it");
+    }
+
     function test_onlyOwnerSetsReferenceFeeds() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));

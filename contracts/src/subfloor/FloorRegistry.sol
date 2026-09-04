@@ -84,6 +84,8 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
     error WrongNonce(uint256 expected, uint256 given);
     error AbsoluteRateTooLarge(uint256 absoluteRate);
     error BadReferenceConfig();
+    /// @notice A pair's reference is write-once. See `setReferenceFeed`.
+    error ReferenceAlreadySet(address base, address quote, address existingFeed);
 
     constructor(address initialOwner) Ownable(initialOwner) EIP712("SUBFLOOR FloorRegistry", "1") { }
 
@@ -287,10 +289,25 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
 
     // --- owner-curated references ------------------------------------------------------------
 
-    /// @notice Register the reference feed for one ordered pair.
+    /// @notice Register the reference feed for one ordered pair. **Write once, permanently.**
+    ///
+    /// The owner curates which feed a pair is scored against, and that is the only power over a
+    /// floor this contract grants anyone other than the recipient and its guardian. Leaving it
+    /// mutable would have made it a second, unsigned way to weaken every relative floor at once:
+    /// repoint a pair at a feed reporting a lower price and every recipient accepts fills below
+    /// what they configured, with their own stored numbers untouched; or raise `stalenessBound` and
+    /// the fail-closed guarantee quietly stops applying. Neither would leave a trace in the floor
+    /// storage anyone is watching.
+    ///
+    /// So a pair can be set once and never changed. The cost is that migrating a pair to a
+    /// different feed means deploying a new registry and having recipients move, which is a real
+    /// operational cost and the right way round: the guarantee holds without anyone having to
+    /// trust the owner, rather than holding only while the owner behaves.
+    ///
     /// @param stalenessBound Seconds. Set it from the measured inter-round gap distribution of the
     ///        feed, never from a round-looking guess: a bound below the real distribution fails the
-    ///        vault closed through ordinary quiet periods.
+    ///        vault closed through ordinary quiet periods. It is immutable with the rest of the
+    ///        config, so it cannot be widened later to defeat the staleness check.
     function setReferenceFeed(
         address base,
         address quote,
@@ -302,10 +319,11 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
         uint8 quoteDecimals
     ) external onlyOwner {
         require(base != address(0) && quote != address(0) && base != quote, BadReferenceConfig());
-        require(feed == address(0) || stalenessBound > 0, BadReferenceConfig());
+        require(feed != address(0) && stalenessBound > 0, BadReferenceConfig());
+        require(referenceFeed[base][quote].feed == address(0), ReferenceAlreadySet(base, quote, referenceFeed[base][quote].feed));
 
-        uint256 scale = feed == address(0) ? 0 : Math.mulDiv(_RATE_ONE, 10 ** quoteDecimals, 10 ** baseDecimals);
-        require(feed == address(0) || scale > 0, BadReferenceConfig());
+        uint256 scale = Math.mulDiv(_RATE_ONE, 10 ** quoteDecimals, 10 ** baseDecimals);
+        require(scale > 0, BadReferenceConfig());
 
         referenceFeed[base][quote] = Reference({ feed: feed, inverted: inverted, stalenessBound: stalenessBound, feedDecimals: feedDecimals, scale: scale });
         emit ReferenceFeedSet(base, quote, feed, inverted, stalenessBound);
