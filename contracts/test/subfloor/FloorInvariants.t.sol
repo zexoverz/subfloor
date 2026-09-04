@@ -57,7 +57,7 @@ contract FloorInvariantsTest is Test {
         taker = address(this);
 
         vm.warp(1_757_000_000);
-        registry = new FloorRegistry(address(this));
+        registry = new FloorRegistry(address(this), 0);
         router = new InvRouter(address(0), address(0), address(this), address(registry));
 
         tokenA = new TokenMock("Token A", "TKA");

@@ -39,11 +39,6 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
         uint232 absoluteRate;
     }
 
-    struct Tolerance {
-        bool configured;
-        uint16 maxAdverseBps;
-    }
-
     /// @dev `scale` is precomputed at registration so the hot path does no exponentiation:
     ///      forward  refRate = answer * scale / 10**feedDecimals
     ///      inverted refRate = 10**feedDecimals * scale / answer
@@ -59,10 +54,25 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
     /// @notice floor[recipient][base][quote], where `base` is the token the recipient gives and
     ///         `quote` the token it receives.
     mapping(address => mapping(address => mapping(address => Floor))) public floor;
-    /// @notice Applies to any pair this recipient has no specific entry for.
-    mapping(address => Tolerance) public defaultTolerance;
     /// @notice The key that may weaken this recipient's protection. Hardware, in the live run.
     mapping(address => address) public guardian;
+    /// @notice A weakening waiting out the timelock. Empty when the delay is zero.
+    struct PendingLowering {
+        bool exists;
+        uint16 maxAdverseBps;
+        uint64 effectiveAt;
+        uint232 absoluteRate;
+    }
+
+    /// @notice Set at deployment and never after. Zero means a signed weakening applies at once,
+    ///         which is how the live run is configured: the guardian signature is already the
+    ///         hardware-in-the-loop moment, and a delay would stall floor adjustments on shoot day.
+    ///         Non-zero makes every weakening observable on-chain before it binds, so even a
+    ///         compromised owner key cannot instantly gut a floor.
+    uint32 public immutable LOWERING_DELAY;
+
+    mapping(address => mapping(address => mapping(address => PendingLowering))) public pendingLowering;
+
     /// @notice Owner-curated reference feeds, one entry per ordered pair.
     mapping(address => mapping(address => Reference)) public referenceFeed;
 
@@ -72,8 +82,6 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
 
     bytes32 internal constant _FLOOR_LOWERING_TYPEHASH =
         keccak256("FloorLowering(address recipient,address base,address quote,uint16 maxAdverseBps,uint256 absoluteRate,uint256 nonce,uint256 deadline)");
-    bytes32 internal constant _DEFAULT_WIDENING_TYPEHASH =
-        keccak256("DefaultToleranceWidening(address recipient,uint16 maxAdverseBps,uint256 nonce,uint256 deadline)");
     bytes32 internal constant _GUARDIAN_ROTATION_TYPEHASH =
         keccak256("GuardianRotation(address recipient,address newGuardian,uint256 nonce,uint256 deadline)");
 
@@ -81,13 +89,17 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
     error NoGuardianRegistered(address recipient);
     error BadGuardianSignature(address recipient, address guardian, bytes32 digest);
     error SignatureExpired(uint256 deadline);
+    error NoPendingLowering(address recipient, address base, address quote);
+    error LoweringStillTimelocked(uint64 effectiveAt);
     error WrongNonce(uint256 expected, uint256 given);
     error AbsoluteRateTooLarge(uint256 absoluteRate);
     error BadReferenceConfig();
     /// @notice A pair's reference is write-once. See `setReferenceFeed`.
     error ReferenceAlreadySet(address base, address quote, address existingFeed);
 
-    constructor(address initialOwner) Ownable(initialOwner) EIP712("SUBFLOOR FloorRegistry", "1") { }
+    constructor(address initialOwner, uint32 loweringDelay) Ownable(initialOwner) EIP712("SUBFLOOR FloorRegistry", "1") {
+        LOWERING_DELAY = loweringDelay;
+    }
 
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return _domainSeparatorV4();
@@ -97,18 +109,16 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
 
     /// @inheritdoc IFloorRegistry
     function effectiveFloor(address recipient, address base, address quote) public view returns (uint256 floorRate, bool enforced) {
+        // One cold SLOAD, and a recipient who never opted in stops here. There is deliberately no
+        // per-recipient default fallback: it was built, measured at 4,628 gas on every fill, and
+        // removed. It was a third of the whole settlement overhead, it was charged to recipients
+        // who got nothing for it, and it was the reason the opt-out path cost more than the opt-in
+        // one. Setting a floor per pair is one call.
         Floor memory f = floor[recipient][base][quote];
+        if (!f.configured) return (0, false);
 
-        uint16 bps;
-        uint256 absolute;
-        if (f.configured) {
-            bps = f.maxAdverseBps;
-            absolute = uint256(f.absoluteRate);
-        } else {
-            Tolerance memory d = defaultTolerance[recipient];
-            if (!d.configured) return (0, false);
-            bps = d.maxAdverseBps;
-        }
+        uint16 bps = f.maxAdverseBps;
+        uint256 absolute = uint256(f.absoluteRate);
 
         // A tolerance of exactly _BPS is "any adverse deviation is acceptable": the relative
         // component contributes nothing and only the backstop can bind.
@@ -191,19 +201,6 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
         if (newMaxAdverseBps != oldBps) emit ToleranceTightened(msg.sender, base, quote, oldBps, newMaxAdverseBps);
     }
 
-    /// @notice Strengthen the tolerance that applies to every pair without a specific entry.
-    function tightenDefaultTolerance(uint16 newMaxAdverseBps) external {
-        require(newMaxAdverseBps <= _BPS, MaxAdverseBpsOutOfRange(newMaxAdverseBps));
-
-        Tolerance storage d = defaultTolerance[msg.sender];
-        uint16 oldBps = d.configured ? d.maxAdverseBps : uint16(_BPS);
-        require(newMaxAdverseBps <= oldBps, NotARaise(oldBps, newMaxAdverseBps, 0, 0));
-
-        d.configured = true;
-        d.maxAdverseBps = newMaxAdverseBps;
-        emit DefaultToleranceTightened(msg.sender, oldBps, newMaxAdverseBps);
-    }
-
     /// @notice Register the key that may weaken this recipient's protection. Callable by the
     ///         recipient only while no guardian is set; rotating an existing one is a weakening
     ///         action and goes through `rotateGuardian`.
@@ -256,6 +253,29 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
             signature
         );
 
+        if (LOWERING_DELAY == 0) {
+            _applyLowering(recipient, base, quote, newMaxAdverseBps, newAbsoluteRate, signer);
+        } else {
+            uint64 effectiveAt = uint64(block.timestamp) + LOWERING_DELAY;
+            pendingLowering[recipient][base][quote] =
+                PendingLowering({ exists: true, maxAdverseBps: newMaxAdverseBps, effectiveAt: effectiveAt, absoluteRate: uint232(newAbsoluteRate) });
+            emit FloorLoweringScheduled(recipient, base, quote, newMaxAdverseBps, newAbsoluteRate, effectiveAt, signer);
+        }
+    }
+
+    /// @notice Apply a weakening that has waited out the timelock. Permissionless: the signature
+    ///         was already checked when it was scheduled, and anyone executing it only does what
+    ///         the guardian already authorised.
+    function executeLowering(address recipient, address base, address quote) external {
+        PendingLowering memory p = pendingLowering[recipient][base][quote];
+        require(p.exists, NoPendingLowering(recipient, base, quote));
+        require(block.timestamp >= p.effectiveAt, LoweringStillTimelocked(p.effectiveAt));
+
+        delete pendingLowering[recipient][base][quote];
+        _applyLowering(recipient, base, quote, p.maxAdverseBps, uint256(p.absoluteRate), guardian[recipient]);
+    }
+
+    function _applyLowering(address recipient, address base, address quote, uint16 newMaxAdverseBps, uint256 newAbsoluteRate, address signer) internal {
         Floor storage f = floor[recipient][base][quote];
         uint16 oldBps = f.configured ? f.maxAdverseBps : uint16(_BPS);
         uint256 oldAbsolute = uint256(f.absoluteRate);
@@ -266,26 +286,6 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
 
         if (newAbsoluteRate != oldAbsolute) emit FloorLowered(recipient, base, quote, oldAbsolute, newAbsoluteRate, signer);
         if (newMaxAdverseBps != oldBps) emit ToleranceWidened(recipient, base, quote, oldBps, newMaxAdverseBps, signer);
-    }
-
-    /// @notice Weaken the tolerance that applies to every pair without a specific entry.
-    function widenDefaultTolerance(address recipient, uint16 newMaxAdverseBps, uint256 nonce, uint256 deadline, bytes calldata signature) external {
-        require(newMaxAdverseBps <= _BPS, MaxAdverseBpsOutOfRange(newMaxAdverseBps));
-
-        address signer = _consume(
-            recipient,
-            keccak256(abi.encode(_DEFAULT_WIDENING_TYPEHASH, recipient, newMaxAdverseBps, nonce, deadline)),
-            nonce,
-            deadline,
-            signature
-        );
-
-        Tolerance storage d = defaultTolerance[recipient];
-        uint16 oldBps = d.configured ? d.maxAdverseBps : uint16(_BPS);
-        d.configured = true;
-        d.maxAdverseBps = newMaxAdverseBps;
-
-        emit DefaultToleranceWidened(recipient, oldBps, newMaxAdverseBps, signer);
     }
 
     /// @dev Checks the deadline, the nonce and the guardian signature, then burns the nonce.
