@@ -128,6 +128,25 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
 
     /// @inheritdoc IFloorRegistry
     function checkFill(address recipient, address base, address quote, uint256 given, uint256 received) external view {
+        _checkFill(recipient, base, quote, given, received);
+    }
+
+    /// @inheritdoc IFloorRegistry
+    function checkSettlement(
+        address takerRecipient,
+        address makerRecipient,
+        address tokenIn,
+        address tokenOut,
+        uint256 takerGave,
+        uint256 takerGot,
+        uint256 makerGave,
+        uint256 makerGot
+    ) external view {
+        _checkFill(takerRecipient, tokenIn, tokenOut, takerGave, takerGot);
+        _checkFill(makerRecipient, tokenOut, tokenIn, makerGave, makerGot);
+    }
+
+    function _checkFill(address recipient, address base, address quote, uint256 given, uint256 received) internal view {
         (uint256 floorRate, bool enforced) = effectiveFloor(recipient, base, quote);
         if (!enforced) return;
         uint256 executionRate = given == 0 ? type(uint256).max : Math.mulDiv(received, _RATE_ONE, given);

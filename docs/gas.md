@@ -42,8 +42,11 @@ guard as nearly free; that is a measurement artefact and the test avoids it deli
 | Case | Gas | vs upstream |
 |---|---:|---:|
 | Upstream `SwapVMRouter`, LimitSwap | 91,798 | — |
-| Guarded router, neither side opted in | 106,931 | **+15,133** |
-| Guarded router, taker floor configured | 104,916 | **+13,118** |
+| Guarded router, neither side opted in | 106,367 | **+14,569** |
+| Guarded router, taker floor configured | 104,352 | **+12,554** |
+
+Was +15,133 / +13,118 when the guard made two separate calls into the registry. Folding them into
+one `checkSettlement` saved 564.
 
 For context, from `.gas-snapshot` at `f09a41e`: `MinRate`, the maker's *optional, in-program* rate
 guard, costs **+1,994**.
@@ -57,12 +60,23 @@ SLOADs — while a configured pair short-circuits after the first. So the expect
 who never opts in pays one cold SLOAD finding a zero default" is not what the code does, and the
 cost falls hardest on exactly the users getting no benefit.
 
-**+15,133 is not a small number** against a 91,798 gas swap. It is roughly seven times what the
-optional in-program guard costs. Some of it is irreducible — the check is mandatory and consults
-external storage, which the optional guard only does when a program asks — but not all of it: the
-guard makes two separate external calls to the registry where one would do, and the opt-out path
-reads a slot it does not need. Tracked in the issue on registry read cost, and this table gets
-re-measured after.
+**+14,569 is not a small number** against a 91,798 gas swap. It is roughly seven times what the
+optional in-program guard costs. Where it goes, measured rather than reasoned about:
 
-Publishing the number before it is optimised is deliberate. It is the honest starting point, and a
-table that improves between now and submission is worth more than one that appears finished.
+| Component | Gas |
+|---|---:|
+| The per-recipient default tolerance lookup | **4,628** |
+| Everything else: the cold registry account, two pair-slot reads, the arithmetic and the call | 9,941 |
+
+The 4,628 figure comes from deleting the default-tolerance branch and re-running the same test.
+That one feature is a third of the whole overhead, it is paid on **every swap by everyone**
+including recipients who never opted in, and it is the reason the opt-out path costs more than the
+opt-in one. Without it the ordering inverts to the intuitive one: +9,941 opted out, +10,194 opted
+in.
+
+The default is a convenience — "apply this tolerance to any pair I have not configured" — and it is
+in the spec. Whether it is worth 4,628 gas on every fill is a product decision, not an engineering
+one, so it is recorded here with its price rather than quietly removed.
+
+Publishing the number before it is fully optimised is deliberate. It is the honest starting point,
+and a table that improves between now and submission is worth more than one that appears finished.

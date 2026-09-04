@@ -54,4 +54,22 @@ interface IFloorRegistry {
 
     /// @notice Reverts `SettledBelowFloor` if the realised amounts breach this party's floor.
     function checkFill(address recipient, address base, address quote, uint256 given, uint256 received) external view;
+
+    /// @notice Both sides of one fill in a single call.
+    /// @dev The settlement guard runs on every swap, so the second external call is pure overhead
+    ///      on the hot path. Same arithmetic, one CALL and one calldata frame instead of two.
+    /// @param takerGave   what the taker parts with, in `tokenIn`
+    /// @param takerGot    what the taker receives, in `tokenOut`
+    /// @param makerGave   what the maker parts with, in `tokenOut`, protocol fee included
+    /// @param makerGot    what the maker receives, in `tokenIn`, protocol fee deducted
+    function checkSettlement(
+        address takerRecipient,
+        address makerRecipient,
+        address tokenIn,
+        address tokenOut,
+        uint256 takerGave,
+        uint256 takerGot,
+        uint256 makerGave,
+        uint256 makerGot
+    ) external view;
 }

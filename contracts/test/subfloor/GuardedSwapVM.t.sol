@@ -63,6 +63,20 @@ contract SpyRegistry is IFloorRegistry {
     ///      hence the assembly-free trick of recording via a mutable sibling is not available —
     ///      instead the router calls this and we cheat with a storage write behind a low-level
     ///      call from the test, see `_drain`. Kept simple: record through a transient log instead.
+    function checkSettlement(
+        address takerRecipient,
+        address makerRecipient,
+        address tokenIn,
+        address tokenOut,
+        uint256 takerGave,
+        uint256 takerGot,
+        uint256 makerGave,
+        uint256 makerGot
+    ) external view {
+        this.checkFill(takerRecipient, tokenIn, tokenOut, takerGave, takerGot);
+        this.checkFill(makerRecipient, tokenOut, tokenIn, makerGave, makerGot);
+    }
+
     function checkFill(address recipient, address base, address quote, uint256 given, uint256 received) external view {
         if (shouldRevertFor[recipient]) {
             revert SettledBelowFloor(recipient, base, quote, given, received);
