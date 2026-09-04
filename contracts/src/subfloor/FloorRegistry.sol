@@ -6,6 +6,8 @@ pragma solidity 0.8.30;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { IFloorRegistry } from "./IFloorRegistry.sol";
 
 interface IAggregatorV3 {
@@ -25,7 +27,7 @@ interface IAggregatorV3 {
 ///
 /// Fail closed. Where this contract cannot prove the reference is fresh, it reverts rather than
 /// guessing: a stale feed with no backstop stops trading, it does not wave a fill through.
-contract FloorRegistry is IFloorRegistry, Ownable {
+contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
     uint256 internal constant _BPS = 10_000;
     uint256 internal constant _RATE_ONE = 1e18;
 
@@ -64,11 +66,30 @@ contract FloorRegistry is IFloorRegistry, Ownable {
     /// @notice Owner-curated reference feeds, one entry per ordered pair.
     mapping(address => mapping(address => Reference)) public referenceFeed;
 
+    /// @notice One counter per recipient. The typehashes differ, so a signature for one action can
+    ///         never be replayed as another, and consuming the counter retires all of them at once.
+    mapping(address => uint256) public nonces;
+
+    bytes32 internal constant _FLOOR_LOWERING_TYPEHASH =
+        keccak256("FloorLowering(address recipient,address base,address quote,uint16 maxAdverseBps,uint256 absoluteRate,uint256 nonce,uint256 deadline)");
+    bytes32 internal constant _DEFAULT_WIDENING_TYPEHASH =
+        keccak256("DefaultToleranceWidening(address recipient,uint16 maxAdverseBps,uint256 nonce,uint256 deadline)");
+    bytes32 internal constant _GUARDIAN_ROTATION_TYPEHASH =
+        keccak256("GuardianRotation(address recipient,address newGuardian,uint256 nonce,uint256 deadline)");
+
     error MaxAdverseBpsOutOfRange(uint16 maxAdverseBps);
+    error NoGuardianRegistered(address recipient);
+    error BadGuardianSignature(address recipient, address guardian, bytes32 digest);
+    error SignatureExpired(uint256 deadline);
+    error WrongNonce(uint256 expected, uint256 given);
     error AbsoluteRateTooLarge(uint256 absoluteRate);
     error BadReferenceConfig();
 
-    constructor(address initialOwner) Ownable(initialOwner) { }
+    constructor(address initialOwner) Ownable(initialOwner) EIP712("SUBFLOOR FloorRegistry", "1") { }
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return _domainSeparatorV4();
+    }
 
     // --- reads -----------------------------------------------------------------------------
 
@@ -162,11 +183,106 @@ contract FloorRegistry is IFloorRegistry, Ownable {
         emit DefaultToleranceTightened(msg.sender, oldBps, newMaxAdverseBps);
     }
 
-    /// @notice Register or rotate the key that may weaken this recipient's protection.
+    /// @notice Register the key that may weaken this recipient's protection. Callable by the
+    ///         recipient only while no guardian is set; rotating an existing one is a weakening
+    ///         action and goes through `rotateGuardian`.
+    ///
+    /// Without that asymmetry the guardian is decorative: a recipient key that has been taken over
+    /// would simply appoint a guardian it controls and then lower the floor with it, and the
+    /// hardware in the design would be protecting nothing.
     function setGuardian(address newGuardian) external {
-        address oldGuardian = guardian[msg.sender];
+        require(guardian[msg.sender] == address(0), NoGuardianRegistered(msg.sender));
         guardian[msg.sender] = newGuardian;
-        emit GuardianSet(msg.sender, oldGuardian, newGuardian);
+        emit GuardianSet(msg.sender, address(0), newGuardian);
+    }
+
+    /// @notice Replace the guardian, under a signature from the guardian being replaced.
+    function rotateGuardian(address recipient, address newGuardian, uint256 nonce, uint256 deadline, bytes calldata signature) external {
+        address oldGuardian = _consume(
+            recipient,
+            keccak256(abi.encode(_GUARDIAN_ROTATION_TYPEHASH, recipient, newGuardian, nonce, deadline)),
+            nonce,
+            deadline,
+            signature
+        );
+
+        guardian[recipient] = newGuardian;
+        emit GuardianSet(recipient, oldGuardian, newGuardian);
+    }
+
+    // --- weakening: the one action that needs the key the trading machine never holds ----------
+
+    /// @notice Weaken the floor for one pair. Either component may move in either direction; the
+    ///         guardian signature is what authorises it.
+    function lowerFloor(
+        address recipient,
+        address base,
+        address quote,
+        uint16 newMaxAdverseBps,
+        uint256 newAbsoluteRate,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external {
+        require(newMaxAdverseBps <= _BPS, MaxAdverseBpsOutOfRange(newMaxAdverseBps));
+        require(newAbsoluteRate <= type(uint232).max, AbsoluteRateTooLarge(newAbsoluteRate));
+
+        address signer = _consume(
+            recipient,
+            keccak256(abi.encode(_FLOOR_LOWERING_TYPEHASH, recipient, base, quote, newMaxAdverseBps, newAbsoluteRate, nonce, deadline)),
+            nonce,
+            deadline,
+            signature
+        );
+
+        Floor storage f = floor[recipient][base][quote];
+        uint16 oldBps = f.configured ? f.maxAdverseBps : uint16(_BPS);
+        uint256 oldAbsolute = uint256(f.absoluteRate);
+
+        f.configured = true;
+        f.maxAdverseBps = newMaxAdverseBps;
+        f.absoluteRate = uint232(newAbsoluteRate);
+
+        if (newAbsoluteRate != oldAbsolute) emit FloorLowered(recipient, base, quote, oldAbsolute, newAbsoluteRate, signer);
+        if (newMaxAdverseBps != oldBps) emit ToleranceWidened(recipient, base, quote, oldBps, newMaxAdverseBps, signer);
+    }
+
+    /// @notice Weaken the tolerance that applies to every pair without a specific entry.
+    function widenDefaultTolerance(address recipient, uint16 newMaxAdverseBps, uint256 nonce, uint256 deadline, bytes calldata signature) external {
+        require(newMaxAdverseBps <= _BPS, MaxAdverseBpsOutOfRange(newMaxAdverseBps));
+
+        address signer = _consume(
+            recipient,
+            keccak256(abi.encode(_DEFAULT_WIDENING_TYPEHASH, recipient, newMaxAdverseBps, nonce, deadline)),
+            nonce,
+            deadline,
+            signature
+        );
+
+        Tolerance storage d = defaultTolerance[recipient];
+        uint16 oldBps = d.configured ? d.maxAdverseBps : uint16(_BPS);
+        d.configured = true;
+        d.maxAdverseBps = newMaxAdverseBps;
+
+        emit DefaultToleranceWidened(recipient, oldBps, newMaxAdverseBps, signer);
+    }
+
+    /// @dev Checks the deadline, the nonce and the guardian signature, then burns the nonce.
+    ///      Accepts ERC-1271 as well as ECDSA, so the guardian may be a smart account.
+    function _consume(address recipient, bytes32 structHash, uint256 nonce, uint256 deadline, bytes calldata signature)
+        internal
+        returns (address signer)
+    {
+        require(block.timestamp <= deadline, SignatureExpired(deadline));
+        require(nonces[recipient] == nonce, WrongNonce(nonces[recipient], nonce));
+
+        signer = guardian[recipient];
+        require(signer != address(0), NoGuardianRegistered(recipient));
+
+        bytes32 digest = _hashTypedDataV4(structHash);
+        require(SignatureChecker.isValidSignatureNow(signer, digest, signature), BadGuardianSignature(recipient, signer, digest));
+
+        nonces[recipient] = nonce + 1;
     }
 
     // --- owner-curated references ------------------------------------------------------------
