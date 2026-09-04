@@ -171,6 +171,7 @@ abstract contract SwapVM is EIP712, OnlyWethReceiver, Rescuable {
         (amountIn, amountOut) = ctx.runLoop();
         order.traits.validate(amountIn);
         takerTraits.validate(takerData, amount, amountIn, amountOut);
+        _settlementGuard(ctx, order, takerTraits, takerData, amountIn, amountOut);
     }
 
     function swap(
@@ -229,6 +230,7 @@ abstract contract SwapVM is EIP712, OnlyWethReceiver, Rescuable {
         (amountIn, amountOut) = ctx.runLoop();
         order.traits.validate(amountIn);
         takerTraits.validate(takerData, amount, amountIn, amountOut);
+        _settlementGuard(ctx, order, takerTraits, takerData, amountIn, amountOut);
 
         if (takerTraits.isFirstTransferFromTaker()) {
             _transferIn(ctx, order, takerTraits, takerData, originalAquaBalanceIn);
@@ -241,6 +243,29 @@ abstract contract SwapVM is EIP712, OnlyWethReceiver, Rescuable {
         _reentrancyGuards[orderHash].unlock();
         emit Swapped(orderHash, order.maker, msg.sender, tokenIn, tokenOut, amountIn, amountOut);
     }
+
+    /// @notice SUBFLOOR: the settlement guard, and the one modification to this file.
+    ///
+    /// It runs after `takerTraits.validate` and before `_transferIn`/`_transferOut`, and the
+    /// identical call sits at the end of `quote()` so a quote can never report a rate that
+    /// settlement would reject.
+    ///
+    /// Placing it here rather than in the instruction set is the whole design. The run loop only
+    /// computes amounts; no tokens move during it, and program bytecode cannot reach or skip
+    /// settlement. So there is nothing here for an attacker to omit: an empty program still
+    /// settles, and still arrives at this line. Before the transfers rather than after, because
+    /// the transfer path invokes maker hooks and taker callbacks, and a guard that ran after them
+    /// would let arbitrary external code run first.
+    ///
+    /// The base implementation is empty, so an unmodified router behaves exactly as upstream.
+    function _settlementGuard(
+        Context memory ctx,
+        ISwapVM.Order calldata order,
+        TakerTraits takerTraits,
+        bytes calldata takerData,
+        uint256 amountIn,
+        uint256 amountOut
+    ) internal view virtual { }
 
     function _transferIn(Context memory ctx, ISwapVM.Order calldata order, TakerTraits takerTraits, bytes calldata takerData, uint256 originalAquaBalanceIn) private {
         if (order.traits.hasPreTransferInHook()) {
