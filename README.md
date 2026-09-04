@@ -15,7 +15,7 @@
 
 ## The problem
 
-An AI agent can trade for you around the clock. To do that it needs access to your money — and the
+An AI agent can trade for you around the clock. To do that it needs access to your money, and the
 moment it has that, one bad prompt is all it takes.
 
 ```
@@ -25,12 +25,12 @@ moment it has that, one bad prompt is all it takes.
 ```
 
 Today's answer is to watch the agent and try to catch bad behaviour. But a watcher is a program
-forming an opinion, and **the same attacker who fooled your agent can fool the thing watching it.**
+forming an opinion, and the same attacker who fooled your agent can fool the thing watching it.
 
 ## The solution
 
-A vault where you set one number — the worst price you will accept — and the exchange itself
-refuses anything below it.
+A vault where you set one number, the worst price you will accept, and the exchange itself refuses
+anything below it.
 
 ```
    agent gets hacked     →   tries to dump 38% below market
@@ -38,8 +38,8 @@ refuses anything below it.
    your balance          →   unchanged
 ```
 
-**We watch nothing.** Your floor is arithmetic inside the code that moves the tokens. An agent
-cannot route around it, switch it off, or argue with it. Watching can be fooled; a number cannot.
+We watch nothing. Your floor is arithmetic inside the code that moves the tokens. An agent cannot
+route around it, switch it off, or argue with it. Watching can be fooled. A number cannot.
 
 ## How it works
 
@@ -59,18 +59,18 @@ cannot route around it, switch it off, or argue with it. Watching can be fooled;
       every fill  ──►  above your number, or it does not happen
 ```
 
-And we prove it rather than promise it: millions of hostile trading programs were generated and run
-against the vault, plus a machine-checked proof covering every program that could ever exist.
+We prove this rather than promise it. Millions of hostile trading programs were generated and run
+against the vault, and a machine-checked proof covers every program that could ever exist.
 
 ## What you get
 
 | | |
 |---|---|
-| **You keep custody** | the agent gets a trading permit, never your keys |
-| **Raising your floor is free** | one click, no device, instant |
-| **Lowering it needs your hardware wallet** | so nobody, including a hacked agent, can move it |
-| **One button kills the agent** | revoke mid-trade, funds stay put |
-| **Anyone can check** | every fill is public and recomputed against your floor |
+| You keep custody | the agent gets a trading permit, never your keys |
+| Raising your floor is free | one click, no device, instant |
+| Lowering it needs your hardware wallet | so nobody, including a hacked agent, can move it |
+| One button kills the agent | revoke mid-trade, funds stay put |
+| Anyone can check | every fill is public and recomputed against your floor |
 
 ## Live on Base
 
@@ -85,53 +85,54 @@ against the vault, plus a machine-checked proof covering every program that coul
 
 Real money from day one. Everything on this page comes from the live deployment.
 
-## Built with — and what each one proves
+## Built with
 
-### 1inch — the first thing built *inside* SwapVM, not on top of it
+### 1inch
 
-Aqua's thesis is programmable liquidity you never hand away. SUBFLOOR is the case that makes it hold
-under an adversary: **the floor lives in the settlement path itself**, checked after taker validation
-and before tokens move, for both sides, mirrored in `quote()`.
+The first thing built inside SwapVM rather than on top of it. Aqua's thesis is programmable
+liquidity you never hand away, and SUBFLOOR is the case that makes it hold under an adversary. The
+floor sits in the settlement path itself, checked after taker validation and before tokens move, for
+both sides, mirrored in `quote()`.
 
-That matters because `MinRate` — the guard that exists today — is maker-side and lives *in the
-program*, written by whoever writes the program. When the program's author is the agent you are
-defending against, an in-program guard is a suggestion. A settlement invariant is not. Plus three new
-instructions in the `0x20` guard bank and a property suite run against the full instruction set.
+That matters because `MinRate`, the guard that exists today, is maker-side and lives in the program,
+written by whoever writes the program. When the program's author is the agent you are defending
+against, an in-program guard is a suggestion. A settlement invariant is not. We also add three
+instructions to the `0x20` guard bank and run a property suite against the full instruction set.
 
-**The claim: an agent can be handed a whole portfolio on Aqua and still cannot hurt you.** That is
-what turns Aqua from a venue into somewhere agent capital can actually live.
+An agent can be handed a whole portfolio on Aqua and still cannot hurt you. That is what turns Aqua
+into somewhere agent capital can actually live.
 
-### Ledger — the device stops approving transactions and starts setting rules
+### Ledger
 
-Every hardware-wallet integration signs a transaction. This one signs **the constraint the chain then
-enforces on every transaction after it.**
+Every hardware-wallet integration signs a transaction. This one signs the constraint the chain then
+enforces on every transaction after it.
 
-Your floor and the agent's permit are clear-signed on the device; raising the floor is free and
-device-free because it can only help you, and lowering it is the one dangerous action so it is the
-one the device owns. Ring revocation cuts the agent off mid-quote. The security claim only holds
-because of this split — "even a hacked agent cannot go below your floor" is circular if the
+Your floor and the agent's permit are clear-signed on the device. Raising the floor is free and
+device-free because it can only help you. Lowering it is the one dangerous action, so it is the one
+the device owns, and ring revocation cuts the agent off mid-quote. The security claim only holds
+because of this split. "Even a hacked agent cannot go below your floor" is circular if the
 floor-setting key sits on the machine the agent runs on.
 
-**The claim: the device is not a confirmation step, it is where the economic rule is authored.**
+The device is not a confirmation step. It is where the economic rule is authored.
 
-### The Graph — a guarantee nobody can check is not a guarantee
+### The Graph
 
-A Substreams package decoding canonical Aqua settlements, composed into a subgraph on the **DEX
-Aggregator standardized schema** — a listed Messari schema **no one has ever implemented** — plus the
-Token API. Three products, and the index is load-bearing twice:
+A guarantee nobody can check is not a guarantee. A Substreams package decodes canonical Aqua
+settlements into a subgraph on the DEX Aggregator standardized schema, a listed Messari schema no
+one has ever implemented, alongside the Token API.
 
-- the floor-setting screen reads it, showing realized adverse deviation p50/p99 from live history, so
-  the number a human signs is calibrated rather than guessed
-- the daily execution-quality report is generated from it, query attached — so the guarantee is not
-  the operator auditing their own fills
+The index is load-bearing twice. The floor-setting screen reads it, showing realized adverse
+deviation p50 and p99 from live history, so the number a human signs is calibrated rather than
+guessed. And the daily execution-quality report is generated from it, query attached, so the
+guarantee is not the operator auditing their own fills.
 
-**The claim: this is what indexing is for.** Not a dashboard beside the product — the thing that
-makes the product's promise checkable by a stranger.
+This is what indexing is for. Not a dashboard beside the product, but the thing that makes the
+product's promise checkable by a stranger.
 
 ## The standard
 
-Implements **[ERC-8377 (Reference-Relative Slippage Bounds)](https://github.com/ethereum/ERCs/pull/1935)**,
-a draft standard written by this project's author. The specification is public prior art; every line
+Implements [ERC-8377 (Reference-Relative Slippage Bounds)](https://github.com/ethereum/ERCs/pull/1935),
+a draft standard written by this project's author. The specification is public prior art. Every line
 of implementation here was written during the event.
 
 MIT.
