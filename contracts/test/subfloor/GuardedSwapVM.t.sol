@@ -58,6 +58,14 @@ contract SpyRegistry is IFloorRegistry {
         return (0, false);
     }
 
+    function referenceAge(address, address) external pure returns (uint256, uint32) {
+        return (0, 0);
+    }
+
+    function guardian(address) external pure returns (address) {
+        return address(0);
+    }
+
     /// @dev `view` in the interface, so the recording goes through a self-call the compiler will
     ///      not let a view function make directly. The staticcall context makes this impossible,
     ///      hence the assembly-free trick of recording via a mutable sibling is not available —

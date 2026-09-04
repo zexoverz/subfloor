@@ -136,6 +136,19 @@ contract FloorRegistry is IFloorRegistry, Ownable, EIP712 {
         return (Math.max(floorRate, absolute), true);
     }
 
+    /// @notice How old this pair's reference answer is, in seconds, and the registry's own bound.
+    /// @dev For `RequireFreshReference`, which lets a strategy demand a fresher reference than the
+    ///      registry-wide bound. Reverts `NoReferenceFeed` if the pair has none, so a strategy
+    ///      cannot demand freshness from a feed that does not exist and get silence.
+    function referenceAge(address base, address quote) external view returns (uint256 age, uint32 registryBound) {
+        Reference memory r = referenceFeed[base][quote];
+        require(r.feed != address(0), NoReferenceFeed(base, quote));
+
+        (,,, uint256 updatedAt,) = IAggregatorV3(r.feed).latestRoundData();
+        age = block.timestamp > updatedAt ? block.timestamp - updatedAt : 0;
+        registryBound = r.stalenessBound;
+    }
+
     /// @inheritdoc IFloorRegistry
     function checkFill(address recipient, address base, address quote, uint256 given, uint256 received) external view {
         _checkFill(recipient, base, quote, given, received);

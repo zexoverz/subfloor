@@ -53,6 +53,12 @@ interface IFloorRegistry {
     ///                   caller must not enforce `floorRate` in that case.
     function effectiveFloor(address recipient, address base, address quote) external view returns (uint256 floorRate, bool enforced);
 
+    /// @notice How old this pair's reference answer is, and the registry-wide staleness bound.
+    function referenceAge(address base, address quote) external view returns (uint256 age, uint32 registryBound);
+
+    /// @notice The key that may weaken this recipient's protection.
+    function guardian(address recipient) external view returns (address);
+
     /// @notice Reverts `SettledBelowFloor` if the realised amounts breach this party's floor.
     function checkFill(address recipient, address base, address quote, uint256 given, uint256 received) external view;
 

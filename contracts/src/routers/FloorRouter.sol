@@ -9,13 +9,14 @@ import { Simulator } from "@1inch/solidity-utils/contracts/mixins/Simulator.sol"
 
 import { SwapVM } from "../SwapVM.sol";
 import { GuardedSwapVM } from "../subfloor/GuardedSwapVM.sol";
-import { AquaOpcodes } from "../opcodes/AquaOpcodes.sol";
+import { SubfloorOpcodes } from "../opcodes/SubfloorOpcodes.sol";
+import { SubfloorGuardDispatch } from "../opcodes/SubfloorGuardDispatch.sol";
 
 /// @title FloorRouter
 /// @notice The deployed router: Aqua-backed strategies, with the floor checked at settlement.
 /// @dev Aqua positions reference the VM by address, so this plugs into canonical Aqua unchanged.
 ///      Aqua itself is never forked.
-contract FloorRouter is Simulator, GuardedSwapVM, AquaOpcodes {
+contract FloorRouter is Simulator, GuardedSwapVM, SubfloorOpcodes {
     constructor(
         address aqua,
         address weth,
@@ -23,7 +24,7 @@ contract FloorRouter is Simulator, GuardedSwapVM, AquaOpcodes {
         string memory name,
         string memory version,
         address floorRegistry
-    ) SwapVM(aqua, weth, owner, name, version) GuardedSwapVM(floorRegistry) { }
+    ) SwapVM(aqua, weth, owner, name, version) GuardedSwapVM(floorRegistry) SubfloorGuardDispatch(floorRegistry) { }
 
     /// @dev Dispatches an opcode to its handler for VM execution
     function _dispatch(Context memory ctx, uint256 opcode, bytes calldata args) internal override {

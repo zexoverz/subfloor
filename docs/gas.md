@@ -71,3 +71,24 @@ a third of the price.
 
 Publishing the number before it is fully optimised is deliberate. It is the honest starting point,
 and a table that improves between now and submission is worth more than one that appears finished.
+
+## The optional in-program guards
+
+Measured in `test/subfloor/SubfloorGuards.t.sol`, same-harness, cold state.
+
+| Case | Gas | vs the same program without it |
+|---|---:|---:|
+| LimitSwap, no guard | 109,402 | — |
+| plus `NotionalThrottle`, first write in an epoch | 133,044 | **+23,642** |
+
+`RequireFreshReference` and `ApprovalGate` are reads and a signature check; `NotionalThrottle` is
+the only guard here that writes storage, and the cold SSTORE is essentially all of that 23,642.
+
+**So it does not ship by default.** 22% on top of a fill is not a cost to impose on every strategy,
+and the flagship strategies do not carry it. It stays a documented instruction for the case it
+exists for: a strategy whose operator wants a hard ceiling on churn within an epoch, accepting the
+write. That decision is exactly what §13 asked for — measure it early, and if the number embarrasses
+the table, keep the instruction and stop shipping it by default.
+
+The number is per epoch, not per fill: the second and later fills in the same epoch write a warm
+slot instead.
