@@ -48,12 +48,22 @@ abstract contract GuardedSwapVM is SwapVM {
         // still parts with exactly `amountIn` and still receives exactly `amountOut`: on the
         // tokenIn side the fee is carved out of what the maker gets, and on the tokenOut side it is
         // pulled from the maker separately while the taker is paid the full amount.
-        FLOOR_REGISTRY.checkFill(takerTraits.to(takerData, ctx.query.taker), tokenIn, tokenOut, amountIn, amountOut);
-
         // The maker's is not. It receives `amountIn` less any tokenIn fee and pays `amountOut` plus
         // any tokenOut fee, so the fee has to be resolved here rather than assumed away.
         uint256 feeIn = SettlementFeeLib.settlementFee(ctx.fee, true, amountIn);
         uint256 feeOut = SettlementFeeLib.settlementFee(ctx.fee, false, amountOut);
-        FLOOR_REGISTRY.checkFill(order.traits.receiver(order.maker), tokenOut, tokenIn, amountOut + feeOut, amountIn - feeIn);
+
+        // One call rather than two: this runs on every swap, so a second CALL and calldata frame is
+        // pure overhead on the hot path.
+        FLOOR_REGISTRY.checkSettlement(
+            takerTraits.to(takerData, ctx.query.taker),
+            order.traits.receiver(order.maker),
+            tokenIn,
+            tokenOut,
+            amountIn,
+            amountOut,
+            amountOut + feeOut,
+            amountIn - feeIn
+        );
     }
 }
