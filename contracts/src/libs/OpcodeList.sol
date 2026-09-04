@@ -52,7 +52,7 @@ enum Opcode {
 
     // 0x20-0x3f | Conditions & access guards: taker/time validation, whitelists, conditional jumps
     /* 20 */ Deadline,
-    /* 21 */ _21,
+    /* 21 */ RequireFloor,
     /* 22 */ _22,
     /* 23 */ OnlyTakerTokenBalanceNonZero,
     /* 24 */ OnlyTakerTokenBalanceGte,
