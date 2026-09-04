@@ -85,14 +85,53 @@ against the vault, plus a machine-checked proof covering every program that coul
 
 Real money from day one. Everything on this page comes from the live deployment.
 
-## Built with
+## Built with — and what each one proves
 
-**1inch Aqua** — the floor lives inside the trading engine, not in an app on top of it, which is why
-no program can skip it. **Ledger** — your floor and the agent's permit are signed on your device, so
-the machine that trades is never the machine that sets the limit. **The Graph** — a public index
-recomputes every fill against every floor, so the guarantee is anyone's query rather than our word.
+### 1inch — the first thing built *inside* SwapVM, not on top of it
 
-Implements **[ERC-8377](https://github.com/ethereum/ERCs/pull/1935)**, a draft standard written by
-this project's author.
+Aqua's thesis is programmable liquidity you never hand away. SUBFLOOR is the case that makes it hold
+under an adversary: **the floor lives in the settlement path itself**, checked after taker validation
+and before tokens move, for both sides, mirrored in `quote()`.
+
+That matters because `MinRate` — the guard that exists today — is maker-side and lives *in the
+program*, written by whoever writes the program. When the program's author is the agent you are
+defending against, an in-program guard is a suggestion. A settlement invariant is not. Plus three new
+instructions in the `0x20` guard bank and a property suite run against the full instruction set.
+
+**The claim: an agent can be handed a whole portfolio on Aqua and still cannot hurt you.** That is
+what turns Aqua from a venue into somewhere agent capital can actually live.
+
+### Ledger — the device stops approving transactions and starts setting rules
+
+Every hardware-wallet integration signs a transaction. This one signs **the constraint the chain then
+enforces on every transaction after it.**
+
+Your floor and the agent's permit are clear-signed on the device; raising the floor is free and
+device-free because it can only help you, and lowering it is the one dangerous action so it is the
+one the device owns. Ring revocation cuts the agent off mid-quote. The security claim only holds
+because of this split — "even a hacked agent cannot go below your floor" is circular if the
+floor-setting key sits on the machine the agent runs on.
+
+**The claim: the device is not a confirmation step, it is where the economic rule is authored.**
+
+### The Graph — a guarantee nobody can check is not a guarantee
+
+A Substreams package decoding canonical Aqua settlements, composed into a subgraph on the **DEX
+Aggregator standardized schema** — a listed Messari schema **no one has ever implemented** — plus the
+Token API. Three products, and the index is load-bearing twice:
+
+- the floor-setting screen reads it, showing realized adverse deviation p50/p99 from live history, so
+  the number a human signs is calibrated rather than guessed
+- the daily execution-quality report is generated from it, query attached — so the guarantee is not
+  the operator auditing their own fills
+
+**The claim: this is what indexing is for.** Not a dashboard beside the product — the thing that
+makes the product's promise checkable by a stranger.
+
+## The standard
+
+Implements **[ERC-8377 (Reference-Relative Slippage Bounds)](https://github.com/ethereum/ERCs/pull/1935)**,
+a draft standard written by this project's author. The specification is public prior art; every line
+of implementation here was written during the event.
 
 MIT.
