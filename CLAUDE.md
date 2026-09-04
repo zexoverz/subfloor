@@ -45,3 +45,31 @@ fields flat (`topic0`…`topic3`, `data`).
 **Prove a venue is alive from event recency before reading it.** A contract answers every call and
 returns a well-formed book whether or not anyone is trading against it. That has already cost time
 on this work twice.
+
+## Issues are the working board, and this is not optional
+
+Open an issue before starting a piece of work, and close it with the commit that finishes it. A
+repo whose history shows ten days of real work and a board that tracked it reads very differently
+from one that shows neither.
+
+```bash
+gh issue create --title "FloorRegistry: guardian-signed lowering" \
+  --label contracts --body "what done looks like, in one or two lines"
+
+gh issue close 7 --comment "done in abc1234"
+```
+
+Labels: `contracts`, `frontend`, `indexer`, `agent`, `proofs`, `ops`, `spike`, `blocked`, `demo`.
+
+Three rules that keep it useful rather than decorative:
+
+**One issue per thing that can be finished.** If it cannot be closed in a day, it is two issues.
+
+**`spike` means answer it before building on it.** A spike that stays open while code is written on
+top of its assumption is how a wrong assumption reaches the demo.
+
+**`blocked` names who you are waiting on and since when.** Anything blocked for more than a day
+either gets chased or gets a different plan, and neither happens if the board does not say so.
+
+Anything in `frontend` is Zikri's, so write those so someone who has not read the spec can pick
+them up: what the screen shows, what the user does, what it reads from.
