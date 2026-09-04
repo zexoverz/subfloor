@@ -1,0 +1,13 @@
+node_modules/
+out/
+cache/
+broadcast/
+target/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+CLAUDE.local.md
+docs/SPEC.md
