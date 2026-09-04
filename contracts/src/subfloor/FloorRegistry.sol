@@ -94,7 +94,9 @@ contract FloorRegistry is IFloorRegistry, Ownable {
             // refRate == 0 is only reachable when the reference was stale and a backstop exists,
             // in which case the backstop is the whole floor.
             if (refRate != 0) {
-                floorRate = Math.mulDiv(refRate, _BPS - bps, _BPS);
+                // Round the floor up. It is a minimum, so truncation would make it
+                // marginally weaker than configured, which is the wrong direction here.
+                floorRate = Math.mulDiv(refRate, _BPS - bps, _BPS, Math.Rounding.Ceil);
             }
         }
 
