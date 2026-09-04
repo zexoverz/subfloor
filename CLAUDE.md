@@ -73,3 +73,16 @@ either gets chased or gets a different plan, and neither happens if the board do
 
 Anything in `frontend` is Zikri's, so write those so someone who has not read the spec can pick
 them up: what the screen shows, what the user does, what it reads from.
+
+**Assign it, branch it, PR it, close it.** Taking an issue means assigning it to yourself first, so
+the board says who is on what rather than only what exists. Work lands on a branch named for the
+issue, goes up as a pull request, and the issue closes through that PR — not through a commit
+pushed straight to `main`. The history a sponsor reads should show the work being proposed and
+merged, not appearing.
+
+```bash
+gh issue edit 14 --add-assignee @me
+git checkout -b floor-registry-storage
+gh pr create --title "FloorRegistry storage, raise and read paths" --body "Closes #14"
+```
+
