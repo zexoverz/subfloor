@@ -72,19 +72,6 @@ against the vault, and a machine-checked proof covers every program that could e
 | One button kills the agent | revoke mid-trade, funds stay put |
 | Anyone can check | every fill is public and recomputed against your floor |
 
-## Live on Base
-
-<!-- filled during the build -->
-
-| | |
-|---|---|
-| Vault | _pending_ |
-| Floor registry | _pending_ |
-| A rogue agent, refused | _pending_ |
-| A normal day of trading | _pending_ |
-
-Real money from day one. Everything on this page comes from the live deployment.
-
 ## Built with
 
 ### 1inch
@@ -128,6 +115,19 @@ guarantee is not the operator auditing their own fills.
 
 This is what indexing is for. Not a dashboard beside the product, but the thing that makes the
 product's promise checkable by a stranger.
+
+## Live on Base
+
+<!-- filled during the build -->
+
+| | |
+|---|---|
+| Vault | _pending_ |
+| Floor registry | _pending_ |
+| A rogue agent, refused | _pending_ |
+| A normal day of trading | _pending_ |
+
+Real money from day one. Everything on this page comes from the live deployment.
 
 ## The standard
 
