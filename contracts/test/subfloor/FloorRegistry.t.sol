@@ -46,7 +46,7 @@ contract FloorRegistryTest is Test {
 
     function setUp() public {
         vm.warp(1_757_000_000);
-        registry = new FloorRegistry(owner);
+        registry = new FloorRegistry(owner, 0);
         feed = new MockAggregator(ETH_USD, block.timestamp);
 
         vm.startPrank(owner);
@@ -108,23 +108,17 @@ contract FloorRegistryTest is Test {
 
     // --- resolution order ---------------------------------------------------------------------
 
-    function test_defaultToleranceAppliesWhenThePairHasNoEntry() public {
+    /// There is no per-recipient default fallback, deliberately. It existed, it was measured at
+    /// 4,628 gas on every fill, and it was removed: a third of the settlement overhead, charged to
+    /// recipients who got nothing for it, and the reason the opt-out path cost more than the opt-in
+    /// one. A pair with no entry is simply not enforced, and that read is one cold SLOAD.
+    function test_aPairWithNoEntryIsNotEnforcedEvenForAConfiguredRecipient() public {
         vm.prank(alice);
-        registry.tightenDefaultTolerance(100);
-
-        (uint256 floorRate, bool enforced) = registry.effectiveFloor(alice, WETH, USDC);
-        assertTrue(enforced);
-        assertEq(floorRate, 2_475_000_000); // 2.5e9 * 9900 / 10000
-    }
-
-    function test_pairEntryBeatsTheDefault() public {
-        vm.startPrank(alice);
-        registry.tightenDefaultTolerance(100);
         registry.raiseFloor(WETH, USDC, 50, 0);
-        vm.stopPrank();
 
-        (uint256 floorRate,) = registry.effectiveFloor(alice, WETH, USDC);
-        assertEq(floorRate, 2_487_500_000); // the pair's 50 bps, not the default's 100
+        (uint256 floorRate, bool enforced) = registry.effectiveFloor(alice, USDC, WETH);
+        assertEq(floorRate, 0);
+        assertFalse(enforced, "configuring one pair must not silently cover another");
     }
 
     function test_effectiveFloorIsTheStrongerOfRelativeAndAbsolute() public {
@@ -220,14 +214,6 @@ contract FloorRegistryTest is Test {
         registry.raiseFloor(WETH, USDC, 50, 2_000_000_000);
         vm.expectRevert(abi.encodeWithSelector(IFloorRegistry.NotARaise.selector, uint16(50), uint16(40), uint256(2_000_000_000), uint256(1_000_000_000)));
         registry.raiseFloor(WETH, USDC, 40, 1_000_000_000);
-        vm.stopPrank();
-    }
-
-    function test_defaultToleranceCannotBeWidened() public {
-        vm.startPrank(alice);
-        registry.tightenDefaultTolerance(100);
-        vm.expectRevert(abi.encodeWithSelector(IFloorRegistry.NotARaise.selector, uint16(100), uint16(200), uint256(0), uint256(0)));
-        registry.tightenDefaultTolerance(200);
         vm.stopPrank();
     }
 

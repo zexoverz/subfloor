@@ -38,8 +38,9 @@ interface IFloorRegistry {
     /// @notice Emitted when the reference-relative tolerance is widened under a guardian signature.
     event ToleranceWidened(address indexed recipient, address indexed base, address indexed quote, uint16 oldMaxAdverseBps, uint16 newMaxAdverseBps, address guardian);
 
-    event DefaultToleranceTightened(address indexed recipient, uint16 oldMaxAdverseBps, uint16 newMaxAdverseBps);
-    event DefaultToleranceWidened(address indexed recipient, uint16 oldMaxAdverseBps, uint16 newMaxAdverseBps, address guardian);
+    /// @notice A weakening has been signed and is waiting out the timelock. Only emitted when the
+    ///         registry was deployed with a non-zero lowering delay.
+    event FloorLoweringScheduled(address indexed recipient, address indexed base, address indexed quote, uint16 maxAdverseBps, uint256 absoluteRate, uint64 effectiveAt, address guardian);
     event GuardianSet(address indexed recipient, address oldGuardian, address newGuardian);
     event ReferenceFeedSet(address indexed base, address indexed quote, address feed, bool inverted, uint32 stalenessBound);
 

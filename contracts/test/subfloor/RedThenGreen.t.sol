@@ -63,7 +63,7 @@ contract RedThenGreenTest is Test {
         maker2 = vm.addr(maker2PK);
         taker = address(this);
 
-        registry = new FloorRegistry(address(this));
+        registry = new FloorRegistry(address(this), 0);
         control = new ControlFloorRouter(address(0), address(0), address(this), "SwapVM", "1.0.0", address(registry));
         guarded = new GuardedRouter(address(0), address(0), address(this), address(registry));
         upstream = new SwapVMRouter(address(0), address(0), address(this), "SwapVM", "1.0.0");

@@ -15,6 +15,11 @@ contract MockAggregator {
         updatedAt = u;
     }
 
+    function set(int256 a, uint256 u) external {
+        answer = a;
+        updatedAt = u;
+    }
+
     function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         return (1, answer, updatedAt, updatedAt, 1);
     }
@@ -48,7 +53,7 @@ contract FloorRegistryGuardianTest is Test {
         attacker = vm.addr(attackerPK);
 
         vm.warp(1_757_000_000);
-        registry = new FloorRegistry(owner);
+        registry = new FloorRegistry(owner, 0);
         feed = new MockAggregator(2500e8, block.timestamp);
 
         vm.prank(owner);
@@ -148,6 +153,74 @@ contract FloorRegistryGuardianTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(FloorRegistry.NoGuardianRegistered.selector, bob));
         registry.lowerFloor(bob, WETH, USDC, 200, 0, 0, deadline, sig);
+    }
+
+    // --- the timelock, off for the live run and available as a constructor option --------------
+
+    /// Deployed with a delay, a signed weakening does not bind when it is signed. It is announced
+    /// on-chain and anyone can see it coming before the floor actually moves.
+    function test_withADelayTheLoweringIsScheduledNotApplied() public {
+        FloorRegistry delayed = _delayedRegistry(1 days);
+
+        (uint256 before,) = delayed.effectiveFloor(alice, WETH, USDC);
+        assertEq(before, 2_487_500_000);
+
+        _lowerOn(delayed, 200, block.timestamp + 1 hours);
+
+        (uint256 stillBefore,) = delayed.effectiveFloor(alice, WETH, USDC);
+        assertEq(stillBefore, 2_487_500_000, "the floor must not move yet");
+    }
+
+    function test_executingBeforeTheDelayReverts() public {
+        FloorRegistry delayed = _delayedRegistry(1 days);
+        _lowerOn(delayed, 200, block.timestamp + 1 hours);
+
+        uint64 effectiveAt = uint64(block.timestamp + 1 days);
+        vm.expectRevert(abi.encodeWithSelector(FloorRegistry.LoweringStillTimelocked.selector, effectiveAt));
+        delayed.executeLowering(alice, WETH, USDC);
+    }
+
+    function test_executingAfterTheDelayApplies() public {
+        FloorRegistry delayed = _delayedRegistry(1 days);
+        _lowerOn(delayed, 200, block.timestamp + 1 hours);
+
+        vm.warp(block.timestamp + 1 days);
+        feed.set(2500e8, block.timestamp); // a day passed; the reference has to be fresh to read
+        delayed.executeLowering(alice, WETH, USDC);
+
+        (uint256 after_,) = delayed.effectiveFloor(alice, WETH, USDC);
+        assertEq(after_, 2_450_000_000);
+    }
+
+    function test_executingWithNothingPendingReverts() public {
+        FloorRegistry delayed = _delayedRegistry(1 days);
+        vm.expectRevert(abi.encodeWithSelector(FloorRegistry.NoPendingLowering.selector, alice, WETH, USDC));
+        delayed.executeLowering(alice, WETH, USDC);
+    }
+
+    /// The live run deploys with delay 0, so a signed weakening binds immediately. That is the
+    /// configuration the shoot-day floor adjustments depend on.
+    function test_withNoDelayTheLoweringAppliesImmediately() public {
+        _lowerFloor(200, 0, 0, block.timestamp + 1 hours, ledgerPK);
+        (uint256 after_,) = registry.effectiveFloor(alice, WETH, USDC);
+        assertEq(after_, 2_450_000_000);
+    }
+
+    function _delayedRegistry(uint32 delay) private returns (FloorRegistry d) {
+        d = new FloorRegistry(owner, delay);
+        vm.prank(owner);
+        d.setReferenceFeed(WETH, USDC, address(feed), false, BOUND, 8, 18, 6);
+        vm.startPrank(alice);
+        d.setGuardian(ledger);
+        d.raiseFloor(WETH, USDC, 50, 0);
+        vm.stopPrank();
+    }
+
+    function _lowerOn(FloorRegistry d, uint16 bps, uint256 deadline) private {
+        bytes32 structHash = keccak256(abi.encode(FLOOR_LOWERING_TYPEHASH, alice, WETH, USDC, bps, uint256(0), uint256(0), deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", d.DOMAIN_SEPARATOR(), structHash));
+        (uint8 v, bytes32 r, bytes32 s2) = vm.sign(ledgerPK, digest);
+        d.lowerFloor(alice, WETH, USDC, bps, 0, 0, deadline, abi.encodePacked(r, s2, v));
     }
 
     // --- helpers ---------------------------------------------------------------------------------
