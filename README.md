@@ -13,32 +13,24 @@
 
 ---
 
-## How it works
+## The problem
+
+An AI agent can trade for you around the clock. To do that it needs access to your money — and the
+moment it has that, one bad prompt is all it takes.
 
 ```
-   YOU                                          YOUR MONEY
-   ┌────────────────────┐
-   │ deposit tokens     │  ─────────────────►   sits in your vault
-   └────────────────────┘
-   ┌────────────────────┐
-   │ set one number:    │  ─────────────────►   "never below $2,463"
-   │ your worst price   │
-   └────────────────────┘
-   ┌────────────────────┐
-   │ hand the agent     │  ─────────────────►   it trades all day.
-   │ a trading permit   │                       you do nothing.
-   └────────────────────┘
-
-                            ↓
-
-   every fill  ──────►  above your number, or it does not happen
+   you give the agent access    →    someone poisons what it reads
+                                →    it dumps your bag at any price
+                                →    your money is gone
 ```
 
-That is the whole product. Set one number, stop thinking about it.
+Today's answer is to watch the agent and try to catch bad behaviour. But a watcher is a program
+forming an opinion, and **the same attacker who fooled your agent can fool the thing watching it.**
 
-## What if the agent goes rogue
+## The solution
 
-It cannot hurt you. That is the point.
+A vault where you set one number — the worst price you will accept — and the exchange itself
+refuses anything below it.
 
 ```
    agent gets hacked     →   tries to dump 38% below market
@@ -46,20 +38,37 @@ It cannot hurt you. That is the point.
    your balance          →   unchanged
 ```
 
-Most agent-safety tools watch the agent and try to spot bad behaviour. Watching can be fooled.
-**We watch nothing.** Your floor is arithmetic inside the code that moves the tokens — an agent
-cannot route around it, switch it off, or talk it out of anything.
+**We watch nothing.** Your floor is arithmetic inside the code that moves the tokens. An agent
+cannot route around it, switch it off, or argue with it. Watching can be fooled; a number cannot.
 
-And we prove that rather than promise it: millions of hostile trading programs generated and run
-against it, plus a machine-checked proof covering every program that could ever exist.
+## How it works
+
+```
+   1  DEPOSIT        your tokens go into a vault you own
+
+   2  SET ONE NUMBER "never below $2,463"
+                     raising it later is free and instant
+
+   3  GIVE A PERMIT  the agent gets permission to trade
+                     it never gets your keys
+
+   4  IT TRADES      all day, without asking you anything
+
+                                ↓
+
+      every fill  ──►  above your number, or it does not happen
+```
+
+And we prove it rather than promise it: millions of hostile trading programs were generated and run
+against the vault, plus a machine-checked proof covering every program that could ever exist.
 
 ## What you get
 
 | | |
 |---|---|
 | **You keep custody** | the agent gets a trading permit, never your keys |
-| **You set the limit** | one number; raising it is free and instant |
-| **Lowering it needs your hardware wallet** | so nobody, including a hacked agent, can move your floor |
+| **Raising your floor is free** | one click, no device, instant |
+| **Lowering it needs your hardware wallet** | so nobody, including a hacked agent, can move it |
 | **One button kills the agent** | revoke mid-trade, funds stay put |
 | **Anyone can check** | every fill is public and recomputed against your floor |
 
