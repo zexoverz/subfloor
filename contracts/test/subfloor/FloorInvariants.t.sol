@@ -123,6 +123,51 @@ contract FloorInvariantsTest is Test {
         }
     }
 
+    /// Invariant 2: `quote()` and `swap()` agree about whether a fill is allowed. A quote the
+    /// settlement would reject is a bug with a demo-visible failure mode — the agent composes
+    /// against the quote, the fill reverts, and the dashboard shows liquidity that is not there.
+    ///
+    /// Checked as an equivalence, not a one-way implication: quote succeeding must mean swap
+    /// succeeds, *and* quote reverting must mean swap reverts. A mirror that only ever refuses more
+    /// than settlement would still be wrong, just quieter.
+    function testFuzz_quoteAndSwapAlwaysAgree(
+        uint8 shape,
+        uint96 takerFloor,
+        uint96 makerFloor,
+        uint96 amountRaw
+    ) public {
+        uint256 amount = bound(uint256(amountRaw), 1e12, 10e18);
+
+        if (takerFloor > 0) {
+            vm.prank(taker);
+            registry.raiseFloor(address(tokenA), address(tokenB), 10_000, takerFloor);
+        }
+        if (makerFloor > 0) {
+            vm.prank(maker);
+            registry.raiseFloor(address(tokenB), address(tokenA), 10_000, makerFloor);
+        }
+
+        ISwapVM.Order memory order = _createOrder(_program(shape));
+        bytes memory takerData = _takerData(order);
+        tokenA.mint(taker, amount);
+
+        bool quoteOk;
+        try router.quote(order, amount, takerData) returns (uint256, uint256, bytes32) {
+            quoteOk = true;
+        } catch {
+            quoteOk = false;
+        }
+
+        bool swapOk;
+        try router.swap(order, amount, takerData) returns (uint256, uint256, bytes32) {
+            swapOk = true;
+        } catch {
+            swapOk = false;
+        }
+
+        assertEq(quoteOk, swapOk, "quote and swap disagreed about the same fill");
+    }
+
     function _rate(uint256 received, uint256 given) private pure returns (uint256) {
         return given == 0 ? type(uint256).max : received * 1e18 / given;
     }

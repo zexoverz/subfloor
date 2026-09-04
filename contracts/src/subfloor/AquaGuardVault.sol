@@ -98,6 +98,7 @@ contract AquaGuardVault is Ownable, EIP712 {
     error TokenOutsideMandate(address token);
     error AmountAboveMandate(address token, uint256 amount, uint256 maxAmount);
     error LengthMismatch(uint256 tokens, uint256 amounts);
+    error RenounceDisabled();
 
     modifier onlyDelegate() {
         require(msg.sender == delegate, NotDelegate(msg.sender));
@@ -239,6 +240,13 @@ contract AquaGuardVault is Ownable, EIP712 {
         (bool ok, bytes memory ret) = target.call{ value: value }(data);
         require(ok, "AquaGuardVault: rescue call failed");
         return ret;
+    }
+
+    /// @notice Disabled. Renouncing would permanently remove the owner rescue path, and that path
+    ///         is the stated answer to "a vault bug locks the funds". A vault with inventory in it
+    ///         and no owner is not decentralised, it is bricked.
+    function renounceOwnership() public pure override {
+        revert RenounceDisabled();
     }
 
     receive() external payable { }

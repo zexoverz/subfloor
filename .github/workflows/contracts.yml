@@ -63,6 +63,12 @@ jobs:
         id: test
         run: forge test -vv
 
+      # The delegate-reachable surface is the custody claim. A new state-changing function on the
+      # vault fails this until it is classified, which is the point.
+      - name: Check the vault's delegate surface
+        working-directory: .
+        run: ./scripts/check-delegate-surface.sh
+
       - name: Save forge build cache
         if: always() && steps.test.outcome == 'success' && steps.forge-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
