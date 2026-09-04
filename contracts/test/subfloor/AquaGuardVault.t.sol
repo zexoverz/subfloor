@@ -360,6 +360,71 @@ contract AquaGuardVaultTest is Test {
         assertEq(tokenA.balanceOf(attacker), 100e18);
     }
 
+    // --- invariant 3: the delegate surface ---------------------------------------------------------
+
+    /// The delegate-reachable surface is gated in CI rather than here: `scripts/check-delegate-surface.sh`
+    /// reads the compiled ABI and fails if any state-changing function appears that is not either
+    /// owner-gated or one of ship/dock/updateQuote/rescueApproval. Solidity cannot filter the ABI
+    /// JSON usefully, and a hand-written list in a test only ever proves the functions I remembered.
+    ///
+    /// That check exists because the fuzz below is weaker than it looks. It passed with a
+    /// deliberately-added `sweep(address,address,uint256)` passthrough sitting in the contract:
+    /// random bytes essentially never form a valid selector with valid arguments. An invariant that
+    /// cannot fail is worse than none, because it gets believed.
+
+    /// Renouncing would permanently remove the rescue path that "a vault bug locking funds" relies
+    /// on, leaving inventory in a contract nobody can act on.
+    function test_ownershipCannotBeRenounced() public {
+        vm.prank(owner);
+        vm.expectRevert(AquaGuardVault.RenounceDisabled.selector);
+        vault.renounceOwnership();
+    }
+
+    /// The complement: whatever calldata the delegate sends, including malformed and unknown
+    /// selectors, nothing leaves and nobody but Aqua gains an allowance. On its own this is weak
+    /// (see above); alongside the ABI check it covers the fallback and receive paths.
+    function testFuzz_noDelegateCallMovesValueOrApprovesAnyoneButAqua(bytes calldata data, address spender) public {
+        vm.assume(spender != address(aqua));
+
+        uint256 aBefore = tokenA.balanceOf(address(vault));
+        uint256 bBefore = tokenB.balanceOf(address(vault));
+        uint256 outBefore = outsider.balanceOf(address(vault));
+
+        vm.prank(agent);
+        (bool ok,) = address(vault).call(data);
+        ok; // a revert is a fine outcome; what matters is what is true afterwards
+
+        assertGe(tokenA.balanceOf(address(vault)), aBefore, "tokenA left the vault");
+        assertGe(tokenB.balanceOf(address(vault)), bBefore, "tokenB left the vault");
+        assertGe(outsider.balanceOf(address(vault)), outBefore, "outsider token left the vault");
+
+        assertEq(tokenA.allowance(address(vault), spender), 0, "a non-Aqua spender was approved");
+        assertEq(tokenB.allowance(address(vault), spender), 0, "a non-Aqua spender was approved");
+        assertEq(outsider.allowance(address(vault), spender), 0, "a non-Aqua spender was approved");
+    }
+
+    /// The same question with the delegate's own signing key in play, so the fuzzer can attempt a
+    /// forged mandate rather than only malformed calldata. It cannot produce the guardian's
+    /// signature, so no ship should ever succeed.
+    function testFuzz_theDelegateCannotForgeAMandate(uint256 wrongPK, uint96 amount, uint256 nonce) public {
+        uint256 pk = bound(wrongPK, 1, type(uint128).max);
+        vm.assume(vm.addr(pk) != ledger);
+
+        (address[] memory tokens, uint256[] memory amounts) = _pair(uint256(amount), uint256(amount));
+        AquaGuardVault.Mandate memory m = _mandate(tokens, type(uint256).max, nonce);
+        bytes memory sig = _sign(m, pk);
+
+        uint256 before = tokenA.balanceOf(address(vault));
+        vm.prank(agent);
+        (bool ok,) = address(vault).call(
+            abi.encodeCall(AquaGuardVault.ship, (app, "strategy", tokens, amounts, m, sig))
+        );
+
+        assertFalse(ok, "a mandate not signed by the guardian was accepted");
+        assertEq(tokenA.balanceOf(address(vault)), before);
+        assertEq(tokenA.allowance(address(vault), address(aqua)), 0);
+    }
+
     // --- helpers ------------------------------------------------------------------------------------
 
     function _pair(uint256 a, uint256 b) private view returns (address[] memory tokens, uint256[] memory amounts) {
