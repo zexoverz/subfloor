@@ -1,4 +1,4 @@
-# SUBFLOOR — ETHOnline 2026
+# SUBFLOOR, ETHOnline 2026
 
 **Read `docs/SPEC.md` before anything else.** It opens with a build-handoff section carrying what
 is settled, the verified addresses, the measured facts and the traps that already cost time. Do not
@@ -8,8 +8,8 @@ re-derive what it records, and do not soften anything it marks unverified.
 
 ## Working rules
 
-**Commit at short stages, with short messages.** One working change per commit — a contract that
-compiles, a test that passes, a screen that renders — not a day's work in one push. Sponsors read
+**Commit at short stages, with short messages.** One working change per commit, a contract that
+compiles, a test that passes, a screen that renders, not a day's work in one push. Sponsors read
 the history and a single dump on the final day reads as one. Keep the subject to a line that says
 what changed; the reasoning belongs in the code or the spec, not in a paragraph nobody reads twice.
 Sign them.
@@ -33,10 +33,10 @@ export PATH="$HOME/.local/bin:$HOME/.nvm/versions/node/v23.10.0/bin:$PATH"
 mcporter call exa.web_search_exa query="<describe the ideal page, not keywords>" numResults=6
 ```
 
-Jina Reader reads any URL: `curl https://r.jina.ai/<URL>`. There is no `timeout` binary here — wrap
+Jina Reader reads any URL: `curl https://r.jina.ai/<URL>`. There is no `timeout` binary here, so wrap
 long calls as `perl -e 'alarm 150; exec @ARGV' <cmd>`.
 
-**On-chain history goes through Envio HyperSync**, not an RPC loop. Public RPCs cap `eth_getLogs`
+On-chain history goes through Envio HyperSync, not an RPC loop. Public RPCs cap `eth_getLogs`
 and rate-limit under a walk; HyperSync does neither. Query
 `https://<chain|chainid>.hypersync.xyz/query` with a bearer token, paginate on `next_block` until it
 stops advancing, and remember the response returns `blocks` and `logs` as sibling arrays with log
