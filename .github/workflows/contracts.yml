@@ -1,0 +1,73 @@
+name: contracts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: contracts/yarn.lock
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # A cold build is ten minutes because of via_ir, and an incremental one is under a second.
+      # The whole point of this cache is to pay that once per dependency set rather than per push.
+      # The key carries a hash of every source file so a real change gets a correct build; the
+      # restore-keys prefix still hands us the previous `out/`, and forge then recompiles only what
+      # actually changed rather than all 254 files.
+      - name: Restore forge build cache
+        uses: actions/cache/restore@v4
+        id: forge-cache
+        with:
+          path: |
+            contracts/out
+            contracts/cache
+          key: forge-${{ runner.os }}-${{ hashFiles('contracts/foundry.toml', 'contracts/yarn.lock') }}-${{ hashFiles('contracts/src/**/*.sol', 'contracts/test/**/*.sol', 'contracts/mocks/**/*.sol') }}
+          restore-keys: |
+            forge-${{ runner.os }}-${{ hashFiles('contracts/foundry.toml', 'contracts/yarn.lock') }}-
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: forge build
+
+      - name: Test
+        id: test
+        run: forge test -vv
+
+      - name: Save forge build cache
+        if: always() && steps.test.outcome == 'success' && steps.forge-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            contracts/out
+            contracts/cache
+          key: forge-${{ runner.os }}-${{ hashFiles('contracts/foundry.toml', 'contracts/yarn.lock') }}-${{ hashFiles('contracts/src/**/*.sol', 'contracts/test/**/*.sol', 'contracts/mocks/**/*.sol') }}
