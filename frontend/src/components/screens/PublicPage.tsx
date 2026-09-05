@@ -1,7 +1,12 @@
+import { useState } from 'react';
+import { ChartLine, Receipt } from 'lucide-react';
 import { copy } from '../../copy.ts';
-import { Panel, Label, Todo } from '../Panel.tsx';
-import { StatStrip } from '../StatStrip.tsx';
+import { Card, CardHead, Note, Todo } from '../Card.tsx';
+import { Tile, Tiles } from '../Tiles.tsx';
+import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
+import { PriceChart } from '../PriceChart.tsx';
+import { formatBps } from '../../lib/rate.ts';
 import type { VaultState } from '../../types.ts';
 
 /**
@@ -12,37 +17,72 @@ import type { VaultState } from '../../types.ts';
  * positions — that is a target list, not a product.
  */
 export function PublicPage({ state }: { state: VaultState }) {
+  const [query, setQuery] = useState<string | null>(null);
+
   return (
     <>
-      <Panel>
-        <StatStrip stats={state.stats} />
-      </Panel>
+      <Tiles>
+        <Tile
+          label={copy.desk.fills}
+          value={state.stats.fills}
+          sub={`${copy.desk.fillsSub} · ${state.stats.since}`}
+          onQuery={() => setQuery('{ fills(where: { vault: $vault }) { totalCount } }')}
+        />
+        <Tile
+          label={copy.desk.markout}
+          value={state.stats.medianVsMidBps}
+          format={formatBps}
+          sub={copy.desk.markoutSub}
+          tone="settle"
+          onQuery={() => setQuery('{ fills(where: { vault: $vault }) { markout30sBps referenceBps } }')}
+        />
+        <Tile
+          label={copy.desk.worst}
+          value={state.stats.worstFillAboveFloorBps}
+          format={formatBps}
+          sub={copy.desk.worstSub}
+          onQuery={() =>
+            setQuery('{ fills(where: { vault: $vault }, orderBy: bpsAboveFloor, first: 1) { bpsAboveFloor tx } }')
+          }
+        />
+        <Tile
+          label={copy.desk.refused}
+          value={state.stats.refused}
+          sub={copy.desk.refusedSub}
+          tone="refuse"
+          onQuery={() =>
+            setQuery('# a refusal is a revert and emits no log — Substreams reads transaction status instead')
+          }
+        />
+      </Tiles>
 
-      <Panel>
-        <Label>{copy.live.tape}</Label>
+      {query && (
+        <pre className="mb-4.5 overflow-x-auto rounded-[3px] border border-rule bg-sunken px-4 py-3 text-[12px] whitespace-pre text-muted">
+          {query}
+        </pre>
+      )}
+
+      <FuzzCounter fuzz={state.fuzz} />
+
+      <Card className="mb-4.5">
+        <CardHead
+          icon={ChartLine}
+          left={`${state.pair.base} / ${state.pair.quote} · fills against the floor`}
+          right="anyone can recompute this from chain data"
+        />
+        <PriceChart state={state} />
+      </Card>
+
+      <Card className="flex h-[520px] flex-col">
+        <CardHead icon={Receipt} left={copy.desk.tape} right={`${state.pair.base} / ${state.pair.quote}`} />
         <Tape entries={state.tape} pair={state.pair} />
-      </Panel>
+      </Card>
 
-      <Panel>
-        <div className="flex flex-wrap gap-x-10 gap-y-3">
-          <div>
-            <span className="block text-[11px] tracking-[0.08em] text-dim uppercase">
-              {copy.publicPage.programsExecuted}
-            </span>
-            <b className="num text-lg">{state.fuzz.programs.toLocaleString('en-US')}</b>
-          </div>
-          <div>
-            <span className="block text-[11px] tracking-[0.08em] text-dim uppercase">
-              {copy.publicPage.settledBelowFloor}
-            </span>
-            <b className="num text-lg">{state.fuzz.settledBelowFloor}</b>
-          </div>
-        </div>
-      </Panel>
+      <Note className="serif mt-4.5 text-[14.5px]">{copy.desk.everyRow}</Note>
 
       <Todo>
-        skeleton: [run query] belongs next to every headline number here — the guarantee is
-        anyone's query, and the affordance is that sentence made clickable.
+        skeleton: the queries above are the shapes these numbers will come from, not live ones —
+        they run against the subgraph the moment it exists (#24, #42).
       </Todo>
     </>
   );

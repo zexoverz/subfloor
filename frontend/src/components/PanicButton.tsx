@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { OctagonX } from 'lucide-react';
 import { copy } from '../copy.ts';
 
 const HOLD_MS = 1500;
@@ -34,13 +35,16 @@ export function PanicButton({ onFire }: { onFire: () => void }) {
       onPointerUp={disarm}
       onPointerLeave={disarm}
       title={copy.panic.hint}
-      className="relative overflow-hidden rounded-lg border border-red-900/70 bg-red-950/30 px-3 py-1.5 text-xs text-red-200 select-none"
+      className="relative cursor-pointer overflow-hidden rounded-[2px] border border-refuse/40 bg-surface px-2.5 py-[3px] text-[10.5px] tracking-[0.1em] text-refuse uppercase select-none"
     >
       <span
-        className="absolute inset-y-0 left-0 bg-red-900/60 transition-[width] ease-linear"
-        style={{ width: arming ? '100%' : 0, transitionDuration: arming ? `${HOLD_MS}ms` : '0ms' }}
+        className="absolute inset-y-0 left-0 bg-refuse-wash ease-linear"
+        style={{ width: arming ? '100%' : 0, transition: `width ${arming ? HOLD_MS : 0}ms linear` }}
       />
-      <span className="relative">{copy.panic.label}</span>
+      <span className="relative flex items-center gap-1.5">
+        <OctagonX size={12} strokeWidth={1.8} />
+        {copy.panic.label}
+      </span>
     </button>
   );
 }

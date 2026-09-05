@@ -1,5 +1,8 @@
 import type { VaultState } from './types.ts';
 
+/** The fixture tape is anchored to now so the chart has a sane axis before any live data exists. */
+const t0 = Math.floor(Date.now() / 1000);
+
 /**
  * The skeleton's data, and the contract between these screens and the real readers. Every field
  * is commented with where its reader will come from; nothing in a component fetches anything, so
@@ -12,10 +15,19 @@ export const fixtures: VaultState = {
 
   // ERC20 balanceOf, on the owner's wallet and on the vault.
   wallet: { base: 0.2, quote: 500 },
-  inventory: { base: 0.18, quote: 512 },
+
+  // ERC20 balanceOf on the vault, one row per token in the mandate's set. Two tokens this week
+  // because the run trades one pair — not because the vault or the mandate is limited to two.
+  inventory: [
+    { symbol: 'WETH', amount: 0.18, mandateMax: 0.5 },
+    { symbol: 'USDC', amount: 512, mandateMax: 1500 },
+  ],
 
   // FloorRegistry.effectiveFloor(recipient, base, quote) + FloorRegistry.floor(...)
   floor: { enforced: true, maxAdverseBps: 100, absoluteRate: 2_445_400_000n },
+
+  // The (USDC, WETH) entry: the same protection for the side that buys WETH.
+  floorBuy: { enforced: true, maxAdverseBps: 100, absoluteRate: 400_000_000_000_000_000_000_000_000n },
 
   // FloorRegistry.pendingLowering(...). Stays null while LOWERING_DELAY is zero.
   pendingLowering: null,
@@ -59,10 +71,11 @@ export const fixtures: VaultState = {
   // Fills from the subgraph. Refusals from Substreams, or from the receipt watcher on our own
   // transactions — the card's numbers are the decoded revert arguments either way.
   tape: [
-    { kind: 'fill', time: '14:02', side: 'sold', amount: 0.05, price: 2463.1, bpsAboveFloor: 72, tx: '0x4c1a' },
-    { kind: 'fill', time: '13:47', side: 'bought', amount: 0.04, price: 2468.9, bpsAboveFloor: 96, tx: '0x77de' },
+    { kind: 'fill', ts: t0 - 60, time: '14:02', side: 'sold', amount: 0.05, price: 2463.1, bpsAboveFloor: 72, vsReferenceBps: -28, markout30sBps: 11, vsCexMidBps: 9, tx: '0x4c1a' },
+    { kind: 'fill', ts: t0 - 180, time: '13:47', side: 'bought', amount: 0.04, price: 2468.9, bpsAboveFloor: 96, vsReferenceBps: -5, markout30sBps: 4, vsCexMidBps: 6, tx: '0x77de' },
     {
       kind: 'refusal',
+      ts: t0 - 300,
       time: '13:31',
       tx: '0x9d02',
       // Real SettledBelowFloor revert data: a taker selling WETH for USDC at 2,391.6 against a
@@ -71,7 +84,7 @@ export const fixtures: VaultState = {
       data: '0x027e4c460000000000000000000000001111113ccf1426a8e30e2bff5e005d929bf6a90a0000000000000000000000004200000000000000000000000000000000000006000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000000000000000000000000000000000008e8ceb800000000000000000000000000000000000000000000000000000000091c1d7c0',
       referencePrice: 2470.1,
     },
-    { kind: 'fill', time: '13:12', side: 'sold', amount: 0.03, price: 2459.8, bpsAboveFloor: 58, tx: '0x2b91' },
+    { kind: 'fill', ts: t0 - 420, time: '13:12', side: 'sold', amount: 0.03, price: 2459.8, bpsAboveFloor: 58, vsReferenceBps: -42, markout30sBps: -3, vsCexMidBps: 2, tx: '0x2b91' },
   ],
 
   // Plain words, decoded from the strategy classification the subgraph computes off the Shipped
