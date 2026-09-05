@@ -26,7 +26,17 @@ npm run build                   # type-check and bundle
 | **Subgraph** (Graph Client) | the tape's fills, floor history, the p50/p99 the floor screen calibrates from | not started (#23, #24) |
 | **Substreams** | the refusal count and the refusal card's numbers | not started (#33) |
 
-**A refused fill emits nothing.** `SettledBelowFloor` is a revert; a reverted transaction has no
+**A refused fill emits nothing.** `src/lib/refusal.ts` decodes one from raw revert data —
+selector `0x027e4c46`, verified with `cast keccak` against the signature — and everything the
+refusal card shows comes out of that decoder. Two things it pins:
+
+- `tokenIn` is what *that recipient gave*. `checkSettlement` scores the maker with the pair the
+  other way round, so a maker-side refusal arrives with the tokens swapped; decimals are read from
+  the decoded addresses, never from a fixed pair, or the maker's card renders upside down.
+- The vs-reference figure is **not** in the revert and cannot be derived from it. The reference at
+  that block is a separate read; until it exists the card omits that line rather than inventing it.
+
+ `SettledBelowFloor` is a revert; a reverted transaction has no
 logs, so no event handler will ever populate a `Refusal` entity. Refusals come from the
 Substreams module reading transaction status, or — for our own transactions on shoot day — from
 watching the receipt and decoding the revert args client-side. Same five numbers either way.
