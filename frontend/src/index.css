@@ -180,3 +180,23 @@ body {
 .value-pulse-settle {
   --pulse-wash: var(--c-settle-wash);
 }
+
+/*
+ * One glyph arriving, not a strip of ten sliding behind a window. The window version depended on a
+ * 1em clip box agreeing with the text baseline, which it does not before the webfont loads — the
+ * neighbouring digits showed through on a cold page.
+ */
+@keyframes digit-roll {
+  from {
+    transform: translateY(0.45em);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.digit-roll {
+  animation: digit-roll 0.42s cubic-bezier(0.2, 0.9, 0.25, 1) backwards;
+}
