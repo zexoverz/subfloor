@@ -56,10 +56,18 @@ export type Stats = {
 export type Fill = {
   kind: 'fill';
   time: string;
+  /** Unix seconds. The chart needs an axis; the tape only ever shows `time`. */
+  ts: number;
   side: 'sold' | 'bought';
   amount: number;
   price: number;
   bpsAboveFloor: number;
+  /** Against the reference at that block. Undefined until that read exists — never guessed. */
+  vsReferenceBps?: number;
+  /** Markout: where the reference sat 30s after the fill. The honest measure of whether it was good. */
+  markout30sBps?: number;
+  /** Against a CEX mid at the same second. Needs the off-chain join; undefined until it exists. */
+  vsCexMidBps?: number;
   tx: string;
 };
 
@@ -75,6 +83,7 @@ export type Fill = {
 export type Refusal = {
   kind: 'refusal';
   time: string;
+  ts: number;
   tx: string;
   data: `0x${string}`;
   referencePrice?: number;
@@ -83,6 +92,21 @@ export type Refusal = {
 export type TapeEntry = Fill | Refusal;
 
 export type Mandate = { delegateLabel: string; expiresInDays: number };
+
+/**
+ * One token the vault holds. The vault is multi-token by construction — a mandate carries a token
+ * set with a per-token bound (`Mandate.tokens[]` / `maxAmounts[]`), deliberately not one summed
+ * figure, because a single aggregate is decimals-blind and the delegate would choose the split.
+ *
+ * This week's run trades one pair, so this list is short; the shape is what the contract enforces,
+ * and adding a token the mandate covers is one row.
+ */
+export type Holding = {
+  symbol: string;
+  amount: number;
+  /** The mandate's bound for this token, in whole units. Undefined when it is outside the set. */
+  mandateMax?: number;
+};
 
 export type Addresses = {
   floorRegistry: `0x${string}` | null;
@@ -94,8 +118,13 @@ export type Addresses = {
 export type VaultState = {
   pair: Pair;
   wallet: { base: number; quote: number };
-  inventory: { base: number; quote: number };
+  inventory: Holding[];
   floor: Floor;
+  /**
+   * The other direction's entry. The registry keys floors by ordered pair, so buying WETH is a
+   * second (quote, base) entry rather than a sign flip on this one.
+   */
+  floorBuy: Floor;
   pendingLowering: PendingLowering;
   reference: Reference;
   calibration: Calibration;

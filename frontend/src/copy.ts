@@ -14,11 +14,60 @@ export const copy = {
   scope: 'the worst price on this venue is the one you set',
 
   nav: {
-    onboarding: 'first run',
-    floor: 'floor',
-    live: 'live',
-    ceremony: 'device',
-    public: 'public',
+    onboarding: 'First run',
+    floor: 'Floor control',
+    live: 'Desk',
+    ceremony: 'Device',
+    public: 'Public',
+  },
+
+  /** The skeleton-only picker. The shipped app reaches these by flow, not by a tab. */
+  preview: 'skeleton',
+
+  desk: {
+    fills: 'Fills',
+    fillsSub: 'since the vault was funded',
+    markout: 'Median markout',
+    markoutSub: '30s post-fill vs reference',
+    worst: 'Worst fill vs floor',
+    worstSub: 'closest approach, never through',
+    /** The old draft said "Blocked" here, which is the register this project stays out of. */
+    refused: 'Refused',
+    refusedSub: 'reverts below the floor',
+    tape: 'Fill tape',
+    vault: 'What is in the vault',
+    marketPrice: 'Market price',
+    /** Not "your limits" — the register matters more here than anywhere. */
+    standing: 'Your floor right now',
+    selling: 'Selling',
+    buying: 'Buying',
+    feedDies: 'If the feed goes quiet',
+    neverBelow: 'never below',
+    neverAbove: 'never above',
+    backstopNote: 'absolute backstop, ignores the reference',
+    fresh: 'fresh',
+    stale: 'stale',
+    everyRow: 'Every row above is a real Base transaction, reconstructed from chain data rather than from our own logs.',
+  },
+
+  floorControl: {
+    tighten: 'Tighten the floor',
+    tightenNote: 'Safer is free. One transaction from your own address, no device, binding on the very next fill.',
+    tightenTo: 'Tighten to',
+    oneWay: 'One-way. Going back counts as loosening, and loosening needs your device.',
+    loosen: 'Loosen the floor',
+    loosenNote:
+      'Giving away protection is the one dangerous move here, so your address alone cannot do it. It needs a signature from your device.',
+    loosenTo: 'Loosen to',
+    chartTitle: 'How far below the reference each of your fills landed',
+    chartNote: 'Taller bar = more fills landed there. Everything you have actually traded sits in the left clump.',
+    usually: 'Usually',
+    oneInHundred: '1 fill in 100',
+    worstEver: 'Worst ever',
+    yourFloor: 'Your floor',
+    backstopHolds: 'also holds on its own, whatever the reference does',
+    rebuilt:
+      'The chart is rebuilt from on-chain fill history, not from our own server — so the number you are signing against is one anybody can recompute.',
   },
 
   panic: {
@@ -63,6 +112,8 @@ export const copy = {
     inventory: 'inventory',
     floor: 'floor',
     live: 'live',
+    /** Shown instead of "live" whenever the tape is the dev feed rather than the chain. */
+    simulated: 'simulated feed',
   },
 
   refusal: {

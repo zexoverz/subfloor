@@ -4,41 +4,31 @@ import type { DecodedRefusal } from '../lib/refusal.ts';
 import type { Refusal } from '../types.ts';
 
 /**
- * The product working, not an error. No alarm styling on the card — the only red is the attempted
- * price, because the attempted price is the bad thing and the card is the good thing.
- *
  * Every number here is a decoded revert argument, which is why same-day router verification is not
- * optional: [view] has to land on a page whose failed transaction decodes into these same rates,
+ * optional: [view] has to land on a page whose failed transaction decodes into these same rates —
  * the same event from two witnesses.
  */
-export function RefusalCard({ entry, decoded }: { entry: Refusal; decoded: DecodedRefusal }) {
-  const vsReference =
-    entry.referencePrice === undefined ? null : bpsAbove(decoded.attemptedPrice, entry.referencePrice);
-  const floorVsReference =
-    entry.referencePrice === undefined ? null : bpsAbove(decoded.floorPrice, entry.referencePrice);
+export function RefusalDetail({ entry, decoded }: { entry: Refusal; decoded: DecodedRefusal }) {
+  const vsRef = entry.referencePrice === undefined ? null : bpsAbove(decoded.attemptedPrice, entry.referencePrice);
+  const floorVsRef = entry.referencePrice === undefined ? null : bpsAbove(decoded.floorPrice, entry.referencePrice);
 
   return (
-    <div className="my-2 rounded-xl border border-floor/40 bg-floor/5 px-5 py-4">
-      <h3 className="mb-3 text-xs font-semibold tracking-[0.14em] text-floor/90">{copy.refusal.heading}</h3>
-
-      <dl className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 text-sm">
-        <dt className="text-dim">{copy.refusal.attempted}</dt>
-        <dd className="num text-bad">
-          {formatPrice(decoded.attemptedPrice)}
-          {vsReference !== null && <span className="text-dim"> ({vsReference} bps vs ref)</span>}
+    <div className="border-l-2 border-refuse bg-refuse-wash px-4 py-3.5">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1 text-[12.5px]">
+        <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.attempted}</dt>
+        <dd className="m-0 font-semibold text-refuse">
+          {formatPrice(decoded.attemptedPrice)} {decoded.gotSymbol}
+          {vsRef !== null && <span className="ml-2 font-normal text-faint">{vsRef} bps vs ref</span>}
         </dd>
-        <dt className="text-dim">{copy.refusal.yourFloor}</dt>
-        <dd className="num">
-          {formatPrice(decoded.floorPrice)}
-          {floorVsReference !== null && <span className="text-dim"> ({floorVsReference} bps)</span>}
+        <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.yourFloor}</dt>
+        <dd className="m-0 font-semibold text-brass">
+          {formatPrice(decoded.floorPrice)} {decoded.gotSymbol}
+          {floorVsRef !== null && <span className="ml-2 font-normal text-faint">{floorVsRef} bps</span>}
         </dd>
       </dl>
-
-      <p className="mt-3 text-xs text-dim">
-        {decoded.bpsBelowFloor} bps under your floor, in {decoded.gotSymbol} per {decoded.gaveSymbol}
-      </p>
-      <p className="mt-1 text-xs text-dim">
-        reverted on Base mainnet · tx {entry.tx}… · <span className="text-ink">{copy.refusal.unchanged}</span>
+      <p className="serif mt-3 text-[13.5px] leading-relaxed text-muted">
+        {decoded.bpsBelowFloor} bps under your floor, priced in {decoded.gotSymbol} per {decoded.gaveSymbol}. Reverted
+        on Base mainnet, tx {entry.tx}… — <span className="text-ink">{copy.refusal.unchanged}</span>.
       </p>
     </div>
   );

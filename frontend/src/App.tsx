@@ -7,6 +7,7 @@ import { Ceremony } from './components/screens/Ceremony.tsx';
 import { PublicPage } from './components/screens/PublicPage.tsx';
 import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
+import { useSimulatedFeed } from './lib/feed.ts';
 import type { Screen } from './types.ts';
 
 /**
@@ -16,7 +17,9 @@ import type { Screen } from './types.ts';
 export default function App() {
   const [screen, setScreen] = useState<Screen>('live');
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
-  const state = fixtures;
+  // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
+  // the number strip says so. See src/lib/feed.ts.
+  const { state, simulated } = useSimulatedFeed(fixtures);
 
   const lower = (bps: number) => {
     setDraftBps(bps);
@@ -24,7 +27,13 @@ export default function App() {
   };
 
   return (
-    <AppShell screen={screen} onNavigate={setScreen} onPanic={() => alert(copy.panic.done)}>
+    <AppShell
+      screen={screen}
+      onNavigate={setScreen}
+      onPanic={() => alert(copy.panic.done)}
+      state={state}
+      simulated={simulated}
+    >
       {screen === 'onboarding' && (
         <Onboarding state={state} onAdjust={() => setScreen('floor')} onSign={() => setScreen('ceremony')} />
       )}
