@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* The price register, as tokens. Nothing in a component hardcodes a hex value. */
+@theme {
+  --color-bg: #0b0d10;
+  --color-panel: #12161b;
+  --color-line: #232a33;
+  --color-ink: #e8edf3;
+  --color-dim: #8b97a6;
+  --color-good: #4ade80;
+  --color-bad: #f87171;
+  --color-floor: #6e56cf;
+  --color-reference: #5c6b7a;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  @apply bg-bg text-ink antialiased;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Tabular figures everywhere a number can change under the reader's eye. */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
