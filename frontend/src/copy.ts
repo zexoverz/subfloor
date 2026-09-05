@@ -114,6 +114,8 @@ export const copy = {
     live: 'live',
     /** Shown instead of "live" whenever the tape is the dev feed rather than the chain. */
     simulated: 'simulated feed',
+    /** And this whenever the page is standing on fixtures — a deployed skeleton says so. */
+    fixtures: 'fixture data',
   },
 
   refusal: {

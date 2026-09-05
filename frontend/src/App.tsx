@@ -19,7 +19,7 @@ export default function App() {
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
-  const { state, simulated } = useSimulatedFeed(fixtures);
+  const { state, source } = useSimulatedFeed(fixtures);
 
   const lower = (bps: number) => {
     setDraftBps(bps);
@@ -32,7 +32,7 @@ export default function App() {
       onNavigate={setScreen}
       onPanic={() => alert(copy.panic.done)}
       state={state}
-      simulated={simulated}
+      source={source}
     >
       {screen === 'onboarding' && (
         <Onboarding state={state} onAdjust={() => setScreen('floor')} onSign={() => setScreen('ceremony')} />

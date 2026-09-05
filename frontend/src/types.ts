@@ -136,4 +136,11 @@ export type VaultState = {
   addresses: Addresses;
 };
 
+/**
+ * Where the numbers on screen came from. The badge reads this, never the build mode: a production
+ * build of a page with no readers wired up is not "live", it is fixtures, and a stranger opening
+ * the URL has no other way to tell.
+ */
+export type DataSource = 'fixtures' | 'simulated' | 'chain';
+
 export type Screen = 'onboarding' | 'floor' | 'live' | 'ceremony' | 'public';

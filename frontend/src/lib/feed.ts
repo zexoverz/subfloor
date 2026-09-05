@@ -3,7 +3,7 @@ import { encodeErrorResult } from 'viem';
 import { SETTLED_BELOW_FLOOR } from './refusal.ts';
 import { USDC, WETH } from './tokens.ts';
 import { bpsAbove, floorPriceFromBps, priceToRate } from './rate.ts';
-import type { TapeEntry, VaultState } from '../types.ts';
+import type { DataSource, TapeEntry, VaultState } from '../types.ts';
 
 /**
  * A dev-only stand-in for the agent trading. Nothing is deployed, so nothing produces fills, and a
@@ -74,8 +74,11 @@ function refusal(state: VaultState, seq: number): TapeEntry {
   };
 }
 
-/** The state the screens render, with the simulated tape folded in and the stats recomputed. */
-export function useSimulatedFeed(base: VaultState): { state: VaultState; simulated: boolean } {
+/**
+ * The state the screens render, with the simulated tape folded in and the stats recomputed, plus
+ * where it all came from. `chain` is returned by nothing yet — it arrives with the readers.
+ */
+export function useSimulatedFeed(base: VaultState): { state: VaultState; source: DataSource } {
   const simulated = import.meta.env.DEV;
   const [extra, setExtra] = useState<TapeEntry[]>([]);
 
@@ -111,5 +114,5 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; simulat
     };
   }, [base, extra, simulated]);
 
-  return { state, simulated };
+  return { state, source: simulated ? 'simulated' : 'fixtures' };
 }
