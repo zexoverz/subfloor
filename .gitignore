@@ -11,3 +11,6 @@ dist/
 .DS_Store
 CLAUDE.local.md
 docs/SPEC.md
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
