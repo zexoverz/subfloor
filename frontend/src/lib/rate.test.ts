@@ -14,6 +14,13 @@ test('rate and price round-trip for an 18/18 pair', () => {
   assert.equal(priceToRate(1, 18, 18), 10n ** 18n);
 });
 
+// The maker side of a settlement is scored with the pair the other way round, and micro
+// precision rounded this to zero.
+test('an inverted pair survives the bigint to number step', () => {
+  assert.equal(rateToPrice(400_000_000_000_000_000_000_000_000n, 6, 18), 0.0004);
+  assert.equal(priceToRate(0.0004, 6, 18), 400_000_000_000_000_000_000_000_000n);
+});
+
 test('a floor 100 bps under the reference is 1% under it', () => {
   assert.equal(floorPriceFromBps(2470.1, 100), 2445.399);
   assert.equal(bpsAbove(2463.1, 2445.4), 72);

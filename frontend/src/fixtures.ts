@@ -61,7 +61,16 @@ export const fixtures: VaultState = {
   tape: [
     { kind: 'fill', time: '14:02', side: 'sold', amount: 0.05, price: 2463.1, bpsAboveFloor: 72, tx: '0x4c1a' },
     { kind: 'fill', time: '13:47', side: 'bought', amount: 0.04, price: 2468.9, bpsAboveFloor: 96, tx: '0x77de' },
-    { kind: 'refusal', time: '13:31', attempted: 2391.6, floorPrice: 2445.4, attemptedBpsVsRef: -318, floorBps: -100, tx: '0x9d02' },
+    {
+      kind: 'refusal',
+      time: '13:31',
+      tx: '0x9d02',
+      // Real SettledBelowFloor revert data: a taker selling WETH for USDC at 2,391.6 against a
+      // floor of 2,445.40. Produced with viem's encodeErrorResult against the contract's own error
+      // ABI, so it is byte-identical to what Base will return on Sep 9.
+      data: '0x027e4c460000000000000000000000001111113ccf1426a8e30e2bff5e005d929bf6a90a0000000000000000000000004200000000000000000000000000000000000006000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000000000000000000000000000000000008e8ceb800000000000000000000000000000000000000000000000000000000091c1d7c0',
+      referencePrice: 2470.1,
+    },
     { kind: 'fill', time: '13:12', side: 'sold', amount: 0.03, price: 2459.8, bpsAboveFloor: 58, tx: '0x2b91' },
   ],
 

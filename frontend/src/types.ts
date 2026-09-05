@@ -63,15 +63,21 @@ export type Fill = {
   tx: string;
 };
 
-/** The five decoded arguments of SettledBelowFloor, in the shape the card renders. */
+/**
+ * A refusal as it actually arrives: the raw revert data of a failed transaction. Everything the
+ * card shows is decoded from it (`src/lib/refusal.ts`), so a real mainnet revert renders on first
+ * sight rather than being reshaped by hand.
+ *
+ * `referencePrice` is not in the revert and cannot be derived from it — the reference at that
+ * block is a separate read. Undefined until that read exists, and the card simply omits the
+ * vs-reference line rather than inventing one.
+ */
 export type Refusal = {
   kind: 'refusal';
   time: string;
-  attempted: number;
-  floorPrice: number;
-  attemptedBpsVsRef: number;
-  floorBps: number;
   tx: string;
+  data: `0x${string}`;
+  referencePrice?: number;
 };
 
 export type TapeEntry = Fill | Refusal;
