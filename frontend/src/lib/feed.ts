@@ -79,7 +79,12 @@ function refusal(state: VaultState, seq: number): TapeEntry {
  * where it all came from. `chain` is returned by nothing yet — it arrives with the readers.
  */
 export function useSimulatedFeed(base: VaultState): { state: VaultState; source: DataSource } {
-  const simulated = import.meta.env.DEV;
+  // Deployed builds have no dev mode, so a shared link would otherwise show four frozen rows.
+  // VITE_DATA_SOURCE lets an environment ask for the feed explicitly; dev defaults to it, and
+  // anything else falls back to fixtures. Whatever it says, the badge says the same thing — the
+  // point of the switch is which honest state the page is in, never whether it tells you.
+  const configured = import.meta.env.VITE_DATA_SOURCE as DataSource | undefined;
+  const simulated = configured === 'simulated' || (configured === undefined && import.meta.env.DEV);
   const [extra, setExtra] = useState<TapeEntry[]>([]);
 
   useEffect(() => {
