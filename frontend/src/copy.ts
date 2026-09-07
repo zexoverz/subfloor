@@ -295,7 +295,6 @@ export const copy = {
     /** §10 hides the machinery; #111 makes the delegate address the exception, and says why. */
     advancedNote: 'Set once, and the reason the agent can trade without ever holding your tokens.',
     doing: 'what happens when you press it',
-    notNow: 'not now',
     finishSetup: 'Finish setup',
     finishSetupNote: 'Your vault is deployed but not configured. Nothing trades until it is.',
   },

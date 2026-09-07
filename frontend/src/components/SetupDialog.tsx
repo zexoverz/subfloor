@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { isAddress } from 'viem';
-import { Check, KeyRound, Wallet as WalletIcon } from 'lucide-react';
+import { Check, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
@@ -73,7 +73,13 @@ export function SetupDialog({
     >
       <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
         <h2 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">{copy.onboarding.finishSetup}</h2>
-        <Ghost onClick={onClose}>{copy.onboarding.notNow}</Ghost>
+        <button
+          onClick={onClose}
+          aria-label="close"
+          className="-mr-1 cursor-pointer p-1 text-faint transition-colors hover:text-ink"
+        >
+          <X size={14} strokeWidth={1.8} />
+        </button>
       </div>
 
       <div className="p-5">

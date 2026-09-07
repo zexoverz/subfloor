@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
-import { Act, Ghost, Locked } from './Button.tsx';
+import { X } from 'lucide-react';
+import { Act, Locked } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { FloorHistogram } from './FloorHistogram.tsx';
 import { DeviceCeremony } from './DeviceCeremony.tsx';
@@ -66,7 +67,13 @@ export function FloorDialog({
         <h2 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">
           {onDevice ? copy.ceremony.willDisplay : copy.floor.title}
         </h2>
-        <Ghost onClick={onClose}>close</Ghost>
+        <button
+          onClick={onClose}
+          aria-label="close"
+          className="-mr-1 cursor-pointer p-1 text-faint transition-colors hover:text-ink"
+        >
+          <X size={14} strokeWidth={1.8} />
+        </button>
       </div>
 
       <div className="p-5">
