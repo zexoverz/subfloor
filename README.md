@@ -75,6 +75,118 @@ or above the floor; if what moved was below the floor, it reverts. For every pos
 0.31 seconds, reproducible. What that proof does and does not cover is written out in
 [docs/proof.md](docs/proof.md) — including the part still covered by fuzzing rather than proof.
 
+## Architecture
+
+The floor is checked **between validation and transfer**, inside the settlement function itself.
+That position is the entire design — it is why no program can avoid it.
+
+```
+  SETUP — who is allowed to trade, and inside what
+
+    agent                    AquaGuardVault                  canonical Aqua
+      │                      (the maker)                          │
+      │   ship / dock /            │                              │
+      ├─── updateQuote ──────────► │ ── mandate signed on ───────► │  inventory
+      │   nothing else             │    the owner's device         │  committed
+      │                            │                               │
+      └── holds a delegate key, never a key to funds ──────────────┘
+
+
+  SETTLEMENT — one swap, and where the floor sits
+
+    taker ──► FloorRouter.swap()          (forked SwapVM)
+                     │
+                     ├─ 1. runLoop()                 program executes
+                     │                               amounts computed
+                     │                               ── no tokens move ──
+                     │
+                     ├─ 2. order.traits.validate()
+                     │     takerTraits.validate()
+                     │
+                     ├─ 3. ★ _settlementGuard() ──►  FloorRegistry
+                     │        both recipients            .checkSettlement()
+                     │        scored post-fee            reverts
+                     │                                   SettledBelowFloor
+                     │
+                     └─ 4. _transferIn() / _transferOut()
+                              ▲
+                              └── tokens move only past this line
+```
+
+Program bytecode runs in `runLoop` and cannot reach or skip what comes after it. A program that
+carries no guard instruction at all still arrives at the check; there is nothing to omit. The
+identical call sits in `quote()`, so a quote can never report a price the settlement would refuse.
+
+## Contracts
+
+| Contract | What it does |
+|---|---|
+| `FloorRegistry` | The worst rate each recipient accepts, keyed to the recipient rather than chosen per order. Reference-relative tolerance plus an absolute backstop; the stronger of the two binds |
+| `GuardedSwapVM` | The fork. One hook in `swap()` and one in `quote()`, three hunks against upstream `f09a41e` |
+| `FloorRouter` | The deployed router: Aqua opcodes, the settlement guard, and three new `0x20` guard instructions |
+| `AquaGuardVault` | The smart account that **is** the Aqua maker. The agent holds a delegate credential whose whole surface is ship / dock / updateQuote / rescueApproval |
+| `ControlFloorRouter` | The control arm. Same floor, but as an opcode a program can decline to include — it exists to be broken, and it is |
+| `SettlementFeeLib` | Mirrors the protocol fee arithmetic without moving anything, so the maker is scored on what it actually receives |
+
+Three instructions were added to the free slots in the `0x20` guard bank:
+`RequireFreshReference` (0x22), `NotionalThrottle` (0x27), `ApprovalGate` (0x28).
+
+## Deployed
+
+**Base Sepolia** — integration environment. Aqua is not deployed on Sepolia, so this deploys its own.
+
+| Contract | Address |
+|---|---|
+| FloorRegistry | [`0xe96098eb96aC681682CD09E8413C87b22742C009`](https://sepolia.basescan.org/address/0xe96098eb96aC681682CD09E8413C87b22742C009) |
+| FloorRouter | [`0xe1E445BC60B70d4C4f3c0Db242d9cF98C632b41F`](https://sepolia.basescan.org/address/0xe1E445BC60B70d4C4f3c0Db242d9cF98C632b41F) |
+| AquaGuardVault | [`0x32E58d01AF21483a66Ab59c598667C80224441a2`](https://sepolia.basescan.org/address/0x32E58d01AF21483a66Ab59c598667C80224441a2) |
+| Aqua (ours, not canonical) | [`0xdFfeEe4f46F4dc002AB75354438C456D0bcc404F`](https://sepolia.basescan.org/address/0xdFfeEe4f46F4dc002AB75354438C456D0bcc404F) |
+
+**Base mainnet** — _pending, see below._
+
+## The index
+
+Every fill is recomputed against every floor by an independent index, so the guarantee is anyone's
+query rather than our claim about our own execution.
+
+```
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.1
+```
+
+Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
+implementations. SUBFLOOR-specific facts (`Floor`, `FloorChange`, `FillQuality`, `Refusal`) hang off
+the standard entities by id rather than modifying them, so anyone who knows `dex-agg` can query this
+subgraph without reading our docs.
+
+```graphql
+{ floorChanges(orderBy: timestamp) {
+    kind oldMaxAdverseBps newMaxAdverseBps guardian hash } }
+```
+
+One detail decides the whole indexing design: **a refused fill emits nothing.**
+`SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
+log-driven. The refusal counter — the headline number — provably cannot come from a subgraph at all.
+It comes from Substreams, which sees transaction status. That is why the composition exists.
+
+## What is new here, stated precisely
+
+**Not the first settlement-enforced price guarantee.** CoW Protocol's settlement contract already
+enforces on-chain that no order clears worse than it specifies — **taker-side, per discrete order**.
+A CoW order is its own floor, one signed order at a time.
+
+**What has no precedent is the delegated-maker case.** Nothing covers a maker that hands continuous,
+two-sided, programmatic authority over standing inventory to something else — which is exactly what
+an agent-run book is. The property exists for taker orders; nobody gives it to delegated makers.
+
+Four things follow from that, and each is checkable:
+
+| | |
+|---|---|
+| **Recipient-keyed, not caller-chosen** | 1inch's own `TakerTraits.threshold` is optional and chosen by whoever calls. The floor here is keyed to the recipient and cannot be selected per order |
+| **In settlement, not in the program** | Every prior design in this space makes the guard an instruction. `ControlFloorRouter` is that design, and an ordinary swap program that simply omits the opcode settles below the floor on it |
+| **Both sides, post-fee** | The maker receives `amountIn` minus the fee. Scoring the pre-fee number would let a fill pass the check and still pay out below the floor |
+| **First implementation of ERC-8377** | Reference-Relative Slippage Bounds, authored by this project'"'"'s author. The specification is public prior art; every line of implementation here was written during the event |
+
 ## What you get
 
 | | |
@@ -142,7 +254,9 @@ product's promise checkable by a stranger.
 | A rogue agent, refused | _pending_ |
 | A normal day of trading | _pending_ |
 
-Real money from day one. Everything on this page comes from the live deployment.
+Real money from day one. Every number on the site comes from the deployment and the index, not from
+our own logs — the fuzz counter is [a file in this repo](docs/fuzz-counter.json) updated by CI, and
+the fills are a subgraph query anyone can run.
 
 ## The standard
 
