@@ -314,8 +314,13 @@ export const copy = {
     set: 'SET SUBFLOOR',
     setHint: 'nothing is registered for this pair yet',
     notSet: 'not set',
-    /** Past the worst fill ever seen, the floor stops binding anything that has actually happened. */
-    tooLoose: 'past every fill this venue has ever produced',
+    /**
+     * The real hazard is a floor tight enough to catch ordinary trading. §10 wants it sitting past
+     * the worst realized fill precisely so it never interferes — a hijacked agent hits it, honest
+     * fills never do. Warning about that state was backwards.
+     */
+    tooTight: 'would have refused {n} of the last {total} fills',
+    clear: '{n} bps past the worst fill ever taken',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',

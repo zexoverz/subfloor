@@ -1,5 +1,7 @@
 import { isAddress } from 'viem';
+import { Check } from 'lucide-react';
 import { copy } from '../copy.ts';
+import { KeyRound, Wallet } from 'lucide-react';
 import { TokenIcon } from './TokenIcon.tsx';
 import type { Holding } from '../types.ts';
 
@@ -54,29 +56,41 @@ export function AddressField({
   value,
   onChange,
   action,
+  icon = 'key',
 }: {
   label: string;
   hint: string;
   value: string;
   onChange: (v: string) => void;
   action?: { label: string; onClick: () => void; disabled?: boolean };
+  icon?: 'key' | 'wallet';
 }) {
+  const Mark = icon === 'wallet' ? Wallet : KeyRound;
   const invalid = value.length > 0 && !isAddress(value);
 
   return (
     <div className="text-left">
-      <label className="block text-[10.5px] tracking-[0.09em] text-faint uppercase">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value.trim())}
-        placeholder="0x…"
-        spellCheck={false}
-        className={`mt-1.5 w-full rounded-[2px] border bg-sunken px-3 py-2.5 font-mono text-[12.5px] outline-none ${
-          invalid ? 'border-refuse text-refuse' : 'border-rule focus:border-brass'
+      <label className="block text-[10.5px] tracking-[0.09em] text-muted uppercase">{label}</label>
+      {/* The mark sits inside the field: which key this is matters more than the field's border. */}
+      <div
+        className={`mt-1.5 flex items-center gap-2 rounded-[2px] border bg-sunken px-3 focus-within:border-brass ${
+          invalid ? 'border-refuse' : 'border-rule'
         }`}
-      />
+      >
+        <Mark size={13} strokeWidth={1.7} className={invalid ? 'text-refuse' : 'text-faint'} />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value.trim())}
+          placeholder="0x…"
+          spellCheck={false}
+          className={`w-full border-0 bg-transparent py-2.5 font-mono text-[12.5px] outline-none ${
+            invalid ? 'text-refuse' : ''
+          }`}
+        />
+        {!invalid && value.length > 0 && <Check size={13} strokeWidth={2.2} className="text-settle" />}
+      </div>
       {/* An address that is nearly right is the worst outcome here, so it is checked as it is typed. */}
-      <p className={`serif mt-1.5 text-[12.5px] leading-relaxed ${invalid ? 'text-refuse' : 'text-faint'}`}>
+      <p className={`serif mt-1.5 text-[12.5px] leading-relaxed ${invalid ? 'text-refuse' : 'text-muted'}`}>
         {invalid ? copy.wallet.invalidAddress : hint}
       </p>
       {action && (

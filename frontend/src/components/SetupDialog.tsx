@@ -173,7 +173,7 @@ export function SetupDialog({
                 referencePrice={reference.price}
                 base={pair.base}
                 quote={pair.quote}
-                worstEverBps={Math.max(...state.calibration.fillsBps.map(Math.abs))}
+                fillsBps={state.calibration.fillsBps}
                 onChange={setFloorBps}
               />
               {!floor.enforced && (
@@ -194,7 +194,7 @@ export function SetupDialog({
                   </span>
                   <span className="text-faint transition-transform group-open:rotate-45">+</span>
                 </summary>
-                <p className="serif mt-2 mb-3 text-[12.5px] leading-relaxed text-faint">
+                <p className="serif mt-2 mb-3 text-[12.5px] leading-relaxed text-muted">
                   {copy.onboarding.advancedNote}
                 </p>
                 <div className="grid gap-3">
@@ -206,6 +206,7 @@ export function SetupDialog({
                     action={{ label: copy.wallet.useDevice, onClick: () => {}, disabled: ledger.presence !== 'paired' }}
                   />
                   <AddressField
+                    icon="wallet"
                     label={copy.wallet.delegateLabel}
                     hint={copy.wallet.delegateHint}
                     value={delegate}

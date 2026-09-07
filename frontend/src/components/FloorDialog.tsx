@@ -107,7 +107,7 @@ export function FloorDialog({
           referencePrice={state.reference.price}
           base={state.pair.base}
           quote={state.pair.quote}
-                worstEverBps={Math.max(...state.calibration.fillsBps.map(Math.abs))}
+                fillsBps={state.calibration.fillsBps}
           onChange={setBps}
         />
 
