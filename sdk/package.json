@@ -1,0 +1,10 @@
+{
+  "name": "@subfloor/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Compose SwapVM programs and read SUBFLOOR floors from TypeScript.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "check": "node --experimental-strip-types --test src/*.test.ts" },
+  "devDependencies": { "@types/node": "^26.4.1", "typescript": "^5.9.0" }
+}
