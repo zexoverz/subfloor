@@ -19,19 +19,40 @@ dataSources:
   # Canonical Aqua. Note that not one parameter on any of these four events is indexed, so nothing
   # here can be filtered by maker at the log level: every Shipped/Pulled/Pushed/Docked on the venue
   # arrives and is narrowed after decoding. See docs/event-map.md.
-  # The Aqua data source is commented out, not deleted.
-  #
-  # Every deployment carrying it sits at `startBlock - 1` forever with `hasIndexingErrors: false`;
-  # every deployment without it syncs. That is a second, separate problem from the missing
-  # `receipt: true` below, which was what halted the router at the first fill. handleShipped is not
-  # the cause — it passes locally against a real payload and stubbing it in production changed
-  # nothing — so the remaining suspects are handleDocked, handlePulled and handlePushed, none of
-  # which has ever executed on a synced deployment.
-  #
-  # Restoring it costs `Maker` and `Strategy`, which only the live view's strategy line reads.
-  # Everything else — floors, swaps, fill quality, the daily rollup, the reference — comes from the
-  # three data sources below and is worth more than leaving the whole index dark.
+  - kind: ethereum
+    name: Aqua
+    network: base-sepolia
+    source:
+      # Not canonical Aqua — canonical is not on Base Sepolia, so this is ours from
+      # DeploySubfloorTestnet.s.sol. Deployed 7 Sep, 6/6 transactions successful.
+      address: "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB"
+      abi: Aqua
+      startBlock: 46513825
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/aqua.ts
+      entities:
+        - DexAggProtocol
+        - VirtualPool
+        - Token
+      abis:
+        - name: Aqua
+          file: ./abis/Aqua.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Shipped(address,address,bytes32,bytes)
+          handler: handleShipped
+        - event: Docked(address,address,bytes32)
+          handler: handleDocked
+        - event: Pulled(address,address,bytes32,address,uint256)
+          handler: handlePulled
+        - event: Pushed(address,address,bytes32,address,uint256)
+          handler: handlePushed
 
+  # Our router. `Swapped` is likewise fully non-indexed.
   - kind: ethereum
     name: FloorRouter
     network: base-sepolia

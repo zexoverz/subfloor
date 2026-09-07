@@ -75,12 +75,19 @@ export function getToken(address: Address, block: ethereum.Block): Token {
   return t;
 }
 
+/// @dev Every non-nullable field on the entity has to be set before `save`, or graph-node aborts the
+///      handler — deterministically, on every retry, which halts the subgraph at that block while
+///      still reporting `hasIndexingErrors: false`. This one shipped with only `id` set and did not
+///      fire for a week, because no `Swapped` event had ever been indexed: the previous testnet
+///      deployment never took a fill. The first real fill stopped the index dead.
 export function getAccount(address: Address): Account {
   const id = Bytes.fromHexString(address.toHexString());
   const existing = Account.load(id);
   if (existing) return existing;
 
   const a = new Account(id);
+  a.cumulativeVolumeUSD = ZERO_BD;
+  a.swapCount = 0;
   a.save();
   return a;
 }
