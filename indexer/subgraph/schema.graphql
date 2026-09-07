@@ -152,6 +152,19 @@ type RewardToken @entity(immutable: true) @regularPolling {
 enum FeeType {
   " Protocol collects positive slippage that occurs as a result of a swap "
   POSITIVE_SLIPPAGE
+
+  """
+  Protocol collects a fixed proportional fee on the input amount.
+
+  Not in Messari's dex-aggregator schema, which assumes an aggregator earns from positive slippage
+  rather than charging a fee of its own. SUBFLOOR is a settlement layer rather than an aggregator:
+  the strategy prices with the `FeeFlatIn` opcode, so a fixed fee on the given side is what actually
+  happens and POSITIVE_SLIPPAGE would be a false statement about the protocol.
+
+  The value is taken verbatim from Messari's dex-amm FeeType rather than invented, so a consumer
+  reading across both standards sees the same identifier for the same thing.
+  """
+  FIXED_TRADING_FEE
 }
 
 #############################
