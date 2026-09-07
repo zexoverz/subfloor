@@ -1,7 +1,8 @@
 import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import { Swapped } from "../generated/FloorRouter/FloorRouter";
 import { Swap, VirtualPool, FillQuality, Floor, ReferenceAnswer } from "../generated/schema";
-import { deviationBps, ETH_USD_AGGREGATOR, eventId, getAccount, getProtocol, getToken, rateOf, referenceRate, ZERO_BD, ZERO_BI } from "./shared";
+import { recordFill } from "./quality";
+import { deviationBps, ETH_USD, eventId, getAccount, getProtocol, getToken, rateOf, referenceRate, ZERO_BD, ZERO_BI } from "./shared";
 
 /// The standardized entity, populated exactly as the schema defines it. Nothing SUBFLOOR-specific
 /// goes in here; a consumer who knows dex-agg queries this without reading our docs.
@@ -64,7 +65,7 @@ export function handleSwapped(event: Swapped): void {
   // settlement compared against. `referenceAgeSeconds` of -1 still means "not scored" — it happens
   // when the fill precedes any AnswerUpdated this subgraph has seen — and the daily report must
   // exclude those rather than average them in as if they were fresh.
-  const ref = ReferenceAnswer.load(ETH_USD_AGGREGATOR);
+  const ref = ReferenceAnswer.load(ETH_USD);
   if (ref) {
     const refRate = referenceRate(ref.answer, tokenIn.decimals, tokenOut.decimals);
     q.referencePrice = refRate;
@@ -84,4 +85,7 @@ export function handleSwapped(event: Swapped): void {
   q.blockNumber = event.block.number;
   q.timestamp = event.block.timestamp;
   q.save();
+
+  // And the day's roll-up, so the report and the floor screen never walk the fills themselves.
+  recordFill(event.block, q.adverseDeviationBps, q.referenceAgeSeconds);
 }

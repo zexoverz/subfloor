@@ -772,12 +772,91 @@ Chainlink can move a proxy to a new aggregator, and if that happens this data so
 receiving updates silently — `FillQuality.referenceAgeSeconds` growing without bound is the symptom.
 """
 type ReferenceAnswer @entity(immutable: false) @regularPolling {
-  " The aggregator address "
+  " The feed's identity, not its address: `ETH/USD`. Keying by address made every consumer carry one aggregator constant per network, and Base Sepolia silently scored nothing because it inherited mainnet's. The address is a field instead. "
   id: Bytes!
+  " The aggregator that produced this answer "
+  aggregator: Bytes!
   " Raw answer, at the feed's own decimals "
   answer: BigInt!
   " Feed-reported update time, which is what staleness is measured against "
   updatedAt: BigInt!
   roundId: BigInt!
   blockNumber: BigInt!
+}
+
+"""
+The day's adverse-deviation samples, kept sorted so the snapshot's percentiles are an index rather
+than a scan. Internal to the aggregation: consumers read ExecutionQualityDailySnapshot, never this.
+
+It exists because a percentile is not incrementally computable from a running total the way a sum or
+a count is, and the alternative — having every consumer page the day's fills and sort them client
+side — is exactly the "report is a script that walks every fill" shape the daily report is meant to
+replace.
+"""
+type ExecutionQualitySamples @entity(immutable: false) {
+  " { Days since Unix epoch } "
+  id: Bytes!
+  " Adverse deviation in bps, ascending. Only scored fills appear: a fill with no reference behind it is excluded rather than averaged in at zero, which would drag every percentile toward the reference and make the floor look safer than the venue is. "
+  deviationsBps: [Int!]!
+  " Reference ages in seconds, ascending, for the snapshot's median. "
+  referenceAgesSeconds: [Int!]!
+}
+
+"""
+An address that ships strategies to the venue. Not the vault specifically: nothing upstream is
+indexed, so every maker on Aqua arrives at the handlers and all of them are recorded. Narrowing to
+one vault is a query, which is what makes this reusable by anyone building on the venue rather than
+only by us.
+"""
+type Maker @entity(immutable: false) @regularPolling {
+  " The maker address "
+  id: Bytes!
+  strategies: [Strategy!]! @derivedFrom(field: "maker")
+  strategiesShipped: Int!
+  strategiesActive: Int!
+  firstSeenTimestamp: BigInt!
+  lastUpdateTimestamp: BigInt!
+}
+
+"""
+One shipped SwapVM program, decoded.
+
+`Shipped` carries the whole program in its data blob, and the venue never decodes it — the VM reads
+`[opcode][argsLen][args]` at execution time and nothing records what ran. Decoding it here is the one
+piece of this index nobody else has, and it is what lets an interface say "quoting both sides,
+decaying" instead of showing a user a hex blob.
+"""
+type Strategy @entity(immutable: false) @regularPolling {
+  " maker ++ app ++ strategyHash "
+  id: Bytes!
+  maker: Maker!
+  app: Bytes!
+  strategyHash: Bytes!
+  " The raw program, kept so anyone can re-decode it and check this one "
+  program: Bytes!
+  " Primary curve family, in the register an interface can show a person "
+  classification: String!
+  " Every curve family present, for a program running more than one "
+  families: [String!]!
+  steps: [StrategyStep!]! @derivedFrom(field: "strategy")
+  stepCount: Int!
+  " Empty when the program decoded cleanly. A truncated or malformed program is recorded with what was decoded and this set, rather than dropped. "
+  decodeError: String!
+  active: Boolean!
+  shippedTimestamp: BigInt!
+  shippedBlock: BigInt!
+  dockedTimestamp: BigInt
+  dockedBlock: BigInt
+}
+
+" One instruction of a decoded program, in program order. "
+type StrategyStep @entity(immutable: true) {
+  " strategy ++ index "
+  id: Bytes!
+  strategy: Strategy!
+  index: Int!
+  opcode: Int!
+  " The VM's own name for the opcode, generated from OpcodeList.sol. `UNKNOWN` for an unallocated slot. "
+  name: String!
+  args: Bytes!
 }

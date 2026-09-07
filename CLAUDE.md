@@ -1,10 +1,29 @@
 # SUBFLOOR, ETHOnline 2026
 
+**Read `docs/SPEC.md` in full, before anything else, every session.** Not the sections that look
+relevant — all 2,500+ lines of it. Reading it in parts is how a session ends up confidently wrong
+about something the spec already settled.
+
+That is not hypothetical. On 7 Sep a session had read §0, §1, §2, §3, §5, §11, §12 and §13 and
+skipped §7, §8, §10 and §15 entirely. It then told the builder the product was one vault per
+relationship — because it had read §4's first sentence and stopped — when §4 names vault depositors
+and agent products as the coming wave. It wrote every frontend ticket without ever opening §10, the
+section that *is* the screen drawing, so tickets three lines long stood in for pages of settled
+design. Both were caught by the builder, not by the session.
+
+The cost of reading it all is minutes. The cost of not reading it is work built on a guess and a
+builder who has to catch it.
+
 **Read `docs/SPEC.md` before anything else.** It opens with a build-handoff section carrying what
 is settled, the verified addresses, the measured facts and the traps that already cost time. Do not
 re-derive what it records, and do not soften anything it marks unverified.
 
 **Submission: 13 Sep 2026, 16:00 UTC.**
+
+`docs/SPEC.md` is a private planning document and is not published with this repository. Everything
+the code asserts is reproducible from the repo itself: `docs/gas.md`, `docs/proof.md` and
+`docs/counterexamples.md` carry the measurements and the proofs.
+
 
 ## Working rules
 
