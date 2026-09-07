@@ -772,12 +772,32 @@ Chainlink can move a proxy to a new aggregator, and if that happens this data so
 receiving updates silently — `FillQuality.referenceAgeSeconds` growing without bound is the symptom.
 """
 type ReferenceAnswer @entity(immutable: false) @regularPolling {
-  " The aggregator address "
+  " The feed's identity, not its address: `ETH/USD`. Keying by address made every consumer carry one aggregator constant per network, and Base Sepolia silently scored nothing because it inherited mainnet's. The address is a field instead. "
   id: Bytes!
+  " The aggregator that produced this answer "
+  aggregator: Bytes!
   " Raw answer, at the feed's own decimals "
   answer: BigInt!
   " Feed-reported update time, which is what staleness is measured against "
   updatedAt: BigInt!
   roundId: BigInt!
   blockNumber: BigInt!
+}
+
+"""
+The day's adverse-deviation samples, kept sorted so the snapshot's percentiles are an index rather
+than a scan. Internal to the aggregation: consumers read ExecutionQualityDailySnapshot, never this.
+
+It exists because a percentile is not incrementally computable from a running total the way a sum or
+a count is, and the alternative — having every consumer page the day's fills and sort them client
+side — is exactly the "report is a script that walks every fill" shape the daily report is meant to
+replace.
+"""
+type ExecutionQualitySamples @entity(immutable: false) {
+  " { Days since Unix epoch } "
+  id: Bytes!
+  " Adverse deviation in bps, ascending. Only scored fills appear: a fill with no reference behind it is excluded rather than averaged in at zero, which would drag every percentile toward the reference and make the floor look safer than the venue is. "
+  deviationsBps: [Int!]!
+  " Reference ages in seconds, ascending, for the snapshot's median. "
+  referenceAgesSeconds: [Int!]!
 }
