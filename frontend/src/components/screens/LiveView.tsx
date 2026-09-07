@@ -28,9 +28,12 @@ export function LiveView({
   onLower,
   onRaise,
   onConnect,
+  onWithdraw,
   onCreateVault,
   creatingVault,
   canCreateVault,
+  vaultChecked,
+  vaultError,
   onSetup,
   connected,
 }: {
@@ -42,9 +45,13 @@ export function LiveView({
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
   onConnect: () => void;
+  /** Owner-only: the vault's withdraw, which is onlyOwner on chain too. */
+  onWithdraw: () => void;
   onCreateVault: () => void;
   creatingVault: boolean;
   canCreateVault: boolean;
+  vaultChecked: boolean;
+  vaultError: string | null;
   connected: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
   onSetup: (() => void) | null;
@@ -131,7 +138,8 @@ export function LiveView({
             <CardHead
               icon={Wallet}
               left={copy.desk.vault}
-              right={`${inventory.length} under mandate`}
+              // Nothing is "under mandate" until a delegate exists to hold one.
+              right={state.delegate ? `${inventory.length} under mandate` : copy.wallet.noMandate}
             />
             <CardBody>
               <dl className="m-0 text-[12.5px]">
@@ -155,6 +163,18 @@ export function LiveView({
                   <dd className="m-0 text-right font-medium">{formatPrice(reference.price)}</dd>
                 </div>
               </dl>
+              {/*
+                * The exit, next to the balance it applies to. Not the panic path — that docks the
+                * strategy first and lives on its own screen. This is the ordinary owner right the
+                * vault enforces as onlyOwner, and a vault whose owner cannot see how to empty it
+                * is asking for trust it says it does not need.
+                */}
+              {inventory.some((h) => h.amount > 0) && (
+                <div className="mt-3 border-t border-rule pt-3">
+                  <Act onClick={onWithdraw}>{copy.wallet.withdraw}</Act>
+                  <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">{copy.wallet.withdrawHint}</p>
+                </div>
+              )}
               <p className="mt-3 flex items-center gap-2 border-t border-rule pt-3 text-[11px] text-faint">
                 <ChainlinkMark />
                 {/* Linked, because "the reference" is a claim until someone can open it. */}
@@ -258,6 +278,8 @@ export function LiveView({
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
             canCreateVault={canCreateVault}
+            checked={vaultChecked}
+            vaultError={vaultError}
           />
         )}
       </div>

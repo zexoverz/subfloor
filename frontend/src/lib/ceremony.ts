@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createPublicClient, http, type Address } from 'viem';
-import { chain } from './chain.ts';
+import { formatUnits, type Address } from 'viem';
+import { publicClient } from './client.ts';
 import {
   addresses,
+  erc20Abi,
   deployed,
   mandateDomain,
   mandateTypes,
@@ -11,8 +12,8 @@ import {
   setRegistryGuardianAsVault,
   vaultAbi,
 } from './contracts.ts';
-import { USDC, WETH } from './tokens.ts';
-import type { Floor } from '../types.ts';
+import { ACTIVE_TOKENS, USDC, WETH } from './tokens.ts';
+import type { Floor, Holding } from '../types.ts';
 import { mocked } from './mock.ts';
 
 /**
@@ -36,7 +37,6 @@ export type Step = {
   device: boolean;
 };
 
-const publicClient = createPublicClient({ chain, transport: http() });
 
 export type CeremonyState = {
   deployed: boolean;
@@ -51,20 +51,36 @@ export type CeremonyState = {
   floor: Floor | null;
   /** The reference feed the registry actually consults, so the link points at the real oracle. */
   feed: Address | null;
+  /** What the vault itself holds. Null until read — never the owner's wallet, which is a different address. */
+  inventory: Holding[] | null;
   steps: Step[];
+  /**
+   * Whether the read has come back at all — either way.
+   *
+   * `isOwner` being null cannot carry this: null means both "not asked yet" and "asked, and the
+   * answer never arrived", and a screen that cannot tell them apart either hangs on a spinner or
+   * calls the owner a stranger. Those were the same bug twice, in opposite directions.
+   */
+  settled: boolean;
+  /** What stopped the read, so a failure can be shown rather than waited on forever. */
+  error: string | null;
   refresh: () => void;
 };
 
-export function useCeremony(address: Address | null, vault: Address | null, fundedTokens: number): CeremonyState {
+export function useCeremony(address: Address | null, vault: Address | null): CeremonyState {
   /** Mock mode advances one step per press, so the whole flow is walkable with nothing deployed. */
   const [mockDone, setMockDone] = useState(0);
   const [owner, setOwner] = useState<Address | null>(null);
   const [floorsSet, setFloorsSet] = useState(false);
+  /** The vault's own inventory. The wallet's holdings are not the vault's, and only one settles. */
+  const [inventory, setInventory] = useState<Holding[] | null>(null);
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
+  const [settled, setSettled] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     if (mocked) setMockDone((n) => n + 1);
@@ -72,13 +88,26 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
   }, []);
 
   useEffect(() => {
-    if (!deployed || mocked || !vault) return;
+    /*
+     * Gated on the vault being read, not on the demo vault in the build's env. `deployed` requires
+     * VITE_VAULT, which has nothing to do with a vault the visitor deployed themselves — with it
+     * absent, an owner's own vault was never read at all, and the board called them a stranger.
+     */
+    if (mocked) return;
+    if (!addresses.registry || !vault) {
+      // Nothing to read is a settled answer too: it is not the owner's vault, and not a pending one.
+      setSettled(true);
+      setError(addresses.registry ? null : 'no registry address in this build');
+      return;
+    }
+    setSettled(false);
+    setError(null);
     let live = true;
 
     (async () => {
       const registry = addresses.registry as Address;
       try {
-        const [o, d, g, sell, buy, registryGuardian, configured, reference] = await Promise.all([
+        const [o, d, g, sell, buy, registryGuardian, configured, reference, held] = await Promise.all([
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'delegate' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'guardian' }),
@@ -87,6 +116,11 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'guardian', args: [vault] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'floor', args: [vault, WETH, USDC] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'referenceFeed', args: [WETH, USDC] }),
+          Promise.all(
+            ACTIVE_TOKENS.map((t) =>
+              publicClient.readContract({ address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [vault] }),
+            ),
+          ),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -104,10 +138,23 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
         const [isConfigured, bps, absolute] = configured as [boolean, number, bigint];
         setFloor({ enforced: isConfigured, maxAdverseBps: bps, absoluteRate: absolute });
 
+        // Funded means the *vault* holds something. Reading the owner's wallet here ticked the
+        // step green before a single token had moved.
+        setInventory(
+          ACTIVE_TOKENS.map((t, i) => ({
+            symbol: t.symbol,
+            amount: Number(formatUnits((held as bigint[])[i] ?? 0n, t.decimals)),
+          })),
+        );
+
         const [feedAddress] = reference as [Address, boolean, number, number, bigint];
         setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
-      } catch {
-        if (live) setOwner(null);
+        setSettled(true);
+      } catch (cause) {
+        if (!live) return;
+        setOwner(null);
+        setError((cause instanceof Error ? cause.message : String(cause)).split('\n')[0]?.slice(0, 120) ?? 'the vault could not be read');
+        setSettled(true);
       }
     })();
 
@@ -121,7 +168,7 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
       id: 'fund',
       title: 'Fund the vault',
       detail: 'move inventory in. An ordinary transfer — the vault holds it, you still own it.',
-      done: mocked ? mockDone > 0 : fundedTokens > 0,
+      done: mocked ? mockDone > 0 : Boolean(inventory?.some((h) => h.amount > 0)),
       device: false,
     },
     {
@@ -160,7 +207,10 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
     delegate,
     floor,
     feed,
+    inventory,
     steps,
+    settled: mocked || settled,
+    error,
     refresh,
   };
 }

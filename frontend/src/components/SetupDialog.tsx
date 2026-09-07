@@ -5,7 +5,10 @@ import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
-import { useCeremony } from '../lib/ceremony.ts';
+import type { CeremonyState } from '../lib/ceremony.ts';
+import { useFund } from '../lib/fund.ts';
+import { Toasts } from './Toasts.tsx';
+import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
 // Lazy, like every other heavy thing here: a WebGL library is not something a visitor who never
@@ -26,6 +29,7 @@ export function SetupDialog({
   state,
   wallet,
   vault,
+  ceremony,
   open,
   onClose,
   onSign,
@@ -35,6 +39,12 @@ export function SetupDialog({
   wallet: Wallet;
   /** The vault being set up — theirs if they deployed one, ours otherwise. */
   vault: `0x${string}` | null;
+  /*
+   * Passed in rather than read again here. A second useCeremony was a second copy of the same
+   * chain state, and refreshing one left the other showing what was true before the transaction —
+   * which is why funding the vault only appeared after a full reload.
+   */
+  ceremony: CeremonyState;
   open: boolean;
   onClose: () => void;
   onSign: () => void;
@@ -44,7 +54,7 @@ export function SetupDialog({
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
-  const ceremony = useCeremony(wallet.address, vault, holdings.filter((h) => h.amount > 0).length);
+  const fund = useFund(vault, wallet.address);
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});
@@ -60,6 +70,8 @@ export function SetupDialog({
   const [delegate, setDelegate] = useState('');
 
   const funded = holdings.some((h) => Number(amounts[h.symbol]) > 0);
+  // WETH is the one that needs a wrap, and only when the wallet is short of what was typed.
+  const wrapping = Number(amounts.WETH ?? 0) > (holdings.find((h) => h.symbol === 'WETH')?.amount ?? 0);
   const keysReady = isAddress(guardian) && isAddress(delegate);
   const blocked = !ceremony.deployed
     ? copy.wallet.notDeployed
@@ -202,6 +214,21 @@ export function SetupDialog({
                     onChange={(v) => setAmounts((a) => ({ ...a, [h.symbol]: v }))}
                   />
                 ))}
+                {wrapping && <p className="mt-2 mb-2 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
+                <div className="mt-3" />
+                <Act
+                  primary
+                  wide
+                  onClick={() =>
+                    void fund.send(
+                      ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
+                    )
+                  }
+                  disabled={!funded || fund.sending || !vault}
+                >
+                  {/* Say why it cannot be pressed, rather than looking broken. */}
+                  {fund.step ?? (funded ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
+                </Act>
               </div>
 
               {/*
@@ -290,6 +317,9 @@ export function SetupDialog({
           )}
         </div>
       </div>
+      {/* Inside the sheet, because a modal dialog is in the top layer and a toast painted
+          outside it cannot rise above it however high its z-index goes. */}
+      <Toasts />
     </dialog>
   );
 }

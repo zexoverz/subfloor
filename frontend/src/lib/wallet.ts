@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPublicClient, formatUnits, http, type Address } from 'viem';
-import { chain } from './chain.ts';
+import { formatUnits, type Address } from 'viem';
+import { publicClient } from './client.ts';
 import { ACTIVE_TOKENS } from './tokens.ts';
 import { MOCK_ADDRESS, mocked } from './mock.ts';
 import type { Holding } from '../types.ts';
@@ -13,7 +13,6 @@ import type { Holding } from '../types.ts';
  * first floor into one signature, and a connection that happens before any of that is not part of
  * it. The screen reads inventory "from wallet", which is only true once this exists.
  */
-const publicClient = createPublicClient({ chain, transport: http() });
 
 const BALANCE_OF = [
   {
@@ -37,6 +36,8 @@ export type Wallet = {
   holdings: Holding[] | null;
   connect: () => void;
   disconnect: () => void;
+  /** Re-read balances. Sending tokens out changes them, and nothing else would say so. */
+  refresh: () => void;
 };
 
 export function useWallet(): Wallet {
@@ -44,6 +45,7 @@ export function useWallet(): Wallet {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
+  const [balanceTick, setBalanceTick] = useState(0);
   const unwatch = useRef<(() => void) | null>(null);
 
   /** Attach the account watcher and take the current answer. Shared by connect and by restore. */
@@ -150,7 +152,7 @@ export function useWallet(): Wallet {
     return () => {
       live = false;
     };
-  }, [address]);
+  }, [address, balanceTick]);
 
   return {
     address,
@@ -160,5 +162,6 @@ export function useWallet(): Wallet {
     holdings,
     connect: () => void connect(),
     disconnect: () => void disconnect(),
+    refresh: () => setBalanceTick((t) => t + 1),
   };
 }

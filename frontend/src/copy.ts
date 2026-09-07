@@ -135,6 +135,19 @@ export const copy = {
     createVault: 'Deploy your own vault',
     createVaultHint: 'One transaction. It comes out owned by this wallet, empty, and with no agent connected — you set the floor before anything can trade.',
     creatingVault: 'Deploying…',
+    checkingVault: 'Checking whether this wallet owns a vault…',
+    sendToVault: 'Send to the vault',
+    /** Said only when a delegate exists. With none, nothing is under any mandate. */
+    noMandate: 'no agent yet',
+    withdraw: 'Withdraw everything',
+    /** The owner's standing exit, not the panic path. Both exist; only this one is one press. */
+    withdrawHint: 'sends the full balance of each token back to your address. Yours to call at any time, and the agent can never reach it.',
+    /** A disabled button with no reason on it reads as broken rather than as waiting. */
+    sendNeedsAmount: 'Enter an amount above',
+    /** Two transactions, and saying so beforehand is cheaper than a surprise second prompt. */
+    wrapNote: 'You hold ETH but no WETH, so this wraps what is missing first — two signatures, not one.',
+    /** Named so it reads as our failure to look, never as a finding about their wallet. */
+    vaultReadFailed: 'Could not reach the factory, so whether this wallet owns a vault is unknown:',
     ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */
