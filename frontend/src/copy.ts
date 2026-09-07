@@ -137,6 +137,10 @@ export const copy = {
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',
+    setFloor: 'Register this floor',
+    /** Two transactions: a floor on one side only is the absence of a floor, not half of one. */
+    setFloorHint: 'registered for the vault, both directions — two signatures. The registry can only be moved to a stronger floor from here; weakening it needs your device.',
+    floorAlreadySet: 'Registered. Raising it again is one press; weakening it is not.',
     /** Said only when a delegate exists. With none, nothing is under any mandate. */
     noMandate: 'no agent yet',
     withdraw: 'Withdraw everything',

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
 import { useOwnVault } from './lib/vault.ts';
+import { useFloor } from './lib/floor.ts';
 import { useIndex } from './lib/subgraph.ts';
 import { StoppedState } from './components/StoppedState.tsx';
 import { Toasts } from './components/Toasts.tsx';
@@ -50,6 +51,7 @@ export default function App() {
   // Every hook runs before the landing screen returns early: React counts hooks per render, and a
   // hook below that return would change the count the moment someone navigates on to the board.
   const panic = usePanic(wallet.address, vault);
+  const floorWrite = useFloor(vault);
 
   const ceremony = useCeremony(wallet.address, vault);
   const indexed = {
@@ -134,7 +136,12 @@ export default function App() {
           connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
-          onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
+          /*
+           * The registry decides what the floor is after this, not the button. It writes both
+           * directions, waits for both to land, and then re-reads — so what the screen says next
+           * comes from effectiveFloor rather than from the number that was typed.
+           */
+          onRaise={(bps) => void floorWrite.raise(bps).then(() => ceremony.refresh())}
         />
       )}
       {needsSetup && (

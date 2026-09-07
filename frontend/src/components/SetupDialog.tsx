@@ -7,6 +7,7 @@ import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
+import { useFloor } from '../lib/floor.ts';
 import { Toasts } from './Toasts.tsx';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -55,6 +56,7 @@ export function SetupDialog({
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
   const fund = useFund(vault, wallet.address);
+  const floorWrite = useFloor(vault);
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});
@@ -252,6 +254,24 @@ export function SetupDialog({
               {!floor.enforced && (
                 <p className="-mt-3 mb-5 text-[11px] text-faint">{copy.onboarding.proposedNote}</p>
               )}
+              {/*
+                * The sheet's whole subject, and until now the one thing it could not do: the number
+                * was collected and never written, so an owner left this screen believing a floor
+                * was set while the registry held none.
+                */}
+              <div className="mb-6">
+                <Act
+                  primary
+                  wide
+                  disabled={floorWrite.sending || !vault}
+                  onClick={() => void floorWrite.raise(floorBps).then(() => ceremony.refresh())}
+                >
+                  {floorWrite.step ? `registering — ${floorWrite.step}` : copy.wallet.setFloor}
+                </Act>
+                <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                  {floor.enforced ? copy.wallet.floorAlreadySet : copy.wallet.setFloorHint}
+                </p>
+              </div>
 
               {/* The one exception to hiding machinery, and the ticket that made it one. */}
               {/*

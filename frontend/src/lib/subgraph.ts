@@ -26,9 +26,15 @@ async function ask<T>(body: Query): Promise<T | null> {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const json = (await response.json()) as { data?: T; errors?: unknown[] };
-    // A GraphQL error arrives with HTTP 200, so the status alone proves nothing.
-    return json.errors?.length ? null : (json.data ?? null);
+    const json = (await response.json()) as { data?: T; errors?: unknown[]; message?: string };
+    /*
+     * The status alone proves nothing here, twice over. A GraphQL error arrives with HTTP 200, and
+     * an unpublished Studio version answers 200 with `{"message":"Not found"}` and no `data` at
+     * all — which is how a pinned version that has been republished looks from the outside. Both
+     * are "no answer", and the board stays on fixtures rather than rendering an empty one as live.
+     */
+    if (json.errors?.length || json.message) return null;
+    return json.data ?? null;
   } catch {
     return null;
   }
