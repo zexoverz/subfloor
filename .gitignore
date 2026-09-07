@@ -17,3 +17,4 @@ frontend/*.tsbuildinfo
 docs/DEMO-LIVE.md
 .playwright-mcp/
 *.png
+feedbacks/
