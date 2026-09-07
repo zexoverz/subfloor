@@ -132,6 +132,11 @@ identical call sits in `quote()`, so a quote can never report a price the settle
 Three instructions were added to the free slots in the `0x20` guard bank:
 `RequireFreshReference` (0x22), `NotionalThrottle` (0x27), `ApprovalGate` (0x28).
 
+`sdk/` composes SwapVM programs from TypeScript. Its encoders are asserted byte-for-byte against
+output from the instruction libraries the VM actually runs, printed by `EncodingVectors.t.sol` — an
+off-chain encoder checked against hand-written expectations only proves it agrees with whoever wrote
+them.
+
 ## Deployed
 
 **Base Sepolia** — integration environment. Canonical Aqua exists on Ethereum Sepolia but on no L2
@@ -154,7 +159,7 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.1
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.4
 ```
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
@@ -166,6 +171,32 @@ subgraph without reading our docs.
 { floorChanges(orderBy: timestamp) {
     kind oldMaxAdverseBps newMaxAdverseBps guardian hash } }
 ```
+
+**Shipped strategies are decoded.** Aqua stores a strategy as an opaque blob and the VM reads it only
+at execution time, so nothing on the venue records what actually ran. `Strategy` carries the program
+decoded into named instructions, plus a classification in the words an interface can show a person.
+The opcode table is generated from `contracts/src/libs/OpcodeList.sol`, so a renamed or newly claimed
+slot cannot drift out of the decoder silently.
+
+```graphql
+{ strategies(where: { active: true }) {
+    classification families stepCount
+    steps(orderBy: index) { index name args } } }
+```
+
+**Two consumers read it, which is what makes it load-bearing rather than a checkbox.**
+`indexer/consumers/` serves `/calibration` — the floor-setting screen's default, derived as the p99
+of realized adverse deviation over the trailing week rather than configured — and `/report`, the
+daily execution-quality record, generated from the index with the query attached and never from
+operator logs. Below 100 scored fills the calibration refuses to return a percentile at all and says
+so, because a p99 over a dozen fills is a rumour with a decimal point.
+
+Every answer either endpoint returns carries the query and variables that produced it. That is the
+same reason the floor screen puts `[run query]` next to every number: a figure you can re-derive is
+worth more than one you are asked to believe.
+
+**An MCP server and a skill** over the same index are in `indexer/mcp/`, so an agent can ask the
+venue a question without first learning the schema.
 
 One detail decides the whole indexing design: **a refused fill emits nothing.**
 `SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
