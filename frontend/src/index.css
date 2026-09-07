@@ -366,11 +366,16 @@ body {
   border-radius: 4px;
   box-shadow: var(--c-shadow);
   width: min(440px, calc(100vw - 32px));
+  /* A modal <dialog> centres itself with `margin: auto`, and the CSS reset zeroes every margin —
+     so without this it sits in the top-left corner looking like a mistake, which it was. */
+  margin: auto;
 }
 
+/* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is
+   nearly white, so the backdrop came out as a pale wash over a dark page. */
 .sheet::backdrop {
-  background: color-mix(in srgb, var(--c-ink) 45%, transparent);
-  backdrop-filter: blur(2px);
+  background: rgb(6 8 11 / 0.62);
+  backdrop-filter: blur(3px);
 }
 
 @keyframes sheet-in {
