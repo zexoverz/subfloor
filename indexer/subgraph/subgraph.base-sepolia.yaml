@@ -70,11 +70,18 @@ dataSources:
         - Swap
         - FillQuality
         - Account
+        - ReferenceFeed
       abis:
         - name: FloorRouter
           file: ./abis/FloorRouter.json
         - name: ERC20
           file: ./abis/ERC20.json
+        # `handleSwapped` asks the registry which way round this pair's reference runs, and
+        # graph-node resolves a contract call against the ABIs listed on the *data source running
+        # the handler* rather than the TypeScript import. Without this line the call is a
+        # deterministic failure and the subgraph stops at the first fill.
+        - name: FloorRegistry
+          file: ./abis/FloorRegistry.json
       eventHandlers:
         - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
           handler: handleSwapped
