@@ -67,9 +67,7 @@ export function Onboarding({
 
       <div className="relative w-full max-w-[440px]">
         <div className="relative mb-10 text-center">
-          {/* The card is opaque; this heading is not, so it gets the same scrim the hero uses. */}
-          <div className="hero-scrim pointer-events-none absolute -inset-x-10 -inset-y-6" />
-          <div className="relative text-[15px] font-semibold tracking-[0.3em]">{copy.brand}</div>
+          <div className="text-[15px] font-semibold tracking-[0.3em]">{copy.brand}</div>
           {/* A mock that does not say so is how a mock ends up in a screenshot. */}
           {mocked && (
             <span className="mt-3 inline-block rounded-[2px] border border-brass/40 bg-brass-wash px-2 py-[3px] text-[10px] tracking-[0.12em] text-brass uppercase">
@@ -152,7 +150,19 @@ export function Onboarding({
 
               <div className="flex flex-1 flex-col justify-center">
               {blocked ? (
-                <p className="serif text-center text-[14px] leading-relaxed text-muted">{blocked}</p>
+                <div className="text-center">
+                  <p className="serif m-0 text-[14px] leading-relaxed text-muted">{blocked}</p>
+                  {ceremony.isOwner === false && (
+                    <>
+                      <p className="serif mx-auto mt-2 mb-5 max-w-[32ch] text-[13px] leading-relaxed text-faint">
+                        {copy.wallet.notOwnerHint}
+                      </p>
+                      <Act primary onClick={() => onNavigate('live')}>
+                        {copy.wallet.notOwnerAction}
+                      </Act>
+                    </>
+                  )}
+                </div>
               ) : current ? (
                 <>
                   {/*
@@ -296,17 +306,6 @@ export function Onboarding({
           )}
         </div>
 
-        {/* Development only, for the same reason as the row in the shell. */}
-        {import.meta.env.DEV && (
-        <div className="mt-10 flex justify-center gap-4 text-[10.5px] tracking-[0.1em] text-faint uppercase">
-          <span>{copy.preview}</span>
-          {(['landing', 'live', 'floor'] as Screen[]).map((s) => (
-            <button key={s} onClick={() => onNavigate(s)} className="cursor-pointer hover:text-muted">
-              {copy.nav[s]}
-            </button>
-          ))}
-        </div>
-        )}
       </div>
     </div>
   );

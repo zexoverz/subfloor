@@ -122,7 +122,9 @@ export const copy = {
     agentWhat: 'the agent may trade inside your floor, for a fixed term. It never holds your keys, and it can never lower the floor.',
     agentLocked: 'connect your wallet first',
     notDeployed: 'no vault deployed yet — the addresses land with the Base deployment',
-    notOwner: 'this wallet does not own the vault. You are seeing the public view.',
+    notOwner: 'This wallet does not own the vault.',
+    notOwnerAction: 'OPEN THE BOARD',
+    notOwnerHint: 'Everything the vault trades is public — the tape, the floor distance on every fill, and the refusals.',
     ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */
