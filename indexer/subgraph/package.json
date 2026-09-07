@@ -10,7 +10,8 @@
     "deploy:mainnet": "graph deploy subfloor-mainnet --version-label $npm_config_label",
     "test": "graph test",
     "gen:opcodes": "node scripts/gen-opcodes.mjs",
-    "deploy:base-sepolia": "graph deploy subfloor-base-sepolia subgraph.base-sepolia.yaml --version-label $npm_config_label"
+    "deploy:base-sepolia": "graph deploy subfloor-base-sepolia subgraph.base-sepolia.yaml --version-label $npm_config_label",
+    "check": "node scripts/check-required-fields.mjs && graph test"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.98.1",
