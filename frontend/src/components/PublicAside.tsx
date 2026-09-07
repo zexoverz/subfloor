@@ -14,7 +14,16 @@ import type { VaultState } from '../types.ts';
  * a floor keyed to a recipient, or anything mapping an address to a position size, because on that
  * branch those components are not rendered at all.
  */
-export function PublicAside({ state, onConnect }: { state: VaultState; onConnect: () => void }) {
+export function PublicAside({
+  state,
+  connected,
+  onConnect,
+}: {
+  state: VaultState;
+  /** A connected wallet that is not the owner is a different message, not the same button again. */
+  connected: boolean;
+  onConnect: () => void;
+}) {
   return (
     <div className="flex flex-col gap-4.5">
       <Card>
@@ -64,15 +73,23 @@ export function PublicAside({ state, onConnect }: { state: VaultState; onConnect
       <Card>
         <CardHead left={copy.landing.publicOwnTitle} />
         <div className="p-4">
-          {/*
-            * Connects, exactly like the control in the header. It used to navigate to first run,
-            * which then bounced anyone whose vault was already set up — two buttons with the same
-            * words doing different things. Where you go next is decided by what the chain says,
-            * not by which button you happened to press.
-            */}
-          <Act primary onClick={onConnect}>
-            {copy.wallet.connect}
-          </Act>
+          {connected ? (
+            /*
+             * Already connected, and this vault is someone else's. Offering the same connect
+             * button again asks them to fix something that is not broken.
+             */
+            <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">
+              {copy.wallet.notOwner} {copy.wallet.notOwnerHint}
+            </p>
+          ) : (
+            /*
+             * Connects, exactly like the control in the header. It used to navigate to first run,
+             * which then bounced anyone whose vault was already set up.
+             */
+            <Act primary onClick={onConnect}>
+              {copy.wallet.connect}
+            </Act>
+          )}
         </div>
       </Card>
     </div>

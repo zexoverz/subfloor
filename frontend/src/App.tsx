@@ -65,6 +65,7 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
+          connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
           onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
