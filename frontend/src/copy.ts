@@ -289,6 +289,11 @@ export const copy = {
     /** Load-bearing: it sets up clear-signing as confirmation, before the device ever lights up. */
     underAction: 'the device will show you exactly these numbers',
     noInventory: 'fund the wallet first',
+    runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
+    advanced: 'the keys behind this',
+    /** §10 hides the machinery; #111 makes the delegate address the exception, and says why. */
+    advancedNote: 'Set once, and the reason the agent can trade without ever holding your tokens.',
+    doing: 'what happens when you press it',
   },
 
   floor: {
