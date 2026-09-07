@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { createPublicClient, http, type Address } from 'viem';
+import { createPublicClient, http, parseEventLogs, type Address } from 'viem';
 import { chain } from './chain.ts';
 import { addresses, vaultFactoryAbi } from './contracts.ts';
 
@@ -46,7 +46,6 @@ export function useOwnVault(owner: Address | null): OwnVault {
   const [vault, setVault] = useState<Address | null>(null);
   const [known, setKnown] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!addresses.factory || !owner) {
@@ -77,7 +76,7 @@ export function useOwnVault(owner: Address | null): OwnVault {
     return () => {
       live = false;
     };
-  }, [owner, tick]);
+  }, [owner]);
 
   const create = useCallback(async () => {
     if (!addresses.factory || !owner) return;
@@ -92,14 +91,22 @@ export function useOwnVault(owner: Address | null): OwnVault {
         chainId: chain.id,
       });
       const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
-      /*
-       * The address comes from the receipt rather than from the call's return value: a write
-       * returns a hash, not the return data, and re-reading the factory is the honest way to learn
-       * what it actually deployed.
-       */
       if (receipt.status !== 'success') throw new Error('the vault was not deployed');
+      /*
+       * The address comes out of the receipt's own log, not from re-reading the factory.
+       *
+       * A write returns a hash rather than return data, so the address has to be recovered
+       * somehow — but recovering it by reading `vaultsOfOwner` again races: the receipt resolves
+       * against the wallet's RPC, while the read goes to ours, which may not have that block yet.
+       * The answer comes back empty, and an empty answer is indistinguishable from "you own
+       * nothing" — so the screen keeps offering to deploy a vault that already exists. The receipt
+       * carries the log that names the vault, and it cannot disagree with itself.
+       */
+      const [created] = parseEventLogs({ abi: vaultFactoryAbi, eventName: 'VaultCreated', logs: receipt.logs });
+      if (!created) throw new Error('the vault was deployed but the transaction did not say where');
+      setVault(created.args.vault);
+      setKnown(true);
       toast.success('vault deployed');
-      setTick((t) => t + 1);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       toast.error(
