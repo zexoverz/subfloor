@@ -1,0 +1,1215 @@
+[
+ {
+  "type": "constructor",
+  "inputs": [
+   {
+    "name": "initialOwner",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "loweringDelay",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "DOMAIN_SEPARATOR",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "LOWERING_DELAY",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "checkFill",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "given",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "received",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "checkSettlement",
+  "inputs": [
+   {
+    "name": "takerRecipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "makerRecipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "tokenIn",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "tokenOut",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "takerGave",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "takerGot",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "makerGave",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "makerGot",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "effectiveFloor",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "floorRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "enforced",
+    "type": "bool",
+    "internalType": "bool"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "eip712Domain",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "fields",
+    "type": "bytes1",
+    "internalType": "bytes1"
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "internalType": "string"
+   },
+   {
+    "name": "version",
+    "type": "string",
+    "internalType": "string"
+   },
+   {
+    "name": "chainId",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "verifyingContract",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "salt",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   },
+   {
+    "name": "extensions",
+    "type": "uint256[]",
+    "internalType": "uint256[]"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "executeLowering",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "floor",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "configured",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "maxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "absoluteRate",
+    "type": "uint232",
+    "internalType": "uint232"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "guardian",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "lowerFloor",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "newMaxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "newAbsoluteRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "nonce",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "deadline",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "signature",
+    "type": "bytes",
+    "internalType": "bytes"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "nonces",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "owner",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "pendingLowering",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "exists",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "maxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "effectiveAt",
+    "type": "uint64",
+    "internalType": "uint64"
+   },
+   {
+    "name": "absoluteRate",
+    "type": "uint232",
+    "internalType": "uint232"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "raiseFloor",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "newMaxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "newAbsoluteRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "referenceAge",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "age",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "registryBound",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "referenceFeed",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "feed",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "inverted",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "stalenessBound",
+    "type": "uint32",
+    "internalType": "uint32"
+   },
+   {
+    "name": "feedDecimals",
+    "type": "uint8",
+    "internalType": "uint8"
+   },
+   {
+    "name": "scale",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "renounceOwnership",
+  "inputs": [],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "rotateGuardian",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "newGuardian",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "nonce",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "deadline",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "signature",
+    "type": "bytes",
+    "internalType": "bytes"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "setGuardian",
+  "inputs": [
+   {
+    "name": "newGuardian",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "setReferenceFeed",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "feed",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "inverted",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "stalenessBound",
+    "type": "uint32",
+    "internalType": "uint32"
+   },
+   {
+    "name": "feedDecimals",
+    "type": "uint8",
+    "internalType": "uint8"
+   },
+   {
+    "name": "baseDecimals",
+    "type": "uint8",
+    "internalType": "uint8"
+   },
+   {
+    "name": "quoteDecimals",
+    "type": "uint8",
+    "internalType": "uint8"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "transferOwnership",
+  "inputs": [
+   {
+    "name": "newOwner",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "event",
+  "name": "EIP712DomainChanged",
+  "inputs": [],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "FloorLowered",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "oldFloor",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "newFloor",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "guardian",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "FloorLoweringScheduled",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "maxAdverseBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   },
+   {
+    "name": "absoluteRate",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "effectiveAt",
+    "type": "uint64",
+    "indexed": false,
+    "internalType": "uint64"
+   },
+   {
+    "name": "guardian",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "FloorRaised",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "oldFloor",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "newFloor",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "GuardianSet",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "oldGuardian",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   },
+   {
+    "name": "newGuardian",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "OwnershipTransferred",
+  "inputs": [
+   {
+    "name": "previousOwner",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "newOwner",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "ReferenceFeedSet",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "feed",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   },
+   {
+    "name": "inverted",
+    "type": "bool",
+    "indexed": false,
+    "internalType": "bool"
+   },
+   {
+    "name": "stalenessBound",
+    "type": "uint32",
+    "indexed": false,
+    "internalType": "uint32"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "ToleranceTightened",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "oldMaxAdverseBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   },
+   {
+    "name": "newMaxAdverseBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "ToleranceWidened",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "oldMaxAdverseBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   },
+   {
+    "name": "newMaxAdverseBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   },
+   {
+    "name": "guardian",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "error",
+  "name": "AbsoluteRateTooLarge",
+  "inputs": [
+   {
+    "name": "absoluteRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "BadGuardianSignature",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "guardian",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "digest",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "BadReferenceAnswer",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "answer",
+    "type": "int256",
+    "internalType": "int256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "BadReferenceConfig",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "InvalidShortString",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "LoweringStillTimelocked",
+  "inputs": [
+   {
+    "name": "effectiveAt",
+    "type": "uint64",
+    "internalType": "uint64"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "MaxAdverseBpsOutOfRange",
+  "inputs": [
+   {
+    "name": "maxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "NoGuardianRegistered",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "NoPendingLowering",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "NoReferenceFeed",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "NotARaise",
+  "inputs": [
+   {
+    "name": "oldMaxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "newMaxAdverseBps",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "oldAbsoluteRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "newAbsoluteRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "OwnableInvalidOwner",
+  "inputs": [
+   {
+    "name": "owner",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "OwnableUnauthorizedAccount",
+  "inputs": [
+   {
+    "name": "account",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "ReferenceAlreadySet",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "existingFeed",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "SettledBelowFloor",
+  "inputs": [
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "tokenIn",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "tokenOut",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "executionRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "floorRate",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "SignatureExpired",
+  "inputs": [
+   {
+    "name": "deadline",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "StaleReference",
+  "inputs": [
+   {
+    "name": "base",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quote",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "updatedAt",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "bound",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "StringTooLong",
+  "inputs": [
+   {
+    "name": "str",
+    "type": "string",
+    "internalType": "string"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "WrongNonce",
+  "inputs": [
+   {
+    "name": "expected",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "given",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ }
+]

@@ -1,0 +1,16 @@
+{
+  "name": "subfloor-subgraph",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:base": "graph deploy subfloor-base --version-label $npm_config_label",
+    "deploy:mainnet": "graph deploy subfloor-mainnet --version-label $npm_config_label"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.98.1",
+    "@graphprotocol/graph-ts": "0.38.1"
+  }
+}

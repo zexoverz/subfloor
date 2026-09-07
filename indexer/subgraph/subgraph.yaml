@@ -1,0 +1,92 @@
+specVersion: 1.2.0
+description: >
+  Execution quality across Base venues on the Messari DEX Aggregator standardized schema, with the
+  recipient-keyed price floor each fill was scored against.
+repository: https://github.com/zexoverz/subfloor
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  # Canonical Aqua. Note that not one parameter on any of these four events is indexed, so nothing
+  # here can be filtered by maker at the log level: every Shipped/Pulled/Pushed/Docked on the venue
+  # arrives and is narrowed after decoding. See docs/event-map.md.
+  - kind: ethereum
+    name: Aqua
+    network: base
+    source:
+      address: "0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a"
+      abi: Aqua
+      startBlock: 35000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/aqua.ts
+      entities:
+        - DexAggProtocol
+        - VirtualPool
+        - Token
+      abis:
+        - name: Aqua
+          file: ./abis/Aqua.json
+      eventHandlers:
+        - event: Shipped(address,address,bytes32,bytes)
+          handler: handleShipped
+        - event: Docked(address,address,bytes32)
+          handler: handleDocked
+        - event: Pulled(address,address,bytes32,address,uint256)
+          handler: handlePulled
+        - event: Pushed(address,address,bytes32,address,uint256)
+          handler: handlePushed
+
+  # Our router. `Swapped` is likewise fully non-indexed.
+  - kind: ethereum
+    name: FloorRouter
+    network: base
+    source:
+      abi: FloorRouter
+      startBlock: 35000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/router.ts
+      entities:
+        - Swap
+        - FillQuality
+        - Account
+      abis:
+        - name: FloorRouter
+          file: ./abis/FloorRouter.json
+      eventHandlers:
+        - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
+          handler: handleSwapped
+
+  # The registry's events are the one place upstream indexing gets easy: recipient, base and quote
+  # are all indexed, so floor history for one recipient is a topic filter rather than a scan.
+  - kind: ethereum
+    name: FloorRegistry
+    network: base
+    source:
+      abi: FloorRegistry
+      startBlock: 35000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/registry.ts
+      entities:
+        - Floor
+        - FloorChange
+      abis:
+        - name: FloorRegistry
+          file: ./abis/FloorRegistry.json
+      eventHandlers:
+        - event: FloorRaised(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleFloorRaised
+        - event: FloorLowered(indexed address,indexed address,indexed address,uint256,uint256,address)
+          handler: handleFloorLowered
+        - event: ToleranceTightened(indexed address,indexed address,indexed address,uint16,uint16)
+          handler: handleToleranceTightened
+        - event: ToleranceWidened(indexed address,indexed address,indexed address,uint16,uint16,address)
+          handler: handleToleranceWidened
