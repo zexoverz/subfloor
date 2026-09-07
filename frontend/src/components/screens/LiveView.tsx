@@ -6,14 +6,17 @@ import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
-import type { VaultState } from '../../types.ts';
+import type { DataSource, VaultState } from '../../types.ts';
 
 /**
  * The desk: the owner's home while the agent trades. One rule — every number here is read from the
  * index, the same queries the public page runs, so the owner never sees a figure a stranger cannot
  * check. Refusals are a headline tile, never buried: they are the product's proudest number.
  */
-export function LiveView({ state }: { state: VaultState }) {
+export function LiveView({ state, source }: { state: VaultState; source: DataSource }) {
+  // One flag decides the badge and every provenance sentence on the screen, so the header and the
+  // line under the tape can never again claim different things about the same rows.
+  const live = source === 'chain';
   const { pair, stats, tape, agent, inventory, floor, floorBuy, reference, fuzz } = state;
   const sellFloor = rateToPrice(floor.absoluteRate, pair.baseDecimals, pair.quoteDecimals);
   const buyCeiling = 1 / rateToPrice(floorBuy.absoluteRate, pair.quoteDecimals, pair.baseDecimals);
@@ -22,7 +25,11 @@ export function LiveView({ state }: { state: VaultState }) {
   return (
     <>
       <Tiles>
-        <Tile label={copy.desk.fills} value={stats.fills} sub={`${copy.desk.fillsSub} · ${stats.since}`} />
+        <Tile
+          label={copy.desk.fills}
+          value={stats.fills}
+          sub={live ? `${copy.desk.fillsSub} · ${stats.since}` : copy.desk.fillsSubPending}
+        />
         <Tile
           label={copy.desk.markout}
           value={stats.medianVsMidBps}
@@ -59,8 +66,15 @@ export function LiveView({ state }: { state: VaultState }) {
         <Card className="flex flex-col">
           <CardHead icon={Receipt} left={copy.desk.tape} right={`${pair.base} / ${pair.quote}`} />
           <p className="serif m-0 border-b border-rule px-4 py-3 text-[15px] leading-snug text-muted">
-            The vault has been traded against <b className="font-medium text-ink">{stats.fills}</b> times. It refused{' '}
-            <b className="font-medium text-refuse">{stats.refused}</b>. It has never once settled at a bad price.
+            {live ? (
+              <>
+                The vault has been traded against <b className="font-medium text-ink">{stats.fills}</b> times. It
+                refused <b className="font-medium text-refuse">{stats.refused}</b>. It has never once settled at a bad
+                price.
+              </>
+            ) : (
+              copy.desk.leadSample
+            )}
           </p>
           <Tape entries={tape} pair={pair} />
         </Card>
@@ -143,7 +157,9 @@ export function LiveView({ state }: { state: VaultState }) {
         </div>
       </div>
 
-      <Note className="serif mt-4.5 text-[14.5px]">{copy.desk.everyRow}</Note>
+      <Note className="serif mt-4.5 text-[14.5px]">
+        {live ? copy.desk.everyRowLive : copy.desk.everyRowSample}
+      </Note>
       <Note className="serif text-[14.5px]">{copy.scope}</Note>
     </>
   );

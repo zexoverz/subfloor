@@ -7,7 +7,7 @@ import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { formatBps } from '../../lib/rate.ts';
-import type { VaultState } from '../../types.ts';
+import type { DataSource, VaultState } from '../../types.ts';
 
 /**
  * What a stranger meets: the same page in a second state, which is what keeps the two honest.
@@ -16,7 +16,8 @@ import type { VaultState } from '../../types.ts';
  * address to an exposed position size. No page may ever publish an identifying list of exposed
  * positions — that is a target list, not a product.
  */
-export function PublicPage({ state }: { state: VaultState }) {
+export function PublicPage({ state, source }: { state: VaultState; source: DataSource }) {
+  const live = source === 'chain';
   const [query, setQuery] = useState<string | null>(null);
 
   return (
@@ -25,7 +26,7 @@ export function PublicPage({ state }: { state: VaultState }) {
         <Tile
           label={copy.desk.fills}
           value={state.stats.fills}
-          sub={`${copy.desk.fillsSub} · ${state.stats.since}`}
+          sub={live ? `${copy.desk.fillsSub} · ${state.stats.since}` : copy.desk.fillsSubPending}
           onQuery={() => setQuery('{ fills(where: { vault: $vault }) { totalCount } }')}
         />
         <Tile
@@ -78,7 +79,9 @@ export function PublicPage({ state }: { state: VaultState }) {
         <Tape entries={state.tape} pair={state.pair} />
       </Card>
 
-      <Note className="serif mt-4.5 text-[14.5px]">{copy.desk.everyRow}</Note>
+      <Note className="serif mt-4.5 text-[14.5px]">
+        {live ? copy.desk.everyRowLive : copy.desk.everyRowSample}
+      </Note>
 
       <Todo>
         skeleton: the queries above are the shapes these numbers will come from, not live ones —

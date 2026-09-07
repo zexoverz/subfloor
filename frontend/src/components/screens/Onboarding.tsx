@@ -265,7 +265,8 @@ export function Onboarding({
           )}
         </div>
 
-        {/* Skeleton-only, so the other screens stay reachable while there is no vault. */}
+        {/* Development only, for the same reason as the row in the shell. */}
+        {import.meta.env.DEV && (
         <div className="mt-10 flex justify-center gap-4 text-[10.5px] tracking-[0.1em] text-faint uppercase">
           <span>{copy.preview}</span>
           {(['landing', 'live', 'floor', 'public'] as Screen[]).map((s) => (
@@ -274,6 +275,7 @@ export function Onboarding({
             </button>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

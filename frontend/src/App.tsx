@@ -70,7 +70,7 @@ export default function App() {
           onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
         />
       )}
-      {screen === 'live' && <LiveView state={state} />}
+      {screen === 'live' && <LiveView state={state} source={source} />}
       {screen === 'ceremony' && (
         <Ceremony
           state={state}
@@ -80,7 +80,7 @@ export default function App() {
           onBack={() => setScreen(purpose === 'mandate' ? 'onboarding' : 'floor')}
         />
       )}
-      {screen === 'public' && <PublicPage state={state} />}
+      {screen === 'public' && <PublicPage state={state} source={source} />}
     </AppShell>
   );
 }

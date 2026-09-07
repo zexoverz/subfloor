@@ -16,8 +16,9 @@ export const copy = {
   nav: {
     landing: 'Home',
     onboarding: 'First run',
-    floor: 'Floor control',
-    live: 'Desk',
+    /** Visitor-facing names. "Desk" and "Floor control" are what we call them, not what they are. */
+    floor: 'Your floor',
+    live: 'Live',
     ceremony: 'Device',
     public: 'Public',
   },
@@ -48,7 +49,14 @@ export const copy = {
     backstopNote: 'absolute backstop, ignores the reference',
     fresh: 'fresh',
     stale: 'stale',
-    everyRow: 'Every row above is a real Base transaction, reconstructed from chain data rather than from our own logs.',
+    /** Only true when the rows came from the chain. Keyed off the same source flag as the badge. */
+    everyRowLive:
+      'Every row above is a real Base transaction, reconstructed from chain data rather than from our own logs.',
+    everyRowSample: 'Sample rows. The vault is not live yet — every number here is an illustration.',
+    /** "since the vault was funded" reads as history. It has not happened yet. */
+    fillsSubPending: 'illustration · the vault is not funded yet',
+    leadLive: 'The vault has been traded against {fills} times. It refused {refused}. It has never once settled at a bad price.',
+    leadSample: 'When the vault is live, this line reports what it actually traded and what it refused. Nothing below has happened yet.',
   },
 
   floorControl: {

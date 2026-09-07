@@ -91,7 +91,11 @@ export function AppShell({
         )}
       </div>
 
-      {/* The screens the shipped app never puts in a tab bar, marked as what they are. */}
+      {/*
+        * Development only. This row is the screen switcher, and shipping it is what makes the site
+        * read as an internal demo rather than a product — everything under it is the real thing.
+        */}
+      {import.meta.env.DEV && (
       <div className="flex items-center gap-3 py-2 text-[10.5px] tracking-[0.1em] text-faint uppercase">
         <span>{copy.preview}</span>
         {PREVIEW.map((s) => (
@@ -107,6 +111,7 @@ export function AppShell({
           </button>
         ))}
       </div>
+      )}
 
       <div className="pt-3">{children}</div>
     </div>

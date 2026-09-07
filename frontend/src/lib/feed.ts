@@ -105,9 +105,8 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; source:
     return {
       ...base,
       tape,
-      // CI is what advances this in the live run; here the simulated feed stands in for it, under
-      // the same "simulated feed" badge that covers every other number on the page.
-      fuzz: { ...base.fuzz, programs: base.fuzz.programs + extra.length * 1_483 },
+      // The fuzz counter is deliberately NOT simulated. It is sourced from a file in the public
+      // repo, and a number anyone can check is the one number this feed has no business moving.
       stats: {
         ...base.stats,
         fills: base.stats.fills + extra.filter((e) => e.kind === 'fill').length,
