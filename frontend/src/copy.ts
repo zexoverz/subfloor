@@ -103,6 +103,11 @@ export const copy = {
 
   wallet: {
     connect: 'CONNECT YOUR WALLET',
+    connectLedger: 'CONNECT A LEDGER DIRECTLY',
+    /** Not a convenience: routing the device through a browser wallet hides the split it proves. */
+    ledgerWhy: 'no browser wallet in between — the device is where the rule is authored, not a signing accessory.',
+    ledgerUnsupported: 'this browser cannot talk to a Ledger directly — try Chrome or Edge',
+    or: 'or',
     connecting: 'waiting for your wallet…',
     /** A prerequisite, not a step of the ceremony — §10 keeps that to one signature. */
     why: 'so the vault can read what you hold. Nothing moves until you sign on the device.',

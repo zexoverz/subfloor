@@ -9,6 +9,7 @@ import { mocked } from '../../lib/mock.ts';
 import { AddressField, AmountRow, MandateSummary } from '../StepForms.tsx';
 import { FloorControl } from '../FloorControl.tsx';
 import { withTransition } from '../../lib/transition.ts';
+import { useLedger } from '../../lib/ledger.ts';
 import type { Wallet } from '../../lib/wallet.ts';
 import type { Screen, VaultState } from '../../types.ts';
 
@@ -43,6 +44,7 @@ export function Onboarding({
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [guardian, setGuardian] = useState('');
   const [floorBps, setFloorBps] = useState(floor.maxAdverseBps);
+  const ledger = useLedger();
   const [delegate, setDelegate] = useState('');
 
   // The current step is the first one not done — read from chain, so this survives a reload and a
@@ -90,6 +92,23 @@ export function Onboarding({
                 </span>
               </Act>
               {wallet.error && <p className="mt-3 text-center text-[11.5px] text-refuse">{wallet.error}</p>}
+
+              {/* The second path, and the one that demonstrates the key split rather than describing it. */}
+              <div className="my-4 flex items-center gap-3 text-[10.5px] tracking-[0.12em] text-faint uppercase">
+                <span className="h-px flex-1 bg-rule" />
+                {copy.wallet.or}
+                <span className="h-px flex-1 bg-rule" />
+              </div>
+
+              <Act onClick={ledger.connect} disabled={ledger.connecting || !ledger.supported}>
+                <span className="flex items-center justify-center gap-2">
+                  <KeyRound size={14} strokeWidth={1.7} className="text-brass" />
+                  {copy.wallet.connectLedger}
+                </span>
+              </Act>
+              <p className="serif mx-auto mt-2 max-w-[34ch] text-center text-[12.5px] leading-relaxed text-faint">
+                {ledger.error ?? (ledger.supported ? copy.wallet.ledgerWhy : copy.wallet.ledgerUnsupported)}
+              </p>
             </div>
           ) : (
             <>
