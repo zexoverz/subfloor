@@ -35,7 +35,7 @@ export function PanicButton({ onFire }: { onFire: () => void }) {
       onPointerUp={disarm}
       onPointerLeave={disarm}
       title={copy.panic.hint}
-      className="relative cursor-pointer overflow-hidden rounded-[2px] border border-refuse/40 bg-surface px-2.5 py-[3px] text-[10.5px] tracking-[0.1em] text-refuse uppercase select-none"
+      className="relative cursor-pointer overflow-hidden rounded-lg border border-refuse/40 bg-surface px-2.5 py-[3px] text-[10.5px] tracking-[0.1em] text-refuse uppercase select-none"
     >
       <span
         className="absolute inset-y-0 left-0 bg-refuse-wash ease-linear"

@@ -3,7 +3,14 @@ import type { ReactNode } from 'react';
 
 type Props = { children: ReactNode; onClick?: () => void; disabled?: boolean };
 
-/** The affirmative action. Brass, because it is the owner's own number moving. */
+/**
+ * The affirmative action.
+ *
+ * Blue, as everywhere in Oku: it is what the application does. Brass is kept for the floor — the
+ * owner's own number — so the two never compete. When every button was brass, the one colour that
+ * was supposed to mean "your decision" meant "a button", and the floor stopped standing out on
+ * the screen built around it.
+ */
 export function Act({
   children,
   onClick,
@@ -15,12 +22,12 @@ export function Act({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`cursor-pointer rounded-[2px] border px-3.5 py-2.5 text-xs tracking-[0.06em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+      className={`cursor-pointer rounded-lg border px-3.5 py-2.5 text-xs tracking-[0.06em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
         wide ? 'w-full' : ''
       } ${
         primary
-          ? 'border-brass bg-brass-wash font-semibold text-brass'
-          : 'border-rule bg-surface text-ink hover:border-brass'
+          ? 'border-transparent bg-action font-semibold text-white hover:bg-action-hover'
+          : 'border-rule bg-raise text-ink hover:border-action'
       }`}
     >
       {children}
@@ -36,7 +43,7 @@ export function Locked({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-[2px] border border-rule bg-surface px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-brass"
+      className="cursor-pointer rounded-lg border border-rule bg-raise px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-brass"
     >
       <span className="flex items-center gap-2">
         <KeyRound size={13} strokeWidth={1.7} className="text-brass" />
@@ -50,7 +57,7 @@ export function Ghost({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-[2px] border border-rule bg-surface px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-brass hover:text-ink"
+      className="cursor-pointer rounded-lg border border-rule bg-raise px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-action hover:text-ink"
     >
       {children}
     </button>
@@ -74,7 +81,7 @@ export function Stepper({
   format: (n: number) => string;
 }) {
   return (
-    <span className="inline-flex overflow-hidden rounded-[2px] border border-rule">
+    <span className="inline-flex overflow-hidden rounded-lg border border-rule">
       <button
         onClick={() => onChange(Math.max(min, value - step))}
         aria-label="safer"

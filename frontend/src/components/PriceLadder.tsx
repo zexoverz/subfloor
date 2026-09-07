@@ -82,7 +82,7 @@ export function PriceLadder() {
               Fill
             </span>
             <span
-              className={`absolute top-0 right-0 -translate-y-1/2 rounded-[2px] px-2 py-[3px] text-[12px] font-semibold text-surface ${
+              className={`absolute top-0 right-0 -translate-y-1/2 rounded-lg px-2 py-[3px] text-[12px] font-semibold text-surface ${
                 refused ? 'bg-refuse' : 'bg-settle'
               }`}
             >
@@ -96,7 +96,7 @@ export function PriceLadder() {
             <button
               key={s.id}
               onClick={() => setPrice(s.price)}
-              className="cursor-pointer rounded-[2px] border border-rule bg-surface px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-brass hover:text-ink"
+              className="cursor-pointer rounded-lg border border-rule bg-surface px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-brass hover:text-ink"
             >
               {s.label}
             </button>
@@ -109,7 +109,7 @@ export function PriceLadder() {
 
       <div className="flex flex-col gap-4 p-6">
         <span
-          className={`inline-flex w-fit items-center gap-2 rounded-[2px] border px-2.5 py-1.5 text-[12px] font-semibold tracking-[0.12em] uppercase ${
+          className={`inline-flex w-fit items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold tracking-[0.12em] uppercase ${
             refused
               ? 'border-refuse/35 bg-refuse-wash text-refuse'
               : 'border-settle/35 bg-settle-wash text-settle'
@@ -156,7 +156,7 @@ function Line({ price, label, tone }: { price: number; label: string; tone: 'ref
         {formatPrice(price)}
       </span>
       <span
-        className={`absolute top-0 left-2 -translate-y-1/2 rounded-[2px] text-[10px] font-semibold tracking-[0.1em] uppercase ${
+        className={`absolute top-0 left-2 -translate-y-1/2 rounded-lg text-[10px] font-semibold tracking-[0.1em] uppercase ${
           floor ? 'bg-brass-wash px-1.5 py-0.5 text-brass' : 'text-faint'
         }`}
       >

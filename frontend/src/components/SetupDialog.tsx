@@ -377,7 +377,7 @@ export function SetupDialog({
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
                     {!keysReady && (
-                      <span className="rounded-[2px] border border-brass/40 bg-brass-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-brass">
+                      <span className="rounded-lg border border-brass/40 bg-brass-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-brass">
                         {copy.onboarding.required}
                       </span>
                     )}

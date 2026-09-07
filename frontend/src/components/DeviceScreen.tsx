@@ -14,8 +14,8 @@ export function DeviceScreen({ rows, waiting = true }: { rows: [string, string][
         </div>
       ))}
       <div className="mt-3 flex gap-2 border-t border-[#2A313C] pt-2.5 text-[10.5px]">
-        <b className="flex-1 rounded-[2px] bg-[#2A1614] py-1.5 text-center text-[#E2705F]">Reject</b>
-        <b className={`flex-1 rounded-[2px] bg-[#14261F] py-1.5 text-center text-[#57AC8C] ${waiting ? 'animate-pulse' : ''}`}>
+        <b className="flex-1 rounded-lg bg-[#2A1614] py-1.5 text-center text-[#E2705F]">Reject</b>
+        <b className={`flex-1 rounded-lg bg-[#14261F] py-1.5 text-center text-[#57AC8C] ${waiting ? 'animate-pulse' : ''}`}>
           Approve
         </b>
       </div>

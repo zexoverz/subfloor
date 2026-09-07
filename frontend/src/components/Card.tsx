@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`overflow-hidden rounded-[3px] border border-rule bg-surface shadow-card ${className}`}>
+    <div className={`overflow-hidden rounded-lg border border-rule bg-surface shadow-card ${className}`}>
       {children}
     </div>
   );
@@ -35,7 +35,7 @@ export function CardBody({ children, className = '' }: { children: ReactNode; cl
 export function Chip({ children, live = false }: { children: ReactNode; live?: boolean }) {
   return (
     <span
-      className={`rounded-[2px] border px-2 py-[3px] text-[10.5px] tracking-[0.1em] uppercase ${
+      className={`rounded-lg border px-2 py-[3px] text-[10.5px] tracking-[0.1em] uppercase ${
         live ? 'border-settle/35 text-settle' : 'border-rule bg-surface text-muted'
       }`}
     >

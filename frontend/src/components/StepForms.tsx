@@ -51,7 +51,7 @@ export function AmountRow({
         type="button"
         onClick={() => balance !== null && onChange(String(balance))}
         disabled={!balance}
-        className="shrink-0 cursor-pointer rounded-[2px] border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-brass hover:text-brass disabled:cursor-not-allowed disabled:opacity-40"
+        className="shrink-0 cursor-pointer rounded-lg border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-brass hover:text-brass disabled:cursor-not-allowed disabled:opacity-40"
       >
         {copy.wallet.max}
       </button>
@@ -92,7 +92,7 @@ export function AddressField({
       </label>
       {/* The mark sits inside the field: which key this is matters more than the field's border. */}
       <div
-        className={`mt-1.5 flex items-center gap-2 rounded-[2px] border bg-sunken px-3 focus-within:border-brass ${
+        className={`mt-1.5 flex items-center gap-2 rounded-lg border bg-sunken px-3 focus-within:border-brass ${
           invalid ? 'border-refuse' : 'border-rule'
         }`}
       >
@@ -127,7 +127,7 @@ export function AddressField({
 
 export function MandateSummary({ rows }: { rows: [string, string][] }) {
   return (
-    <div className="rounded-[2px] border border-rule bg-sunken px-3 py-2.5 text-left">
+    <div className="rounded-lg border border-rule bg-sunken px-3 py-2.5 text-left">
       <p className="mb-2 text-[10px] tracking-[0.12em] text-faint uppercase">{copy.wallet.mandateSummary}</p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11.5px]">
         {rows.map(([k, v]) => (

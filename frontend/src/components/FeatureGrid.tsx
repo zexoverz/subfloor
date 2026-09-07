@@ -43,7 +43,7 @@ export function FeatureGrid() {
         <p className="mb-1.5 text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.landing.f3Surface}</p>
         <div className="flex flex-wrap gap-1.5 text-[11.5px]">
           {['compose', 'ship', 'dock', 'update-quote'].map((call) => (
-            <span key={call} className="rounded-[2px] border border-rule bg-sunken px-2 py-1">
+            <span key={call} className="rounded-lg border border-rule bg-sunken px-2 py-1">
               {call}
             </span>
           ))}
@@ -58,7 +58,7 @@ export function FeatureGrid() {
       </Feature>
 
       <Feature label={copy.landing.f5Label} title={copy.landing.f5Title}>
-        <pre className="overflow-x-auto rounded-[3px] border border-rule bg-sunken px-3 py-2.5 text-[11px] whitespace-pre text-muted">
+        <pre className="overflow-x-auto rounded-lg border border-rule bg-sunken px-3 py-2.5 text-[11px] whitespace-pre text-muted">
           {'{ fills(where: { vault }) {\n    price bpsAboveFloor\n} }'}
         </pre>
       </Feature>

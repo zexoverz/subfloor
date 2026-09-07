@@ -12,14 +12,14 @@ export function HeroAnnotations() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
       <span
-        className="hero-bubble absolute rounded-[3px] border border-refuse/40 bg-refuse-wash px-2.5 py-1.5 text-[11px] leading-tight text-refuse shadow-card"
+        className="hero-bubble absolute rounded-lg border border-refuse/40 bg-refuse-wash px-2.5 py-1.5 text-[11px] leading-tight text-refuse shadow-card"
         style={{ left: '2%', top: '10%', animationDelay: '0s' }}
       >
         {copy.landing.bubbleAgent}
       </span>
 
       <span
-        className="hero-bubble absolute rounded-[3px] border border-brass/45 bg-brass-wash px-2.5 py-1.5 text-[11px] leading-tight text-brass shadow-card"
+        className="hero-bubble absolute rounded-lg border border-brass/45 bg-brass-wash px-2.5 py-1.5 text-[11px] leading-tight text-brass shadow-card"
         style={{ left: '46%', top: '58%', animationDelay: '1.9s' }}
       >
         <b className="block font-semibold">{copy.refusal.heading}</b>

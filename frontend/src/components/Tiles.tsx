@@ -52,7 +52,7 @@ export function Tile({
     <div className="flex flex-col gap-1 bg-surface p-4">
       <span className="text-[10.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
       <span className={`text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
-        <span className={`-mx-1 rounded-[2px] px-1 ${pulseClass}`}>
+        <span className={`-mx-1 rounded-lg px-1 ${pulseClass}`}>
           {typeof value === 'number' ? <RollingNumber value={value} format={format} /> : value}
         </span>
       </span>
