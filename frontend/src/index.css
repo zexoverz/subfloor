@@ -349,3 +349,61 @@ body {
     transform: none;
   }
 }
+
+/*
+ * The floor sheet. Native <dialog>, so focus trapping, Esc, the page behind going inert and the
+ * top layer are the browser's problem rather than ours — every one of them is something a
+ * hand-rolled modal gets subtly wrong.
+ *
+ * Centred on a desktop, a bottom sheet on a phone: the same element and one media query, because a
+ * modal landing in the middle of a small screen puts the number you are dragging under your hand.
+ */
+.sheet {
+  border: 1px solid var(--c-rule);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  padding: 0;
+  border-radius: 4px;
+  box-shadow: var(--c-shadow);
+  width: min(440px, calc(100vw - 32px));
+}
+
+.sheet::backdrop {
+  background: color-mix(in srgb, var(--c-ink) 45%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] {
+    animation: sheet-in 0.18s cubic-bezier(0.2, 0.9, 0.25, 1);
+  }
+}
+
+@media (max-width: 640px) {
+  .sheet {
+    width: 100vw;
+    max-width: 100vw;
+    margin: auto auto 0;
+    border-radius: 12px 12px 0 0;
+    border-bottom: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet[open] {
+      animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
+    }
+  }
+}

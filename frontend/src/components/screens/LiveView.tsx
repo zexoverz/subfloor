@@ -1,11 +1,14 @@
 import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Receipt, Wallet } from 'lucide-react';
+import { useState } from 'react';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead } from '../Card.tsx';
+import { Ghost } from '../Button.tsx';
 import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { PublicAside } from '../PublicAside.tsx';
+import { FloorDialog } from '../FloorDialog.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
 import type { DataSource, Screen, VaultState } from '../../types.ts';
@@ -20,13 +23,18 @@ export function LiveView({
   source,
   owner,
   onNavigate,
+  onLower,
+  onRaise,
 }: {
   state: VaultState;
   source: DataSource;
   /** True when the connected wallet owns the vault. False is what a stranger sees. */
   owner: boolean;
   onNavigate: (s: Screen) => void;
+  onLower: (bps: number) => void;
+  onRaise: (bps: number) => void;
 }) {
+  const [adjusting, setAdjusting] = useState(false);
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
   // line under the tape can never again claim different things about the same rows.
   const live = source === 'chain';
@@ -124,7 +132,13 @@ export function LiveView({
           </Card>
 
           <Card>
-            <CardHead icon={ArrowDownToLine} left={copy.desk.standing} />
+            <CardHead
+              icon={ArrowDownToLine}
+              left={copy.desk.standing}
+              // Adjusted in place: leaving the board to change one number loses the tape, the
+              // freshness reading and the fills the number is being judged against.
+              right={<Ghost onClick={() => setAdjusting(true)}>{copy.onboarding.adjust}</Ghost>}
+            />
             <CardBody className="py-1">
               {[
                 [`${copy.desk.selling} ${pair.base}`, `${copy.desk.neverBelow} ${formatPrice(sellFloor)}`, `−${floor.maxAdverseBps} bps from the reference`],
@@ -180,6 +194,22 @@ export function LiveView({
           <PublicAside state={state} onNavigate={onNavigate} />
         )}
       </div>
+
+      {owner && (
+        <FloorDialog
+          state={state}
+          open={adjusting}
+          onClose={() => setAdjusting(false)}
+          onLower={(bps) => {
+            setAdjusting(false);
+            onLower(bps);
+          }}
+          onRaise={(bps) => {
+            setAdjusting(false);
+            onRaise(bps);
+          }}
+        />
+      )}
 
       <p className="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-faint">
         <span>{live ? copy.desk.everyRowLive : copy.desk.everyRowSample}</span>
