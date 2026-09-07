@@ -8,6 +8,7 @@ import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
 import { useFloor } from '../lib/floor.ts';
+import { useKeys } from '../lib/keys.ts';
 import { DeviceSign } from './DeviceSign.tsx';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import { buildMandate } from '../lib/mandate.ts';
@@ -58,6 +59,7 @@ export function SetupDialog({
   const holdings = wallet.holdings ?? state.inventory;
   const fund = useFund(vault, wallet.address);
   const floorWrite = useFloor(vault);
+  const keys = useKeys(vault, ceremony.refresh);
   /*
    * Signing happens here rather than on its own route. §10 puts setup on one screen ending in one
    * signature, and navigating away took the sheet — and the thing being authorised — off screen at
@@ -215,9 +217,7 @@ export function SetupDialog({
                 vault,
                 delegate,
                 inventory: state.inventory,
-                // ponytail: the vault's mandate nonce is not read yet, so this signs against zero.
-                // Correct for a first mandate and wrong for a second — wire it before mainnet.
-                nonce: 0n,
+                nonce: ceremony.nonce ?? 0n,
                 expiresInDays: mandate.expiresInDays,
               })}
               payloadLine="Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)"
@@ -378,6 +378,44 @@ export function SetupDialog({
                   />
                 </div>
               </details>
+
+              {/*
+                * The addresses were collected and never written — the same gap the floor had. Two
+                * separate actions rather than one: the guardian's registry entry cannot be undone
+                * and the delegate can be changed at will, and one button would hide that
+                * difference behind a single press.
+                */}
+              <div className="mb-6 flex flex-col gap-3">
+                <div>
+                  <Act
+                    wide
+                    disabled={!isAddress(guardian) || keys.sending || Boolean(ceremony.steps.find((x) => x.id === 'guardian')?.done)}
+                    onClick={() => void keys.setGuardian(guardian as `0x${string}`)}
+                  >
+                    {keys.step ?? copy.wallet.registerDevice}
+                  </Act>
+                  <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                    {ceremony.steps.find((x) => x.id === 'guardian')?.done
+                      ? copy.wallet.deviceRegistered
+                      : copy.wallet.registerDeviceHint}
+                  </p>
+                </div>
+                <div>
+                  <Act
+                    wide
+                    disabled={!isAddress(delegate) || keys.sending}
+                    onClick={() => void keys.setDelegate(delegate as `0x${string}`)}
+                  >
+                    {copy.wallet.nameAgent}
+                  </Act>
+                  <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                    {ceremony.steps.find((x) => x.id === 'delegate')?.done
+                      ? copy.wallet.agentNamed
+                      : copy.wallet.nameAgentHint}
+                  </p>
+                </div>
+              </div>
+
 
               <p className="serif mb-4 border-t border-rule pt-5 text-[14px] text-muted">
                 {copy.onboarding.runsFor.replace('{days}', String(mandate.expiresInDays))}

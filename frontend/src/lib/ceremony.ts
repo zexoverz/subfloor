@@ -53,6 +53,14 @@ export type CeremonyState = {
   feed: Address | null;
   /** What the vault itself holds. Null until read — never the owner's wallet, which is a different address. */
   inventory: Holding[] | null;
+  /**
+   * A mandate nonce that has not been spent.
+   *
+   * Mandates are single-use, so signing against a spent nonce produces a signature the vault will
+   * reject — and it would look like a device fault rather than a stale number. Null until read,
+   * because guessing zero is right exactly once.
+   */
+  nonce: bigint | null;
   steps: Step[];
   /**
    * Whether the read has come back at all — either way.
@@ -74,6 +82,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   const [floorsSet, setFloorsSet] = useState(false);
   /** The vault's own inventory. The wallet's holdings are not the vault's, and only one settles. */
   const [inventory, setInventory] = useState<Holding[] | null>(null);
+  const [nonce, setNonce] = useState<bigint | null>(null);
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
@@ -107,7 +116,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     (async () => {
       const registry = addresses.registry as Address;
       try {
-        const [o, d, g, sell, buy, registryGuardian, configured, reference, held] = await Promise.all([
+        const [o, d, g, sell, buy, registryGuardian, configured, reference, held, zeroSpent] = await Promise.all([
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'delegate' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'guardian' }),
@@ -121,6 +130,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
               publicClient.readContract({ address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [vault] }),
             ),
           ),
+          // Nonce 0 is the usual answer and the loop below only looks further if it is taken.
+          publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'mandateUsed', args: [0n] }),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -146,6 +157,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
             amount: Number(formatUnits((held as bigint[])[i] ?? 0n, t.decimals)),
           })),
         );
+
+        setNonce((zeroSpent as boolean) ? null : 0n);
 
         const [feedAddress] = reference as [Address, boolean, number, number, bigint];
         setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
@@ -208,6 +221,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     floor,
     feed,
     inventory,
+    nonce,
     steps,
     settled: mocked || settled,
     error,

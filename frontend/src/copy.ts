@@ -138,6 +138,13 @@ export const copy = {
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',
     setFloor: 'Register this floor',
+    registerDevice: 'Register the device',
+    /** Two writes, one of which cannot be taken back. Said before the press, not after. */
+    registerDeviceHint: 'writes your device to the vault and to the registry. The registry entry can only be set once — after this, changing it needs a signature from the device being replaced.',
+    deviceRegistered: 'Registered on both.',
+    nameAgent: 'Name the agent',
+    nameAgentHint: 'the address allowed to compose and ship strategies. It can never move a token out, and you can change it whenever you like.',
+    agentNamed: 'Named. Change it whenever you like.',
     /** Two transactions: a floor on one side only is the absence of a floor, not half of one. */
     setFloorHint: 'registered for the vault, both directions — two signatures. The registry can only be moved to a stronger floor from here; weakening it needs your device.',
     floorAlreadySet: 'Registered. Raising it again is one press; weakening it is not.',
