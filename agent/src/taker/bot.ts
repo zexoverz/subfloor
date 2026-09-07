@@ -84,14 +84,19 @@ export function referenceRateFor(
     : (scale * wethUnit * ONE) / (answer * quoteUnit);
 }
 
-/// Typed off the constructors rather than off viem's exported client types: the exported ones are
-/// generic over chain and transport, and pinning them by hand produces two structurally identical
-/// types TypeScript treats as unrelated.
-export interface Clients {
-  pub: ReturnType<typeof createPublicClient>;
-  wallet: ReturnType<typeof createWalletClient>;
-  account: PrivateKeyAccount;
+/// Inferred from the factory rather than declared. viem's client types are generic over chain,
+/// transport and account, and a hand-written annotation produces a type that is structurally
+/// identical to the real one and which TypeScript still treats as unrelated.
+function makeClients(cfg: Config, account: PrivateKeyAccount) {
+  const transport = http(cfg.rpcUrl);
+  return {
+    pub: createPublicClient({ chain: baseSepolia, transport }),
+    wallet: createWalletClient({ account, chain: baseSepolia, transport }),
+    account,
+  };
 }
+
+export type Clients = ReturnType<typeof makeClients>;
 
 export function clientsFromEnv(cfg: Config): Clients {
   const key = process.env.TAKER_PRIVATE_KEY as Hex | undefined;
@@ -101,13 +106,7 @@ export function clientsFromEnv(cfg: Config): Clients {
         "separate from the owner's — that separation is the point, so there is no fallback here.",
     );
   }
-  const account = privateKeyToAccount(key);
-  const transport = http(cfg.rpcUrl);
-  return {
-    pub: createPublicClient({ chain: baseSepolia, transport }),
-    wallet: createWalletClient({ account, chain: baseSepolia, transport }),
-    account,
-  };
+  return makeClients(cfg, privateKeyToAccount(key));
 }
 
 export function configFromEnv(): Config {

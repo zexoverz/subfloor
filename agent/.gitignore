@@ -4,3 +4,4 @@ node_modules/
 *.ring.json
 *.sealed.json
 *.member.json
+.secrets/

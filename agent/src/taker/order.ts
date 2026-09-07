@@ -12,10 +12,19 @@ import { decodeAbiParameters, encodeAbiParameters, type Address, type Hex } from
 /// So the taker does not rebuild anything. It takes the emitted blob, decodes enough to know what
 /// pair it is looking at, and hands the same bytes back to `swap`.
 
+/// `abi.encode(order)` encodes the struct as a **dynamic tuple**, so the blob opens with a head
+/// offset (`0x20`) rather than with the maker. Decoding it as three flat parameters reads that
+/// offset as the maker address and produces `0x…0020`, which is a plausible-looking address and not
+/// a decoding error — the sort of wrong that reaches a dashboard.
 export const ORDER_ABI = [
-  { type: "address", name: "maker" },
-  { type: "uint256", name: "traits" },
-  { type: "bytes", name: "data" },
+  {
+    type: "tuple",
+    components: [
+      { type: "address", name: "maker" },
+      { type: "uint256", name: "traits" },
+      { type: "bytes", name: "data" },
+    ],
+  },
 ] as const;
 
 /// Bit layout from `src/libs/MakerTraits.sol`. Only what the taker needs to read.
@@ -34,13 +43,15 @@ export interface LiveOrder extends Order {
 }
 
 export function decodeShipped(blob: Hex): LiveOrder {
-  const [maker, traits, data] = decodeAbiParameters(ORDER_ABI, blob);
+  const [order] = decodeAbiParameters(ORDER_ABI, blob) as unknown as [
+    { maker: Address; traits: bigint; data: Hex },
+  ];
   return {
-    maker,
-    traits,
-    data,
-    encoded: encodeAbiParameters(ORDER_ABI, [maker, traits, data]),
-    usesAqua: (traits & USE_AQUA_FLAG) !== 0n,
+    maker: order.maker,
+    traits: order.traits,
+    data: order.data,
+    encoded: encodeAbiParameters(ORDER_ABI, [order] as never),
+    usesAqua: (order.traits & USE_AQUA_FLAG) !== 0n,
   };
 }
 

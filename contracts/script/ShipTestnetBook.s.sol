@@ -42,7 +42,7 @@ contract ShipTestnetBook is Script {
     /// fills, it just fills at a price nobody meant. The curve works on raw balances and does not
     /// know the tokens have different decimals — the registry's floors already carry the same raw
     /// convention, which is why they read 2.45e9 and 4e26 rather than anything human.
-    uint256 internal constant REFERENCE = 2500e6;
+    uint256 internal constant REFERENCE = uint256(2480_630000);
     uint16 internal constant SPREAD_BPS = 50;
 
     uint256 internal constant WETH_SHIPPED = 0.004e18;
