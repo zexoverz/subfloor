@@ -8,6 +8,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Aqua } from "@1inch/aqua/src/Aqua.sol";
 
 import { AquaGuardVault } from "../../src/subfloor/AquaGuardVault.sol";
+import { FloorRegistry } from "../../src/subfloor/FloorRegistry.sol";
 
 /// @notice The custody model, tested. The point of this contract is what the delegate *cannot*
 ///         reach, so most of these are negative tests.
@@ -468,5 +469,63 @@ contract AquaGuardVaultTest is Test {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", vault.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
         return abi.encodePacked(r, s, v);
+    }
+    // --- the floor has to be keyed to the vault, not to its owner ---------------------------------
+
+    /// @dev The seeding mistake this pins: `raiseFloor` keys off `msg.sender`, so broadcasting it
+    ///      from the deployer registers the floor to the deployer. At settlement the maker-side
+    ///      recipient is `order.traits.receiver(order.maker)` and the maker is this vault, so an
+    ///      owner-keyed floor binds an address that never appears in a fill. The registry and the
+    ///      subgraph both show a floor; the vault settles with none.
+    function test_aFloorRaisedByTheOwnerDirectlyDoesNotCoverTheVault() public {
+        // Backstop only (tolerance at _BPS), so the floor binds without a reference feed and the
+        // test is about who the floor is keyed to rather than about the oracle.
+        FloorRegistry registry = new FloorRegistry(owner, 0);
+
+        vm.prank(owner);
+        registry.raiseFloor(address(tokenA), address(tokenB), 10_000, 1e18);
+
+        (, bool ownerEnforced) = registry.effectiveFloor(owner, address(tokenA), address(tokenB));
+        assertTrue(ownerEnforced, "the owner got a floor");
+
+        (uint256 vaultRate, bool vaultEnforced) =
+            registry.effectiveFloor(address(vault), address(tokenA), address(tokenB));
+        assertFalse(vaultEnforced, "the vault, which is what settles, has none");
+        assertEq(vaultRate, 0);
+    }
+
+    /// @dev And the shape that fixes it, which is what `script/SeedTestnet.s.sol` now does.
+    function test_theOwnerRaisesTheVaultsFloorThroughExecute() public {
+        // Backstop only (tolerance at _BPS), so the floor binds without a reference feed and the
+        // test is about who the floor is keyed to rather than about the oracle.
+        FloorRegistry registry = new FloorRegistry(owner, 0);
+
+        vm.prank(owner);
+        vault.execute(
+            address(registry),
+            0,
+            abi.encodeCall(FloorRegistry.raiseFloor, (address(tokenA), address(tokenB), 10_000, 1e18))
+        );
+
+        (uint256 vaultRate, bool vaultEnforced) =
+            registry.effectiveFloor(address(vault), address(tokenA), address(tokenB));
+        assertTrue(vaultEnforced, "the vault is the recipient the floor is keyed to");
+        assertEq(vaultRate, 1e18);
+    }
+
+    /// @dev `execute` is the owner rescue path and the delegate must never reach it, or the whole
+    ///      custody argument collapses into an arbitrary-call passthrough.
+    function test_theDelegateCannotRaiseAFloorThroughExecute() public {
+        // Backstop only (tolerance at _BPS), so the floor binds without a reference feed and the
+        // test is about who the floor is keyed to rather than about the oracle.
+        FloorRegistry registry = new FloorRegistry(owner, 0);
+
+        vm.prank(agent);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, agent));
+        vault.execute(
+            address(registry),
+            0,
+            abi.encodeCall(FloorRegistry.raiseFloor, (address(tokenA), address(tokenB), 10_000, 1e18))
+        );
     }
 }
