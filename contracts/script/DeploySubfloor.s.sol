@@ -10,6 +10,7 @@ import { console2 } from "forge-std/console2.sol";
 import { FloorRegistry } from "../src/subfloor/FloorRegistry.sol";
 import { FloorRouter } from "../src/routers/FloorRouter.sol";
 import { AquaGuardVault } from "../src/subfloor/AquaGuardVault.sol";
+import { VaultFactory } from "../src/subfloor/VaultFactory.sol";
 import { SubfloorParams } from "../src/subfloor/SubfloorParams.sol";
 
 /// @notice Deploys the three contracts to Base and wires the WETH/USDC reference.
@@ -92,11 +93,16 @@ contract DeploySubfloor is Script {
         // The feeds are write-once and now set, so the owner key never needs to touch them.
         registry.transferOwnership(owner);
 
+        // So someone other than us can have a vault. The factory owns nothing and cannot act on
+        // what it creates; the vault below is ours, deployed the same way anyone else would.
+        VaultFactory factory = new VaultFactory(SubfloorParams.BASE_AQUA);
+
         vm.stopBroadcast();
 
         console2.log("FloorRegistry  ", address(registry));
         console2.log("FloorRouter    ", address(router));
         console2.log("AquaGuardVault ", address(vault));
+        console2.log("VaultFactory   ", address(factory));
         console2.log("owner          ", owner);
         console2.log("loweringDelay  ", loweringDelay);
         console2.log("");

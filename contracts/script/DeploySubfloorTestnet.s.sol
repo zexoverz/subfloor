@@ -11,6 +11,7 @@ import { Aqua } from "@1inch/aqua/src/Aqua.sol";
 import { FloorRegistry } from "../src/subfloor/FloorRegistry.sol";
 import { FloorRouter } from "../src/routers/FloorRouter.sol";
 import { AquaGuardVault } from "../src/subfloor/AquaGuardVault.sol";
+import { VaultFactory } from "../src/subfloor/VaultFactory.sol";
 
 /// @notice Base Sepolia deployment, so the frontend can integrate against real contracts and real
 ///         events without waiting for the mainnet run.
@@ -64,6 +65,10 @@ contract DeploySubfloorTestnet is Script {
         // The feeds are write-once and now set, so the owner key never needs to touch them.
         registry.transferOwnership(owner);
 
+        // So someone other than us can have a vault. The factory owns nothing and cannot act on
+        // what it creates; the vault below is ours, deployed the same way anyone else would.
+        VaultFactory factory = new VaultFactory(address(aqua));
+
         vm.stopBroadcast();
 
         console2.log("--- Base Sepolia, for frontend integration only ---");
@@ -71,6 +76,7 @@ contract DeploySubfloorTestnet is Script {
         console2.log("FloorRegistry             ", address(registry));
         console2.log("FloorRouter               ", address(router));
         console2.log("AquaGuardVault            ", address(vault));
+        console2.log("VaultFactory              ", address(factory));
         console2.log("owner                     ", owner);
         console2.log("");
         console2.log("WETH", SEPOLIA_WETH);
