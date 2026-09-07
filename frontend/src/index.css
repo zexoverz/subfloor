@@ -262,3 +262,90 @@ body {
 .hero-bubble {
   animation: hero-bubble 7s ease-in-out infinite;
 }
+
+/*
+ * The hero drawing breathes. Slow enough that it reads as weight rather than motion — the point of
+ * the picture is a thing that does not move, so the drift is a few pixels and nothing more.
+ */
+@keyframes hero-float {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+.hero-art {
+  animation: hero-float 7s ease-in-out infinite alternate;
+}
+
+/*
+ * The engraving was drawn for warm paper. On the dark ground its ink greys sink into the
+ * background, so they are lifted — brass included, which only gets warmer for it.
+ */
+:root:not([data-theme='light']) .hero-art img,
+:root[data-theme='dark'] .hero-art img {
+  filter: brightness(1.55) contrast(1.06);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .hero-art img {
+    filter: none;
+  }
+}
+
+/*
+ * Reading protection as depth of field rather than a painted blob: the noise stays visible behind
+ * the words and simply goes out of focus, and the effect fades out with no edge to notice.
+ */
+.hero-scrim {
+  backdrop-filter: blur(7px) brightness(0.72);
+  -webkit-backdrop-filter: blur(7px) brightness(0.72);
+  mask-image: radial-gradient(ellipse 78% 70% at 45% 50%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 78% 70% at 45% 50%, #000 40%, transparent 100%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .hero-scrim {
+    backdrop-filter: blur(7px) brightness(1.12);
+    -webkit-backdrop-filter: blur(7px) brightness(1.12);
+  }
+}
+
+/*
+ * The strike, on a loop: the fill descends, stops dead on the rail, holds, fades, and tries again.
+ * The rail never moves and never changes — it is the only thing on this page that cannot.
+ *
+ * Two clipped copies of one drawing rather than separate assets: the rail is the bottom band, and
+ * everything above it travels. The debris rides down with the arrowhead along the same axis, which
+ * at this speed reads as the strike landing rather than as two things moving.
+ */
+@keyframes hero-strike {
+  0% {
+    opacity: 0;
+    transform: translate3d(-7%, -11%, 0);
+  }
+  14%,
+  58% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  74%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-strike {
+  animation: hero-strike 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+/* Reduced motion keeps the finished picture: the argument survives without the sequence. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-strike {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * The headline resolves out of noise, one character at a time.
@@ -17,17 +17,32 @@ export function ScrambleText({
   className = '',
   speed = 26,
   delay = 0,
+  onVisible = false,
 }: {
   text: string;
   className?: string;
   speed?: number;
   delay?: number;
+  /** Wait until the text is on screen. A headline that resolved while scrolled past never happened. */
+  onVisible?: boolean;
 }) {
   const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const [revealed, setRevealed] = useState(reduced ? text.length : 0);
+  const [armed, setArmed] = useState(!onVisible);
+  const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (reduced) return;
+    if (!onVisible || armed || !ref.current) return;
+    const io = new IntersectionObserver(
+      ([entry]) => entry?.isIntersecting && setArmed(true),
+      { rootMargin: '-15% 0px' },
+    );
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [onVisible, armed]);
+
+  useEffect(() => {
+    if (reduced || !armed) return;
     let id: ReturnType<typeof setInterval>;
     const start = setTimeout(() => {
       id = setInterval(() => {
@@ -45,12 +60,14 @@ export function ScrambleText({
       clearTimeout(start);
       clearInterval(id);
     };
-  }, [text, speed, delay, reduced]);
+  }, [text, speed, delay, reduced, armed]);
 
   return (
-    <span className={className} aria-label={text}>
+    <span ref={ref} className={className} aria-label={text}>
       {Array.from(text).map((char, i) => {
-        if (i < revealed || char === ' ' || char === '\n') return <span key={i}>{char}</span>;
+        // Only letters and digits scramble. Punctuation and spaces hold their place, so the line
+        // never looks like a typo on its way to resolving.
+        if (i < revealed || !/[A-Za-z0-9]/.test(char)) return <span key={i}>{char}</span>;
         return (
           <span key={i} className="text-faint" aria-hidden>
             {NOISE[Math.floor(Math.random() * NOISE.length)]}

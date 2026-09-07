@@ -3,8 +3,10 @@ import { copy } from '../../copy.ts';
 import { Act, Ghost } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
 import { LetterGlitch } from '../LetterGlitch.tsx';
+import { ProductShot } from '../ProductShot.tsx';
+import { FeatureGrid } from '../FeatureGrid.tsx';
 import { LandingHeader } from '../LandingHeader.tsx';
-import { HeroAnnotations } from '../HeroAnnotations.tsx';
+import { HeroStrike } from '../HeroStrike.tsx';
 import { ScrambleText } from '../ScrambleText.tsx';
 import type { Screen } from '../../types.ts';
 
@@ -22,40 +24,37 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
     <>
       <LandingHeader onNavigate={onNavigate} />
 
+      {/* Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column. */}
+      <div className="relative">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)] opacity-[0.22]">
+        <LetterGlitch />
+      </div>
+
       <div className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] pb-24">
       {/*
         * Texture behind the hero band. Quieter than it was, because the drawing now carries the
         * argument and the noise only carries atmosphere — whichever of the two the eye lands on
         * first should be the one that means something.
         */}
-      {/*
-        * Texture behind the hero band, and masked away from the column the words are in. Noise
-        * under body text is not atmosphere, it is a reading problem.
-        */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[92vh] opacity-[0.22]"
-        style={{ maskImage: 'linear-gradient(to right, #000 0%, #000 42%, transparent 62%)' }}
-      >
-        <LetterGlitch />
-      </div>
-
-      <header className="relative grid min-h-[calc(100vh-60px)] items-center gap-10 py-10 md:grid-cols-[1fr_1fr]">
+      <header className="relative grid min-h-[calc(100vh-60px)] items-center gap-10 py-10 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] md:gap-[clamp(48px,7vw,104px)]">
         {/*
           * The argument as a drawing: a fill stops dead on the floor and nothing passes beneath it.
           * It carries the claim, so it sits beside the headline rather than behind it — and if the
           * file is not there, the hero is text and loses nothing.
           */}
-        <div className="relative order-2 w-full max-w-[560px] justify-self-center md:order-1">
-          <img
-            src="/hero.png"
-            alt=""
-            onError={(e) => (e.currentTarget.style.display = 'none')}
-            className="w-full"
-          />
-          <HeroAnnotations />
+        {/* Sized to sit beside the sentence, not to compete with it. */}
+        <div className="hero-art relative order-2 w-full max-w-[480px] justify-self-center md:order-1">
+          <HeroStrike />
         </div>
 
-        <div className="order-1 md:order-2">
+        <div className="relative order-1 md:order-2">
+          {/*
+            * The scrim. A soft radial wash of the page's own ground, with no edge to notice, so the
+            * type sits on quiet paper while the noise continues behind and around it.
+            */}
+          <div className="hero-scrim pointer-events-none absolute -inset-x-16 -inset-y-12" />
+
+          <div className="relative">
           <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">
             {copy.landing.eyebrow}
           </p>
@@ -80,10 +79,34 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
             </div>
             <Ghost onClick={() => onNavigate('public')}>{copy.landing.seePublic}</Ghost>
           </div>
+          </div>
         </div>
       </header>
 
-      <section className="relative mt-10" aria-label="interactive fill">
+      <section className="relative mt-24">
+        <SectionHead
+          eyebrow={copy.landing.shotEyebrow}
+          title={copy.landing.shotTitle}
+          standfirst={copy.landing.shotStandfirst}
+        />
+        <ProductShot />
+      </section>
+
+      <section className="relative mt-24">
+        <SectionHead
+          eyebrow={copy.landing.featuresEyebrow}
+          title={copy.landing.featuresTitle}
+          standfirst={copy.landing.featuresStandfirst}
+        />
+        <FeatureGrid />
+      </section>
+
+      <section className="relative mt-24" aria-label="interactive fill">
+        <SectionHead
+          eyebrow="Try it"
+          title="Drag the fill below the floor."
+          standfirst="Nothing here is a simulation of our contract — it is the same arithmetic, in the browser."
+        />
         <PriceLadder />
       </section>
 
@@ -131,7 +154,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <p className="serif mt-3 text-[16px] text-ink">{copy.scope}.</p>
       </Section>
 
-      <div className="mt-12 flex flex-wrap items-center gap-4">
+      <div className="mt-20 flex flex-wrap items-center justify-center gap-4 border-y border-rule py-10">
         <div className="w-full max-w-[260px]">
           <Act primary onClick={() => onNavigate('onboarding')}>
             <span className="flex items-center justify-center gap-2">
@@ -149,17 +172,37 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         </p>
       </footer>
       </div>
+      </div>
     </>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-12 max-w-[63ch]">
+    <section className="mx-auto mt-20 max-w-[63ch]">
       <h2 className="mb-3.5 border-b border-rule pb-2.5 text-[13px] font-semibold tracking-[0.14em] text-faint uppercase">
         {title}
       </h2>
       {children}
     </section>
+  );
+}
+
+/**
+ * Asymmetric on purpose: the claim on the left, the qualification on the right, sharing a baseline.
+ * Centred headings stack every section into the same silhouette and the page stops having a
+ * rhythm — and a left edge is what the eye returns to when it drops from one section to the next.
+ */
+function SectionHead({ eyebrow, title, standfirst }: { eyebrow: string; title: string; standfirst: string }) {
+  return (
+    <div className="mb-9 grid items-end gap-x-10 gap-y-4 border-b border-rule pb-6 md:grid-cols-[1.1fr_1fr]">
+      <div>
+        <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">{eyebrow}</p>
+        <h2 className="mt-2.5 mb-0 max-w-[18ch] text-[clamp(22px,3.4vw,34px)] leading-[1.1] font-semibold tracking-tight text-balance">
+          <ScrambleText text={title} onVisible speed={18} />
+        </h2>
+      </div>
+      <p className="serif m-0 max-w-[46ch] text-[15.5px] leading-relaxed text-muted md:pb-1">{standfirst}</p>
+    </div>
   );
 }

@@ -158,6 +158,34 @@ export const copy = {
     launch: 'OPEN THE DESK',
     seePublic: 'see the public page',
 
+    shotEyebrow: 'The desk',
+    shotTitle: 'Every fill, measured against your floor.',
+    shotStandfirst:
+      'The tape shows what settled and what did not. A refusal enters it like any other row, with the two rates decoded from the transaction that failed.',
+    /** The same honesty rule as every other surface: sample data says so. */
+    shotNote: 'Sample rows — the vault is not live yet. The refusal is decoded from real revert data.',
+
+    featuresEyebrow: 'What it does',
+    featuresTitle: 'Six parts, one guarantee.',
+    featuresStandfirst:
+      'Each of these is a piece of the running product, not a description of one — the same components the desk uses.',
+
+    f1Label: 'The floor',
+    f1Title: 'Tighten it free. Loosen it only with your device.',
+    f2Label: 'Refusals',
+    f2Title: 'A fill below your floor cannot exist.',
+    f3Label: 'The agent',
+    f3Title: 'It trades. It can never move a token out.',
+    f3Surface: 'everything the agent may call',
+    f4Label: 'The proof',
+    f4Title: 'Hostile programs, none of them settled below a floor.',
+    f4Sub: 'counted by CI, in a file anyone can open',
+    f5Label: 'The index',
+    f5Title: 'Every number here is somebody else’s query.',
+    f6Label: 'The panic path',
+    f6Title: 'Stop the agent in one gesture.',
+    f6Sub: 'press and hold · no device needed, because stopping can only help you',
+
     whereTitle: 'Where the check lives',
     whereBody:
       'The router computes amounts first and moves tokens second. The floor sits in the gap — after the program has had its say, before a single token leaves anyone’s balance, checked for both parties.',
