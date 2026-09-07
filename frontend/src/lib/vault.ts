@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { createPublicClient, http, parseEventLogs, type Address } from 'viem';
+import { parseEventLogs, type Address } from 'viem';
 import { chain } from './chain.ts';
+import { publicClient } from './client.ts';
 import { addresses, vaultFactoryAbi } from './contracts.ts';
 
 /**
@@ -15,7 +16,6 @@ import { addresses, vaultFactoryAbi } from './contracts.ts';
  * after they deployed theirs would put another owner's floor and holdings on their screen, which
  * is the one confusion this whole design exists to prevent.
  */
-const publicClient = createPublicClient({ chain, transport: http() });
 
 const ZERO = '0x0000000000000000000000000000000000000000';
 

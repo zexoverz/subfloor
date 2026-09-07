@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createPublicClient, formatUnits, http, type Address } from 'viem';
-import { chain } from './chain.ts';
+import { formatUnits, type Address } from 'viem';
+import { publicClient } from './client.ts';
 import {
   addresses,
   erc20Abi,
@@ -37,7 +37,6 @@ export type Step = {
   device: boolean;
 };
 
-const publicClient = createPublicClient({ chain, transport: http() });
 
 export type CeremonyState = {
   deployed: boolean;

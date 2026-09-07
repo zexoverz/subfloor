@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPublicClient, formatUnits, http, type Address } from 'viem';
-import { chain } from './chain.ts';
+import { formatUnits, type Address } from 'viem';
+import { publicClient } from './client.ts';
 import { ACTIVE_TOKENS } from './tokens.ts';
 import { MOCK_ADDRESS, mocked } from './mock.ts';
 import type { Holding } from '../types.ts';
@@ -13,7 +13,6 @@ import type { Holding } from '../types.ts';
  * first floor into one signature, and a connection that happens before any of that is not part of
  * it. The screen reads inventory "from wallet", which is only true once this exists.
  */
-const publicClient = createPublicClient({ chain, transport: http() });
 
 const BALANCE_OF = [
   {

@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
-import { createPublicClient, http, parseUnits, type Address } from 'viem';
+import { parseUnits, type Address } from 'viem';
 import { chain } from './chain.ts';
+import { publicClient } from './client.ts';
 import { erc20Abi } from './contracts.ts';
 import { WETH } from './tokens.ts';
 
@@ -16,7 +17,6 @@ import { WETH } from './tokens.ts';
  * shortfall is wrapped in the owner's wallet and then transferred, which is two transactions and
  * cannot be collapsed into one without a contract to do it.
  */
-const publicClient = createPublicClient({ chain, transport: http() });
 
 const wethAbi = [
   { type: 'function', name: 'deposit', stateMutability: 'payable', inputs: [], outputs: [] },
