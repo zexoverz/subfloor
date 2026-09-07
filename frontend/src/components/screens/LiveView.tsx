@@ -1,6 +1,6 @@
 import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Receipt, Wallet } from 'lucide-react';
 import { copy } from '../../copy.ts';
-import { Card, CardBody, CardHead, Foot, Note } from '../Card.tsx';
+import { Card, CardBody, CardHead } from '../Card.tsx';
 import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
@@ -37,21 +37,6 @@ export function LiveView({
 
   return (
     <>
-      {/*
-        * #102: someone who opens this link has nobody next to them. The tagline, the problem, and
-        * why watching fails — then the dashboard, which is evidence for a claim they have now read
-        * rather than an operator console they have to decode.
-        */}
-      <div className="mb-5 border-b border-rule pb-5">
-        <h1 className="m-0 max-w-[32ch] text-[clamp(20px,3vw,26px)] leading-[1.15] font-semibold tracking-tight text-balance">
-          {copy.desk.explainTagline}
-        </h1>
-        <p className="serif mt-2.5 max-w-[62ch] text-[15px] leading-relaxed text-muted">
-          {copy.desk.explainProblem} {copy.desk.explainWhy}
-        </p>
-        <p className="serif mt-2 max-w-[62ch] text-[15px] leading-relaxed text-ink">{copy.scope}.</p>
-      </div>
-
       <Tiles>
         <Tile
           label={copy.desk.fills}
@@ -99,17 +84,6 @@ export function LiveView({
           */}
         <Card className="flex flex-col">
           <CardHead icon={Receipt} left={copy.desk.tape} right={`${pair.base} / ${pair.quote}`} />
-          <p className="serif m-0 border-b border-rule px-4 py-3 text-[15px] leading-snug text-muted">
-            {live ? (
-              <>
-                The vault has been traded against <b className="font-medium text-ink">{stats.fills}</b> times. It
-                refused <b className="font-medium text-refuse">{stats.refused}</b>. It has never once settled at a bad
-                price.
-              </>
-            ) : (
-              copy.desk.leadSample
-            )}
-          </p>
           <Tape entries={tape} pair={pair} />
         </Card>
 
@@ -139,18 +113,13 @@ export function LiveView({
                   <dd className="m-0 text-right font-medium">{formatPrice(reference.price)}</dd>
                 </div>
               </dl>
-              <p className="mt-2 text-[11px] text-faint">
-                each token bounded separately by the mandate — a summed bound is decimals-blind, and the
-                agent would choose the split
-              </p>
-              <Foot>
-                {reference.name}, updated <b className="font-medium text-ink">{reference.ageSeconds} s</b> ago —{' '}
+              <p className="mt-3 flex items-center gap-2 border-t border-rule pt-3 text-[11px] text-faint">
+                {reference.name} · {reference.ageSeconds}s
                 <span className={feedFresh ? 'text-settle' : 'text-refuse'}>
                   <span className="mr-1 inline-block size-[6px] rounded-full bg-current align-[1px]" />
                   {feedFresh ? copy.desk.fresh : copy.desk.stale}
                 </span>
-                . Past the staleness bound the vault stops trading rather than guess.
-              </Foot>
+              </p>
             </CardBody>
           </Card>
 
@@ -194,9 +163,6 @@ export function LiveView({
                     {state.delegate}
                     <ExternalLink size={11} strokeWidth={1.7} className="shrink-0 text-faint" />
                   </a>
-                  <p className="serif mt-1 text-[12.5px] leading-relaxed text-faint">
-                    {copy.wallet.agentAddressHint}
-                  </p>
                 </div>
               )}
               <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
@@ -215,17 +181,10 @@ export function LiveView({
         )}
       </div>
 
-      <Note className="serif mt-4.5 text-[14.5px]">
-        {live ? copy.desk.everyRowLive : copy.desk.everyRowSample}
-      </Note>
-
-      {/* The second question a trading judge asks, answered where second questions belong. */}
-      <section className="mt-8 border-t border-rule pt-5">
-        <h2 className="mb-2.5 text-[10.5px] tracking-[0.11em] text-faint uppercase">{copy.desk.whoPaysTitle}</h2>
-        <p className="serif m-0 max-w-[68ch] text-[15px] leading-relaxed text-muted">{copy.desk.whoPays}</p>
-        <p className="serif mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink">{copy.desk.whoPaysAfter}</p>
-      </section>
-      <Note className="serif text-[14.5px]">{copy.scope}</Note>
+      <p className="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-faint">
+        <span>{live ? copy.desk.everyRowLive : copy.desk.everyRowSample}</span>
+        <span className="text-muted">{copy.scope}.</span>
+      </p>
     </>
   );
 }
