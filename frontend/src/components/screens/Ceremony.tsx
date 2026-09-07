@@ -1,4 +1,5 @@
 import { DeviceSign } from '../DeviceSign.tsx';
+import { useLedger } from '../../lib/ledger.ts';
 import { Todo } from '../Card.tsx';
 import { floorPriceFromBps, formatPrice } from '../../lib/rate.ts';
 import type { VaultState } from '../../types.ts';
@@ -27,6 +28,7 @@ export function Ceremony({
   // §10: the device-absent state is known before the ceremony is offered, never discovered by
   const { pair, reference, floor, mandate } = state;
 
+  const ledger = useLedger();
   const bindsAt = floorPriceFromBps(reference.price, draftBps);
   const standing = formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps));
 
@@ -57,6 +59,9 @@ export function Ceremony({
       <DeviceSign
         rows={rows}
         purpose={purpose}
+        ledger={ledger}
+        // The lowering payload is not built yet; the panel refuses to sign rather than send noise.
+        typedData={null}
         payloadLine={
           purpose === 'lower'
             ? `FloorLowering(${pair.base}, ${pair.quote}, ${draftBps}, nonce)`

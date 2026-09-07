@@ -4,7 +4,7 @@ import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead, Note } from './Card.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
-import { useLedger } from '../lib/ledger.ts';
+import type { Ledger } from '../lib/ledger.ts';
 
 export type SignPurpose = 'mandate' | 'lower';
 
@@ -27,6 +27,8 @@ export function DeviceSign({
   payloadLine,
   standing,
   scheduledAt,
+  typedData,
+  ledger,
   onDone,
   onBack,
 }: {
@@ -34,14 +36,31 @@ export function DeviceSign({
   purpose: SignPurpose;
   /** The call being built, spelled out while the device is thinking. */
   payloadLine: string;
+  /**
+   * The EIP-712 object the device is actually asked to sign.
+   *
+   * Separate from `rows`, which is what the screen shows, and that separation is the risk this
+   * component exists to manage: the two must describe the same thing. Until a descriptor generates
+   * both (#36) they are written together and reviewed together.
+   *
+   * Null when the payload cannot be built yet — an unset delegate, an unread nonce — in which case
+   * there is nothing to ask the device and the panel says so rather than sending it noise.
+   */
+  typedData: object | null;
   /** The floor that still holds if this is declined — the reassurance a decline needs. */
   standing: string;
   /** Set when the registry delays lowerings, in which case signing schedules rather than applies. */
   scheduledAt?: number | null;
+  /*
+   * Passed in, never created here. useLedger keeps the paired session in a ref, so a second
+   * instance is a second session — and it is always the empty one. The owner paired on the sheet
+   * and this panel then asked a different, unpaired hook to sign, which returned null without ever
+   * reaching the device: nothing appeared on the Ledger and the screen called it a decline.
+   */
+  ledger: Ledger;
   onDone: () => void;
   onBack: () => void;
 }) {
-  const ledger = useLedger();
   // Starts at 'pre' unless the browser cannot speak to a device at all, which is worth saying to
   // someone who has already completed a form.
   const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');

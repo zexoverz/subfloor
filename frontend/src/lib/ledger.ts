@@ -38,7 +38,14 @@ export type Ledger = {
   connecting: boolean;
   address: Address | null;
   error: string | null;
-  connect: () => void;
+  /**
+   * Returns the address it read, as well as storing it.
+   *
+   * A caller that awaits connect() and then looks at `address` sees the value from the render it
+   * was created in, not the one just fetched — React state does not update inside the closure that
+   * asked for it. Returning it is what lets "read it from my device" fill a field.
+   */
+  connect: () => Promise<Address | null>;
   /** Hand the device back, so other apps on the machine can open it. */
   release: () => Promise<void>;
   signTypedData: (typedData: unknown) => Promise<string | null>;
@@ -105,7 +112,7 @@ export function useLedger(): Ledger {
   const connect = useCallback(async () => {
     if (!supported) {
       setError('this browser cannot talk to a Ledger directly — try Chrome or Edge');
-      return;
+      return null;
     }
     setConnecting(true);
     setError(null);
@@ -136,12 +143,14 @@ export function useLedger(): Ledger {
       const result = await settle<{ address: string }>(signer.getAddress(DERIVATION_PATH));
       session.current = { dmk, sessionId, signer };
       setAddress(result.address as Address);
+      return result.address as Address;
     } catch (e) {
       // A device left locked, or the owner closing the browser prompt, are both ordinary outcomes.
       setError(e instanceof Error ? e.message : 'could not reach the device');
     } finally {
       setConnecting(false);
     }
+    return null;
   }, [supported]);
 
   /**
@@ -176,7 +185,16 @@ export function useLedger(): Ledger {
   useEffect(() => () => void release(), [release]);
 
   const signTypedData = useCallback(async (typedData: unknown) => {
-    if (!session.current) return null;
+    if (!session.current) {
+      // Not a decline. Nothing was asked, and reporting it as one taught the owner that their
+      // device had refused something it had never been shown.
+      setError('no device is paired — connect it first');
+      return null;
+    }
+    if (!typedData) {
+      setError('there is nothing to sign yet');
+      return null;
+    }
     try {
       const signed = await settle<{ r: string; s: string; v: number }>(
         session.current.signer.signTypedData(DERIVATION_PATH, typedData),

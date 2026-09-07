@@ -162,6 +162,7 @@ export const copy = {
     guardianLabel: 'your device address',
     guardianHint: 'the key that may weaken the floor — hardware, never this browser.',
     useDevice: 'read it from my device',
+    readingDevice: 'asking the device…',
     delegateLabel: "the agent's address",
     delegateHint: 'composes and ships strategies. It can never move a token out.',
     agentAddress: 'the agent',

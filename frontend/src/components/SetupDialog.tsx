@@ -10,6 +10,7 @@ import { useFund } from '../lib/fund.ts';
 import { useFloor } from '../lib/floor.ts';
 import { DeviceSign } from './DeviceSign.tsx';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
+import { buildMandate } from '../lib/mandate.ts';
 import { Toasts } from './Toasts.tsx';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -209,6 +210,16 @@ export function SetupDialog({
                 ['Expires', `${mandate.expiresInDays} days`],
               ]}
               purpose="mandate"
+              ledger={ledger}
+              typedData={buildMandate({
+                vault,
+                delegate,
+                inventory: state.inventory,
+                // ponytail: the vault's mandate nonce is not read yet, so this signs against zero.
+                // Correct for a first mandate and wrong for a second — wire it before mainnet.
+                nonce: 0n,
+                expiresInDays: mandate.expiresInDays,
+              })}
               payloadLine="Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)"
               standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
               onDone={() => {
@@ -343,7 +354,20 @@ export function SetupDialog({
                     hint={copy.wallet.guardianHint}
                     value={guardian}
                     onChange={setGuardian}
-                    action={{ label: copy.wallet.useDevice, onClick: () => {}, disabled: ledger.presence !== 'paired' }}
+                    action={{
+                      label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
+                      /*
+                       * Was a no-op: the button existed, reported nothing, and left the owner to
+                       * type an address they were being told to read off the device.
+                       */
+                      onClick: () => {
+                        void (async () => {
+                          const found = ledger.address ?? (await ledger.connect());
+                          if (found) setGuardian(found);
+                        })();
+                      },
+                      disabled: ledger.connecting || !ledger.supported,
+                    }}
                   />
                   <AddressField
                     icon="wallet"
