@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { copy } from '../copy.ts';
-import { Act, Ghost } from './Button.tsx';
+import { Act } from './Button.tsx';
 import { LetterGlitch } from './LetterGlitch.tsx';
 import { ScrambleText } from './ScrambleText.tsx';
 import type { Screen } from '../types.ts';
@@ -40,16 +40,13 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
           {copy.landing.closeStandfirst}
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <div className="w-full max-w-[220px]">
-            <Act primary onClick={() => onNavigate('onboarding')}>
-              <span className="flex items-center justify-center gap-2">
-                {copy.landing.launch}
-                <ArrowRight size={14} strokeWidth={1.8} />
-              </span>
-            </Act>
-          </div>
-          <Ghost onClick={() => onNavigate('public')}>{copy.landing.seePublic}</Ghost>
+        <div className="mx-auto mt-8 w-full max-w-[220px]">
+          <Act primary onClick={() => onNavigate('live')}>
+            <span className="flex items-center justify-center gap-2">
+              {copy.landing.launchApp}
+              <ArrowRight size={14} strokeWidth={1.8} />
+            </span>
+          </Act>
         </div>
 
         <p className="serif mx-auto mt-8 max-w-[52ch] text-[14px] leading-relaxed text-ink">{copy.scope}.</p>

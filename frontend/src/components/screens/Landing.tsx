@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
-import { Act, Ghost } from '../Button.tsx';
+import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
 import { LetterGlitch } from '../LetterGlitch.tsx';
 import { ProductShot } from '../ProductShot.tsx';
@@ -69,17 +69,15 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
             {copy.landing.standfirst}
           </p>
 
-          {/* The action belongs in the hero, not eight sections down. */}
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            <div className="w-full max-w-[220px]">
-              <Act primary onClick={() => onNavigate('onboarding')}>
-                <span className="flex items-center justify-center gap-2">
-                  {copy.landing.launch}
-                  <ArrowRight size={14} strokeWidth={1.8} />
-                </span>
-              </Act>
-            </div>
-            <Ghost onClick={() => onNavigate('public')}>{copy.landing.seePublic}</Ghost>
+          {/* One action, and the same one the header offers. A second button beside it only asks
+              the reader to choose between two things they have no basis to choose between yet. */}
+          <div className="mt-7 w-full max-w-[220px]">
+            <Act primary onClick={() => onNavigate('live')}>
+              <span className="flex items-center justify-center gap-2">
+                {copy.landing.launchApp}
+                <ArrowRight size={14} strokeWidth={1.8} />
+              </span>
+            </Act>
           </div>
           </div>
         </div>

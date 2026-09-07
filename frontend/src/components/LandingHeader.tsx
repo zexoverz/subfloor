@@ -13,20 +13,13 @@ export function LandingHeader({ onNavigate }: { onNavigate: (s: Screen) => void 
       <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-[clamp(18px,4vw,36px)] py-3.5">
         <span className="text-[15px] font-semibold tracking-[0.22em]">{copy.brand}</span>
 
-        <nav className="ml-auto flex items-center gap-4 text-[11.5px] text-muted">
-          <button onClick={() => onNavigate('public')} className="cursor-pointer hover:text-ink">
-            {copy.nav.public}
-          </button>
-          <a
-            href="https://github.com/zexoverz/subfloor"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden hover:text-ink sm:inline"
-          >
-            GitHub
-          </a>
-          {/* One action in the header. Connecting a wallet is asked for further down, once there
-              is a reason to; two primary-looking buttons here make a visitor choose before reading. */}
+        {/*
+          * Brand and one action, nothing else. The public page and the repo are both reachable from
+          * the footer, and a header link row on a single-page site is furniture: it competes with
+          * the only button that matters and gives a first-time visitor somewhere to go instead of
+          * something to read.
+          */}
+        <nav className="ml-auto flex items-center">
           <span className="w-[140px]">
             <Act primary onClick={() => onNavigate('live')}>
               {copy.landing.launchApp}
