@@ -131,6 +131,28 @@ export function useLedger(): Ledger {
       setError('this browser cannot talk to a Ledger directly — try Chrome or Edge');
       return null;
     }
+    /*
+     * Reuse the session rather than building a second kit.
+     *
+     * Each call used to construct a fresh DeviceManagementKit and start its own discovery. The
+     * first one opens the device and keeps it — WebHID hands out an exclusive handle — so the
+     * second kit discovers nothing, its promise never resolves, and the caller waits forever on an
+     * address that was already sitting in the first session. The logs showed exactly that: a live
+     * session polling getAppAndVersion happily, and no GetAddress APDU behind it.
+     */
+    if (session.current) {
+      try {
+        const known = await settle<{ address: string }>(session.current.signer.getAddress(DERIVATION_PATH));
+        setAddress(known.address as Address);
+        return known.address as Address;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'the device stopped answering');
+        return null;
+      }
+    }
+    // A second press while the first is still discovering would do the same damage.
+    if (connecting) return null;
+
     setConnecting(true);
     setError(null);
 
@@ -181,7 +203,7 @@ export function useLedger(): Ledger {
       setConnecting(false);
     }
     return null;
-  }, [supported]);
+  }, [supported, connecting]);
 
   /**
    * Give the device back.
