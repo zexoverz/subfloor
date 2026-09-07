@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Address } from 'viem';
 
 /**
@@ -19,8 +19,22 @@ import type { Address } from 'viem';
  */
 const DERIVATION_PATH = "44'/60'/0'/0/0";
 
+/**
+ * What we can honestly say about the device before anyone presses anything.
+ *
+ * `unsupported` is definite: the browser has no WebHID at all. `paired` means a Ledger has already
+ * been granted to this origin and is attached. `unknown` is the honest answer everywhere else —
+ * WebHID will not enumerate an unpaired device without a user gesture, so a device sitting plugged
+ * in and a drawer with nothing in it look identical from here, and the screen must not pretend
+ * otherwise.
+ */
+export type Presence = 'unsupported' | 'unknown' | 'paired';
+
+const LEDGER_VENDOR_ID = 0x2c97;
+
 export type Ledger = {
   supported: boolean;
+  presence: Presence;
   connecting: boolean;
   address: Address | null;
   error: string | null;
@@ -32,12 +46,44 @@ type Session = { dmk: any; sessionId: string; signer: any };
 
 export function useLedger(): Ledger {
   const [address, setAddress] = useState<Address | null>(null);
+  const [presence, setPresence] = useState<Presence>('unknown');
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const session = useRef<Session | null>(null);
 
   // WebHID is Chromium-only, and saying so beats a button that silently does nothing in Firefox.
   const supported = typeof navigator !== 'undefined' && 'hid' in navigator;
+
+  /**
+   * Enumerated on load, before the ceremony is offered. §10 is explicit that the device-absent
+   * state must be known up front rather than discovered by a user who has already filled in a form.
+   */
+  useEffect(() => {
+    if (!supported) {
+      setPresence('unsupported');
+      return;
+    }
+
+    const hid = (navigator as Navigator & { hid: { getDevices: () => Promise<{ vendorId: number }[]>; addEventListener: Function; removeEventListener: Function } }).hid;
+
+    const look = async () => {
+      try {
+        const devices = await hid.getDevices();
+        setPresence(devices.some((d) => d.vendorId === LEDGER_VENDOR_ID) ? 'paired' : 'unknown');
+      } catch {
+        setPresence('unknown');
+      }
+    };
+
+    void look();
+    // Plugging in or unplugging a paired device changes the answer while the page is open.
+    hid.addEventListener('connect', look);
+    hid.addEventListener('disconnect', look);
+    return () => {
+      hid.removeEventListener('connect', look);
+      hid.removeEventListener('disconnect', look);
+    };
+  }, [supported]);
 
   /** The device actions report progress on an observable; this waits for the terminal state. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rxjs subscribe has overloads the
@@ -109,5 +155,5 @@ export function useLedger(): Ledger {
     }
   }, []);
 
-  return { supported, connecting, address, error, connect, signTypedData };
+  return { supported, presence, connecting, address, error, connect, signTypedData };
 }

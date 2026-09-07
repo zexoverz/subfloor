@@ -340,6 +340,11 @@ export const copy = {
     takeYourTime: 'Take your time — nothing happens until you press confirm.',
     declined: 'You declined on the device. Nothing changed.',
     absent: 'This needs your device. Everything else on this page works without it.',
+    /** Honest about the one thing WebHID cannot tell us without a gesture. */
+    unknownDevice: 'Your device will be asked for when you continue.',
+    paired: 'device found',
+    signing: 'waiting for your device',
+    signed: 'Signed on your device.',
     scheduled: 'Signed. It takes effect at',
   },
 

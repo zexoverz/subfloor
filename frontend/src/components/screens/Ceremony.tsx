@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Usb } from 'lucide-react';
+import { useLedger } from '../../lib/ledger.ts';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead, Note, Todo } from '../Card.tsx';
 import { Act, Ghost } from '../Button.tsx';
@@ -7,7 +8,7 @@ import { DeviceScreen } from '../DeviceScreen.tsx';
 import { floorPriceFromBps, formatPrice } from '../../lib/rate.ts';
 import type { VaultState } from '../../types.ts';
 
-type Stage = 'pre' | 'waiting' | 'declined' | 'absent' | 'scheduled';
+type Stage = 'pre' | 'waiting' | 'declined' | 'absent' | 'scheduled' | 'signed';
 
 /**
  * The two hardware moments: signing the mandate, and loosening a floor. Designed around the device
@@ -30,7 +31,10 @@ export function Ceremony({
   onDone: () => void;
   onBack: () => void;
 }) {
-  const [stage, setStage] = useState<Stage>('pre');
+  const ledger = useLedger();
+  // §10: the device-absent state is known before the ceremony is offered, never discovered by
+  // someone who has already completed a form. Enumeration happens on load, in useLedger.
+  const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
   const { pair, reference, floor, mandate } = state;
 
   const bindsAt = floorPriceFromBps(reference.price, draftBps);
@@ -78,7 +82,28 @@ export function Ceremony({
                     the pair, the new floor and the price it binds at, on the device screen itself.
                   </p>
                   <Note className="mb-3">{copy.ceremony.onlyIfMatches}</Note>
-                  <Act primary onClick={() => setStage('waiting')}>
+                  <p className="mb-3 text-[11.5px] text-faint">
+                    {ledger.presence === 'paired' ? (
+                      <span className="text-settle">
+                        <span className="mr-1 inline-block size-[6px] rounded-full bg-current align-[1px]" />
+                        {copy.ceremony.paired}
+                      </span>
+                    ) : (
+                      copy.ceremony.unknownDevice
+                    )}
+                  </p>
+                  <Act
+                    primary
+                    disabled={ledger.presence === 'unsupported'}
+                    onClick={async () => {
+                      setStage('waiting');
+                      // The real thing: the device renders the payload and answers. A decline and
+                      // an unreachable device are both ordinary outcomes, not errors.
+                      if (!ledger.address) await ledger.connect();
+                      const signature = await ledger.signTypedData({ rows });
+                      setStage(signature ? 'signed' : 'declined');
+                    }}
+                  >
                     {copy.ceremony.continue}
                   </Act>
                 </>
@@ -102,12 +127,21 @@ export function Ceremony({
                     </div>
                   </div>
                   <p className="serif mt-3 text-[14.5px] text-muted">{copy.ceremony.takeYourTime}</p>
-                  {/* Skeleton stand-ins for the device's answers. */}
-                  <div className="mt-3 flex gap-2">
-                    <Ghost onClick={() => (state.pendingLowering ? setStage('scheduled') : onDone())}>approved</Ghost>
-                    <Ghost onClick={() => setStage('declined')}>rejected</Ghost>
-                    <Ghost onClick={() => setStage('absent')}>no device</Ghost>
-                  </div>
+                  {/*
+                    * No spinner, no countdown, and nothing here cancels the ceremony. The device is
+                    * allowed to be slow, and someone comparing eight lines of text on a small
+                    * screen is not to be hurried. In development only, stand-ins for the two
+                    * answers a device gives, so the states can be built without hardware.
+                    */}
+                  {import.meta.env?.DEV && (
+                    <div className="mt-3 flex gap-2">
+                      <Ghost onClick={() => (state.pendingLowering ? setStage('scheduled') : setStage('signed'))}>
+                        approved
+                      </Ghost>
+                      <Ghost onClick={() => setStage('declined')}>rejected</Ghost>
+                      <Ghost onClick={() => setStage('absent')}>no device</Ghost>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -122,6 +156,15 @@ export function Ceremony({
               )}
 
               {stage === 'absent' && <p className="serif mt-0 text-[14.5px] text-muted">{copy.ceremony.absent}</p>}
+
+              {stage === 'signed' && (
+                <>
+                  <p className="serif mt-0 text-[14.5px] text-muted">{copy.ceremony.signed}</p>
+                  <div className="mt-3">
+                    <Ghost onClick={onDone}>continue</Ghost>
+                  </div>
+                </>
+              )}
 
               {stage === 'scheduled' && (
                 <p className="serif mt-0 text-[14.5px] text-muted">
