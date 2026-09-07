@@ -1,0 +1,74 @@
+import { ExternalLink } from 'lucide-react';
+import { copy } from '../copy.ts';
+import { Act } from './Button.tsx';
+import { Card, CardHead } from './Card.tsx';
+import { RollingNumber } from './RollingNumber.tsx';
+import { addresses } from '../lib/contracts.ts';
+import { addressUrl } from '../lib/chain.ts';
+import type { Screen, VaultState } from '../types.ts';
+
+/**
+ * What sits where the owner's inventory would be, when the reader is not the owner.
+ *
+ * The rule this enforces is structural rather than remembered: a stranger cannot be shown holdings,
+ * a floor keyed to a recipient, or anything mapping an address to a position size, because on that
+ * branch those components are not rendered at all.
+ */
+export function PublicAside({ state, onNavigate }: { state: VaultState; onNavigate: (s: Screen) => void }) {
+  return (
+    <div className="flex flex-col gap-4.5">
+      <Card>
+        <CardHead left={copy.publicPage.programsExecuted} right="counted by CI" />
+        <div className="p-5">
+          <div className="text-[34px] leading-none font-semibold tracking-tight">
+            <RollingNumber value={state.fuzz.programs} />
+          </div>
+          <p className="mt-2 text-[11.5px] text-faint">
+            <b className="font-semibold text-settle">{state.fuzz.settledBelowFloor}</b>{' '}
+            {copy.publicPage.settledBelowFloor}
+          </p>
+        </div>
+      </Card>
+
+      {addresses.registry && (
+        <Card>
+          <CardHead left="Contracts" right="Base Sepolia" />
+          <ul className="m-0 list-none p-4 text-[11.5px]">
+            {(
+              [
+                ['FloorRegistry', addresses.registry],
+                ['FloorRouter', addresses.router],
+                ['AquaGuardVault', addresses.vault],
+                ['Aqua', addresses.aqua],
+              ] as const
+            ).map(([name, address]) =>
+              address ? (
+                <li key={name} className="flex items-baseline justify-between gap-3 py-1.5">
+                  <span className="text-faint">{name}</span>
+                  <a
+                    href={addressUrl(address)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 hover:text-brass"
+                  >
+                    {address.slice(0, 6)}…{address.slice(-4)}
+                    <ExternalLink size={10} strokeWidth={1.7} className="text-faint" />
+                  </a>
+                </li>
+              ) : null,
+            )}
+          </ul>
+        </Card>
+      )}
+
+      <Card>
+        <CardHead left={copy.landing.publicOwnTitle} />
+        <div className="p-4">
+          <Act primary onClick={() => onNavigate('onboarding')}>
+            {copy.wallet.connect}
+          </Act>
+        </div>
+      </Card>
+    </div>
+  );
+}

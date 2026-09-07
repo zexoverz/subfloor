@@ -5,16 +5,28 @@ import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
+import { PublicAside } from '../PublicAside.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
-import type { DataSource, VaultState } from '../../types.ts';
+import type { DataSource, Screen, VaultState } from '../../types.ts';
 
 /**
  * The desk: the owner's home while the agent trades. One rule — every number here is read from the
  * index, the same queries the public page runs, so the owner never sees a figure a stranger cannot
  * check. Refusals are a headline tile, never buried: they are the product's proudest number.
  */
-export function LiveView({ state, source }: { state: VaultState; source: DataSource }) {
+export function LiveView({
+  state,
+  source,
+  owner,
+  onNavigate,
+}: {
+  state: VaultState;
+  source: DataSource;
+  /** True when the connected wallet owns the vault. False is what a stranger sees. */
+  owner: boolean;
+  onNavigate: (s: Screen) => void;
+}) {
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
   // line under the tape can never again claim different things about the same rows.
   const live = source === 'chain';
@@ -101,6 +113,7 @@ export function LiveView({ state, source }: { state: VaultState; source: DataSou
           <Tape entries={tape} pair={pair} />
         </Card>
 
+        {owner ? (
         <div className="flex flex-col gap-4.5">
           <Card>
             <CardHead
@@ -197,6 +210,9 @@ export function LiveView({ state, source }: { state: VaultState; source: DataSou
             </CardBody>
           </Card>
         </div>
+        ) : (
+          <PublicAside state={state} onNavigate={onNavigate} />
+        )}
       </div>
 
       <Note className="serif mt-4.5 text-[14.5px]">

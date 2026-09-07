@@ -5,7 +5,6 @@ import { Onboarding } from './components/screens/Onboarding.tsx';
 import { FloorScreen } from './components/screens/FloorScreen.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
-import { PublicPage } from './components/screens/PublicPage.tsx';
 import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
@@ -65,7 +64,8 @@ export default function App() {
       state={state}
       source={source}
       wallet={wallet}
-      wide={screen === 'public'}
+      // The board gets the width whoever is reading it.
+      wide={screen === 'live'}
     >
       {screen === 'floor' && (
         <FloorScreen
@@ -74,7 +74,16 @@ export default function App() {
           onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
         />
       )}
-      {screen === 'live' && <LiveView state={state} source={source} />}
+      {screen === 'live' && (
+        <LiveView
+          state={state}
+          source={source}
+          // One page in two states: the owner sees inventory, the standing floor and the agent;
+          // everyone else sees the proof counter and the contracts in that column.
+          owner={ceremony.isOwner === true}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'ceremony' && (
         <Ceremony
           state={state}
@@ -84,7 +93,6 @@ export default function App() {
           onBack={() => setScreen(purpose === 'mandate' ? 'onboarding' : 'floor')}
         />
       )}
-      {screen === 'public' && <PublicPage state={state} source={source} onNavigate={setScreen} />}
     </AppShell>
   );
 }
