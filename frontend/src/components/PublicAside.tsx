@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Loader2 } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { Card, CardHead } from './Card.tsx';
@@ -21,6 +21,7 @@ export function PublicAside({
   onCreateVault,
   creatingVault,
   canCreateVault,
+  checked,
   vaultError,
 }: {
   state: VaultState;
@@ -31,6 +32,8 @@ export function PublicAside({
   creatingVault: boolean;
   /** Only true once the factory has confirmed this wallet owns none — never guessed from silence. */
   canCreateVault: boolean;
+  /** Whether the factory has answered at all. Until it has, the card claims nothing either way. */
+  checked: boolean;
   /** Why we could not tell. Shown, so a card that cannot answer does not look like one still trying. */
   vaultError: string | null;
 }) {
@@ -83,17 +86,40 @@ export function PublicAside({
       <Card>
         <CardHead left={copy.landing.publicOwnTitle} />
         <div className="p-4">
-          {connected ? (
+          {!connected ? (
             /*
-             * Already connected, and this vault is someone else's. Offering the same connect
-             * button again asks them to fix something that is not broken — but since #132 there
-             * is somewhere for them to go, so the dead end became an action.
+             * Connects, exactly like the control in the header. It used to navigate to first run,
+             * which then bounced anyone whose vault was already set up.
+             */
+            <Act primary onClick={onConnect}>
+              {copy.wallet.connect}
+            </Act>
+          ) : vaultError ? (
+            /* Ours to explain, not theirs to interpret: we could not look, so we say nothing about
+               what we would have found. */
+            <p className="m-0 text-[12.5px] leading-relaxed text-refuse">
+              {copy.wallet.vaultReadFailed} <span className="text-faint">{vaultError}</span>
+            </p>
+          ) : !checked ? (
+            /*
+             * Still asking. Saying "this wallet does not own the vault" here would be a claim about
+             * an answer nobody has yet — and it sat directly above a line admitting we were still
+             * checking, which is the contradiction that made it obvious.
+             */
+            <p className="m-0 flex items-center gap-2 text-[12.5px] text-faint">
+              <Loader2 size={13} strokeWidth={1.8} className="animate-spin" />
+              {copy.wallet.checkingVault}
+            </p>
+          ) : (
+            /*
+             * Connects, exactly like the control in the header. It used to navigate to first run,
+             * which then bounced anyone whose vault was already set up.
              */
             <>
               <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">
                 {copy.wallet.notOwner} {copy.wallet.notOwnerHint}
               </p>
-              {canCreateVault ? (
+              {canCreateVault && (
                 <>
                   <p className="serif mt-3 mb-3 text-[13.5px] leading-relaxed text-muted">
                     {copy.wallet.createVaultHint}
@@ -102,22 +128,8 @@ export function PublicAside({
                     {creatingVault ? copy.wallet.creatingVault : copy.wallet.createVault}
                   </Act>
                 </>
-              ) : vaultError ? (
-                <p className="mt-3 mb-0 text-[11.5px] leading-relaxed text-settle">
-                  {copy.wallet.vaultReadFailed} <span className="text-faint">{vaultError}</span>
-                </p>
-              ) : (
-                <p className="mt-3 mb-0 text-[11.5px] text-faint">{copy.wallet.checkingVault}</p>
               )}
             </>
-          ) : (
-            /*
-             * Connects, exactly like the control in the header. It used to navigate to first run,
-             * which then bounced anyone whose vault was already set up.
-             */
-            <Act primary onClick={onConnect}>
-              {copy.wallet.connect}
-            </Act>
           )}
         </div>
       </Card>
