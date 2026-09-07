@@ -8,6 +8,11 @@ import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
 import { useFloor } from '../lib/floor.ts';
+import { useKeys } from '../lib/keys.ts';
+import { DeviceSign } from './DeviceSign.tsx';
+import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
+import { buildMandate } from '../lib/mandate.ts';
+import { saveMandate } from '../lib/mandateStore.ts';
 import { Toasts } from './Toasts.tsx';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -30,16 +35,25 @@ export function SetupDialog({
   state,
   wallet,
   vault,
+  focusKeys,
   ceremony,
   open,
   onClose,
-  onSign,
   onNavigate,
 }: {
   state: VaultState;
   wallet: Wallet;
   /** The vault being set up — theirs if they deployed one, ours otherwise. */
   vault: `0x${string}` | null;
+  /*
+   * Open the keys section regardless of whether it is finished.
+   *
+   * The disclosure collapses once both addresses are set, which is right for someone completing
+   * setup and wrong for someone who came here to change one: the fields were hidden while the
+   * buttons that act on them stayed visible, so the sheet offered an action over an input nobody
+   * could reach.
+   */
+  focusKeys?: boolean;
   /*
    * Passed in rather than read again here. A second useCeremony was a second copy of the same
    * chain state, and refreshing one left the other showing what was true before the transaction —
@@ -48,7 +62,6 @@ export function SetupDialog({
   ceremony: CeremonyState;
   open: boolean;
   onClose: () => void;
-  onSign: () => void;
   onNavigate: (s: Screen) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -57,6 +70,13 @@ export function SetupDialog({
   const holdings = wallet.holdings ?? state.inventory;
   const fund = useFund(vault, wallet.address);
   const floorWrite = useFloor(vault);
+  const keys = useKeys(vault, ceremony.refresh);
+  /*
+   * Signing happens here rather than on its own route. §10 puts setup on one screen ending in one
+   * signature, and navigating away took the sheet — and the thing being authorised — off screen at
+   * the exact moment the owner is meant to be comparing it against the device.
+   */
+  const [signing, setSigning] = useState(false);
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});
@@ -71,10 +91,37 @@ export function SetupDialog({
   const [guardian, setGuardian] = useState('');
   const [delegate, setDelegate] = useState('');
 
-  const funded = holdings.some((h) => Number(amounts[h.symbol]) > 0);
+  /*
+   * Seed the fields from the chain once it answers.
+   *
+   * These were form state and nothing else, so a reload showed two empty boxes over a vault that
+   * already had both addresses set — and the section went on calling itself required. Only fills a
+   * field that is still empty, so it never overwrites something being typed.
+   */
+  useEffect(() => {
+    if (ceremony.guardian) setGuardian((current) => current || ceremony.guardian!);
+    if (ceremony.delegate) setDelegate((current) => current || ceremony.delegate!);
+  }, [ceremony.guardian, ceremony.delegate]);
+
+  /*
+   * Funded means the vault holds something, read from the vault's own balance by the ceremony —
+   * not that a number has been typed into a field. Typing is a proposal; the mandate is about
+   * inventory that exists. The typed version was wrong in both directions: it let the sheet look
+   * ready before anything had moved, and it went back to "not funded" the moment the amounts were
+   * cleared after a successful send.
+   */
+  const funded = ceremony.steps.some((step) => step.id === 'fund' && step.done);
+  /** What the send button needs, which is a different question: is there an amount to send. */
+  const hasAmount = holdings.some((h) => Number(amounts[h.symbol]) > 0);
   // WETH is the one that needs a wrap, and only when the wallet is short of what was typed.
   const wrapping = Number(amounts.WETH ?? 0) > (holdings.find((h) => h.symbol === 'WETH')?.amount ?? 0);
-  const keysReady = isAddress(guardian) && isAddress(delegate);
+  /*
+   * Registered on chain counts, whatever the boxes say. Reading only the inputs meant a vault with
+   * both keys set still reported the section as unfinished.
+   */
+  const guardianDone = Boolean(ceremony.steps.find((x) => x.id === 'guardian')?.done);
+  const delegateDone = Boolean(ceremony.delegate);
+  const keysReady = (guardianDone || isAddress(guardian)) && (delegateDone || isAddress(delegate));
   const blocked = !ceremony.deployed
     ? copy.wallet.notDeployed
     : ceremony.isOwner === false
@@ -185,6 +232,46 @@ export function SetupDialog({
                 {ledger.error ?? (ledger.supported ? copy.wallet.ledgerWhy : copy.wallet.ledgerUnsupported)}
               </p>
             </>
+          ) : signing ? (
+            <DeviceSign
+              rows={[
+                ['Action', 'Authorise agent'],
+                ['Delegate', delegate || mandate.delegateLabel],
+                ['Tokens', state.inventory.map((h) => h.symbol).join(' / ')],
+                ['Expires', `${mandate.expiresInDays} days`],
+              ]}
+              purpose="mandate"
+              ledger={ledger}
+              typedData={buildMandate({
+                vault,
+                delegate,
+                inventory: state.inventory,
+                nonce: ceremony.nonce ?? 0n,
+                expiresInDays: mandate.expiresInDays,
+              })}
+              payloadLine="Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)"
+              standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
+              onSigned={(signature) => {
+                if (!vault) return;
+                saveMandate({
+                  vault,
+                  delegate: (ceremony.delegate ?? delegate) as `0x${string}`,
+                  nonce: String(ceremony.nonce ?? 0n),
+                  signature,
+                  at: Date.now(),
+                });
+                // Tick the step now rather than when the owner presses continue: the thing the
+                // step checks has already happened, and a list that lags the fact it reads is the
+                // same complaint as a list that never updates.
+                ceremony.refresh();
+              }}
+              onDone={() => {
+                setSigning(false);
+                ceremony.refresh();
+                onClose();
+              }}
+              onBack={() => setSigning(false)}
+            />
           ) : blocked ? (
             <div className="text-center">
               <p className="serif m-0 text-[14px] leading-relaxed text-muted">{blocked}</p>
@@ -226,10 +313,10 @@ export function SetupDialog({
                       ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
                     )
                   }
-                  disabled={!funded || fund.sending || !vault}
+                  disabled={!hasAmount || fund.sending || !vault}
                 >
                   {/* Say why it cannot be pressed, rather than looking broken. */}
-                  {fund.step ?? (funded ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
+                  {fund.step ?? (hasAmount ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
                 </Act>
               </div>
 
@@ -279,7 +366,7 @@ export function SetupDialog({
                 * at again, and leaving two fields and two explanations open afterwards is most of
                 * this sheet's height spent on a decision already made.
                 */}
-              <details open={!keysReady} className="group mt-2 mb-6 border-t border-rule pt-5">
+              <details open={!keysReady || focusKeys} className="group mt-2 mb-6 border-t border-rule pt-5">
                 {/*
                   * Not an aside. The signature cannot be produced without both addresses, so an
                   * incomplete section says "required" and a filled one collapses to a tick — the
@@ -310,7 +397,20 @@ export function SetupDialog({
                     hint={copy.wallet.guardianHint}
                     value={guardian}
                     onChange={setGuardian}
-                    action={{ label: copy.wallet.useDevice, onClick: () => {}, disabled: ledger.presence !== 'paired' }}
+                    action={{
+                      label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
+                      /*
+                       * Was a no-op: the button existed, reported nothing, and left the owner to
+                       * type an address they were being told to read off the device.
+                       */
+                      onClick: () => {
+                        void (async () => {
+                          const found = ledger.address ?? (await ledger.connect());
+                          if (found) setGuardian(found);
+                        })();
+                      },
+                      disabled: ledger.connecting || !ledger.supported,
+                    }}
                   />
                   <AddressField
                     icon="wallet"
@@ -322,11 +422,45 @@ export function SetupDialog({
                 </div>
               </details>
 
+              {/*
+                * The addresses were collected and never written — the same gap the floor had. Two
+                * separate actions rather than one: the guardian's registry entry cannot be undone
+                * and the delegate can be changed at will, and one button would hide that
+                * difference behind a single press.
+                */}
+              <div className="mb-6 flex flex-col gap-3">
+                <div>
+                  <Act
+                    wide
+                    disabled={!isAddress(guardian) || keys.sending || guardianDone}
+                    onClick={() => void keys.setGuardian(guardian as `0x${string}`)}
+                  >
+                    {keys.step ?? copy.wallet.registerDevice}
+                  </Act>
+                  <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                    {guardianDone ? copy.wallet.deviceRegistered : copy.wallet.registerDeviceHint}
+                  </p>
+                </div>
+                <div>
+                  <Act
+                    wide
+                    disabled={!isAddress(delegate) || keys.sending}
+                    onClick={() => void keys.setDelegate(delegate as `0x${string}`)}
+                  >
+                    {copy.wallet.nameAgent}
+                  </Act>
+                  <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                    {delegateDone ? copy.wallet.agentNamed : copy.wallet.nameAgentHint}
+                  </p>
+                </div>
+              </div>
+
+
               <p className="serif mb-4 border-t border-rule pt-5 text-[14px] text-muted">
                 {copy.onboarding.runsFor.replace('{days}', String(mandate.expiresInDays))}
               </p>
 
-              <Act wide primary disabled={!ready} onClick={onSign}>
+              <Act wide primary disabled={!ready} onClick={() => setSigning(true)}>
                 {copy.onboarding.action}
               </Act>
               <p className="mt-2 text-center text-[11.5px] text-faint">

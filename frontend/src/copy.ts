@@ -138,6 +138,19 @@ export const copy = {
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',
     setFloor: 'Register this floor',
+    registerDevice: 'Register the device',
+    /** Two writes, one of which cannot be taken back. Said before the press, not after. */
+    registerDeviceHint: 'writes your device to the vault and to the registry. The registry entry can only be set once — after this, changing it needs a signature from the device being replaced.',
+    /*
+     * Not "you cannot change this" — you can, but not from here. The registry entry is write-once,
+     * so moving it needs rotateGuardian signed by the device being replaced, which this screen
+     * does not do yet.
+     */
+    deviceRegistered: 'Registered on the vault and the registry. The registry entry is set once — moving it now needs a signature from this device, which is not on this screen.',
+    nameAgent: 'Name the agent',
+    changeAgent: 'Change the agent',
+    nameAgentHint: 'the address allowed to compose and ship strategies. It can never move a token out, and you can change it whenever you like.',
+    agentNamed: 'Named. Change it whenever you like.',
     /** Two transactions: a floor on one side only is the absence of a floor, not half of one. */
     setFloorHint: 'registered for the vault, both directions — two signatures. The registry can only be moved to a stronger floor from here; weakening it needs your device.',
     floorAlreadySet: 'Registered. Raising it again is one press; weakening it is not.',
@@ -162,6 +175,7 @@ export const copy = {
     guardianLabel: 'your device address',
     guardianHint: 'the key that may weaken the floor — hardware, never this browser.',
     useDevice: 'read it from my device',
+    readingDevice: 'asking the device…',
     delegateLabel: "the agent's address",
     delegateHint: 'composes and ships strategies. It can never move a token out.',
     agentAddress: 'the agent',
@@ -318,7 +332,8 @@ export const copy = {
     action: 'SIGN ON YOUR DEVICE',
     /** Load-bearing: it sets up clear-signing as confirmation, before the device ever lights up. */
     underAction: 'the device will show you exactly these numbers',
-    noInventory: 'fund the wallet first',
+    /** The vault, not the wallet: they are different addresses and only one of them settles. */
+    noInventory: 'the vault holds nothing yet — send inventory in above',
     runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
     /** Required, and named so. It used to read "the keys behind this", which sounds like an aside. */
     advanced: 'two keys, set once',
@@ -389,6 +404,8 @@ export const copy = {
     onlyIfMatches: 'confirm on the device only if it matches',
     continue: 'CONTINUE ON DEVICE',
     waiting: 'waiting for your device',
+    blindSigning:
+      'If the device shows nothing: this vault is in no hardware vendor\u2019s contract registry, so the app needs Blind signing turned on \u2014 Ethereum app \u203a Settings \u203a Blind signing.',
     takeYourTime: 'Take your time — nothing happens until you press confirm.',
     declined: 'You declined on the device. Nothing changed.',
     absent: 'This needs your device. Everything else on this page works without it.',
