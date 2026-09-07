@@ -94,7 +94,15 @@ export const copy = {
   panic: {
     label: 'STOP THE AGENT',
     hint: 'press and hold',
-    done: 'Trading stopped. The agent’s credential is revoked and cannot be restored — issuing a new one takes your device. Your funds are yours to withdraw.',
+    done: 'Trading stopped.',
+    /** §10, near verbatim: the two effects, in the order they happen, and what cannot be undone. */
+    doneDocked: 'Every strategy is docked. The agent’s credential is revoked and cannot be restored — issuing a new one takes your device.',
+    doneFunds: 'Your funds are yours to withdraw.',
+    withdraw: 'WITHDRAW',
+    withdrawAll: 'everything, to your own address',
+    stopped: 'Stopped',
+    docking: 'docking every strategy…',
+    revoking: 'revoking the agent’s credential…',
   },
 
   wallet: {

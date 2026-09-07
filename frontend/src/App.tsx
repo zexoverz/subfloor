@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useRoute } from './lib/route.ts';
+import { usePanic } from './lib/panic.ts';
+import { StoppedState } from './components/StoppedState.tsx';
+import { addresses } from './lib/contracts.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
 import { SetupDialog } from './components/SetupDialog.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
-import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
@@ -47,12 +49,18 @@ export default function App() {
 
 
   const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
+  const panic = usePanic(wallet.address);
 
   return (
     <AppShell
       screen={screen}
       onNavigate={setScreen}
-      onPanic={() => alert(copy.panic.done)}
+      /*
+       * §10 fixes the order: dock through canonical Aqua first, because it works even if the
+       * modified router is bricked, then revoke the credential. The app is the strategy holder, so
+       * it is the one being docked.
+       */
+      onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
       state={state}
       source={source}
       wallet={wallet}
@@ -60,6 +68,10 @@ export default function App() {
       // The board gets the width whoever is reading it.
       wide={screen === 'live'}
     >
+      {panic.stage === 'stopped' ? (
+        <StoppedState state={state} onWithdraw={() => void panic.withdraw()} />
+      ) : (
+        <>
       {screen === 'live' && (
         <LiveView
           state={state}
@@ -97,6 +109,8 @@ export default function App() {
           onDone={() => setScreen('live')}
           onBack={() => setScreen('live')}
         />
+      )}
+        </>
       )}
     </AppShell>
   );

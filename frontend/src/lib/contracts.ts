@@ -38,6 +38,7 @@ export const vaultAbi = [
   { type: 'function', name: 'setDelegate', stateMutability: 'nonpayable', inputs: [{ name: 'newDelegate', type: 'address' }], outputs: [] },
   { type: 'function', name: 'setGuardian', stateMutability: 'nonpayable', inputs: [{ name: 'newGuardian', type: 'address' }], outputs: [] },
   { type: 'function', name: 'execute', stateMutability: 'nonpayable', inputs: [{ name: 'target', type: 'address' }, { name: 'value', type: 'uint256' }, { name: 'data', type: 'bytes' }], outputs: [{ type: 'bytes' }] },
+  { type: 'function', name: 'withdraw', stateMutability: 'nonpayable', inputs: [{ name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }, { name: 'to', type: 'address' }], outputs: [] },
   { type: 'function', name: 'dock', stateMutability: 'nonpayable', inputs: [{ name: 'app', type: 'address' }, { name: 'strategyHash', type: 'bytes32' }, { name: 'tokens', type: 'address[]' }], outputs: [] },
 ] as const;
 
