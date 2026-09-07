@@ -75,7 +75,7 @@ export function SetupDialog({
   return (
     <dialog
       ref={ref}
-      className="sheet max-h-[88vh] w-[min(880px,calc(100vw-32px))] overflow-y-auto"
+      className="sheet max-h-[88vh] w-[min(960px,calc(100vw-48px))] overflow-y-auto"
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
@@ -95,11 +95,18 @@ export function SetupDialog({
         * hidden below the width where it would push the form off the screen. It carries nothing —
         * every number in here is in the column on the right.
         */}
-      <div className="grid md:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
-        <div className="hidden border-r border-rule md:block">
-          <div className="sticky top-0 h-[420px]">
+      {/*
+        * The orb sits in its own darker panel with a fixed width, so it cannot take space from the
+        * form. The column widths are not a ratio for the same reason: at a ratio the form squeezed
+        * and every label wrapped, which is a worse outcome than no orb at all.
+        */}
+      <div className="grid md:grid-cols-[320px_minmax(380px,1fr)]">
+        <div className="hidden border-r border-rule bg-sunken md:block">
+          <div className="sticky top-0 grid h-[460px] place-items-center p-6">
             {/* Nothing in its place while it loads: an empty panel is quieter than a spinner. */}
-            <Suspense fallback={null}>{open && <Orb />}</Suspense>
+            <div className="aspect-square w-full">
+              <Suspense fallback={null}>{open && <Orb />}</Suspense>
+            </div>
           </div>
         </div>
 
