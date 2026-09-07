@@ -391,6 +391,8 @@ export const copy = {
     onlyIfMatches: 'confirm on the device only if it matches',
     continue: 'CONTINUE ON DEVICE',
     waiting: 'waiting for your device',
+    blindSigning:
+      'If the device shows nothing: this vault is in no hardware vendor\u2019s contract registry, so the app needs Blind signing turned on \u2014 Ethereum app \u203a Settings \u203a Blind signing.',
     takeYourTime: 'Take your time — nothing happens until you press confirm.',
     declined: 'You declined on the device. Nothing changed.',
     absent: 'This needs your device. Everything else on this page works without it.',

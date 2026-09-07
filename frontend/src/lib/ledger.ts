@@ -48,7 +48,7 @@ export type Ledger = {
   connect: () => Promise<Address | null>;
   /** Hand the device back, so other apps on the machine can open it. */
   release: () => Promise<void>;
-  signTypedData: (typedData: unknown) => Promise<string | null>;
+  signTypedData: (typedData: unknown, onStep?: (step: string) => void) => Promise<string | null>;
 };
 
 type Session = { dmk: any; sessionId: string; signer: any };
@@ -97,7 +97,10 @@ export function useLedger(): Ledger {
   /** The device actions report progress on an observable; this waits for the terminal state. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rxjs subscribe has overloads the
   // narrow shape below cannot satisfy; the state object is validated at runtime instead.
-  const settle = <T,>(action: { observable: { subscribe: (o: any) => unknown } }): Promise<T> =>
+  const settle = <T,>(
+    action: { observable: { subscribe: (o: any) => unknown } },
+    onStep?: (step: string) => void,
+  ): Promise<T> =>
     new Promise((resolve, reject) => {
       /*
        * A device is allowed to be slow — someone reading four lines on a small screen is not to be
@@ -117,7 +120,10 @@ export function useLedger(): Ledger {
       resolve = done(resolve);
       reject = done(reject);
       action.observable.subscribe({
-        next: (state: { status: string; output?: T; error?: unknown }) => {
+        next: (state: { status: string; output?: T; error?: unknown; intermediateValue?: { step?: string } }) => {
+          // The kit names the step it is on. Reporting it is the difference between "waiting" and
+          // "waiting on the metadata service", which are not the same problem.
+          if (state.intermediateValue?.step) onStep?.(state.intermediateValue.step);
           if (state.status === 'completed' && state.output !== undefined) resolve(state.output);
           if (state.status === 'error') reject(state.error);
           if (state.status === 'stopped') reject(new Error('cancelled on the device'));
@@ -236,7 +242,7 @@ export function useLedger(): Ledger {
   // Leaving the page is the usual exit, so the handle has to be freed there and not only on a press.
   useEffect(() => () => void release(), [release]);
 
-  const signTypedData = useCallback(async (typedData: unknown) => {
+  const signTypedData = useCallback(async (typedData: unknown, onStep?: (step: string) => void) => {
     if (!session.current) {
       // Not a decline. Nothing was asked, and reporting it as one taught the owner that their
       // device had refused something it had never been shown.
@@ -254,7 +260,7 @@ export function useLedger(): Ledger {
        * left that throw to escape as an unhandled rejection while the screen went on waiting.
        */
       const action = session.current.signer.signTypedData(DERIVATION_PATH, typedData);
-      const signed = await settle<{ r: string; s: string; v: number }>(action);
+      const signed = await settle<{ r: string; s: string; v: number }>(action, onStep);
       return `${signed.r}${signed.s.slice(2)}${signed.v.toString(16).padStart(2, '0')}`;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'the device declined');

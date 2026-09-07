@@ -64,6 +64,8 @@ export function DeviceSign({
   // Starts at 'pre' unless the browser cannot speak to a device at all, which is worth saying to
   // someone who has already completed a form.
   const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
+  /** The kit's own step name, so a wait says what it is waiting on. */
+  const [step, setStep] = useState<string | null>(null);
 
   return (
     <Card>
@@ -102,7 +104,9 @@ export function DeviceSign({
                     // The real thing: the device renders the payload and answers. A decline and
                     // an unreachable device are both ordinary outcomes, not errors.
                     if (!ledger.address) await ledger.connect();
-                    const signature = await ledger.signTypedData({ rows });
+                    // `rows` is what the screen renders; this is what the device verifies. They
+                    // must describe the same thing, and only one of them can be signed.
+                    const signature = await ledger.signTypedData(typedData, setStep);
                     setStage(signature ? 'signed' : 'declined');
                   }}
                 >
@@ -122,7 +126,8 @@ export function DeviceSign({
                     {payloadLine}
                   </div>
                   <div>
-                    <b className="font-medium text-ink">›</b> awaiting approval on device{' '}
+                    <b className="font-medium text-ink">›</b>{' '}
+                    {step ? step.replace('signer.eth.steps.', '') : 'awaiting approval on device'}{' '}
                     <span className="animate-pulse">▍</span>
                   </div>
                 </div>
