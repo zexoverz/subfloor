@@ -4,6 +4,7 @@ import { Check, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
+import { Mark } from './Mark.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { useCeremony } from '../lib/ceremony.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -102,11 +103,29 @@ export function SetupDialog({
         */}
       <div className="grid md:grid-cols-[320px_minmax(380px,1fr)]">
         <div className="hidden border-r border-rule bg-sunken md:block">
-          <div className="sticky top-0 grid h-[460px] place-items-center p-6">
-            {/* Nothing in its place while it loads: an empty panel is quieter than a spinner. */}
-            <div className="aspect-square w-full">
+          <div className="sticky top-0 flex flex-col gap-6 p-6">
+            {/* The mark sits in the middle of it: this is the vault the sheet is about. */}
+            <div className="relative aspect-square w-full">
               <Suspense fallback={null}>{open && <Orb />}</Suspense>
+              <div className="pointer-events-none absolute inset-0 grid place-items-center text-ink/75">
+                <Mark size={44} />
+              </div>
             </div>
+
+            {/*
+              * The sequence belongs beside the form rather than under the button. It answers "what
+              * am I about to do" while the form is being filled in, which is when that question is
+              * asked — under the action it was answering a question already committed to.
+              */}
+            <ol className="m-0 grid list-none gap-1.5 p-0 text-[11px] text-faint">
+              <li className="mb-0.5 tracking-[0.08em] uppercase">{copy.onboarding.doing}</li>
+              {ceremony.steps.map((step) => (
+                <li key={step.id} className={`flex items-center gap-2 ${step.done ? 'text-settle' : ''}`}>
+                  {step.done ? <Check size={11} strokeWidth={2.4} /> : <span className="w-[11px]">·</span>}
+                  {step.title}
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
 
@@ -249,16 +268,6 @@ export function SetupDialog({
                 {!funded ? copy.onboarding.noInventory : copy.onboarding.underAction}
               </p>
 
-              {/* Four transactions and one signature, listed rather than made into four decisions. */}
-              <ol className="mt-4 grid list-none gap-1 border-t border-rule pt-3 p-0 text-[11px] text-faint">
-                <li className="mb-0.5 tracking-[0.08em] uppercase">{copy.onboarding.doing}</li>
-                {ceremony.steps.map((step) => (
-                  <li key={step.id} className={`flex items-center gap-2 ${step.done ? 'text-settle' : ''}`}>
-                    {step.done ? <Check size={11} strokeWidth={2.4} /> : <span className="w-[11px]">·</span>}
-                    {step.title}
-                  </li>
-                ))}
-              </ol>
             </>
           )}
         </div>
