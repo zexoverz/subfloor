@@ -51,7 +51,10 @@ contract DeploySubfloor is Script {
 
         vm.startBroadcast();
 
-        FloorRegistry registry = new FloorRegistry(owner, loweringDelay);
+        // Deployed to the broadcaster first: the reference feeds below are onlyOwner, and the
+        // final owner should be a colder key than the one paying gas. Handed over at the end.
+        address deployer = msg.sender;
+        FloorRegistry registry = new FloorRegistry(deployer, loweringDelay);
 
         // Both directions of the pair, because a floor is keyed on (token given, token received)
         // and the two sides of a fill look them up in opposite orders. Missing one means the maker
@@ -85,6 +88,9 @@ contract DeploySubfloor is Script {
         );
 
         AquaGuardVault vault = new AquaGuardVault(SubfloorParams.BASE_AQUA, owner);
+
+        // The feeds are write-once and now set, so the owner key never needs to touch them.
+        registry.transferOwnership(owner);
 
         vm.stopBroadcast();
 

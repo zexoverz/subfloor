@@ -49,13 +49,20 @@ contract DeploySubfloorTestnet is Script {
         vm.startBroadcast();
 
         Aqua aqua = new Aqua();
-        FloorRegistry registry = new FloorRegistry(owner, 0);
+        // Deployed to the broadcaster first, because the reference feeds below are onlyOwner and
+        // the final owner is usually a colder key that is not the one paying gas. Ownership is
+        // handed over at the end, once the write-once feeds are set.
+        address deployer = msg.sender;
+        FloorRegistry registry = new FloorRegistry(deployer, 0);
 
         registry.setReferenceFeed(SEPOLIA_WETH, SEPOLIA_USDC, SEPOLIA_ETH_USD_FEED, false, TESTNET_STALENESS_BOUND, 8, 18, 6);
         registry.setReferenceFeed(SEPOLIA_USDC, SEPOLIA_WETH, SEPOLIA_ETH_USD_FEED, true, TESTNET_STALENESS_BOUND, 8, 6, 18);
 
         FloorRouter router = new FloorRouter(address(aqua), SEPOLIA_WETH, owner, address(registry));
         AquaGuardVault vault = new AquaGuardVault(address(aqua), owner);
+
+        // The feeds are write-once and now set, so the owner key never needs to touch them.
+        registry.transferOwnership(owner);
 
         vm.stopBroadcast();
 
