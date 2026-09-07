@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
 import { StoppedState } from './components/StoppedState.tsx';
+import { Toasts } from './components/Toasts.tsx';
 import { addresses } from './lib/contracts.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
@@ -45,7 +46,13 @@ export default function App() {
   // Lowering is answered in the sheet on the board now; this only records what was signed.
   const lower = (bps: number) => setDraftBps(bps);
 
-  if (screen === 'landing') return <Landing onNavigate={setScreen} />;
+  if (screen === 'landing')
+    return (
+      <>
+        <Landing onNavigate={setScreen} />
+        <Toasts />
+      </>
+    );
 
 
   const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
@@ -112,6 +119,7 @@ export default function App() {
       )}
         </>
       )}
+      <Toasts />
     </AppShell>
   );
 }

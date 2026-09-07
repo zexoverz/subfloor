@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import toast from 'react-hot-toast';
 import { encodeFunctionData, type Address } from 'viem';
 import { addresses, erc20Abi, vaultAbi } from './contracts.ts';
 import { ACTIVE_TOKENS } from './tokens.ts';
@@ -24,6 +25,17 @@ export type PanicState = {
   withdraw: () => Promise<void>;
 };
 
+/**
+ * Wallet errors arrive as sentences meant for a developer. This keeps the first line, which is the
+ * part that says what happened, and names the one case a reader will otherwise never work out: a
+ * read-only session cannot sign, and impersonation is read-only.
+ */
+function reason(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes('eth_sendTransaction')) return 'this wallet cannot sign, only read';
+  return message.split('\n')[0]?.slice(0, 140) ?? 'the transaction was not sent';
+}
+
 export function usePanic(owner: Address | null): PanicState {
   const [stage, setStage] = useState<PanicState['stage']>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +60,13 @@ export function usePanic(owner: Address | null): PanicState {
           }),
         );
         setStage('stopped');
+        toast.success('Docked. Every strategy is stopped.');
       } catch (e) {
         // A refused signature leaves the agent running, and the screen must not pretend otherwise.
         setStage('idle');
-        setError(e instanceof Error ? e.message : 'the transaction was not sent');
+        const message = reason(e);
+        setError(message);
+        toast.error(`The agent is still running — ${message}`);
       }
     },
     [send],
@@ -79,8 +94,11 @@ export function usePanic(owner: Address | null): PanicState {
           }),
         );
       }
+      toast.success('Withdrawn to your address.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'the withdrawal was not sent');
+      const message = reason(e);
+      setError(message);
+      toast.error(`Nothing was withdrawn — ${message}`);
     }
   }, [owner, send]);
 
