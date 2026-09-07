@@ -251,6 +251,16 @@ export const copy = {
       },
     ],
 
+    closeTitle: 'Let it trade. Keep the price.',
+    closeStandfirst:
+      'An agent can run your inventory around the clock. What it cannot do is settle below the number you signed.',
+
+    footerTagline: 'A venue-enforced price floor for delegated makers.',
+    footerBuilt: 'Built with',
+    footerProject: 'Project',
+    footerStandard: 'The standard',
+    footerRights: 'MIT. Live on Base.',
+
     disclosure:
       'FLOOR implements ERC-8377 (Reference-Relative Slippage Bounds), a draft standard I authored (ethereum/ERCs PR #1935, public since Aug 2026). The specification is public prior art; every line of implementation here was written during the event, and none of the ERC’s reference implementation is reused.',
   },

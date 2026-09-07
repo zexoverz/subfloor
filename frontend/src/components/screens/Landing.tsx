@@ -6,6 +6,7 @@ import { LetterGlitch } from '../LetterGlitch.tsx';
 import { ProductShot } from '../ProductShot.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
+import { LandingFooter } from '../LandingFooter.tsx';
 import { LandingHeader } from '../LandingHeader.tsx';
 import { HeroStrike } from '../HeroStrike.tsx';
 import { ScrambleText } from '../ScrambleText.tsx';
@@ -120,24 +121,9 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <Faq />
       </section>
 
-      <div className="mt-20 flex flex-wrap items-center justify-center gap-4 border-y border-rule py-10">
-        <div className="w-full max-w-[260px]">
-          <Act primary onClick={() => onNavigate('onboarding')}>
-            <span className="flex items-center justify-center gap-2">
-              {copy.landing.launch}
-              <ArrowRight size={14} strokeWidth={1.8} />
-            </span>
-          </Act>
-        </div>
-        <Ghost onClick={() => onNavigate('public')}>{copy.landing.seePublic}</Ghost>
       </div>
 
-      <footer className="mt-12 border-t border-rule pt-5">
-        <p className="serif m-0 max-w-[70ch] text-[13.5px] leading-relaxed text-faint">
-          {copy.landing.disclosure}
-        </p>
-      </footer>
-      </div>
+      <LandingFooter onNavigate={onNavigate} />
       </div>
     </>
   );
