@@ -365,7 +365,9 @@ body {
   padding: 0;
   border-radius: 4px;
   box-shadow: var(--c-shadow);
-  width: min(440px, calc(100vw - 32px));
+  /* No width here. It lived in this rule and silently beat every w-[…] utility on the element,
+     because this file loads after Tailwind's — so the setup sheet asked for 960px, got 440, and
+     clipped its own second column. Each sheet sets its own width now. */
   /* A modal <dialog> centres itself with `margin: auto`, and the CSS reset zeroes every margin —
      so without this it sits in the top-left corner looking like a mistake, which it was. */
   margin: auto;

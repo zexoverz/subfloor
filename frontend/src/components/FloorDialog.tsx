@@ -66,7 +66,11 @@ export function FloorDialog({
   return (
     <dialog
       ref={ref}
-      className={`sheet max-h-[86vh] overflow-x-hidden overflow-y-auto ${onDevice ? 'w-[min(680px,calc(100vw-32px))]' : ''}`}
+      // One width class, chosen: two w-[…] utilities on the same element are resolved by their
+      // order in the generated stylesheet, not by the order they appear here.
+      className={`sheet max-h-[86vh] overflow-x-hidden overflow-y-auto ${
+        onDevice ? 'w-[min(680px,calc(100vw-32px))]' : 'w-[min(440px,calc(100vw-32px))]'
+      }`}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
