@@ -141,7 +141,20 @@ export function useLedger(): Ledger {
         import('@ledgerhq/device-signer-kit-ethereum'),
       ]);
 
-      const dmk = new DeviceManagementKitBuilder().addTransport(webHidTransportFactory).build();
+      /*
+       * The kit reports what it is doing through a logger, and without one every failure inside it
+       * — a transport that will not open, a context lookup that 404s, an APDU the app rejects —
+       * surfaces here as a promise that never settles. In dev that silence cost several rounds of
+       * guessing at internals, so it now says so out loud.
+       */
+      const builder = new DeviceManagementKitBuilder().addTransport(webHidTransportFactory);
+      if (import.meta.env?.DEV) {
+        builder.addLogger({
+          log: (level: unknown, message: unknown, options: unknown) =>
+            console.info('[ledger]', level, message, options),
+        } as never);
+      }
+      const dmk = builder.build();
 
       // Discovery is a stream; the first device the owner picks in the browser prompt is the one.
       const device = await new Promise<any>((resolve, reject) => {
