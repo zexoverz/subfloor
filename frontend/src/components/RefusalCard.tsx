@@ -1,6 +1,5 @@
 import { copy } from '../copy.ts';
 import { bpsAbove, formatPrice } from '../lib/rate.ts';
-import type { DecodedRefusal } from '../lib/refusal.ts';
 import type { Refusal } from '../types.ts';
 
 /**
@@ -8,7 +7,14 @@ import type { Refusal } from '../types.ts';
  * optional: [view] has to land on a page whose failed transaction decodes into these same rates —
  * the same event from two witnesses.
  */
-export function RefusalDetail({ entry, decoded }: { entry: Refusal; decoded: DecodedRefusal }) {
+/**
+ * Takes only what it renders, not the full decoder output. A refusal arrives either decoded from
+ * revert data or already decoded by the index, and this card should not care which — narrowing the
+ * prop to the five numbers it actually shows is what lets both satisfy it.
+ */
+type Shown = { attemptedPrice: number; floorPrice: number; bpsBelowFloor: number; gaveSymbol: string; gotSymbol: string };
+
+export function RefusalDetail({ entry, decoded }: { entry: Refusal; decoded: Shown }) {
   const vsRef = entry.referencePrice === undefined ? null : bpsAbove(decoded.attemptedPrice, entry.referencePrice);
   const floorVsRef = entry.referencePrice === undefined ? null : bpsAbove(decoded.floorPrice, entry.referencePrice);
 

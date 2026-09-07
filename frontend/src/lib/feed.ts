@@ -83,7 +83,7 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; source:
   // VITE_DATA_SOURCE lets an environment ask for the feed explicitly; dev defaults to it, and
   // anything else falls back to fixtures. Whatever it says, the badge says the same thing — the
   // point of the switch is which honest state the page is in, never whether it tells you.
-  const configured = import.meta.env.VITE_DATA_SOURCE as DataSource | undefined;
+  const configured = import.meta.env?.VITE_DATA_SOURCE as DataSource | undefined;
   const simulated = configured === 'simulated' || (configured === undefined && import.meta.env.DEV);
   const [extra, setExtra] = useState<TapeEntry[]>([]);
 
@@ -105,9 +105,8 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; source:
     return {
       ...base,
       tape,
-      // CI is what advances this in the live run; here the simulated feed stands in for it, under
-      // the same "simulated feed" badge that covers every other number on the page.
-      fuzz: { ...base.fuzz, programs: base.fuzz.programs + extra.length * 1_483 },
+      // The fuzz counter is deliberately NOT simulated. It is sourced from a file in the public
+      // repo, and a number anyone can check is the one number this feed has no business moving.
       stats: {
         ...base.stats,
         fills: base.stats.fills + extra.filter((e) => e.kind === 'fill').length,

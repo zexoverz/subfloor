@@ -1,3 +1,4 @@
+import fuzzCounter from '../../docs/fuzz-counter.json';
 import type { VaultState } from './types.ts';
 
 /** The fixture tape is anchored to now so the chart has a sane axis before any live data exists. */
@@ -61,6 +62,8 @@ export const fixtures: VaultState = {
   // Zone 1. Fills and markout from the subgraph; `refused` from Substreams.
   stats: {
     fills: 47,
+    notionalUsd: 14_200,
+    markout: { s30: 9, m5: 6, h1: -2 },
     medianVsMidBps: 9,
     worstFillAboveFloorBps: 3,
     refused: 2,
@@ -94,8 +97,16 @@ export const fixtures: VaultState = {
   // The mandate the guardian device signed, from AquaGuardVault.
   mandate: { delegateLabel: 'agent-7', expiresInDays: 14 },
 
-  // From CI. Theater mode for the video is one display state on this stat.
-  fuzz: { programs: 1_742_203, settledBelowFloor: 0 },
+  // vault.delegate(). Null until one is registered on chain.
+  delegate: null,
+
+  /**
+   * Read from docs/fuzz-counter.json, which only the fuzz-cron workflow writes and which anyone
+   * can open in the public repo. Every increment maps to a CI run someone can check, which is the
+   * entire point of the number — a figure this page cannot source is worth less than a smaller one
+   * it can, and one invented number would put every other number here in doubt.
+   */
+  fuzz: { programs: fuzzCounter.programs, settledBelowFloor: 0 },
 
   // Empty until the Sep 7 deploy (#38). Every screen must render with these unset.
   addresses: { floorRegistry: null, floorRouter: null, vault: null, chainId: 8453 },

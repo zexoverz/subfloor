@@ -8,13 +8,38 @@ import type { Address } from 'viem';
  */
 export type TokenMeta = { symbol: string; decimals: number };
 
-export const TOKENS: Record<string, TokenMeta> = {
-  '0x4200000000000000000000000000000000000006': { symbol: 'WETH', decimals: 18 },
-  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': { symbol: 'USDC', decimals: 6 },
-};
+/** `import.meta.env` is undefined under plain node, where the unit tests run, hence the optional. */
+const MAINNET_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+/** Base Sepolia USDC. WETH is at the same predeploy address on both networks. */
+const SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
 export const WETH = '0x4200000000000000000000000000000000000006' as Address;
-export const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
+export const USDC = (import.meta.env?.VITE_CHAIN === 'base' ? MAINNET_USDC : SEPOLIA_USDC) as Address;
+
+/**
+ * Both USDC addresses, always. The decoder refuses to render a token it does not know, which is
+ * correct — but it made a fixture recorded on one network vanish when the app was pointed at the
+ * other, and a refusal silently missing from the tape is the worst possible way for that to show
+ * up. Knowing an address is not the same as trading on it.
+ */
+/**
+ * The tokens this deployment actually trades, on the chain it is pointed at.
+ *
+ * Deliberately separate from TOKENS below. That map exists so the refusal decoder recognises an
+ * address it meets; this list is what the vault holds and what balances are read for. Using one for
+ * both put a mainnet USDC address into a Sepolia balance read, which has no contract behind it —
+ * the read failed, and the vault card showed three tokens, one of them NaN.
+ */
+export const ACTIVE_TOKENS: { address: Address; symbol: string; decimals: number }[] = [
+  { address: WETH, symbol: 'WETH', decimals: 18 },
+  { address: USDC, symbol: 'USDC', decimals: 6 },
+];
+
+export const TOKENS: Record<string, TokenMeta> = {
+  [WETH.toLowerCase()]: { symbol: 'WETH', decimals: 18 },
+  [MAINNET_USDC.toLowerCase()]: { symbol: 'USDC', decimals: 6 },
+  [SEPOLIA_USDC.toLowerCase()]: { symbol: 'USDC', decimals: 6 },
+};
 
 export function tokenMeta(address: Address): TokenMeta | null {
   return TOKENS[address.toLowerCase()] ?? null;

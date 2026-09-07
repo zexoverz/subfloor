@@ -200,3 +200,237 @@ body {
 .digit-roll {
   animation: digit-roll 0.42s cubic-bezier(0.2, 0.9, 0.25, 1) backwards;
 }
+
+/*
+ * Step changes are interpolated rather than cut. The card is a named transition target, so the
+ * browser tweens its height between steps too — the thing that made a five-step flow feel like
+ * five separate screens.
+ */
+.step-card {
+  view-transition-name: step-card;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(step-card) {
+    animation: step-out 0.16s ease-in both;
+  }
+
+  ::view-transition-new(step-card) {
+    animation: step-in 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  }
+}
+
+@keyframes step-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/*
+ * The hero annotations: the agent's intent, then the refusal. They loop because the drawing is
+ * static and the sequence is the argument — a thing tried, and a thing that did not happen.
+ *
+ * Base state is fully visible, so when prefers-reduced-motion disables the animation both labels
+ * simply sit there and the picture still reads.
+ */
+@keyframes hero-bubble {
+  0%,
+  6% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  14%,
+  46% {
+    opacity: 1;
+    transform: none;
+  }
+  56%,
+  100% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.hero-bubble {
+  animation: hero-bubble 7s ease-in-out infinite;
+}
+
+/*
+ * The hero drawing breathes. Slow enough that it reads as weight rather than motion — the point of
+ * the picture is a thing that does not move, so the drift is a few pixels and nothing more.
+ */
+@keyframes hero-float {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+.hero-art {
+  animation: hero-float 7s ease-in-out infinite alternate;
+}
+
+/*
+ * The engraving was drawn for warm paper. On the dark ground its ink greys sink into the
+ * background, so they are lifted — brass included, which only gets warmer for it.
+ */
+:root:not([data-theme='light']) .hero-art img,
+:root[data-theme='dark'] .hero-art img {
+  filter: brightness(1.55) contrast(1.06);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .hero-art img {
+    filter: none;
+  }
+}
+
+/*
+ * Reading protection as depth of field rather than a painted blob: the noise stays visible behind
+ * the words and simply goes out of focus, and the effect fades out with no edge to notice.
+ */
+.hero-scrim {
+  backdrop-filter: blur(7px) brightness(0.72);
+  -webkit-backdrop-filter: blur(7px) brightness(0.72);
+  mask-image: radial-gradient(ellipse 78% 70% at 45% 50%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 78% 70% at 45% 50%, #000 40%, transparent 100%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .hero-scrim {
+    backdrop-filter: blur(7px) brightness(1.12);
+    -webkit-backdrop-filter: blur(7px) brightness(1.12);
+  }
+}
+
+/*
+ * The strike, on a loop: the fill descends, stops dead on the rail, holds, fades, and tries again.
+ * The rail never moves and never changes — it is the only thing on this page that cannot.
+ *
+ * Two clipped copies of one drawing rather than separate assets: the rail is the bottom band, and
+ * everything above it travels. The debris rides down with the arrowhead along the same axis, which
+ * at this speed reads as the strike landing rather than as two things moving.
+ */
+@keyframes hero-strike {
+  0% {
+    opacity: 0;
+    transform: translate3d(-7%, -11%, 0);
+  }
+  14%,
+  58% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  74%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-strike {
+  animation: hero-strike 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+/* Reduced motion keeps the finished picture: the argument survives without the sequence. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-strike {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * The floor sheet. Native <dialog>, so focus trapping, Esc, the page behind going inert and the
+ * top layer are the browser's problem rather than ours — every one of them is something a
+ * hand-rolled modal gets subtly wrong.
+ *
+ * Centred on a desktop, a bottom sheet on a phone: the same element and one media query, because a
+ * modal landing in the middle of a small screen puts the number you are dragging under your hand.
+ */
+.sheet {
+  border: 1px solid var(--c-rule);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  padding: 0;
+  border-radius: 4px;
+  box-shadow: var(--c-shadow);
+  /* No width here. It lived in this rule and silently beat every w-[…] utility on the element,
+     because this file loads after Tailwind's — so the setup sheet asked for 960px, got 440, and
+     clipped its own second column. Each sheet sets its own width now. */
+  /* A modal <dialog> centres itself with `margin: auto`, and the CSS reset zeroes every margin —
+     so without this it sits in the top-left corner looking like a mistake, which it was. */
+  margin: auto;
+}
+
+/* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is
+   nearly white, so the backdrop came out as a pale wash over a dark page. */
+/* Scrolls without drawing a track. Used by the panel inside a fixed-height sheet as well as the
+   sheet itself. */
+.no-bar {
+  scrollbar-width: none;
+}
+
+.no-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* The sheet scrolls without saying so. A bar down the side of a small panel is chrome inside the
+   one place that should be nothing but the decision. */
+.sheet {
+  scrollbar-width: none;
+}
+
+.sheet::-webkit-scrollbar {
+  display: none;
+}
+
+.sheet::backdrop {
+  background: rgb(6 8 11 / 0.62);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] {
+    animation: sheet-in 0.18s cubic-bezier(0.2, 0.9, 0.25, 1);
+  }
+}
+
+@media (max-width: 640px) {
+  .sheet {
+    width: 100vw;
+    max-width: 100vw;
+    margin: auto auto 0;
+    border-radius: 12px 12px 0 0;
+    border-bottom: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet[open] {
+      animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
+    }
+  }
+}

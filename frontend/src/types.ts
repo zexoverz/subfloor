@@ -24,6 +24,8 @@ export type PendingLowering = {
 
 export type Reference = {
   name: string;
+  /** The aggregator the registry consults, read from it rather than written down here. */
+  feed?: `0x${string}` | null;
   price: number;
   ageSeconds: number;
   stalenessBoundSeconds: number;
@@ -45,7 +47,11 @@ export type Calibration = {
 
 export type Stats = {
   fills: number;
+  /** Notional traded, in dollars. "58 fills" is not a number a trading desk reads; volume is. */
+  notionalUsd: number;
   medianVsMidBps: number;
+  /** Markout at more than one horizon: one number cannot show whether a fill aged well. */
+  markout: { s30: number; m5: number; h1: number };
   worstFillAboveFloorBps: number;
   /** from Substreams. A refused fill emits nothing, so this can never come from an event handler. */
   refused: number;
@@ -87,6 +93,19 @@ export type Refusal = {
   tx: string;
   data: `0x${string}`;
   referencePrice?: number;
+  /**
+   * Already decoded, when the index is the source. A refusal reaches this app two ways — decoded
+   * from revert data we watched, or read from the Substreams module that watched the same
+   * transaction — and both end at the same five numbers. Nothing downstream should have to know
+   * which one it got.
+   */
+  decoded?: {
+    attemptedPrice: number;
+    floorPrice: number;
+    bpsBelowFloor: number;
+    gaveSymbol: string;
+    gotSymbol: string;
+  };
 };
 
 export type TapeEntry = Fill | Refusal;
@@ -132,6 +151,8 @@ export type VaultState = {
   tape: TapeEntry[];
   agent: string[];
   mandate: Mandate;
+  /** vault.delegate(). Shown in full, never as a nickname — see copy.wallet.agentAddressHint. */
+  delegate: `0x${string}` | null;
   fuzz: { programs: number; settledBelowFloor: number };
   addresses: Addresses;
 };
@@ -143,4 +164,4 @@ export type VaultState = {
  */
 export type DataSource = 'fixtures' | 'simulated' | 'chain';
 
-export type Screen = 'onboarding' | 'floor' | 'live' | 'ceremony' | 'public';
+export type Screen = 'landing' | 'live' | 'ceremony';

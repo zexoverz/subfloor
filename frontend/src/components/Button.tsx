@@ -4,12 +4,20 @@ import type { ReactNode } from 'react';
 type Props = { children: ReactNode; onClick?: () => void; disabled?: boolean };
 
 /** The affirmative action. Brass, because it is the owner's own number moving. */
-export function Act({ children, onClick, disabled, primary = false }: Props & { primary?: boolean }) {
+export function Act({
+  children,
+  onClick,
+  disabled,
+  primary = false,
+  wide = false,
+}: Props & { primary?: boolean; wide?: boolean }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`cursor-pointer rounded-[2px] border px-3.5 py-2.5 text-xs tracking-[0.06em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+        wide ? 'w-full' : ''
+      } ${
         primary
           ? 'border-brass bg-brass-wash font-semibold text-brass'
           : 'border-rule bg-surface text-ink hover:border-brass'

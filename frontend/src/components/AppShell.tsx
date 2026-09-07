@@ -1,20 +1,24 @@
 import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
+import { Mark } from './Mark.tsx';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
+import { AccountMenu } from './AccountMenu.tsx';
+import { LetterGlitch } from './LetterGlitch.tsx';
+import type { Wallet } from '../lib/wallet.ts';
+import { mocked } from '../lib/mock.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
-const PRIMARY: Screen[] = ['live', 'floor'];
-/** Skeleton-only: onboarding happens once, the ceremony is mid-flow, the public page is a URL. */
-const PREVIEW: Screen[] = ['onboarding', 'ceremony', 'public'];
-
 export function AppShell({
   screen,
   onNavigate,
   onPanic,
   state,
   source,
+  wallet,
+  owner,
+  wide = false,
   children,
 }: {
   screen: Screen;
@@ -22,10 +26,25 @@ export function AppShell({
   onPanic: () => void;
   state: VaultState;
   source: DataSource;
+  wallet: Wallet;
+  /** The panic control belongs to whoever can actually stop the agent. */
+  owner: boolean;
+  /** The public page is a board, not a document: it gets the width to lay one out. */
+  wide?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-[1120px] px-[clamp(12px,3vw,28px)] pb-14">
+    <>
+      {/*
+        * The same texture as the landing, fixed behind the board and much quieter than it is there.
+        * This screen is read for numbers, so the noise sits well under them — enough to belong to
+        * the same product, not enough to compete with a price.
+        */}
+      <div className="pointer-events-none fixed inset-0 -z-10 opacity-[0.07]">
+        <LetterGlitch speed={90} />
+      </div>
+
+      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
       {/*
        * One row. The brand and the two real screens sit together on the left because they are the
        * same thing — where you are — and the status reads right to left in falling importance:
@@ -34,23 +53,16 @@ export function AppShell({
        * the chips that merely state facts.
        */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-rule py-3.5">
-        <span className="text-[15px] font-semibold tracking-[0.22em]">{copy.brand}</span>
-
-        <nav className="-mb-3.5 flex gap-5 self-end" role="tablist">
-          {PRIMARY.map((s) => (
-            <button
-              key={s}
-              role="tab"
-              aria-selected={screen === s}
-              onClick={() => onNavigate(s)}
-              className={`cursor-pointer border-b-2 bg-transparent px-0.5 pt-1 pb-3 text-[12.5px] transition-colors ${
-                screen === s ? 'border-brass text-ink' : 'border-transparent text-muted hover:text-ink'
-              }`}
-            >
-              {copy.nav[s]}
-            </button>
-          ))}
-        </nav>
+        {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
+        <button
+          onClick={() => onNavigate('landing')}
+          className="cursor-pointer text-[15px] font-semibold tracking-[0.22em] hover:text-brass"
+        >
+          <span className="flex items-center gap-2.5">
+            <Mark />
+            {copy.brand}
+          </span>
+        </button>
 
         <div className="ml-auto flex items-center gap-3.5 text-[11px] text-faint">
           {/*
@@ -58,10 +70,10 @@ export function AppShell({
             * and so is the claim underneath it: "own money since Sep 8" is only true once the
             * money is actually on chain, so a fixture build does not get to say it either.
             */}
-          {source === 'chain' ? (
+          {source === 'chain' && !mocked ? (
             <Chip live>{copy.live.live}</Chip>
           ) : (
-            <Chip>{source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
+            <Chip>{mocked ? copy.live.mock : source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
           )}
           <span>
             {state.pair.base} / {state.pair.quote}
@@ -70,31 +82,17 @@ export function AppShell({
           {source === 'chain' && <span className="hidden sm:inline">own money since {state.stats.since}</span>}
         </div>
 
-        {screen !== 'public' && (
+        <AccountMenu wallet={wallet} />
+
+        {owner && (
           <div className="flex items-center gap-3.5 border-l border-rule pl-3.5">
             <PanicButton onFire={onPanic} />
           </div>
         )}
       </div>
 
-      {/* The screens the shipped app never puts in a tab bar, marked as what they are. */}
-      <div className="flex items-center gap-3 py-2 text-[10.5px] tracking-[0.1em] text-faint uppercase">
-        <span>{copy.preview}</span>
-        {PREVIEW.map((s) => (
-          <button
-            key={s}
-            onClick={() => onNavigate(s)}
-            aria-current={screen === s}
-            className={`cursor-pointer bg-transparent tracking-[0.1em] uppercase transition-colors ${
-              screen === s ? 'text-brass' : 'text-faint hover:text-muted'
-            }`}
-          >
-            {copy.nav[s]}
-          </button>
-        ))}
-      </div>
-
       <div className="pt-3">{children}</div>
-    </div>
+      </div>
+    </>
   );
 }
