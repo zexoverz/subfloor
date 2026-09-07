@@ -102,13 +102,28 @@ dataSources:
         - event: ToleranceWidened(indexed address,indexed address,indexed address,uint16,uint16,address)
           handler: handleToleranceWidened
 
-  # Sepolia's aggregator address differs from mainnet's and must be read from the proxy
-  # (`aggregator()`) before this is deployed. Left unset deliberately rather than guessed: a wrong
-  # address here fails silently, with FillQuality.referenceAgeSeconds pinned at -1 forever.
-  # - kind: ethereum
-  #   name: ChainlinkEthUsd
-  #   network: base-sepolia
-  #   source:
-  #     address: "0x0000000000000000000000000000000000000000"
-  #     abi: ChainlinkAggregator
-  #     startBlock: 46501900
+  # The Chainlink aggregator, not the proxy. The proxy emits nothing; the aggregator behind it does.
+  # Read off the proxy with `aggregator()` and proved live by event recency — 13 AnswerUpdated logs
+  # in the last 4,000 blocks — rather than by assuming a contract that answers calls is in use.
+  - kind: ethereum
+    name: ChainlinkEthUsd
+    network: base-sepolia
+    source:
+      address: "0xa24A68DD788e1D7eb4CA517765CFb2b7e217e7a3"
+      abi: ChainlinkAggregator
+      startBlock: 46501900
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/reference.ts
+      entities:
+        - ReferenceAnswer
+      abis:
+        - name: ChainlinkAggregator
+          file: ./abis/ChainlinkAggregator.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated

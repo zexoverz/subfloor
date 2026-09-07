@@ -99,7 +99,8 @@ export function rateOf(received: BigInt, given: BigInt): BigInt {
 
 /// The Base ETH/USD aggregator, which is what emits `AnswerUpdated`. The proxy address that
 /// FloorRegistry is configured with emits nothing.
-export const ETH_USD_AGGREGATOR = Bytes.fromHexString("0x05c84a58fe042275b37db038baacd15f410c7bb0");
+/// The reference row's id. Not an address: see the note on ReferenceAnswer in the schema.
+export const ETH_USD = Bytes.fromUTF8("ETH/USD");
 
 /// Feed decimals for Base ETH/USD, verified on chain.
 export const FEED_DECIMALS = 8;
@@ -130,4 +131,39 @@ export function deviationBps(executionRate: BigInt, reference: BigInt): i32 {
   if (reference.isZero()) return 0;
   const diff = executionRate.minus(reference).times(BigInt.fromI32(10000));
   return diff.div(reference).toI32();
+}
+
+/// Days since the Unix epoch. The id every daily snapshot is keyed on.
+export function dayId(timestamp: BigInt): i32 {
+  return timestamp.toI32() / 86400;
+}
+
+/// Insert into an ascending array, keeping it sorted. The day's fills are counted in tens or
+/// hundreds, so an insertion is cheaper than sorting on every read and far cheaper than making
+/// every consumer sort for itself.
+export function insertSorted(xs: Array<i32>, x: i32): Array<i32> {
+  let lo = 0;
+  let hi = xs.length;
+  while (lo < hi) {
+    const mid = (lo + hi) / 2;
+    if (xs[mid] < x) lo = mid + 1;
+    else hi = mid;
+  }
+  const out = new Array<i32>();
+  for (let i = 0; i < lo; i++) out.push(xs[i]);
+  out.push(x);
+  for (let i = lo; i < xs.length; i++) out.push(xs[i]);
+  return out;
+}
+
+/// Nearest-rank percentile on an ascending array. `p` is 0-100.
+///
+/// Nearest-rank rather than interpolated on purpose: the floor-setting screen reads p99 and turns it
+/// into a price a human signs, and an interpolated p99 returns a deviation no fill actually had.
+/// The number on that screen should be one the venue really produced.
+export function percentile(sorted: Array<i32>, p: i32): i32 {
+  if (sorted.length == 0) return 0;
+  let rank = (p * sorted.length) / 100;
+  if (rank >= sorted.length) rank = sorted.length - 1;
+  return sorted[rank];
 }
