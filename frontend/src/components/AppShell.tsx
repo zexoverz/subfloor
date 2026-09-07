@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
-import type { Screen, VaultState } from '../types.ts';
+import type { DataSource, Screen, VaultState } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
 const PRIMARY: Screen[] = ['live', 'floor'];
@@ -14,14 +14,14 @@ export function AppShell({
   onNavigate,
   onPanic,
   state,
-  simulated,
+  source,
   children,
 }: {
   screen: Screen;
   onNavigate: (s: Screen) => void;
   onPanic: () => void;
   state: VaultState;
-  simulated: boolean;
+  source: DataSource;
   children: ReactNode;
 }) {
   return (
@@ -53,12 +53,21 @@ export function AppShell({
         </nav>
 
         <div className="ml-auto flex items-center gap-3.5 text-[11px] text-faint">
-          {simulated ? <Chip>{copy.live.simulated}</Chip> : state.stats.live && <Chip live>{copy.live.live}</Chip>}
+          {/*
+            * One badge, driven by where the numbers came from. "live" is reserved for the chain,
+            * and so is the claim underneath it: "own money since Sep 8" is only true once the
+            * money is actually on chain, so a fixture build does not get to say it either.
+            */}
+          {source === 'chain' ? (
+            <Chip live>{copy.live.live}</Chip>
+          ) : (
+            <Chip>{source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
+          )}
           <span>
             {state.pair.base} / {state.pair.quote}
           </span>
           <span>Base · {state.addresses.chainId}</span>
-          <span className="hidden sm:inline">own money since {state.stats.since}</span>
+          {source === 'chain' && <span className="hidden sm:inline">own money since {state.stats.since}</span>}
         </div>
 
         {screen !== 'public' && (

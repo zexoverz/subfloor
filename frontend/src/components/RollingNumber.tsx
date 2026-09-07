@@ -3,12 +3,17 @@
  *
  * Worth the code on exactly these numbers: they change while nobody is touching the page, and a
  * figure that silently becomes a different figure is easy to miss and slightly untrustworthy. A
- * digit that visibly travels tells you which column moved and by how much — and the slight stagger
- * left to right is what makes it read as a mechanism instead of a fade.
+ * digit that visibly travels tells you which column moved — and the stagger left to right is what
+ * makes it read as a mechanism instead of a fade.
  *
- * Non-digits (commas, signs, units) stay put, so only what changed appears to move.
+ * It renders one glyph per column and animates it in, rather than translating a strip of ten
+ * digits behind a 1em window. The window version ghosted on a cold load: the clip box is sized in
+ * em, so before the webfont arrives its box and the text baseline disagree and the neighbouring
+ * digits show through. One glyph has no neighbours to leak.
+ *
+ * Non-digits (commas, signs, units) never animate, so only what changed appears to move.
  */
-const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const isDigit = (c: string) => c >= '0' && c <= '9';
 
 export function RollingNumber({
   value,
@@ -19,34 +24,28 @@ export function RollingNumber({
   format?: (n: number) => string;
   className?: string;
 }) {
-  const chars = format(value).split('');
+  const text = format(value);
 
   return (
-    <span className={`inline-flex items-baseline ${className}`} aria-label={format(value)}>
-      {chars.map((char, i) => {
-        const digit = DIGITS.indexOf(char);
-        if (digit < 0) {
-          return (
-            <span key={i} aria-hidden>
-              {char}
-            </span>
-          );
-        }
-        return (
-          <span key={i} className="inline-block h-[1em] overflow-hidden leading-[1em]" aria-hidden>
-            <span
-              className="flex flex-col transition-transform duration-500 ease-[cubic-bezier(.2,.9,.25,1)]"
-              style={{ transform: `translateY(-${digit}em)`, transitionDelay: `${i * 28}ms` }}
-            >
-              {DIGITS.map((d) => (
-                <span key={d} className="h-[1em] leading-[1em]">
-                  {d}
-                </span>
-              ))}
-            </span>
+    <span className={className} aria-label={text}>
+      {text.split('').map((char, i) =>
+        isDigit(char) ? (
+          // The key carries the digit, so React remounts the span when it changes and the CSS
+          // animation fires once. A digit that stays put re-renders without moving.
+          <span
+            key={`${i}-${char}`}
+            aria-hidden
+            className="digit-roll inline-block"
+            style={{ animationDelay: `${i * 28}ms` }}
+          >
+            {char}
           </span>
-        );
-      })}
+        ) : (
+          <span key={`${i}-sep`} aria-hidden>
+            {char}
+          </span>
+        ),
+      )}
     </span>
   );
 }
