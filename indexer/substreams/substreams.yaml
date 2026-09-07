@@ -1,0 +1,36 @@
+specVersion: v0.1.0
+package:
+  name: subfloor_refusals
+  version: v0.1.0
+  url: https://github.com/zexoverz/subfloor
+  description: |
+    Fills refused by a recipient-keyed price floor enforced inside SwapVM settlement on Base.
+    A refusal is a revert and emits no logs, so this reads transaction status and the call tree —
+    the only place these numbers exist.
+  doc: |
+    Fills the floor turned away, on Base.
+
+    A refusal is a revert. Reverted transactions emit no logs, so a subgraph cannot see one — this
+    module reads transaction status and the call tree, which is where the numbers actually are.
+
+protobuf:
+  files:
+    - subfloor.proto
+  importPaths:
+    - ./proto
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/subfloor_substreams.wasm
+
+modules:
+  - name: map_refusals
+    kind: map
+    initialBlock: 35000000
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:subfloor.v1.Refusals
+
+network: base
