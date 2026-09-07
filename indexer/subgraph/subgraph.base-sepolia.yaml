@@ -20,6 +20,40 @@ dataSources:
   # here can be filtered by maker at the log level: every Shipped/Pulled/Pushed/Docked on the venue
   # arrives and is narrowed after decoding. See docs/event-map.md.
   - kind: ethereum
+    name: Aqua
+    network: base-sepolia
+    source:
+      # Not canonical Aqua — canonical is not on Base Sepolia, so this is ours from
+      # DeploySubfloorTestnet.s.sol. Deployed 7 Sep, 6/6 transactions successful.
+      address: "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB"
+      abi: Aqua
+      startBlock: 46513825
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/aqua.ts
+      entities:
+        - DexAggProtocol
+        - VirtualPool
+        - Token
+      abis:
+        - name: Aqua
+          file: ./abis/Aqua.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Shipped(address,address,bytes32,bytes)
+          handler: handleShipped
+        - event: Docked(address,address,bytes32)
+          handler: handleDocked
+        - event: Pulled(address,address,bytes32,address,uint256)
+          handler: handlePulled
+        - event: Pushed(address,address,bytes32,address,uint256)
+          handler: handlePushed
+
+  # Our router. `Swapped` is likewise fully non-indexed.
+  - kind: ethereum
     name: FloorRouter
     network: base-sepolia
     source:
@@ -43,6 +77,11 @@ dataSources:
       eventHandlers:
         - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
           handler: handleSwapped
+          # `router.ts` reads `event.receipt.gasUsed`, and graph-node only populates `receipt` when
+          # the handler asks for it. Without this line the field access traps, graph-node retries the
+          # block forever, and the subgraph stops at the first fill with `hasIndexingErrors: false` —
+          # which is indistinguishable from a slow sync. Cost most of 7 Sep.
+          receipt: true
 
   # The registry's events are the one place upstream indexing gets easy: recipient, base and quote
   # are all indexed, so floor history for one recipient is a topic filter rather than a scan.
