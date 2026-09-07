@@ -94,7 +94,7 @@ export function SetupDialog({
               <p className="serif mx-auto mt-2 mb-6 max-w-[32ch] text-center text-[13.5px] leading-relaxed text-muted">
                 {copy.wallet.why}
               </p>
-              <Act primary onClick={() => withTransition(wallet.connect)} disabled={wallet.connecting}>
+              <Act wide primary onClick={() => withTransition(wallet.connect)} disabled={wallet.connecting}>
                 <span className="flex items-center justify-center gap-2">
                   <WalletIcon size={14} strokeWidth={1.7} />
                   {wallet.connecting ? copy.wallet.connecting : copy.wallet.connect}
@@ -108,7 +108,7 @@ export function SetupDialog({
                 <span className="h-px flex-1 bg-rule" />
               </div>
 
-              <Act onClick={ledger.connect} disabled={ledger.connecting || !ledger.supported}>
+              <Act wide onClick={ledger.connect} disabled={ledger.connecting || !ledger.supported}>
                 <span className="flex items-center justify-center gap-2">
                   <KeyRound size={14} strokeWidth={1.7} className="text-brass" />
                   {copy.wallet.connectLedger}
@@ -219,7 +219,7 @@ export function SetupDialog({
                 {copy.onboarding.runsFor.replace('{days}', String(mandate.expiresInDays))}
               </p>
 
-              <Act primary disabled={!ready} onClick={onSign}>
+              <Act wide primary disabled={!ready} onClick={onSign}>
                 {copy.onboarding.action}
               </Act>
               <p className="mt-2 text-center text-[11.5px] text-faint">

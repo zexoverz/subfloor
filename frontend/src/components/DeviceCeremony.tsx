@@ -56,6 +56,7 @@ export function DeviceCeremony({
               )}
             </p>
             <Act
+              wide
               primary
               disabled={ledger.presence === 'unsupported'}
               onClick={async () => {

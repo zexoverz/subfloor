@@ -1,5 +1,5 @@
 import { isAddress } from 'viem';
-import { Check } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { KeyRound, Wallet } from 'lucide-react';
 import { TokenIcon } from './TokenIcon.tsx';
@@ -70,7 +70,17 @@ export function AddressField({
 
   return (
     <div className="text-left">
-      <label className="block text-[10.5px] tracking-[0.09em] text-muted uppercase">{label}</label>
+      {/*
+        * The explanation moves onto the label as a tooltip. It is read once, by someone deciding
+        * what to paste, and a permanent line under every field turned three inputs into a wall of
+        * grey prose — the thing that made this sheet hard to read at all.
+        */}
+      <label className="flex items-center gap-1.5 text-[10.5px] tracking-[0.09em] text-muted uppercase">
+        {label}
+        <span title={hint} className="cursor-help text-faint hover:text-ink">
+          <Info size={11} strokeWidth={1.8} />
+        </span>
+      </label>
       {/* The mark sits inside the field: which key this is matters more than the field's border. */}
       <div
         className={`mt-1.5 flex items-center gap-2 rounded-[2px] border bg-sunken px-3 focus-within:border-brass ${
@@ -89,10 +99,9 @@ export function AddressField({
         />
         {!invalid && value.length > 0 && <Check size={13} strokeWidth={2.2} className="text-settle" />}
       </div>
-      {/* An address that is nearly right is the worst outcome here, so it is checked as it is typed. */}
-      <p className={`serif mt-1.5 text-[12.5px] leading-relaxed ${invalid ? 'text-refuse' : 'text-muted'}`}>
-        {invalid ? copy.wallet.invalidAddress : hint}
-      </p>
+      {/* Only the error stays on the page: an address that is nearly right is the worst outcome
+          here, and it is not something to discover behind a hover. */}
+      {invalid && <p className="mt-1.5 text-[12px] text-refuse">{copy.wallet.invalidAddress}</p>}
       {action && (
         <button
           type="button"

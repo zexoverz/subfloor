@@ -145,7 +145,7 @@ export function FloorDialog({
 
         {unset || tightening ? (
           <>
-            <Act primary disabled={!unset && bps === current} onClick={() => onRaise(bps)}>
+            <Act wide primary disabled={!unset && bps === current} onClick={() => onRaise(bps)}>
               {unset ? copy.floor.set : copy.floor.raise}
             </Act>
             <p className="mt-2 text-center text-[11.5px] text-faint">
