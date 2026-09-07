@@ -38,6 +38,8 @@ export type OwnVault = {
   vault: Address | null;
   /** Null until the factory has actually answered, so "none" is never guessed from a failed read. */
   known: boolean;
+  /** Why the factory could not be read. Rendered, because a silent failure looks like loading. */
+  error: string | null;
   creating: boolean;
   create: () => Promise<void>;
 };
@@ -45,31 +47,49 @@ export type OwnVault = {
 export function useOwnVault(owner: Address | null): OwnVault {
   const [vault, setVault] = useState<Address | null>(null);
   const [known, setKnown] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!addresses.factory || !owner) {
       setVault(null);
       setKnown(false);
+      setError(addresses.factory ? null : 'no factory address in this build');
       return;
     }
+    // A new wallet must never inherit the last one's answer, not even for a frame.
+    setVault(null);
+    setKnown(false);
+    setError(null);
     let live = true;
 
     (async () => {
-      try {
-        const owned = (await publicClient.readContract({
-          address: addresses.factory as Address,
-          abi: vaultFactoryAbi,
-          functionName: 'vaultsOfOwner',
-          args: [owner],
-        })) as readonly Address[];
-        if (!live) return;
-        // The most recent one: someone who deployed twice meant the second.
-        setVault(pickVault(owned, null));
-        setKnown(true);
-      } catch {
-        // A failed read is not "you have no vault". It stays unknown and the screen says nothing.
-        if (live) setKnown(false);
+      /*
+       * Three attempts, because one is not enough to tell "you own nothing" from "the node did not
+       * answer this time", and those two have opposite consequences on screen.
+       */
+      for (let attempt = 0; attempt < 3 && live; attempt += 1) {
+        try {
+          const owned = (await publicClient.readContract({
+            address: addresses.factory as Address,
+            abi: vaultFactoryAbi,
+            functionName: 'vaultsOfOwner',
+            args: [owner],
+          })) as readonly Address[];
+          if (!live) return;
+          // The most recent one: someone who deployed twice meant the second.
+          setVault(pickVault(owned, null));
+          setKnown(true);
+          setError(null);
+          return;
+        } catch (cause) {
+          if (!live) return;
+          // A failed read is not "you have no vault" — but it must not be silent either, or a dead
+          // card is indistinguishable from one that is still loading.
+          const message = (cause instanceof Error ? cause.message : String(cause)).split('\n')[0] ?? 'the factory did not answer';
+          setError(message.slice(0, 120));
+          await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        }
       }
     })();
 
@@ -119,5 +139,5 @@ export function useOwnVault(owner: Address | null): OwnVault {
     }
   }, [owner]);
 
-  return { vault, known, creating, create };
+  return { vault, known, error, creating, create };
 }

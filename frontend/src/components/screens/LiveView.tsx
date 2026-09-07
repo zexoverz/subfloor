@@ -31,6 +31,7 @@ export function LiveView({
   onCreateVault,
   creatingVault,
   canCreateVault,
+  vaultError,
   onSetup,
   connected,
 }: {
@@ -45,6 +46,7 @@ export function LiveView({
   onCreateVault: () => void;
   creatingVault: boolean;
   canCreateVault: boolean;
+  vaultError: string | null;
   connected: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
   onSetup: (() => void) | null;
@@ -258,6 +260,7 @@ export function LiveView({
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
             canCreateVault={canCreateVault}
+            vaultError={vaultError}
           />
         )}
       </div>

@@ -21,6 +21,7 @@ export function PublicAside({
   onCreateVault,
   creatingVault,
   canCreateVault,
+  vaultError,
 }: {
   state: VaultState;
   /** A connected wallet that is not the owner is a different message, not the same button again. */
@@ -30,6 +31,8 @@ export function PublicAside({
   creatingVault: boolean;
   /** Only true once the factory has confirmed this wallet owns none — never guessed from silence. */
   canCreateVault: boolean;
+  /** Why we could not tell. Shown, so a card that cannot answer does not look like one still trying. */
+  vaultError: string | null;
 }) {
   return (
     <div className="flex flex-col gap-4.5">
@@ -90,7 +93,7 @@ export function PublicAside({
               <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">
                 {copy.wallet.notOwner} {copy.wallet.notOwnerHint}
               </p>
-              {canCreateVault && (
+              {canCreateVault ? (
                 <>
                   <p className="serif mt-3 mb-3 text-[13.5px] leading-relaxed text-muted">
                     {copy.wallet.createVaultHint}
@@ -99,6 +102,12 @@ export function PublicAside({
                     {creatingVault ? copy.wallet.creatingVault : copy.wallet.createVault}
                   </Act>
                 </>
+              ) : vaultError ? (
+                <p className="mt-3 mb-0 text-[11.5px] leading-relaxed text-settle">
+                  {copy.wallet.vaultReadFailed} <span className="text-faint">{vaultError}</span>
+                </p>
+              ) : (
+                <p className="mt-3 mb-0 text-[11.5px] text-faint">{copy.wallet.checkingVault}</p>
               )}
             </>
           ) : (

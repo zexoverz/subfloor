@@ -135,6 +135,9 @@ export const copy = {
     createVault: 'Deploy your own vault',
     createVaultHint: 'One transaction. It comes out owned by this wallet, empty, and with no agent connected — you set the floor before anything can trade.',
     creatingVault: 'Deploying…',
+    checkingVault: 'Checking whether this wallet owns a vault…',
+    /** Named so it reads as our failure to look, never as a finding about their wallet. */
+    vaultReadFailed: 'Could not reach the factory, so whether this wallet owns a vault is unknown:',
     ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */

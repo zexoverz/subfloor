@@ -115,6 +115,7 @@ export default function App() {
           creatingVault={own.creating}
           // Only offer it once the factory has actually said this wallet has none.
           canCreateVault={own.known && !own.vault}
+          vaultError={own.error}
           connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
