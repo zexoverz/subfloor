@@ -785,6 +785,39 @@ type ExecutionQualityDailySnapshot @entity(immutable: false) @dailySnapshot {
 }
 
 """
+The registry's own reference configuration for one ordered pair, read from the registry rather than
+re-derived here.
+
+It is a separate row per direction because the direction is the whole point. WETH/tUSDC is
+registered with `inverted = false` and tUSDC/WETH with `inverted = true`, and the registry applies
+them as two different formulas. An earlier version of this subgraph mirrored only the forward branch
+and computed the scale from the two tokens' decimals, which is right for one direction and produces
+a reference 10^24 out for the other. Every reverse-direction fill then scored -9999 bps, a number
+that looks like a clamp and is really a scale error, and those scores were averaged into the daily
+percentiles as if they were real.
+
+Read by call rather than from `ReferenceFeedSet`, because the feeds are configured in the same
+transaction that deploys the registry, which is before this subgraph's startBlock. Indexing the
+event would leave every fill unscored instead.
+"""
+type ReferenceFeed @entity(immutable: false) @regularPolling {
+  " `base` ++ `quote`, the ordered pair as the registry keys it "
+  id: Bytes!
+  " The token the recipient gives "
+  base: Token!
+  " The token the recipient receives "
+  quote: Token!
+  " The aggregator the registry reads for this pair "
+  feed: Bytes!
+  " Whether the registry inverts the feed answer for this direction "
+  inverted: Boolean!
+  " The registry's staleness bound for this pair, in seconds "
+  stalenessBound: Int!
+  " `1e18 * 10**quoteDecimals / 10**baseDecimals`, as the registry stored it "
+  scale: BigInt!
+}
+
+"""
 The most recent Chainlink answer this subgraph has seen, one row per aggregator.
 
 Written by the aggregator data source, read when a fill is scored. It exists because a subgraph

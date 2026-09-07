@@ -120,11 +120,23 @@ export const FEED_DECIMALS = 8;
 /// is that a stranger can recompute what settlement computed. Drift here and the daily report
 /// quietly disagrees with the chain.
 ///
-///     forward:  answer * scale / 10**feedDecimals
-///     scale  =  1e18 * 10**quoteDecimals / 10**baseDecimals
-export function referenceRate(answer: BigInt, baseDecimals: number, quoteDecimals: number): BigInt {
-  const scale = RATE_ONE.times(pow10(quoteDecimals)).div(pow10(baseDecimals));
-  return answer.times(scale).div(pow10(FEED_DECIMALS));
+///     forward:   answer * scale / 10**feedDecimals
+///     inverted:  10**feedDecimals * scale / answer
+///     scale   =  1e18 * 10**quoteDecimals / 10**baseDecimals
+///
+/// Both branches, and the `inverted` flag comes from the registry rather than being guessed from
+/// which token has more decimals. The registry registers WETH/tUSDC forward and tUSDC/WETH
+/// inverted; a version of this function that had only the forward branch scored every reverse fill
+/// at -9999 bps, which reads as a clamp and is really a reference 10^24 out of scale.
+export function referenceRate(answer: BigInt, scale: BigInt, inverted: boolean): BigInt {
+  if (answer.isZero()) return ZERO_BI;
+  const unit = pow10(FEED_DECIMALS);
+  return inverted ? unit.times(scale).div(answer) : answer.times(scale).div(unit);
+}
+
+/// `1e18 * 10**quoteDecimals / 10**baseDecimals`, the registry's own `scale`.
+export function referenceScale(baseDecimals: number, quoteDecimals: number): BigInt {
+  return RATE_ONE.times(pow10(quoteDecimals)).div(pow10(baseDecimals));
 }
 
 export function pow10(n: number): BigInt {
