@@ -65,6 +65,7 @@ export default function App() {
       state={state}
       source={source}
       wallet={wallet}
+      wide={screen === 'public'}
     >
       {screen === 'floor' && (
         <FloorScreen

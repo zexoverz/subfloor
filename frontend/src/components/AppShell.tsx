@@ -19,6 +19,7 @@ export function AppShell({
   state,
   source,
   wallet,
+  wide = false,
   children,
 }: {
   screen: Screen;
@@ -27,6 +28,8 @@ export function AppShell({
   state: VaultState;
   source: DataSource;
   wallet: Wallet;
+  /** The public page is a board, not a document: it gets the width to lay one out. */
+  wide?: boolean;
   children: ReactNode;
 }) {
   return (
