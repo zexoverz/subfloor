@@ -1,27 +1,55 @@
 import { useState } from 'react';
-import { ChartLine, Receipt } from 'lucide-react';
+import { ChartLine, ExternalLink, Receipt, Wallet } from 'lucide-react';
 import { copy } from '../../copy.ts';
-import { Card, CardHead, Note, Todo } from '../Card.tsx';
+import { Card, CardHead, Note } from '../Card.tsx';
+import { Act } from '../Button.tsx';
 import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { formatBps } from '../../lib/rate.ts';
-import type { DataSource, VaultState } from '../../types.ts';
+import { addressUrl } from '../../lib/chain.ts';
+import { addresses } from '../../lib/contracts.ts';
+import type { DataSource, Screen, VaultState } from '../../types.ts';
 
 /**
- * What a stranger meets: the same page in a second state, which is what keeps the two honest.
+ * What a stranger meets. The same page in a second state, which is what keeps the two honest.
  *
  * A stranger does not see inventory, floor levels keyed to a recipient, or anything mapping an
  * address to an exposed position size. No page may ever publish an identifying list of exposed
  * positions — that is a target list, not a product.
+ *
+ * The organising idea is provenance: every figure names the query behind it, and the contracts are
+ * linked so the reader can go and check rather than take our word.
  */
-export function PublicPage({ state, source }: { state: VaultState; source: DataSource }) {
-  const live = source === 'chain';
+export function PublicPage({
+  state,
+  source,
+  onNavigate,
+}: {
+  state: VaultState;
+  source: DataSource;
+  onNavigate: (s: Screen) => void;
+}) {
   const [query, setQuery] = useState<string | null>(null);
+  const live = source === 'chain';
 
   return (
     <>
+      <header className="mb-8 grid items-end gap-x-10 gap-y-4 border-b border-rule pb-6 md:grid-cols-[1.1fr_1fr]">
+        <div>
+          <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">
+            {copy.landing.publicEyebrow}
+          </p>
+          <h1 className="mt-2.5 mb-0 max-w-[20ch] text-[clamp(22px,3.4vw,32px)] leading-[1.1] font-semibold tracking-tight text-balance">
+            {copy.landing.publicTitle}
+          </h1>
+        </div>
+        <p className="serif m-0 max-w-[46ch] text-[15px] leading-relaxed text-muted">
+          {copy.landing.publicStandfirst}
+        </p>
+      </header>
+
       <Tiles>
         <Tile
           label={copy.desk.fills}
@@ -43,15 +71,6 @@ export function PublicPage({ state, source }: { state: VaultState; source: DataS
           sub={`${formatBps(state.stats.markout.s30)} / ${formatBps(state.stats.markout.m5)} / ${formatBps(state.stats.markout.h1)} · ${copy.desk.horizons}`}
           tone="settle"
           onQuery={() => setQuery('{ fills(where: { vault: $vault }) { markout30sBps markout5mBps markout1hBps } }')}
-        />
-        <Tile
-          label={copy.desk.worst}
-          value={state.stats.worstFillAboveFloorBps}
-          format={formatBps}
-          sub={copy.desk.worstSub}
-          onQuery={() =>
-            setQuery('{ fills(where: { vault: $vault }, orderBy: bpsAboveFloor, first: 1) { bpsAboveFloor tx } }')
-          }
         />
         <Tile
           label={copy.desk.refused}
@@ -90,10 +109,55 @@ export function PublicPage({ state, source }: { state: VaultState; source: DataS
         {live ? copy.desk.everyRowLive : copy.desk.everyRowSample}
       </Note>
 
-      <Todo>
-        skeleton: the queries above are the shapes these numbers will come from, not live ones —
-        they run against the subgraph the moment it exists (#24, #42).
-      </Todo>
+      {/* The contracts, so "go and check" is an instruction rather than an invitation. */}
+      {addresses.registry && (
+        <section className="mt-8 border-t border-rule pt-5">
+          <h2 className="mb-3 text-[10.5px] tracking-[0.11em] text-faint uppercase">Contracts</h2>
+          <ul className="m-0 grid list-none gap-2 p-0 text-[12px] sm:grid-cols-2">
+            {(
+              [
+                ['FloorRegistry', addresses.registry],
+                ['FloorRouter', addresses.router],
+                ['AquaGuardVault', addresses.vault],
+                ['Aqua', addresses.aqua],
+              ] as const
+            ).map(([name, address]) =>
+              address ? (
+                <li key={name} className="flex items-baseline gap-2">
+                  <span className="w-[112px] shrink-0 text-faint">{name}</span>
+                  <a
+                    href={addressUrl(address)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 break-all hover:text-brass"
+                  >
+                    {address}
+                    <ExternalLink size={10} strokeWidth={1.7} className="shrink-0 text-faint" />
+                  </a>
+                </li>
+              ) : null,
+            )}
+          </ul>
+        </section>
+      )}
+
+      {/* The wallet is asked for here, where a reader has seen enough to want one. */}
+      <section className="mt-8 flex flex-wrap items-center justify-between gap-5 rounded-lg border border-rule bg-surface p-6 shadow-card">
+        <div>
+          <h2 className="m-0 flex items-center gap-2 text-[17px] font-semibold tracking-tight">
+            <Wallet size={15} strokeWidth={1.7} className="text-brass" />
+            {copy.landing.publicOwnTitle}
+          </h2>
+          <p className="serif mt-1.5 mb-0 max-w-[52ch] text-[14.5px] leading-relaxed text-muted">
+            {copy.landing.publicOwnBody}
+          </p>
+        </div>
+        <div className="w-full max-w-[220px]">
+          <Act primary onClick={() => onNavigate('onboarding')}>
+            {copy.wallet.connect}
+          </Act>
+        </div>
+      </section>
     </>
   );
 }

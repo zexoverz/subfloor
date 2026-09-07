@@ -10,6 +10,7 @@ import { AddressField, AmountRow, MandateSummary } from '../StepForms.tsx';
 import { FloorControl } from '../FloorControl.tsx';
 import { withTransition } from '../../lib/transition.ts';
 import { useLedger } from '../../lib/ledger.ts';
+import { LetterGlitch } from '../LetterGlitch.tsx';
 import type { Wallet } from '../../lib/wallet.ts';
 import type { Screen, VaultState } from '../../types.ts';
 
@@ -54,17 +55,28 @@ export function Onboarding({
   const blocked = !ceremony.deployed ? copy.wallet.notDeployed : ceremony.isOwner === false ? copy.wallet.notOwner : null;
 
   return (
-    <div className="grid min-h-screen place-items-center px-6 py-16">
-      <div className="w-full max-w-[440px]">
-        <div className="mb-10 text-center">
-          <div className="text-[15px] font-semibold tracking-[0.3em]">{copy.brand}</div>
+    <div className="relative grid min-h-screen place-items-center overflow-hidden px-6 py-16">
+      {/*
+        * The same texture as the landing, so arriving here does not feel like arriving at a
+        * different product. Quieter than the hero: this screen is a form, and a form is read
+        * rather than looked at.
+        */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
+        <LetterGlitch />
+      </div>
+
+      <div className="relative w-full max-w-[440px]">
+        <div className="relative mb-10 text-center">
+          {/* The card is opaque; this heading is not, so it gets the same scrim the hero uses. */}
+          <div className="hero-scrim pointer-events-none absolute -inset-x-10 -inset-y-6" />
+          <div className="relative text-[15px] font-semibold tracking-[0.3em]">{copy.brand}</div>
           {/* A mock that does not say so is how a mock ends up in a screenshot. */}
           {mocked && (
             <span className="mt-3 inline-block rounded-[2px] border border-brass/40 bg-brass-wash px-2 py-[3px] text-[10px] tracking-[0.12em] text-brass uppercase">
               {copy.live.mock}
             </span>
           )}
-          <p className="serif mx-auto mt-3 max-w-[34ch] text-[15px] leading-snug text-muted">
+          <p className="serif relative mx-auto mt-3 max-w-[34ch] text-[15px] leading-snug text-muted">
             {copy.onboarding.title} {copy.onboarding.lede}
           </p>
         </div>

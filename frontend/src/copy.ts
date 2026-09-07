@@ -156,6 +156,7 @@ export const copy = {
     settledNote: 'Above the floor, the fill settles like any other. The check costs the same either way.',
     unchanged: 'balances unchanged',
     launch: 'OPEN THE DESK',
+    launchApp: 'LAUNCH APP',
     seePublic: 'see the public page',
 
     shotEyebrow: 'The desk',
@@ -260,6 +261,13 @@ export const copy = {
     footerProject: 'Project',
     footerStandard: 'The standard',
     footerRights: 'MIT. Live on Base.',
+
+    publicEyebrow: 'Public record',
+    publicTitle: 'Every number here is somebody else’s query.',
+    publicStandfirst:
+      'This page is the same data any stranger can pull from the index. Nothing on it is our claim about our own execution — each figure names the query it comes from.',
+    publicOwnTitle: 'Own a vault?',
+    publicOwnBody: 'Connect your wallet to see your own floor, your own fills, and the agent trading inside them.',
 
     disclosure:
       'FLOOR implements ERC-8377 (Reference-Relative Slippage Bounds), a draft standard I authored (ethereum/ERCs PR #1935, public since Aug 2026). The specification is public prior art; every line of implementation here was written during the event, and none of the ERC’s reference implementation is reused.',

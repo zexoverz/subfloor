@@ -83,7 +83,7 @@ export default function App() {
           onBack={() => setScreen(purpose === 'mandate' ? 'onboarding' : 'floor')}
         />
       )}
-      {screen === 'public' && <PublicPage state={state} source={source} />}
+      {screen === 'public' && <PublicPage state={state} source={source} onNavigate={setScreen} />}
     </AppShell>
   );
 }

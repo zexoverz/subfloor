@@ -1,5 +1,5 @@
 import { copy } from '../copy.ts';
-import { Act, Ghost } from './Button.tsx';
+import { Act } from './Button.tsx';
 import type { Screen } from '../types.ts';
 
 /**
@@ -25,12 +25,11 @@ export function LandingHeader({ onNavigate }: { onNavigate: (s: Screen) => void 
           >
             GitHub
           </a>
-          <span className="hidden sm:inline">
-            <Ghost onClick={() => onNavigate('onboarding')}>{copy.wallet.connect}</Ghost>
-          </span>
-          <span className="w-[150px]">
+          {/* One action in the header. Connecting a wallet is asked for further down, once there
+              is a reason to; two primary-looking buttons here make a visitor choose before reading. */}
+          <span className="w-[140px]">
             <Act primary onClick={() => onNavigate('live')}>
-              {copy.landing.launch}
+              {copy.landing.launchApp}
             </Act>
           </span>
         </nav>
