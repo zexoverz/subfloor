@@ -3,6 +3,8 @@ import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead, Note, Todo } from '../Card.tsx';
 import { Act, Ghost } from '../Button.tsx';
 import { formatPrice, rateToPrice } from '../../lib/rate.ts';
+import { useCeremony } from '../../lib/ceremony.ts';
+import { CeremonySteps } from '../CeremonySteps.tsx';
 import type { Wallet } from '../../lib/wallet.ts';
 import type { VaultState } from '../../types.ts';
 
@@ -32,6 +34,8 @@ export function Onboarding({
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
   const funded = holdings.some((h) => h.amount > 0);
+  const ceremony = useCeremony(wallet.address, holdings.filter((h) => h.amount > 0).length);
+  const ready = connected && ceremony.deployed && ceremony.isOwner !== false;
   const floorPrice = rateToPrice(floor.absoluteRate, pair.baseDecimals, pair.quoteDecimals);
 
   return (
@@ -88,6 +92,11 @@ export function Onboarding({
         <CardHead icon={Vault} left={`2 · ${copy.wallet.step2}`} right={`${pair.base} / ${pair.quote}`} />
         <CardBody>
           <p className="serif m-0 max-w-[58ch] text-[15px] text-muted">{copy.wallet.agentWhat}</p>
+          <p className="serif mt-2 max-w-[58ch] text-[13.5px] text-faint">{copy.wallet.ceremonyWhy}</p>
+
+          <div className="mt-4 border-t border-rule pt-1">
+            <CeremonySteps steps={ceremony.steps} enabled={ready} />
+          </div>
 
           <div className="mt-5">
             <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">
@@ -98,8 +107,8 @@ export function Onboarding({
                 {formatPrice(floorPrice)}
               </span>
               <span className="serif max-w-[40ch] text-[15px] text-muted">
-                {pair.quote} per {pair.base} — {floor.maxAdverseBps} bps below the reference.{' '}
-                <Ghost onClick={onAdjust}>{copy.onboarding.adjust}</Ghost>
+                {pair.quote} per {pair.base} — {floor.maxAdverseBps} bps below the reference,{' '}
+                {copy.wallet.forTheVault}. <Ghost onClick={onAdjust}>{copy.onboarding.adjust}</Ghost>
               </span>
             </div>
           </div>
@@ -108,25 +117,30 @@ export function Onboarding({
             Runs for {mandate.expiresInDays} days. The agent trades inside this and nothing else.
           </p>
 
-          <div className="mt-1">
-            <Act primary disabled={!connected || !funded} onClick={onSign}>
+          <div className="mt-4">
+            <Act primary disabled={!ready || !funded} onClick={onSign}>
               {copy.onboarding.action}
             </Act>
           </div>
           <Note className="mt-2">
             {!connected
               ? copy.wallet.agentLocked
-              : !funded
-                ? copy.onboarding.noInventory
-                : copy.onboarding.underAction}
+              : !ceremony.deployed
+                ? copy.wallet.notDeployed
+                : ceremony.isOwner === false
+                  ? copy.wallet.notOwner
+                  : !funded
+                    ? copy.onboarding.noInventory
+                    : copy.onboarding.underAction}
           </Note>
         </CardBody>
       </Card>
 
       <Todo>
-        skeleton: injected wallets only, and no device is enumerated yet. WebHID enumeration has to
-        run before the ceremony is offered so the device-absent state is known up front — never a
-        form the owner completes and then fails at the end.
+        skeleton: the steps read their state from chain but nothing writes yet — the addresses land
+        with the deployment (#38), and the mandate needs the device (#35, #36). WebHID enumeration has to run before the ceremony is
+        offered so the device-absent state is known up front — never a form the owner completes and
+        then fails at the end.
       </Todo>
     </>
   );

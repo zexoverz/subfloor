@@ -88,6 +88,12 @@ export const copy = {
     /** The mandate is the connection. The delegate address stays hidden: it is machinery. */
     agentWhat: 'the agent may trade inside your floor, for a fixed term. It never holds your keys, and it can never lower the floor.',
     agentLocked: 'connect your wallet first',
+    notDeployed: 'no vault deployed yet — the addresses land with the Base deployment',
+    notOwner: 'this wallet does not own the vault. You are seeing the public view.',
+    ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
+    done: 'done',
+    /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */
+    forTheVault: 'registered for the vault — the address that actually settles',
   },
 
   onboarding: {
