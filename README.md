@@ -4,7 +4,7 @@
 
 ### Let an AI agent trade your portfolio. Set one number. Your money can never go below it.
 
-[![Base](https://img.shields.io/badge/Live%20on-Base-0052FF?style=for-the-badge)](https://basescan.org)
+[![Base Sepolia](https://img.shields.io/badge/Live%20on-Base%20Sepolia-0052FF?style=for-the-badge)](https://sepolia.basescan.org/address/0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6)
 [![1inch](https://img.shields.io/badge/1inch-Aqua-1B314F?style=for-the-badge)](https://github.com/1inch/swap-vm)
 [![Ledger](https://img.shields.io/badge/Ledger-Key%20Ring-000000?style=for-the-badge)](https://developers.ledger.com)
 [![ERC-8377](https://img.shields.io/badge/ERC--8377-6E56CF?style=for-the-badge)](https://github.com/ethereum/ERCs/pull/1935)
@@ -132,6 +132,11 @@ identical call sits in `quote()`, so a quote can never report a price the settle
 Three instructions were added to the free slots in the `0x20` guard bank:
 `RequireFreshReference` (0x22), `NotionalThrottle` (0x27), `ApprovalGate` (0x28).
 
+`sdk/` composes SwapVM programs from TypeScript. Its encoders are asserted byte-for-byte against
+output from the instruction libraries the VM actually runs, printed by `EncodingVectors.t.sol` — an
+off-chain encoder checked against hand-written expectations only proves it agrees with whoever wrote
+them.
+
 ## Deployed
 
 **Base Sepolia** — integration environment. Canonical Aqua exists on Ethereum Sepolia but on no L2
@@ -154,7 +159,7 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.1
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.4
 ```
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
@@ -166,6 +171,32 @@ subgraph without reading our docs.
 { floorChanges(orderBy: timestamp) {
     kind oldMaxAdverseBps newMaxAdverseBps guardian hash } }
 ```
+
+**Shipped strategies are decoded.** Aqua stores a strategy as an opaque blob and the VM reads it only
+at execution time, so nothing on the venue records what actually ran. `Strategy` carries the program
+decoded into named instructions, plus a classification in the words an interface can show a person.
+The opcode table is generated from `contracts/src/libs/OpcodeList.sol`, so a renamed or newly claimed
+slot cannot drift out of the decoder silently.
+
+```graphql
+{ strategies(where: { active: true }) {
+    classification families stepCount
+    steps(orderBy: index) { index name args } } }
+```
+
+**Two consumers read it, which is what makes it load-bearing rather than a checkbox.**
+`indexer/consumers/` serves `/calibration` — the floor-setting screen's default, derived as the p99
+of realized adverse deviation over the trailing week rather than configured — and `/report`, the
+daily execution-quality record, generated from the index with the query attached and never from
+operator logs. Below 100 scored fills the calibration refuses to return a percentile at all and says
+so, because a p99 over a dozen fills is a rumour with a decimal point.
+
+Every answer either endpoint returns carries the query and variables that produced it. That is the
+same reason the floor screen puts `[run query]` next to every number: a figure you can re-derive is
+worth more than one you are asked to believe.
+
+**An MCP server and a skill** over the same index are in `indexer/mcp/`, so an agent can ask the
+venue a question without first learning the schema.
 
 One detail decides the whole indexing design: **a refused fill emits nothing.**
 `SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
@@ -189,7 +220,7 @@ Four things follow from that, and each is checkable:
 | **Recipient-keyed, not caller-chosen** | 1inch's own `TakerTraits.threshold` is optional and chosen by whoever calls. The floor here is keyed to the recipient and cannot be selected per order |
 | **In settlement, not in the program** | Every prior design in this space makes the guard an instruction. `ControlFloorRouter` is that design, and an ordinary swap program that simply omits the opcode settles below the floor on it |
 | **Both sides, post-fee** | The maker receives `amountIn` minus the fee. Scoring the pre-fee number would let a fill pass the check and still pay out below the floor |
-| **First implementation of ERC-8377** | Reference-Relative Slippage Bounds, authored by this project'"'"'s author. The specification is public prior art; every line of implementation here was written during the event |
+| **First implementation of ERC-8377** | Reference-Relative Slippage Bounds, authored by this project's author. The specification is public prior art; every line of implementation here was written during the event |
 
 ## What you get
 
@@ -225,8 +256,9 @@ enforces on every transaction after it.
 
 Your floor and the agent's permit are clear-signed on the device. Raising the floor is free and
 device-free because it can only help you. Lowering it is the one dangerous action, so it is the one
-the device owns, and ring revocation cuts the agent off mid-quote. The security claim only holds
-because of this split. "Even a hacked agent cannot go below your floor" is circular if the
+the device owns — that asymmetry is enforced on chain today, by the registry's guardian signature
+check. Ring revocation, which cuts the agent off mid-quote, is the half still being wired. The
+security claim only holds because of this split. "Even a hacked agent cannot go below your floor" is circular if the
 floor-setting key sits on the machine the agent runs on.
 
 The device is not a confirmation step. It is where the economic rule is authored.
@@ -237,30 +269,37 @@ A guarantee nobody can check is not a guarantee. A Substreams package decodes ca
 settlements into a subgraph on the DEX Aggregator standardized schema, a listed Messari schema no
 one has ever implemented, alongside the Token API.
 
-The index is load-bearing twice. The floor-setting screen reads it, showing realized adverse
-deviation p50 and p99 from live history, so the number a human signs is calibrated rather than
-guessed. And the daily execution-quality report is generated from it, query attached, so the
-guarantee is not the operator auditing their own fills.
+The index is load-bearing twice, and both consumers are built rather than planned. The floor-setting
+screen's default is derived from realized adverse deviation over the trailing week, so the number a
+human signs is calibrated rather than guessed — and below a hundred scored fills it refuses to return
+a percentile at all and says so, because a p99 over a dozen fills is a rumour with a decimal point.
+The daily execution-quality report is generated from the index with the query attached, never from
+operator logs, so the guarantee is not the operator auditing its own fills.
 
 This is what indexing is for. Not a dashboard beside the product, but the thing that makes the
 product's promise checkable by a stranger.
 
-## Live on Base
+## Where this actually is, right now
 
 **[subfloor.vercel.app](https://subfloor.vercel.app)**
 
-<!-- filled during the build -->
+Written plainly, because a repo that overstates its own state is the one thing that makes the rest of
+it worth less.
 
 | | |
 |---|---|
-| Vault | _pending_ |
-| Floor registry | _pending_ |
-| A rogue agent, refused | _pending_ |
-| A normal day of trading | _pending_ |
+| Contracts, Base Sepolia | **live and verified** — [addresses above](#deployed) |
+| Floors, both directions of WETH/USDC | **set on chain**, keyed to the vault |
+| The index | **live**, syncing, `hasIndexingErrors: false` |
+| Calibration and the daily report | **built**, and honestly returning their cold-start state |
+| Fills, and the execution-quality dataset | _none yet_ — the index has a working pipeline and no rows |
+| Base mainnet, with our own money | _pending_ |
+| A rogue agent, refused, on chain | _pending_ |
 
-Real money from day one. Every number on the site comes from the deployment and the index, not from
-our own logs — the fuzz counter is [a file in this repo](docs/fuzz-counter.json) updated by CI, and
-the fills are a subgraph query anyone can run.
+Nothing published here is invented. The fuzz counter is
+[a file in this repo](docs/fuzz-counter.json) written only by CI, and every increment maps to a run
+you can open. The fills, when there are fills, are a subgraph query anyone can run — and until then
+the endpoints say so rather than showing a number.
 
 ## The standard
 
