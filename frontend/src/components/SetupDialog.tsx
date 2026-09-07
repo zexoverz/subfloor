@@ -184,10 +184,18 @@ export function SetupDialog({
               )}
 
               {/* The one exception to hiding machinery, and the ticket that made it one. */}
-              <details className="group mb-5 border-y border-rule py-3">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-[11px] tracking-[0.08em] text-faint uppercase">
-                  {copy.onboarding.advanced}
-                  <span className="transition-transform group-open:rotate-45">+</span>
+              {/*
+                * Filled in, it collapses to one line. The addresses are set once and never looked
+                * at again, and leaving two fields and two explanations open afterwards is most of
+                * this sheet's height spent on a decision already made.
+                */}
+              <details open={!keysReady} className="group mb-5 border-y border-rule py-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-[11px] tracking-[0.08em] uppercase">
+                  <span className={keysReady ? 'flex items-center gap-2 text-settle' : 'text-faint'}>
+                    {keysReady && <Check size={11} strokeWidth={2.4} />}
+                    {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
+                  </span>
+                  <span className="text-faint transition-transform group-open:rotate-45">+</span>
                 </summary>
                 <p className="serif mt-2 mb-3 text-[12.5px] leading-relaxed text-faint">
                   {copy.onboarding.advancedNote}

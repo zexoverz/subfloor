@@ -131,10 +131,10 @@ export const copy = {
     max: 'max',
     inWallet: 'in wallet',
     guardianLabel: 'your device address',
-    guardianHint: 'the key that may weaken the floor. It should be a hardware address, never this browser.',
+    guardianHint: 'the key that may weaken the floor — hardware, never this browser.',
     useDevice: 'read it from my device',
     delegateLabel: "the agent's address",
-    delegateHint: 'it composes and ships strategies. It can never move a token out of the vault.',
+    delegateHint: 'composes and ships strategies. It can never move a token out.',
     agentAddress: 'the agent',
     /**
      * Deliberately visible. The symbolic proof went green, so the agent's private key is published
@@ -293,7 +293,9 @@ export const copy = {
     runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
     advanced: 'the keys behind this',
     /** §10 hides the machinery; #111 makes the delegate address the exception, and says why. */
-    advancedNote: 'Set once, and the reason the agent can trade without ever holding your tokens.',
+    advancedNote: 'Set once. This is why the agent can trade without ever holding your tokens.',
+    keysDone: 'device and agent set',
+    change: 'change',
     doing: 'what happens when you press it',
     finishSetup: 'Finish setup',
     finishSetupNote: 'Your vault is deployed but not configured. Nothing trades until it is.',
