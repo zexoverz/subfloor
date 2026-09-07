@@ -4,6 +4,7 @@ import { extname, join, normalize, resolve } from "node:path";
 import { calibrate } from "./calibration.ts";
 import { generate, renderMarkdown } from "./report.ts";
 import { DEFAULT_ENDPOINT, SubgraphError } from "./subgraph.ts";
+import { recentFills } from "../../../frontend/api/_lib/chain.ts";
 
 /// One service: the built frontend and the two consumers it calls, on one origin.
 ///
@@ -72,6 +73,14 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === "/api/fills") {
+      const limit = Math.min(Number(url.searchParams.get("limit") ?? 25), 200);
+      const body = await recentFills(limit);
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "public, max-age=15" });
+      res.end(JSON.stringify(body, null, 2));
+      return;
+    }
+
     if (url.pathname === "/api/health") {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: true, index: DEFAULT_ENDPOINT }));
@@ -80,7 +89,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname.startsWith("/api/")) {
       res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "not found", routes: ["/api/calibration", "/api/report", "/api/health"] }));
+      res.end(JSON.stringify({ error: "not found", routes: ["/api/calibration", "/api/report", "/api/fills", "/api/health"] }));
       return;
     }
 
