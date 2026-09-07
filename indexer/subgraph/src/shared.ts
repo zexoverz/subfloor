@@ -86,3 +86,38 @@ export function rateOf(received: BigInt, given: BigInt): BigInt {
   if (given.isZero()) return ZERO_BI;
   return received.times(RATE_ONE).div(given);
 }
+
+/// The Base ETH/USD aggregator, which is what emits `AnswerUpdated`. The proxy address that
+/// FloorRegistry is configured with emits nothing.
+export const ETH_USD_AGGREGATOR = Bytes.fromHexString("0x05c84a58fe042275b37db038baacd15f410c7bb0");
+
+/// Feed decimals for Base ETH/USD, verified on chain.
+export const FEED_DECIMALS = 8;
+
+/// The reference rate in the canonical convention, from a raw feed answer.
+///
+/// This mirrors `FloorRegistry._referenceRate` exactly, and it has to: the whole point of the index
+/// is that a stranger can recompute what settlement computed. Drift here and the daily report
+/// quietly disagrees with the chain.
+///
+///     forward:  answer * scale / 10**feedDecimals
+///     scale  =  1e18 * 10**quoteDecimals / 10**baseDecimals
+export function referenceRate(answer: BigInt, baseDecimals: number, quoteDecimals: number): BigInt {
+  const scale = RATE_ONE.times(pow10(quoteDecimals)).div(pow10(baseDecimals));
+  return answer.times(scale).div(pow10(FEED_DECIMALS));
+}
+
+export function pow10(n: number): BigInt {
+  let out = BigInt.fromI32(1);
+  const ten = BigInt.fromI32(10);
+  for (let i = 0; i < (n as i32); i++) out = out.times(ten);
+  return out;
+}
+
+/// Signed deviation of a realised rate from the reference, in bps. Negative is worse than the
+/// reference for the party being scored.
+export function deviationBps(executionRate: BigInt, reference: BigInt): i32 {
+  if (reference.isZero()) return 0;
+  const diff = executionRate.minus(reference).times(BigInt.fromI32(10000));
+  return diff.div(reference).toI32();
+}

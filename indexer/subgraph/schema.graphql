@@ -758,3 +758,26 @@ type ExecutionQualityDailySnapshot @entity(immutable: false) @dailySnapshot {
 
   timestamp: BigInt!
 }
+
+"""
+The most recent Chainlink answer this subgraph has seen, one row per aggregator.
+
+Written by the aggregator data source, read when a fill is scored. It exists because a subgraph
+cannot call `latestRoundData` for a historical block — the reference has to be indexed forward from
+the feed's own events and the most recent one at or before the fill is the one that applies.
+
+Note the address here is the **aggregator**, not the proxy. The proxy that everything else refers
+to (`0x71041ddd...` on Base) emits nothing at all; verified by querying it and getting zero logs.
+Chainlink can move a proxy to a new aggregator, and if that happens this data source stops
+receiving updates silently — `FillQuality.referenceAgeSeconds` growing without bound is the symptom.
+"""
+type ReferenceAnswer @entity(immutable: false) @regularPolling {
+  " The aggregator address "
+  id: Bytes!
+  " Raw answer, at the feed's own decimals "
+  answer: BigInt!
+  " Feed-reported update time, which is what staleness is measured against "
+  updatedAt: BigInt!
+  roundId: BigInt!
+  blockNumber: BigInt!
+}

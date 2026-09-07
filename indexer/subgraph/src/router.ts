@@ -1,7 +1,7 @@
 import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import { Swapped } from "../generated/FloorRouter/FloorRouter";
-import { Swap, VirtualPool, FillQuality, Floor } from "../generated/schema";
-import { eventId, getAccount, getProtocol, getToken, rateOf, ZERO_BD, ZERO_BI } from "./shared";
+import { Swap, VirtualPool, FillQuality, Floor, ReferenceAnswer } from "../generated/schema";
+import { deviationBps, ETH_USD_AGGREGATOR, eventId, getAccount, getProtocol, getToken, rateOf, referenceRate, ZERO_BD, ZERO_BI } from "./shared";
 
 /// The standardized entity, populated exactly as the schema defines it. Nothing SUBFLOOR-specific
 /// goes in here; a consumer who knows dex-agg queries this without reading our docs.
@@ -60,12 +60,22 @@ export function handleSwapped(event: Swapped): void {
   q.swap = swap.id;
   q.executionRate = rateOf(event.params.amountOut, event.params.amountIn);
 
-  // The reference join lands with the Chainlink AnswerUpdated data source. Until then these carry
-  // zero rather than a guess, and referenceAgeSeconds of -1 marks "not yet scored" so a report
-  // built on unscored fills is visibly wrong rather than quietly averaged.
-  q.referencePrice = ZERO_BI;
-  q.referenceAgeSeconds = -1;
-  q.adverseDeviationBps = 0;
+  // Scored against the most recent answer indexed at or before this block, which is the same one
+  // settlement compared against. `referenceAgeSeconds` of -1 still means "not scored" — it happens
+  // when the fill precedes any AnswerUpdated this subgraph has seen — and the daily report must
+  // exclude those rather than average them in as if they were fresh.
+  const ref = ReferenceAnswer.load(ETH_USD_AGGREGATOR);
+  if (ref) {
+    const refRate = referenceRate(ref.answer, tokenIn.decimals, tokenOut.decimals);
+    q.referencePrice = refRate;
+    q.adverseDeviationBps = deviationBps(q.executionRate, refRate);
+    const age = event.block.timestamp.minus(ref.updatedAt);
+    q.referenceAgeSeconds = age.lt(ZERO_BI) ? 0 : age.toI32();
+  } else {
+    q.referencePrice = ZERO_BI;
+    q.referenceAgeSeconds = -1;
+    q.adverseDeviationBps = 0;
+  }
 
   const floorId = Bytes.fromHexString(event.params.taker.toHexString()).concat(tokenIn.id).concat(tokenOut.id);
   const floor = Floor.load(floorId);

@@ -90,3 +90,26 @@ dataSources:
           handler: handleToleranceTightened
         - event: ToleranceWidened(indexed address,indexed address,indexed address,uint16,uint16,address)
           handler: handleToleranceWidened
+
+  # The Chainlink aggregator, not the proxy. The proxy emits nothing — checked by querying it for
+  # AnswerUpdated over 86k blocks and getting zero logs, while the aggregator returned three.
+  - kind: ethereum
+    name: ChainlinkEthUsd
+    network: base
+    source:
+      address: "0x05c84a58FE042275b37db038bAAcD15F410c7bB0"
+      abi: ChainlinkAggregator
+      startBlock: 35000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/reference.ts
+      entities:
+        - ReferenceAnswer
+      abis:
+        - name: ChainlinkAggregator
+          file: ./abis/ChainlinkAggregator.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
