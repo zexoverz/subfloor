@@ -11,8 +11,9 @@
   "dependencies": {
     "@ledgerhq/hw-ledger-key-ring-protocol": "0.10.7",
     "@ledgerhq/ledger-key-ring-protocol": "0.15.2",
-    "@ledgerhq/speculos-transport": "0.10.6",
     "@ledgerhq/live-dmk-speculos": "file:./vendor/live-dmk-speculos",
+    "@ledgerhq/speculos-transport": "0.10.6",
+    "viem": "^2.56.3",
     "ws": "8.18.3"
   },
   "overrides": {
