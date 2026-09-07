@@ -8,6 +8,8 @@ import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
 import { useFloor } from '../lib/floor.ts';
+import { DeviceSign } from './DeviceSign.tsx';
+import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import { Toasts } from './Toasts.tsx';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -33,7 +35,6 @@ export function SetupDialog({
   ceremony,
   open,
   onClose,
-  onSign,
   onNavigate,
 }: {
   state: VaultState;
@@ -48,7 +49,6 @@ export function SetupDialog({
   ceremony: CeremonyState;
   open: boolean;
   onClose: () => void;
-  onSign: () => void;
   onNavigate: (s: Screen) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -57,6 +57,12 @@ export function SetupDialog({
   const holdings = wallet.holdings ?? state.inventory;
   const fund = useFund(vault, wallet.address);
   const floorWrite = useFloor(vault);
+  /*
+   * Signing happens here rather than on its own route. §10 puts setup on one screen ending in one
+   * signature, and navigating away took the sheet — and the thing being authorised — off screen at
+   * the exact moment the owner is meant to be comparing it against the device.
+   */
+  const [signing, setSigning] = useState(false);
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});
@@ -194,6 +200,24 @@ export function SetupDialog({
                 {ledger.error ?? (ledger.supported ? copy.wallet.ledgerWhy : copy.wallet.ledgerUnsupported)}
               </p>
             </>
+          ) : signing ? (
+            <DeviceSign
+              rows={[
+                ['Action', 'Authorise agent'],
+                ['Delegate', delegate || mandate.delegateLabel],
+                ['Tokens', state.inventory.map((h) => h.symbol).join(' / ')],
+                ['Expires', `${mandate.expiresInDays} days`],
+              ]}
+              purpose="mandate"
+              payloadLine="Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)"
+              standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
+              onDone={() => {
+                setSigning(false);
+                ceremony.refresh();
+                onClose();
+              }}
+              onBack={() => setSigning(false)}
+            />
           ) : blocked ? (
             <div className="text-center">
               <p className="serif m-0 text-[14px] leading-relaxed text-muted">{blocked}</p>
@@ -335,7 +359,7 @@ export function SetupDialog({
                 {copy.onboarding.runsFor.replace('{days}', String(mandate.expiresInDays))}
               </p>
 
-              <Act wide primary disabled={!ready} onClick={onSign}>
+              <Act wide primary disabled={!ready} onClick={() => setSigning(true)}>
                 {copy.onboarding.action}
               </Act>
               <p className="mt-2 text-center text-[11.5px] text-faint">

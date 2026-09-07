@@ -26,7 +26,12 @@ export default function App() {
   // be linked to.
   const [screen, setScreen] = useRoute();
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
-  const [purpose, setPurpose] = useState<'mandate' | 'lower'>('mandate');
+  /*
+   * The mandate is signed inside the setup sheet now, so the only ceremony this route can still be
+   * about is loosening a floor — the other moment that needs the device. Nothing navigates here
+   * yet; lowering is unwired, like the guardian and delegate steps.
+   */
+  const purpose = 'lower' as const;
   // Opens itself once for an owner whose vault is not configured, and closes for good if they
   // would rather look around first.
   const [setupOpen, setSetupOpen] = useState(true);
@@ -152,10 +157,6 @@ export default function App() {
           ceremony={ceremony}
           open={setupOpen}
           onClose={() => setSetupOpen(false)}
-          onSign={() => {
-            setPurpose('mandate');
-            setScreen('ceremony');
-          }}
           onNavigate={setScreen}
         />
       )}
