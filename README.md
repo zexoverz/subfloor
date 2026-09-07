@@ -133,7 +133,9 @@ Three instructions were added to the free slots in the `0x20` guard bank:
 
 ## Deployed
 
-**Base Sepolia** — integration environment. Aqua is not deployed on Sepolia, so this deploys its own.
+**Base Sepolia** — integration environment. Canonical Aqua exists on Ethereum Sepolia but on no L2
+testnet, so this deploys its own from the same source. Byte-identical behaviour, different address;
+mainnet uses canonical Aqua and never forks it.
 
 | Contract | Address |
 |---|---|
