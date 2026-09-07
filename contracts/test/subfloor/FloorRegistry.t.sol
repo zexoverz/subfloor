@@ -6,6 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { FloorRegistry } from "../../src/subfloor/FloorRegistry.sol";
 import { IFloorRegistry } from "../../src/subfloor/IFloorRegistry.sol";
 import { SubfloorParams } from "../../src/subfloor/SubfloorParams.sol";
+import { FloorSettlementLemma } from "../halmos/FloorSettlement.sym.sol";
 
 contract MockAggregator {
     int256 public answer;
@@ -278,6 +279,34 @@ contract FloorRegistryTest is Test {
         vm.prank(alice);
         registry.setGuardian(ledger);
         assertEq(registry.guardian(alice), ledger);
+    }
+
+    // --- the lemma the symbolic proof is about ---------------------------------------------------
+
+    /// The Halmos proof runs against `FloorSettlementLemma`, a lift of this contract's comparison
+    /// into a standalone contract, because Halmos does not converge on the registry itself: the
+    /// oracle read through a storage mapping blows up the path count before it reaches the
+    /// comparison. That lift is only worth something if the two agree, so this pins them together.
+    ///
+    /// Without this test the proof is about a contract that resembles the shipped one, which is the
+    /// classic way a formal-methods claim ends up meaning nothing.
+    function testFuzz_theLemmaMatchesTheShippedComparison(uint96 given, uint96 received, uint96 absoluteRate) public {
+        vm.assume(absoluteRate > 0);
+
+        vm.prank(alice);
+        registry.raiseFloor(WETH, USDC, 10_000, uint256(absoluteRate));
+
+        FloorSettlementLemma lemma = new FloorSettlementLemma();
+
+        bool registryReverted;
+        try registry.checkFill(alice, WETH, USDC, uint256(given), uint256(received)) { }
+        catch { registryReverted = true; }
+
+        bool lemmaReverted;
+        try lemma.checkFill(uint256(given), uint256(received), uint256(absoluteRate)) { }
+        catch { lemmaReverted = true; }
+
+        assertEq(registryReverted, lemmaReverted, "the proved lemma and the shipped comparison disagree");
     }
 
     // --- the property the fuzzer is here for -----------------------------------------------------

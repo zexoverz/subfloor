@@ -79,35 +79,18 @@ contract FloorSettlementSymTest is SymTest, Test {
         assert(!ok);
     }
 
-    /// Strengthening never weakens, proved one component at a time.
-    ///
-    /// The combined version — both components varying at once — does not converge: 31 paths and a
-    /// solver timeout, because two independent `mulDiv` calls with `Ceil` rounding leave the solver
-    /// relating two symbolic divisions. Split, each half is small. The conjunction of the two is
-    /// the property, since `effectiveFloor` is a max over the two components and max is monotone in
-    /// each argument independently.
-    function check_tighteningToleranceRaisesTheFloor(uint256 referenceRate, uint16 bpsLoose, uint16 bpsTight, uint256 absolute)
-        public
-        view
-    {
-        vm.assume(bpsLoose <= 10_000 && bpsTight <= bpsLoose);
-        vm.assume(referenceRate < 2 ** 128);
-
-        uint256 weaker = lemma.effectiveFloor(referenceRate, bpsLoose, absolute);
-        uint256 stronger = lemma.effectiveFloor(referenceRate, bpsTight, absolute);
-        assert(stronger >= weaker);
-    }
-
-    function check_raisingTheBackstopRaisesTheFloor(uint256 referenceRate, uint16 bps, uint256 absSmall, uint256 absLarge)
-        public
-        view
-    {
-        vm.assume(bps <= 10_000);
-        vm.assume(absLarge >= absSmall);
-        vm.assume(referenceRate < 2 ** 128);
-
-        uint256 weaker = lemma.effectiveFloor(referenceRate, bps, absSmall);
-        uint256 stronger = lemma.effectiveFloor(referenceRate, bps, absLarge);
-        assert(stronger >= weaker);
-    }
+    // Monotonicity is deliberately not here.
+    //
+    // Both halves were written and both time out: 10 and 31 paths, 90s each, with the solver stuck
+    // relating two symbolic `mulDiv` calls under `Ceil` rounding. Bounding the reference rate below
+    // 2**128 was not enough, and splitting the two components apart was not either.
+    //
+    // It stays covered by `testFuzz_raisingIsMonotone`, which is fuzzed and mutation-tested, and it
+    // is a weaker property than the two above: it constrains how the floor may *change*, while the
+    // two proved lemmas constrain what settlement may *do*. The spec's cut order says to shrink
+    // Halmos to the settlement lemma rather than cut it, and this is what that looks like when the
+    // solver decides where the line falls.
+    //
+    // Do not quietly re-add it and let it time out in CI. A red proof step that everyone learns to
+    // ignore is worse than an honest gap.
 }
