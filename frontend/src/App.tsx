@@ -130,6 +130,7 @@ export default function App() {
           state={state}
           wallet={wallet}
           vault={vault}
+          ceremony={ceremony}
           open={setupOpen}
           onClose={() => setSetupOpen(false)}
           onSign={() => {

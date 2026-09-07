@@ -37,6 +37,8 @@ export type Wallet = {
   holdings: Holding[] | null;
   connect: () => void;
   disconnect: () => void;
+  /** Re-read balances. Sending tokens out changes them, and nothing else would say so. */
+  refresh: () => void;
 };
 
 export function useWallet(): Wallet {
@@ -44,6 +46,7 @@ export function useWallet(): Wallet {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
+  const [balanceTick, setBalanceTick] = useState(0);
   const unwatch = useRef<(() => void) | null>(null);
 
   /** Attach the account watcher and take the current answer. Shared by connect and by restore. */
@@ -150,7 +153,7 @@ export function useWallet(): Wallet {
     return () => {
       live = false;
     };
-  }, [address]);
+  }, [address, balanceTick]);
 
   return {
     address,
@@ -160,5 +163,6 @@ export function useWallet(): Wallet {
     holdings,
     connect: () => void connect(),
     disconnect: () => void disconnect(),
+    refresh: () => setBalanceTick((t) => t + 1),
   };
 }

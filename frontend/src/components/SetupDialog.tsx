@@ -5,7 +5,7 @@ import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
-import { useCeremony } from '../lib/ceremony.ts';
+import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -28,6 +28,7 @@ export function SetupDialog({
   state,
   wallet,
   vault,
+  ceremony,
   open,
   onClose,
   onSign,
@@ -37,6 +38,12 @@ export function SetupDialog({
   wallet: Wallet;
   /** The vault being set up — theirs if they deployed one, ours otherwise. */
   vault: `0x${string}` | null;
+  /*
+   * Passed in rather than read again here. A second useCeremony was a second copy of the same
+   * chain state, and refreshing one left the other showing what was true before the transaction —
+   * which is why funding the vault only appeared after a full reload.
+   */
+  ceremony: CeremonyState;
   open: boolean;
   onClose: () => void;
   onSign: () => void;
@@ -46,7 +53,6 @@ export function SetupDialog({
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
-  const ceremony = useCeremony(wallet.address, vault);
   const fund = useFund(vault, wallet.address);
   const ledger = useLedger();
 
