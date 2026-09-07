@@ -35,6 +35,7 @@ export function SetupDialog({
   state,
   wallet,
   vault,
+  focusKeys,
   ceremony,
   open,
   onClose,
@@ -44,6 +45,15 @@ export function SetupDialog({
   wallet: Wallet;
   /** The vault being set up — theirs if they deployed one, ours otherwise. */
   vault: `0x${string}` | null;
+  /*
+   * Open the keys section regardless of whether it is finished.
+   *
+   * The disclosure collapses once both addresses are set, which is right for someone completing
+   * setup and wrong for someone who came here to change one: the fields were hidden while the
+   * buttons that act on them stayed visible, so the sheet offered an action over an input nobody
+   * could reach.
+   */
+  focusKeys?: boolean;
   /*
    * Passed in rather than read again here. A second useCeremony was a second copy of the same
    * chain state, and refreshing one left the other showing what was true before the transaction —
@@ -356,7 +366,7 @@ export function SetupDialog({
                 * at again, and leaving two fields and two explanations open afterwards is most of
                 * this sheet's height spent on a decision already made.
                 */}
-              <details open={!keysReady} className="group mt-2 mb-6 border-t border-rule pt-5">
+              <details open={!keysReady || focusKeys} className="group mt-2 mb-6 border-t border-rule pt-5">
                 {/*
                   * Not an aside. The signature cannot be produced without both addresses, so an
                   * incomplete section says "required" and a filled one collapses to a tick — the

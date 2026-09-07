@@ -165,6 +165,8 @@ export default function App() {
           state={state}
           wallet={wallet}
           vault={vault}
+          // Opened by hand means they came to change something, not to be told it is done.
+          focusKeys={opened}
           ceremony={ceremony}
           open={sheetOpen}
           onClose={() => {

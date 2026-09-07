@@ -141,7 +141,12 @@ export const copy = {
     registerDevice: 'Register the device',
     /** Two writes, one of which cannot be taken back. Said before the press, not after. */
     registerDeviceHint: 'writes your device to the vault and to the registry. The registry entry can only be set once — after this, changing it needs a signature from the device being replaced.',
-    deviceRegistered: 'Registered on both.',
+    /*
+     * Not "you cannot change this" — you can, but not from here. The registry entry is write-once,
+     * so moving it needs rotateGuardian signed by the device being replaced, which this screen
+     * does not do yet.
+     */
+    deviceRegistered: 'Registered on the vault and the registry. The registry entry is set once — moving it now needs a signature from this device, which is not on this screen.',
     nameAgent: 'Name the agent',
     changeAgent: 'Change the agent',
     nameAgentHint: 'the address allowed to compose and ship strategies. It can never move a token out, and you can change it whenever you like.',
