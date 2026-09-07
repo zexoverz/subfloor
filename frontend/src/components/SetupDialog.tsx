@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { isAddress } from 'viem';
 import { Check, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
@@ -8,6 +8,9 @@ import { FloorControl } from './FloorControl.tsx';
 import { useCeremony } from '../lib/ceremony.ts';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
+// Lazy, like every other heavy thing here: a WebGL library is not something a visitor who never
+// opens this sheet should have paid to download.
+const Orb = lazy(() => import('./Orb.tsx').then((m) => ({ default: m.Orb })));
 import type { Wallet } from '../lib/wallet.ts';
 import type { Screen, VaultState } from '../types.ts';
 
@@ -72,7 +75,7 @@ export function SetupDialog({
   return (
     <dialog
       ref={ref}
-      className="sheet max-h-[88vh] w-[min(520px,calc(100vw-32px))] overflow-y-auto"
+      className="sheet max-h-[88vh] w-[min(880px,calc(100vw-32px))] overflow-y-auto"
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
@@ -87,7 +90,20 @@ export function SetupDialog({
         </button>
       </div>
 
-      <div className="p-5">
+      {/*
+        * Two columns on a wide screen: the orb holds the eye while the form is read, and it is
+        * hidden below the width where it would push the form off the screen. It carries nothing —
+        * every number in here is in the column on the right.
+        */}
+      <div className="grid md:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
+        <div className="hidden border-r border-rule md:block">
+          <div className="sticky top-0 h-[420px]">
+            {/* Nothing in its place while it loads: an empty panel is quieter than a spinner. */}
+            <Suspense fallback={null}>{open && <Orb />}</Suspense>
+          </div>
+        </div>
+
+        <div className="p-5">
           {!connected ? (
             <>
               <h1 className="m-0 text-center text-[17px] font-semibold">{copy.wallet.step1}</h1>
@@ -238,6 +254,7 @@ export function SetupDialog({
               </ol>
             </>
           )}
+        </div>
       </div>
     </dialog>
   );
