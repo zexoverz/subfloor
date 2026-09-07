@@ -45,7 +45,11 @@ export type Calibration = {
 
 export type Stats = {
   fills: number;
+  /** Notional traded, in dollars. "58 fills" is not a number a trading desk reads; volume is. */
+  notionalUsd: number;
   medianVsMidBps: number;
+  /** Markout at more than one horizon: one number cannot show whether a fill aged well. */
+  markout: { s30: number; m5: number; h1: number };
   worstFillAboveFloorBps: number;
   /** from Substreams. A refused fill emits nothing, so this can never come from an event handler. */
   refused: number;
@@ -132,6 +136,8 @@ export type VaultState = {
   tape: TapeEntry[];
   agent: string[];
   mandate: Mandate;
+  /** vault.delegate(). Shown in full, never as a nickname — see copy.wallet.agentAddressHint. */
+  delegate: `0x${string}` | null;
   fuzz: { programs: number; settledBelowFloor: number };
   addresses: Addresses;
 };

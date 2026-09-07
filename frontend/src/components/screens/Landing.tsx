@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Act, Ghost } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
+import { LetterGlitch } from '../LetterGlitch.tsx';
 import type { Screen } from '../../types.ts';
 
 /**
@@ -15,8 +16,17 @@ import type { Screen } from '../../types.ts';
  */
 export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   return (
-    <div className="mx-auto max-w-[900px] px-[clamp(18px,4vw,36px)] pt-[clamp(48px,8vw,88px)] pb-24">
-      <header className="max-w-[63ch]">
+    <div className="relative mx-auto max-w-[900px] px-[clamp(18px,4vw,36px)] pt-[clamp(48px,8vw,88px)] pb-24">
+      {/*
+        * Texture, not decoration competing with the type: it sits behind the hero only, at low
+        * opacity, and fades into the page's own ground. The headline has to stay the loudest thing
+        * on the screen — it is the whole pitch.
+        */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-[0.32]">
+        <LetterGlitch />
+      </div>
+
+      <header className="relative max-w-[63ch]">
         <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">
           {copy.landing.eyebrow}
         </p>
@@ -30,7 +40,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         </p>
       </header>
 
-      <section className="mt-10" aria-label="interactive fill">
+      <section className="relative mt-10" aria-label="interactive fill">
         <PriceLadder />
       </section>
 

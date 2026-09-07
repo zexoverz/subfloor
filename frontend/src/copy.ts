@@ -31,6 +31,9 @@ export const copy = {
     fillsSub: 'since the vault was funded',
     markout: 'Median markout',
     markoutSub: '30s post-fill vs reference',
+    notional: 'Notional traded',
+    notionalSub: 'what the vault actually moved',
+    horizons: 'markout · 30s / 5m / 1h',
     worst: 'Worst fill vs floor',
     worstSub: 'closest approach, never through',
     /** The old draft said "Blocked" here, which is the register this project stays out of. */
@@ -52,6 +55,19 @@ export const copy = {
     /** Only true when the rows came from the chain. Keyed off the same source flag as the badge. */
     everyRowLive:
       'Every row above is a real Base transaction, reconstructed from chain data rather than from our own logs.',
+    whoPaysTitle: 'Who this is for',
+    whoPays:
+      'A foundation lends treasury inventory to a market maker. Today that runs on a legal covenant — a document saying the inventory will not be traded below a certain price. Nobody can enforce a document while the trade is happening; you find out afterwards, in arbitration.',
+    whoPaysAfter:
+      'This turns the covenant into settlement arithmetic. The foundation’s device signs the floor, the market maker’s automation trades inside it, and the venue refuses anything below it. A clause becomes a rule that cannot be broken rather than one you sue over.',
+
+    explainTagline: 'An agent trades your whole portfolio. The worst price is the one you set.',
+    explainProblem:
+      'You give an AI agent access to your money, someone poisons what it reads, and it dumps your inventory at any price.',
+    explainWhy:
+      'Everything shipped today watches the agent and tries to catch bad behaviour. A watcher is a program forming an opinion, and the same attacker who fooled the agent can fool the watcher.',
+    explainHow: 'read how it works',
+
     everyRowSample: 'Sample rows. The vault is not live yet — every number here is an illustration.',
     /** "since the vault was funded" reads as history. It has not happened yet. */
     fillsSubPending: 'illustration · the vault is not funded yet',
@@ -111,6 +127,14 @@ export const copy = {
     useDevice: 'read it from my device',
     delegateLabel: "the agent's address",
     delegateHint: 'it composes and ships strategies. It can never move a token out of the vault.',
+    agentAddress: 'the agent',
+    /**
+     * Deliberately visible. The symbolic proof went green, so the agent's private key is published
+     * in the README — and a judge cannot connect "this key is public" to "this is the address the
+     * vault trades through" if the interface only ever shows a nickname. Hiding it here would turn
+     * the strongest claim in the entry into a claim about a label.
+     */
+    agentAddressHint: 'the key that trades. Its private key is published; the floor is what makes that safe.',
     mandateSummary: 'what your device will sign',
     invalidAddress: 'that is not an address',
     nothingToFund: 'enter an amount',
@@ -177,7 +201,7 @@ export const copy = {
     detail: 'detail',
     failClosed:
       'if the reference feed goes quiet, trading stops until it returns — nothing settles at an unknown price',
-    raise: 'RAISE FLOOR',
+    raise: 'RAISE SUBFLOOR',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
@@ -201,7 +225,8 @@ export const copy = {
   },
 
   refusal: {
-    heading: 'THE FLOOR HELD',
+    /** §10 of the 7 Sep spec renames this. Contract names (FloorRegistry, SettledBelowFloor) do not change. */
+    heading: 'THE SUBFLOOR HELD',
     attempted: 'attempted',
     yourFloor: 'your floor',
     /** The sentence a worried owner is actually looking for. It leads; the forensics follow. */

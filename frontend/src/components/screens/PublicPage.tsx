@@ -30,12 +30,19 @@ export function PublicPage({ state, source }: { state: VaultState; source: DataS
           onQuery={() => setQuery('{ fills(where: { vault: $vault }) { totalCount } }')}
         />
         <Tile
+          label={copy.desk.notional}
+          value={state.stats.notionalUsd}
+          format={(n) => `$${n.toLocaleString('en-US')}`}
+          sub={copy.desk.notionalSub}
+          onQuery={() => setQuery('{ fills(where: { vault: $vault }) { amountUSD } }')}
+        />
+        <Tile
           label={copy.desk.markout}
-          value={state.stats.medianVsMidBps}
+          value={state.stats.markout.s30}
           format={formatBps}
-          sub={copy.desk.markoutSub}
+          sub={`${formatBps(state.stats.markout.s30)} / ${formatBps(state.stats.markout.m5)} / ${formatBps(state.stats.markout.h1)} · ${copy.desk.horizons}`}
           tone="settle"
-          onQuery={() => setQuery('{ fills(where: { vault: $vault }) { markout30sBps referenceBps } }')}
+          onQuery={() => setQuery('{ fills(where: { vault: $vault }) { markout30sBps markout5mBps markout1hBps } }')}
         />
         <Tile
           label={copy.desk.worst}

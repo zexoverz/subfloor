@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPublicClient, formatUnits, http, type Address } from 'viem';
-import { base } from 'viem/chains';
+import { chain } from './chain.ts';
 import { TOKENS } from './tokens.ts';
 import { MOCK_ADDRESS, mocked } from './mock.ts';
 import type { Holding } from '../types.ts';
@@ -13,7 +13,7 @@ import type { Holding } from '../types.ts';
  * first floor into one signature, and a connection that happens before any of that is not part of
  * it. The screen reads inventory "from wallet", which is only true once this exists.
  */
-const publicClient = createPublicClient({ chain: base, transport: http() });
+const publicClient = createPublicClient({ chain, transport: http() });
 
 const BALANCE_OF = [
   {
@@ -26,7 +26,7 @@ const BALANCE_OF = [
 ] as const;
 
 /** Public by design: it identifies the app to Reown's relay, it authorises nothing. */
-const projectId = import.meta.env.VITE_REOWN_PROJECT_ID ?? '';
+const projectId = import.meta.env?.VITE_REOWN_PROJECT_ID ?? '';
 
 export type Wallet = {
   address: Address | null;

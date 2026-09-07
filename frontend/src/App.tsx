@@ -10,6 +10,7 @@ import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
+import { useCeremony } from './lib/ceremony.ts';
 import type { Screen } from './types.ts';
 
 /**
@@ -28,7 +29,9 @@ export default function App() {
 
   // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
   // stops describing a vault nobody owns.
-  const state = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
+  const ceremony = useCeremony(wallet.address, 0);
+  const withHoldings = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
+  const state = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
 
   const lower = (bps: number) => {
     setDraftBps(bps);

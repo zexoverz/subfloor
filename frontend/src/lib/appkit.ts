@@ -1,5 +1,5 @@
 import { createAppKit } from '@reown/appkit';
-import { base } from '@reown/appkit/networks';
+import { base, baseSepolia } from '@reown/appkit/networks';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import type { Config } from '@wagmi/core';
 
@@ -19,11 +19,14 @@ let started: { modal: ReturnType<typeof createAppKit>; config: Config } | undefi
 export function startAppKit() {
   if (started) return started;
 
-  const adapter = new WagmiAdapter({ networks: [base], projectId, ssr: false });
+  // One network, and it is the one the contracts are on. Offering a switcher here would invite an
+  // owner to connect to a chain where their vault does not exist.
+  const network = import.meta.env.VITE_CHAIN === 'base' ? base : baseSepolia;
+  const adapter = new WagmiAdapter({ networks: [network], projectId, ssr: false });
 
   const modal = createAppKit({
     adapters: [adapter],
-    networks: [base],
+    networks: [network],
     projectId,
     metadata: {
       name: 'SUBFLOOR',

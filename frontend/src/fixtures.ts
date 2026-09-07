@@ -62,6 +62,8 @@ export const fixtures: VaultState = {
   // Zone 1. Fills and markout from the subgraph; `refused` from Substreams.
   stats: {
     fills: 47,
+    notionalUsd: 14_200,
+    markout: { s30: 9, m5: 6, h1: -2 },
     medianVsMidBps: 9,
     worstFillAboveFloorBps: 3,
     refused: 2,
@@ -94,6 +96,9 @@ export const fixtures: VaultState = {
 
   // The mandate the guardian device signed, from AquaGuardVault.
   mandate: { delegateLabel: 'agent-7', expiresInDays: 14 },
+
+  // vault.delegate(). Null until one is registered on chain.
+  delegate: null,
 
   /**
    * Read from docs/fuzz-counter.json, which only the fuzz-cron workflow writes and which anyone

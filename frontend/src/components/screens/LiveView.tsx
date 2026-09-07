@@ -1,4 +1,4 @@
-import { Activity, ArrowDownToLine, Bot, ChartLine, Receipt, Wallet } from 'lucide-react';
+import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Receipt, Wallet } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead, Foot, Note } from '../Card.tsx';
 import { Tile, Tiles } from '../Tiles.tsx';
@@ -6,6 +6,7 @@ import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
+import { addressUrl } from '../../lib/chain.ts';
 import type { DataSource, VaultState } from '../../types.ts';
 
 /**
@@ -24,6 +25,21 @@ export function LiveView({ state, source }: { state: VaultState; source: DataSou
 
   return (
     <>
+      {/*
+        * #102: someone who opens this link has nobody next to them. The tagline, the problem, and
+        * why watching fails — then the dashboard, which is evidence for a claim they have now read
+        * rather than an operator console they have to decode.
+        */}
+      <div className="mb-5 border-b border-rule pb-5">
+        <h1 className="m-0 max-w-[32ch] text-[clamp(20px,3vw,26px)] leading-[1.15] font-semibold tracking-tight text-balance">
+          {copy.desk.explainTagline}
+        </h1>
+        <p className="serif mt-2.5 max-w-[62ch] text-[15px] leading-relaxed text-muted">
+          {copy.desk.explainProblem} {copy.desk.explainWhy}
+        </p>
+        <p className="serif mt-2 max-w-[62ch] text-[15px] leading-relaxed text-ink">{copy.scope}.</p>
+      </div>
+
       <Tiles>
         <Tile
           label={copy.desk.fills}
@@ -31,10 +47,16 @@ export function LiveView({ state, source }: { state: VaultState; source: DataSou
           sub={live ? `${copy.desk.fillsSub} · ${stats.since}` : copy.desk.fillsSubPending}
         />
         <Tile
+          label={copy.desk.notional}
+          value={stats.notionalUsd}
+          format={(n) => `$${n.toLocaleString('en-US')}`}
+          sub={copy.desk.notionalSub}
+        />
+        <Tile
           label={copy.desk.markout}
-          value={stats.medianVsMidBps}
+          value={stats.markout.s30}
           format={formatBps}
-          sub={copy.desk.markoutSub}
+          sub={`${formatBps(stats.markout.s30)} / ${formatBps(stats.markout.m5)} / ${formatBps(stats.markout.h1)} · ${copy.desk.horizons}`}
           tone="settle"
         />
         <Tile
@@ -144,6 +166,26 @@ export function LiveView({ state, source }: { state: VaultState; source: DataSou
           <Card>
             <CardHead icon={Bot} left={copy.live.agentNow} right={<Activity size={12} strokeWidth={1.6} />} />
             <CardBody>
+              {/* #111: the address, not a nickname — the published key has to be checkable. */}
+              {state.delegate && (
+                <div className="mb-3 border-b border-rule pb-3">
+                  <span className="text-[10.5px] tracking-[0.08em] text-faint uppercase">
+                    {copy.wallet.agentAddress}
+                  </span>
+                  <a
+                    href={addressUrl(state.delegate)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium break-all hover:text-brass"
+                  >
+                    {state.delegate}
+                    <ExternalLink size={11} strokeWidth={1.7} className="shrink-0 text-faint" />
+                  </a>
+                  <p className="serif mt-1 text-[12.5px] leading-relaxed text-faint">
+                    {copy.wallet.agentAddressHint}
+                  </p>
+                </div>
+              )}
               <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
                 {agent.map((line) => (
                   <li key={line} className="text-muted">
@@ -160,6 +202,13 @@ export function LiveView({ state, source }: { state: VaultState; source: DataSou
       <Note className="serif mt-4.5 text-[14.5px]">
         {live ? copy.desk.everyRowLive : copy.desk.everyRowSample}
       </Note>
+
+      {/* The second question a trading judge asks, answered where second questions belong. */}
+      <section className="mt-8 border-t border-rule pt-5">
+        <h2 className="mb-2.5 text-[10.5px] tracking-[0.11em] text-faint uppercase">{copy.desk.whoPaysTitle}</h2>
+        <p className="serif m-0 max-w-[68ch] text-[15px] leading-relaxed text-muted">{copy.desk.whoPays}</p>
+        <p className="serif mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink">{copy.desk.whoPaysAfter}</p>
+      </section>
       <Note className="serif text-[14.5px]">{copy.scope}</Note>
     </>
   );

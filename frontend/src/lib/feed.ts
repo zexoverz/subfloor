@@ -83,7 +83,7 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; source:
   // VITE_DATA_SOURCE lets an environment ask for the feed explicitly; dev defaults to it, and
   // anything else falls back to fixtures. Whatever it says, the badge says the same thing — the
   // point of the switch is which honest state the page is in, never whether it tells you.
-  const configured = import.meta.env.VITE_DATA_SOURCE as DataSource | undefined;
+  const configured = import.meta.env?.VITE_DATA_SOURCE as DataSource | undefined;
   const simulated = configured === 'simulated' || (configured === undefined && import.meta.env.DEV);
   const [extra, setExtra] = useState<TapeEntry[]>([]);
 

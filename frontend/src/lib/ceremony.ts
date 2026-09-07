@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPublicClient, http, type Address } from 'viem';
-import { base } from 'viem/chains';
+import { chain } from './chain.ts';
 import {
   addresses,
   deployed,
@@ -35,11 +35,13 @@ export type Step = {
   device: boolean;
 };
 
-const publicClient = createPublicClient({ chain: base, transport: http() });
+const publicClient = createPublicClient({ chain, transport: http() });
 
 export type CeremonyState = {
   deployed: boolean;
   isOwner: boolean | null;
+  /** vault.delegate(), for the screens that must show the address rather than a nickname. */
+  delegate: Address | null;
   steps: Step[];
   refresh: () => void;
 };
@@ -137,6 +139,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
   return {
     deployed: mocked || deployed,
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
+    delegate,
     steps,
     refresh,
   };

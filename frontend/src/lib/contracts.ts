@@ -8,10 +8,10 @@ import { encodeFunctionData, type Address } from 'viem';
  * floor set on nothing.
  */
 export const addresses = {
-  registry: (import.meta.env.VITE_FLOOR_REGISTRY ?? '') as Address | '',
-  router: (import.meta.env.VITE_FLOOR_ROUTER ?? '') as Address | '',
-  vault: (import.meta.env.VITE_VAULT ?? '') as Address | '',
-  aqua: (import.meta.env.VITE_AQUA ?? '') as Address | '',
+  registry: (import.meta.env?.VITE_FLOOR_REGISTRY ?? '') as Address | '',
+  router: (import.meta.env?.VITE_FLOOR_ROUTER ?? '') as Address | '',
+  vault: (import.meta.env?.VITE_VAULT ?? '') as Address | '',
+  aqua: (import.meta.env?.VITE_AQUA ?? '') as Address | '',
 };
 
 export const deployed = Boolean(addresses.registry && addresses.vault);
