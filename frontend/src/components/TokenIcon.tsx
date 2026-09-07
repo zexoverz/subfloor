@@ -26,18 +26,22 @@ export function TokenIcon({ symbol, size = 16 }: { symbol: string; size?: number
   if (symbol === 'USDC') {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">
+        {/* Stroked rather than typeset: a text glyph inherited whatever font was around and sat
+            off-centre at this size. */}
         <circle cx="12" cy="12" r="12" fill="#2775CA" />
-        <text
-          x="12"
-          y="16.6"
-          textAnchor="middle"
-          fill="#fff"
-          fontSize="12.5"
-          fontWeight="600"
-          fontFamily="system-ui, sans-serif"
-        >
-          $
-        </text>
+        <path
+          d="M12 5.6v12.8"
+          stroke="#fff"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M15.1 9.1c0-1.4-1.4-2.2-3.1-2.2s-3.1.8-3.1 2.2c0 3.2 6.2 1.5 6.2 4.8 0 1.4-1.4 2.2-3.1 2.2s-3.1-.8-3.1-2.2"
+          stroke="#fff"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          fill="none"
+        />
       </svg>
     );
   }
