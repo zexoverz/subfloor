@@ -35,7 +35,10 @@ export default function App() {
   const withHoldings = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
-  const state = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
+  const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
+  const state = ceremony.feed
+    ? { ...withFloor, reference: { ...withFloor.reference, feed: ceremony.feed } }
+    : withFloor;
 
   // Lowering is answered in the sheet on the board now; this only records what was signed.
   const lower = (bps: number) => setDraftBps(bps);

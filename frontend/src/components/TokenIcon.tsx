@@ -76,3 +76,21 @@ export function TokenIcon({ symbol, size = 16 }: { symbol: string; size?: number
     </svg>
   );
 }
+
+/**
+ * The Chainlink mark: a hexagon ring. Drawn here for the same reason the token marks are — two
+ * shapes, one brand colour, and no request to a CDN on the line that says whether the reference is
+ * fresh enough to trade against.
+ */
+export function ChainlinkMark({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 1.6l9 5.2v10.4l-9 5.2-9-5.2V6.8l9-5.2zm0 4.2L6.6 8.9v6.2L12 18.2l5.4-3.1V8.9L12 5.8z"
+        fill="#375BD2"
+      />
+    </svg>
+  );
+}

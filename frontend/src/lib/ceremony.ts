@@ -49,6 +49,8 @@ export type CeremonyState = {
    * class of lie as a fixture labelled live.
    */
   floor: Floor | null;
+  /** The reference feed the registry actually consults, so the link points at the real oracle. */
+  feed: Address | null;
   steps: Step[];
   refresh: () => void;
 };
@@ -59,6 +61,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
   const [owner, setOwner] = useState<Address | null>(null);
   const [floorsSet, setFloorsSet] = useState(false);
   const [floor, setFloor] = useState<Floor | null>(null);
+  const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
@@ -76,7 +79,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
       const vault = addresses.vault as Address;
       const registry = addresses.registry as Address;
       try {
-        const [o, d, g, sell, buy, registryGuardian, configured] = await Promise.all([
+        const [o, d, g, sell, buy, registryGuardian, configured, reference] = await Promise.all([
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'delegate' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'guardian' }),
@@ -84,6 +87,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'effectiveFloor', args: [vault, USDC, WETH] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'guardian', args: [vault] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'floor', args: [vault, WETH, USDC] }),
+          publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'referenceFeed', args: [WETH, USDC] }),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -100,6 +104,9 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
 
         const [isConfigured, bps, absolute] = configured as [boolean, number, bigint];
         setFloor({ enforced: isConfigured, maxAdverseBps: bps, absoluteRate: absolute });
+
+        const [feedAddress] = reference as [Address, boolean, number, number, bigint];
+        setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
       } catch {
         if (live) setOwner(null);
       }
@@ -153,6 +160,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     delegate,
     floor,
+    feed,
     steps,
     refresh,
   };

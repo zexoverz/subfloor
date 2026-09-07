@@ -9,7 +9,7 @@ import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
-import { TokenIcon } from '../TokenIcon.tsx';
+import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
 import { Act } from '../Button.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
@@ -150,7 +150,21 @@ export function LiveView({
                 </div>
               </dl>
               <p className="mt-3 flex items-center gap-2 border-t border-rule pt-3 text-[11px] text-faint">
-                {reference.name} · {reference.ageSeconds}s
+                <ChainlinkMark />
+                {/* Linked, because "the reference" is a claim until someone can open it. */}
+                {reference.feed ? (
+                  <a
+                    href={addressUrl(reference.feed)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-brass"
+                  >
+                    {reference.name}
+                  </a>
+                ) : (
+                  reference.name
+                )}
+                · {reference.ageSeconds}s
                 <span className={feedFresh ? 'text-settle' : 'text-refuse'}>
                   <span className="mr-1 inline-block size-[6px] rounded-full bg-current align-[1px]" />
                   {feedFresh ? copy.desk.fresh : copy.desk.stale}

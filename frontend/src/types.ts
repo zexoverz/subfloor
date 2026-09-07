@@ -24,6 +24,8 @@ export type PendingLowering = {
 
 export type Reference = {
   name: string;
+  /** The aggregator the registry consults, read from it rather than written down here. */
+  feed?: `0x${string}` | null;
   price: number;
   ageSeconds: number;
   stalenessBoundSeconds: number;
