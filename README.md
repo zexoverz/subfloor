@@ -143,13 +143,26 @@ them.
 testnet, so this deploys its own from the same source. Byte-identical behaviour, different address;
 mainnet uses canonical Aqua and never forks it.
 
-| Contract | Address |
-|---|---|
-| FloorRegistry | [`0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6`](https://sepolia.basescan.org/address/0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6) |
-| FloorRouter | [`0x653363d9EfE33898DB7948FB78EB30c43e0B8498`](https://sepolia.basescan.org/address/0x653363d9EfE33898DB7948FB78EB30c43e0B8498) |
-| VaultFactory | [`0x1049E6c037B3510C79AF082AF84004b7F5Ce3227`](https://sepolia.basescan.org/address/0x1049E6c037B3510C79AF082AF84004b7F5Ce3227) |
-| AquaGuardVault (ours) | [`0x441EE52d939E46A33919C4295e88d32458797503`](https://sepolia.basescan.org/address/0x441EE52d939E46A33919C4295e88d32458797503) |
-| Aqua (ours, not canonical) | [`0x5A3B6dBff7d9Eea9E2fcfd22FaAf0959D4057BFF`](https://sepolia.basescan.org/address/0x5A3B6dBff7d9Eea9E2fcfd22FaAf0959D4057BFF) |
+| Contract | Address | Verified |
+|---|---|---|
+| FloorRegistry | [`0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123`](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123) | Sourcify |
+| FloorRouter | [`0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709`](https://sepolia.basescan.org/address/0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709) | pending |
+| VaultFactory | [`0xD985Ad481D396D37344f7c1229433a7D342cf1F1`](https://sepolia.basescan.org/address/0xD985Ad481D396D37344f7c1229433a7D342cf1F1) | Sourcify |
+| AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
+| Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
+| tUSDC (testnet stand-in) | [`0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD`](https://sepolia.basescan.org/address/0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD) | — |
+
+**Why there is a stand-in for USDC here, and only here.** Circle's testnet USDC is not
+permissionlessly mintable — `isMinter` is false for us and the masterMinter is Circle's — so funding
+a two-sided book means going through their faucet by hand, for every address, every time. That
+blocks the interface and the taker on something with nothing to do with the mechanism. `tUSDC` is
+six decimals, so decimal handling is exercised exactly as it is on mainnet. The registry configures
+**both** pairs: real WETH/USDC for what mainnet will use, WETH/tUSDC for what runs today. Mainnet
+uses real USDC and this contract does not exist there.
+
+The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
+concentrated book is shipped and live — `strategyHash 0xc54042b1…`, mandate signed EIP-712 by the
+guardian.
 
 **Base mainnet** — _pending, see below._
 
@@ -159,7 +172,7 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.4
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.1.0
 ```
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
@@ -288,11 +301,12 @@ it worth less.
 
 | | |
 |---|---|
-| Contracts, Base Sepolia | **live and verified** — [addresses above](#deployed) |
-| Floors, both directions of WETH/USDC | **set on chain**, keyed to the vault |
+| Contracts, Base Sepolia | **live**, [addresses above](#deployed); three of four verified on Sourcify |
+| Floors, both directions | **set on chain**, keyed to the vault |
+| A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
-| Calibration and the daily report | **built**, and honestly returning their cold-start state |
-| Fills, and the execution-quality dataset | _none yet_ — the index has a working pipeline and no rows |
+| Calibration and the daily report | **live** at `/api/calibration` and `/api/report` |
+| Fills, and the execution-quality dataset | _none yet_ — the book is quoting, nothing has taken it |
 | Base mainnet, with our own money | _pending_ |
 | A rogue agent, refused, on chain | _pending_ |
 
