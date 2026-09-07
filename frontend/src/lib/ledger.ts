@@ -39,6 +39,8 @@ export type Ledger = {
   address: Address | null;
   error: string | null;
   connect: () => void;
+  /** Hand the device back, so other apps on the machine can open it. */
+  release: () => Promise<void>;
   signTypedData: (typedData: unknown) => Promise<string | null>;
 };
 
@@ -142,6 +144,37 @@ export function useLedger(): Ledger {
     }
   }, [supported]);
 
+  /**
+   * Give the device back.
+   *
+   * WebHID hands out an exclusive handle: while this page holds the Ledger, nothing else on the
+   * machine can open it — MetaMask lists it and greys out Connect, Ledger Live sees nothing. We
+   * were opening it and never closing it, so one visit to the setup sheet took the device hostage
+   * for the life of the tab.
+   *
+   * Called on unmount as well as by hand, because the common way to leave this screen is to
+   * navigate away rather than to press anything.
+   */
+  const release = useCallback(async () => {
+    const open = session.current;
+    if (!open) return;
+    session.current = null;
+    setAddress(null);
+    try {
+      await open.dmk.disconnect({ sessionId: open.sessionId });
+    } catch {
+      // Already gone — unplugged, or the browser reclaimed it. Nothing to report.
+    }
+    try {
+      await open.dmk.close?.();
+    } catch {
+      // Older kits have no close(); disconnect alone frees the handle there.
+    }
+  }, []);
+
+  // Leaving the page is the usual exit, so the handle has to be freed there and not only on a press.
+  useEffect(() => () => void release(), [release]);
+
   const signTypedData = useCallback(async (typedData: unknown) => {
     if (!session.current) return null;
     try {
@@ -155,5 +188,5 @@ export function useLedger(): Ledger {
     }
   }, []);
 
-  return { supported, presence, connecting, address, error, connect, signTypedData };
+  return { supported, presence, connecting, address, error, connect, release, signTypedData };
 }

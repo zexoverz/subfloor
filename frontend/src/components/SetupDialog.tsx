@@ -71,7 +71,16 @@ export function SetupDialog({
   const [guardian, setGuardian] = useState('');
   const [delegate, setDelegate] = useState('');
 
-  const funded = holdings.some((h) => Number(amounts[h.symbol]) > 0);
+  /*
+   * Funded means the vault holds something, read from the vault's own balance by the ceremony —
+   * not that a number has been typed into a field. Typing is a proposal; the mandate is about
+   * inventory that exists. The typed version was wrong in both directions: it let the sheet look
+   * ready before anything had moved, and it went back to "not funded" the moment the amounts were
+   * cleared after a successful send.
+   */
+  const funded = ceremony.steps.some((step) => step.id === 'fund' && step.done);
+  /** What the send button needs, which is a different question: is there an amount to send. */
+  const hasAmount = holdings.some((h) => Number(amounts[h.symbol]) > 0);
   // WETH is the one that needs a wrap, and only when the wallet is short of what was typed.
   const wrapping = Number(amounts.WETH ?? 0) > (holdings.find((h) => h.symbol === 'WETH')?.amount ?? 0);
   const keysReady = isAddress(guardian) && isAddress(delegate);
@@ -226,10 +235,10 @@ export function SetupDialog({
                       ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
                     )
                   }
-                  disabled={!funded || fund.sending || !vault}
+                  disabled={!hasAmount || fund.sending || !vault}
                 >
                   {/* Say why it cannot be pressed, rather than looking broken. */}
-                  {fund.step ?? (funded ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
+                  {fund.step ?? (hasAmount ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
                 </Act>
               </div>
 

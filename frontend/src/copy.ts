@@ -318,7 +318,8 @@ export const copy = {
     action: 'SIGN ON YOUR DEVICE',
     /** Load-bearing: it sets up clear-signing as confirmation, before the device ever lights up. */
     underAction: 'the device will show you exactly these numbers',
-    noInventory: 'fund the wallet first',
+    /** The vault, not the wallet: they are different addresses and only one of them settles. */
+    noInventory: 'the vault holds nothing yet — send inventory in above',
     runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
     /** Required, and named so. It used to read "the keys behind this", which sounds like an aside. */
     advanced: 'two keys, set once',
