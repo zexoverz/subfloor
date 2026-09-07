@@ -59,11 +59,26 @@ jobs:
         run: |
           echo '${{ steps.campaign.outputs.result }}' | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)['ok'] else 1)"
 
+      # A campaign takes tens of minutes, so main has usually moved by the time it finishes. The
+      # first run lost 12,000 verified programs to exactly that: the count was right, the push was
+      # rejected, and the job failed with nothing recorded. Rebase and retry rather than drop it.
       - name: Update the counter
         run: |
           python3 scripts/update-fuzz-counter.py '${{ steps.campaign.outputs.result }}'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/fuzz-counter.json
-          git diff --staged --quiet || git commit -m "chore: fuzz campaign, cumulative counter"
-          git push
+          git diff --staged --quiet && exit 0
+          git commit -m "chore: fuzz campaign, cumulative counter"
+
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "push rejected, rebasing (attempt $attempt)"
+            git pull --rebase --autostash origin main || exit 1
+            sleep $((attempt * 5))
+          done
+          echo "could not push the counter after 5 attempts" >&2
+          exit 1

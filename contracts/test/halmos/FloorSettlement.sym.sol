@@ -50,7 +50,17 @@ contract FloorSettlementSymTest is SymTest, Test {
     }
 
     /// For all inputs: if the check passes, what actually moved was at or above the floor.
+    ///
+    /// Bounded to amounts below 2**128. That is not a convenience: OpenZeppelin's `mulDiv` carries a
+    /// full 512-bit path for products that overflow 256 bits, and leaving the domain open makes the
+    /// solver explore it without terminating in any time worth waiting for. Under 2**128 the product
+    /// with 1e18 cannot overflow, the 512-bit branch is unreachable, and what is proved is the
+    /// arithmetic that actually runs for every token amount that can exist — total supply of every
+    /// real ERC-20 is orders of magnitude below this bound.
     function check_passingImpliesAtOrAboveTheFloor(uint256 given, uint256 received, uint256 floorRate) public view {
+        vm.assume(given < 2 ** 128);
+        vm.assume(received < 2 ** 128);
+
         lemma.checkFill(given, received, floorRate);
         assert(lemma.executionRate(given, received) >= floorRate);
     }
@@ -59,6 +69,9 @@ contract FloorSettlementSymTest is SymTest, Test {
     /// that never passes a bad fill *and never passes a good one either* would satisfy the lemma
     /// above and be worthless.
     function check_belowTheFloorAlwaysReverts(uint256 given, uint256 received, uint256 floorRate) public {
+        vm.assume(given < 2 ** 128);
+        vm.assume(received < 2 ** 128);
+
         uint256 rate = lemma.executionRate(given, received);
         vm.assume(rate < floorRate);
 
@@ -66,21 +79,35 @@ contract FloorSettlementSymTest is SymTest, Test {
         assert(!ok);
     }
 
-    /// Strengthening never weakens: a smaller tolerance and a larger backstop both raise the floor,
-    /// for all reference rates. This is the property `raiseFloor`'s monotonicity check relies on.
-    function check_floorIsMonotoneInBothComponents(
-        uint256 referenceRate,
-        uint16 bpsLoose,
-        uint16 bpsTight,
-        uint256 absSmall,
-        uint256 absLarge
-    ) public view {
+    /// Strengthening never weakens, proved one component at a time.
+    ///
+    /// The combined version — both components varying at once — does not converge: 31 paths and a
+    /// solver timeout, because two independent `mulDiv` calls with `Ceil` rounding leave the solver
+    /// relating two symbolic divisions. Split, each half is small. The conjunction of the two is
+    /// the property, since `effectiveFloor` is a max over the two components and max is monotone in
+    /// each argument independently.
+    function check_tighteningToleranceRaisesTheFloor(uint256 referenceRate, uint16 bpsLoose, uint16 bpsTight, uint256 absolute)
+        public
+        view
+    {
         vm.assume(bpsLoose <= 10_000 && bpsTight <= bpsLoose);
-        vm.assume(absLarge >= absSmall);
-        vm.assume(referenceRate < type(uint128).max);
+        vm.assume(referenceRate < 2 ** 128);
 
-        uint256 weaker = lemma.effectiveFloor(referenceRate, bpsLoose, absSmall);
-        uint256 stronger = lemma.effectiveFloor(referenceRate, bpsTight, absLarge);
+        uint256 weaker = lemma.effectiveFloor(referenceRate, bpsLoose, absolute);
+        uint256 stronger = lemma.effectiveFloor(referenceRate, bpsTight, absolute);
+        assert(stronger >= weaker);
+    }
+
+    function check_raisingTheBackstopRaisesTheFloor(uint256 referenceRate, uint16 bps, uint256 absSmall, uint256 absLarge)
+        public
+        view
+    {
+        vm.assume(bps <= 10_000);
+        vm.assume(absLarge >= absSmall);
+        vm.assume(referenceRate < 2 ** 128);
+
+        uint256 weaker = lemma.effectiveFloor(referenceRate, bps, absSmall);
+        uint256 stronger = lemma.effectiveFloor(referenceRate, bps, absLarge);
         assert(stronger >= weaker);
     }
 }
