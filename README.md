@@ -198,6 +198,10 @@ worth more than one you are asked to believe.
 **An MCP server and a skill** over the same index are in `indexer/mcp/`, so an agent can ask the
 venue a question without first learning the schema.
 
+Both consumers are live at `https://web-production-37798.up.railway.app` — `/api/calibration` and
+`/api/report` — served from the same origin as the site itself, so a number on screen and the query
+behind it come from one place.
+
 One detail decides the whole indexing design: **a refused fill emits nothing.**
 `SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
 log-driven. The refusal counter — the headline number — provably cannot come from a subgraph at all.

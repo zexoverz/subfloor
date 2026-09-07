@@ -1,0 +1,10 @@
+**/node_modules
+contracts/out
+contracts/cache
+contracts/broadcast
+indexer/substreams/target
+frontend/dist
+.git
+agent
+docs/SPEC.md
+feedbacks
