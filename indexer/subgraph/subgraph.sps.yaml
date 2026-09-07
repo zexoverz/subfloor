@@ -1,0 +1,20 @@
+specVersion: 1.0.0
+description: >
+  Substreams-powered variant. Same Refusal entity, produced by the Substreams module reading
+  transaction status instead of by a log handler, because a refused fill emits no logs at all.
+repository: https://github.com/zexoverz/subfloor
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: substreams
+    name: Refusals
+    network: base
+    source:
+      package:
+        moduleName: map_refusals
+        file: ../substreams/subfloor-refusals-v0.1.0.spkg
+    mapping:
+      apiVersion: 0.0.9
+      kind: substreams/graph-entities
+      file: ./src/substreams.ts
+      handler: handleRefusals
