@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPublicClient, formatUnits, http, type Address } from 'viem';
 import { chain } from './chain.ts';
-import { TOKENS } from './tokens.ts';
+import { ACTIVE_TOKENS } from './tokens.ts';
 import { MOCK_ADDRESS, mocked } from './mock.ts';
 import type { Holding } from '../types.ts';
 
@@ -97,7 +97,7 @@ export function useWallet(): Wallet {
 
     (async () => {
       const balances = await Promise.all(
-        Object.entries(TOKENS).map(async ([token, meta]) => {
+        ACTIVE_TOKENS.map(async ({ address: token, ...meta }) => {
           try {
             const raw = await publicClient.readContract({
               address: token as Address,

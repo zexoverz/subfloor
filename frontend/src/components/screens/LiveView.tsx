@@ -1,4 +1,4 @@
-import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Receipt, Wallet } from 'lucide-react';
+import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Pencil, Receipt, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead } from '../Card.tsx';
@@ -109,7 +109,8 @@ export function LiveView({
                   <div key={h.symbol} className="flex items-baseline justify-between gap-3 py-1">
                     <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{h.symbol}</dt>
                     <dd className="m-0 text-right font-medium">
-                      {h.amount}
+                      {/* A read that failed is not a zero balance and must not be rendered as one. */}
+                      {Number.isNaN(h.amount) ? '—' : h.amount}
                       {h.mandateMax !== undefined && (
                         <span className="ml-2 text-[10.5px] font-normal text-faint">of {h.mandateMax}</span>
                       )}
@@ -137,7 +138,14 @@ export function LiveView({
               left={copy.desk.standing}
               // Adjusted in place: leaving the board to change one number loses the tape, the
               // freshness reading and the fills the number is being judged against.
-              right={<Ghost onClick={() => setAdjusting(true)}>{copy.onboarding.adjust}</Ghost>}
+              right={
+                <Ghost onClick={() => setAdjusting(true)}>
+                  <span className="flex items-center gap-1.5">
+                    <Pencil size={11} strokeWidth={1.8} />
+                    {copy.onboarding.adjust}
+                  </span>
+                </Ghost>
+              }
             />
             <CardBody className="py-1">
               {[

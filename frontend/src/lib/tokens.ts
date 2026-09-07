@@ -22,6 +22,19 @@ export const USDC = (import.meta.env?.VITE_CHAIN === 'base' ? MAINNET_USDC : SEP
  * other, and a refusal silently missing from the tape is the worst possible way for that to show
  * up. Knowing an address is not the same as trading on it.
  */
+/**
+ * The tokens this deployment actually trades, on the chain it is pointed at.
+ *
+ * Deliberately separate from TOKENS below. That map exists so the refusal decoder recognises an
+ * address it meets; this list is what the vault holds and what balances are read for. Using one for
+ * both put a mainnet USDC address into a Sepolia balance read, which has no contract behind it —
+ * the read failed, and the vault card showed three tokens, one of them NaN.
+ */
+export const ACTIVE_TOKENS: { address: Address; symbol: string; decimals: number }[] = [
+  { address: WETH, symbol: 'WETH', decimals: 18 },
+  { address: USDC, symbol: 'USDC', decimals: 6 },
+];
+
 export const TOKENS: Record<string, TokenMeta> = {
   [WETH.toLowerCase()]: { symbol: 'WETH', decimals: 18 },
   [MAINNET_USDC.toLowerCase()]: { symbol: 'USDC', decimals: 6 },
