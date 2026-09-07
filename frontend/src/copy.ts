@@ -291,7 +291,9 @@ export const copy = {
     underAction: 'the device will show you exactly these numbers',
     noInventory: 'fund the wallet first',
     runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
-    advanced: 'the keys behind this',
+    /** Required, and named so. It used to read "the keys behind this", which sounds like an aside. */
+    advanced: 'two keys, set once',
+    required: 'required',
     /** §10 hides the machinery; #111 makes the delegate address the exception, and says why. */
     advancedNote: 'Set once. This is why the agent can trade without ever holding your tokens.',
     keysDone: 'device and agent set',

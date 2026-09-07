@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { isAddress } from 'viem';
-import { Check, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
+import { Check, ChevronDown, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
@@ -237,12 +237,26 @@ export function SetupDialog({
                 * this sheet's height spent on a decision already made.
                 */}
               <details open={!keysReady} className="group mt-2 mb-6 border-t border-rule pt-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-[10.5px] font-semibold tracking-[0.11em] uppercase">
-                  <span className={keysReady ? 'flex items-center gap-2 text-settle' : 'text-faint'}>
+                {/*
+                  * Not an aside. The signature cannot be produced without both addresses, so an
+                  * incomplete section says "required" and a filled one collapses to a tick — the
+                  * disclosure is a place to put a finished decision, never a way past an unmade one.
+                  */}
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[10.5px] font-semibold tracking-[0.11em] uppercase">
+                  <span className={keysReady ? 'flex items-center gap-2 text-settle' : 'flex items-center gap-2 text-ink'}>
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
+                    {!keysReady && (
+                      <span className="rounded-[2px] border border-brass/40 bg-brass-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-brass">
+                        {copy.onboarding.required}
+                      </span>
+                    )}
                   </span>
-                  <span className="text-faint transition-transform group-open:rotate-45">+</span>
+                  <ChevronDown
+                    size={14}
+                    strokeWidth={1.8}
+                    className="shrink-0 text-faint transition-transform group-open:rotate-180"
+                  />
                 </summary>
                 <p className="serif mt-2 mb-3 text-[12.5px] leading-relaxed text-muted">
                   {copy.onboarding.advancedNote}
