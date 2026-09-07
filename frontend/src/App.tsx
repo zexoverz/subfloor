@@ -124,7 +124,12 @@ export default function App() {
           creatingVault={own.creating}
           // Only offer it once the factory has actually said this wallet has none.
           canCreateVault={own.known && !own.vault}
-          vaultChecked={own.known}
+          /*
+           * Both answers, not one. isOwner is null until the ceremony has read the vault, and
+           * treating null as "not the owner" is what made the card deliver a verdict on a question
+           * still in flight.
+           */
+          vaultChecked={own.known && ceremony.isOwner !== null}
           vaultError={own.error}
           connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}

@@ -77,7 +77,12 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   }, []);
 
   useEffect(() => {
-    if (!deployed || mocked || !vault) return;
+    /*
+     * Gated on the vault being read, not on the demo vault in the build's env. `deployed` requires
+     * VITE_VAULT, which has nothing to do with a vault the visitor deployed themselves — with it
+     * absent, an owner's own vault was never read at all, and the board called them a stranger.
+     */
+    if (!addresses.registry || mocked || !vault) return;
     let live = true;
 
     (async () => {
