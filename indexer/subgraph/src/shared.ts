@@ -1,4 +1,5 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
+import { ERC20 } from "../generated/Aqua/ERC20";
 import { DexAggProtocol, Token, Account } from "../generated/schema";
 
 export const PROTOCOL_ID = Bytes.fromUTF8("subfloor-base");
@@ -51,11 +52,20 @@ export function getToken(address: Address, block: ethereum.Block): Token {
   if (existing) return existing;
 
   const t = new Token(id);
-  // Metadata comes from the Token API rather than three eth_calls per unseen token. Nothing
-  // upstream is indexed, so unseen tokens arrive in bulk on every Pulled and Pushed.
-  t.name = "";
-  t.symbol = "";
-  t.decimals = 18;
+  // Read from the token itself. This costs three eth_calls once per token for the life of the
+  // subgraph — `Token.load` above returns early for everything already seen — and the earlier
+  // version deferred all three to the Token API, which published `decimals: 18` for USDC. A
+  // consumer deriving a human amount off that is out by a factor of 10^12, and a standardized
+  // schema is exactly the thing people read without checking.
+  const erc20 = ERC20.bind(address);
+  const name = erc20.try_name();
+  const symbol = erc20.try_symbol();
+  const decimals = erc20.try_decimals();
+  // Fall back rather than revert: a token that does not implement the optional metadata methods
+  // is still a token, and dropping the fill would lose real volume to cosmetics.
+  t.name = name.reverted ? "" : name.value;
+  t.symbol = symbol.reverted ? "" : symbol.value;
+  t.decimals = decimals.reverted ? 18 : decimals.value;
   t.cumulativeVolume = ZERO_BI;
   t.cumulativeVolumeUSD = ZERO_BD;
   t.lastSnapshotDayID = 0;

@@ -32,6 +32,8 @@ dataSources:
       abis:
         - name: Aqua
           file: ./abis/Aqua.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: Shipped(address,address,bytes32,bytes)
           handler: handleShipped
@@ -62,6 +64,8 @@ dataSources:
       abis:
         - name: FloorRouter
           file: ./abis/FloorRouter.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
           handler: handleSwapped
@@ -86,6 +90,8 @@ dataSources:
       abis:
         - name: FloorRegistry
           file: ./abis/FloorRegistry.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: FloorRaised(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleFloorRaised
