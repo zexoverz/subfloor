@@ -2,15 +2,19 @@ import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
-import { Ghost } from './Button.tsx';
+import { AccountMenu } from './AccountMenu.tsx';
 import type { Wallet } from '../lib/wallet.ts';
 import { mocked } from '../lib/mock.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
-const PRIMARY: Screen[] = ['live', 'floor'];
-/** Skeleton-only: onboarding happens once, the ceremony is mid-flow, the public page is a URL. */
-const PREVIEW: Screen[] = ['landing', 'onboarding', 'ceremony', 'public'];
+/**
+ * The three pages someone navigates between. Onboarding happens once, the ceremony is reached from
+ * the step or the action that needs it, and the landing page is where a visitor arrives — none of
+ * them belong in a tab bar, and a row of links to screens a user cannot use made the whole thing
+ * read as a demo of itself.
+ */
+const PRIMARY: Screen[] = ['live', 'floor', 'public'];
 
 export function AppShell({
   screen,
@@ -33,7 +37,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-[1120px] px-[clamp(12px,3vw,28px)] pb-14">
+    <div className={`mx-auto px-[clamp(12px,3vw,28px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
       {/*
        * One row. The brand and the two real screens sit together on the left because they are the
        * same thing — where you are — and the status reads right to left in falling importance:
@@ -76,16 +80,9 @@ export function AppShell({
           </span>
           <span>Base · {state.addresses.chainId}</span>
           {source === 'chain' && <span className="hidden sm:inline">own money since {state.stats.since}</span>}
-          {/* The address is the one piece of wallet machinery worth showing: it says whose desk this is. */}
-          {wallet.address ? (
-            <span className="flex items-center gap-2">
-              {wallet.address.slice(0, 6)}…{wallet.address.slice(-4)}
-              <Ghost onClick={wallet.disconnect}>{copy.wallet.disconnect}</Ghost>
-            </span>
-          ) : (
-            <Ghost onClick={() => onNavigate('onboarding')}>{copy.wallet.connect}</Ghost>
-          )}
         </div>
+
+        <AccountMenu wallet={wallet} />
 
         {screen !== 'public' && (
           <div className="flex items-center gap-3.5 border-l border-rule pl-3.5">
@@ -93,28 +90,6 @@ export function AppShell({
           </div>
         )}
       </div>
-
-      {/*
-        * Development only. This row is the screen switcher, and shipping it is what makes the site
-        * read as an internal demo rather than a product — everything under it is the real thing.
-        */}
-      {import.meta.env.DEV && (
-      <div className="flex items-center gap-3 py-2 text-[10.5px] tracking-[0.1em] text-faint uppercase">
-        <span>{copy.preview}</span>
-        {PREVIEW.map((s) => (
-          <button
-            key={s}
-            onClick={() => onNavigate(s)}
-            aria-current={screen === s}
-            className={`cursor-pointer bg-transparent tracking-[0.1em] uppercase transition-colors ${
-              screen === s ? 'text-brass' : 'text-faint hover:text-muted'
-            }`}
-          >
-            {copy.nav[s]}
-          </button>
-        ))}
-      </div>
-      )}
 
       <div className="pt-3">{children}</div>
     </div>

@@ -112,7 +112,11 @@ export const copy = {
     /** A prerequisite, not a step of the ceremony — §10 keeps that to one signature. */
     why: 'so the vault can read what you hold. Nothing moves until you sign on the device.',
     none: 'no wallet found in this browser',
-    disconnect: 'disconnect',
+    disconnect: 'Disconnect',
+    connected: 'Connected',
+    copyAddress: 'Copy address',
+    copied: 'Copied',
+    viewOnExplorer: 'View on explorer',
     step1: 'Connect your wallet',
     step2: 'Connect the agent',
     /** The mandate is the connection. The delegate address stays hidden: it is machinery. */
