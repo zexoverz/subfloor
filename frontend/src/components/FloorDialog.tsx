@@ -66,7 +66,7 @@ export function FloorDialog({
   return (
     <dialog
       ref={ref}
-      className={`sheet max-h-[86vh] overflow-y-auto ${onDevice ? 'w-[min(680px,calc(100vw-32px))]' : ''}`}
+      className={`sheet max-h-[86vh] overflow-x-hidden overflow-y-auto ${onDevice ? 'w-[min(680px,calc(100vw-32px))]' : ''}`}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >

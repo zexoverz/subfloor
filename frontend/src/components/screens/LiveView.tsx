@@ -162,7 +162,12 @@ export function LiveView({
               // Adjusted in place: leaving the board to change one number loses the tape, the
               // freshness reading and the fills the number is being judged against.
               right={
-                <Ghost onClick={() => setAdjusting(true)}>
+                /*
+                 * While setup is unfinished there is one task, not two entry points into it. A
+                 * floor registered on a vault with no funds, no guardian and no delegate protects
+                 * nothing, and half-configured is the state nobody wants to explain later.
+                 */
+                <Ghost onClick={() => (onSetup ? onSetup() : setAdjusting(true))}>
                   <span className="flex items-center gap-1.5">
                     <Pencil size={11} strokeWidth={1.8} />
                     {floor.enforced ? copy.onboarding.adjust : copy.floor.set}

@@ -18,10 +18,13 @@ export function FloorHistogram({ calibration, floorBps }: { calibration: Calibra
   }
   const tallest = Math.max(1, ...counts);
   const floorLeft = Math.min(100, (floorBps / SPAN_BPS) * 100);
+  // Past the two-thirds mark the label would hang off the right edge and give the whole sheet a
+  // horizontal scrollbar, so it flips and reads back into the chart instead.
+  const flipped = floorLeft > 66;
 
   return (
     <>
-      <div className="relative m-0 flex h-[110px] items-end gap-0.5 border-b border-rule">
+      <div className="relative m-0 flex h-[110px] items-end gap-0.5 overflow-x-clip border-b border-rule">
         {counts.map((n, i) => (
           <div
             key={i}
@@ -30,7 +33,11 @@ export function FloorHistogram({ calibration, floorBps }: { calibration: Calibra
           />
         ))}
         <div className="absolute top-[-12px] bottom-0 w-0 border-l-2 border-brass transition-[left] duration-300" style={{ left: `${floorLeft}%` }}>
-          <span className="absolute top-[-6px] left-[7px] rounded-[2px] bg-brass-wash px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap text-brass uppercase">
+          <span
+            className={`absolute top-[-6px] rounded-[2px] bg-brass-wash px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap text-brass uppercase ${
+              flipped ? 'right-[7px]' : 'left-[7px]'
+            }`}
+          >
             your floor
           </span>
         </div>
