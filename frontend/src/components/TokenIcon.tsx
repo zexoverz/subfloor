@@ -26,19 +26,31 @@ export function TokenIcon({ symbol, size = 16 }: { symbol: string; size?: number
   if (symbol === 'USDC') {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">
-        {/* Stroked rather than typeset: a text glyph inherited whatever font was around and sat
-            off-centre at this size. */}
         <circle cx="12" cy="12" r="12" fill="#2775CA" />
+        {/*
+          * The mark is a broken ring with the gaps at top and bottom, not a plain disc with a
+          * glyph on it. Two arcs and a stroked dollar, so it stays crisp at 15px and does not
+          * depend on a font being present.
+          */}
         <path
-          d="M12 5.6v12.8"
+          d="M9.84 4.92A7.4 7.4 0 0 0 9.84 19.08"
           stroke="#fff"
-          strokeWidth="1.5"
-          strokeLinecap="round"
+          strokeWidth="1.7"
+          fill="none"
+          strokeLinecap="butt"
         />
         <path
-          d="M15.1 9.1c0-1.4-1.4-2.2-3.1-2.2s-3.1.8-3.1 2.2c0 3.2 6.2 1.5 6.2 4.8 0 1.4-1.4 2.2-3.1 2.2s-3.1-.8-3.1-2.2"
+          d="M14.16 4.92A7.4 7.4 0 0 1 14.16 19.08"
           stroke="#fff"
-          strokeWidth="1.6"
+          strokeWidth="1.7"
+          fill="none"
+          strokeLinecap="butt"
+        />
+        <path d="M12 6.2v11.6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M14.5 9.6c0-1.2-1.1-1.9-2.5-1.9s-2.5.7-2.5 1.9c0 2.6 5 1.3 5 3.9 0 1.2-1.1 1.9-2.5 1.9s-2.5-.7-2.5-1.9"
+          stroke="#fff"
+          strokeWidth="1.5"
           strokeLinecap="round"
           fill="none"
         />
