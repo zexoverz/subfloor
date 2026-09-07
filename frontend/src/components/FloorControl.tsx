@@ -24,15 +24,24 @@ export function FloorControl({
   referencePrice,
   quote,
   base,
+  worstEverBps,
   onChange,
 }: {
   bps: number;
   referencePrice: number;
   quote: string;
   base: string;
+  /** The worst realized fill. Past it, the floor no longer binds anything that has happened. */
+  worstEverBps?: number;
   onChange: (bps: number) => void;
 }) {
   const price = floorPriceFromBps(referencePrice, bps);
+  /*
+   * Warned, not blocked. A floor looser than every fill the venue has ever produced is a legitimate
+   * choice — it still binds a compromised agent — but it stops protecting against anything that has
+   * actually occurred, and that is worth saying at the moment the number crosses it.
+   */
+  const tooLoose = worstEverBps !== undefined && bps > worstEverBps;
 
   return (
     <div className="mb-5 rounded-[2px] border border-rule bg-sunken px-4 py-3.5">
@@ -48,7 +57,9 @@ export function FloorControl({
           const typed = Number(e.target.value.replace(/[^0-9.]/g, ''));
           if (typed > 0) onChange(toBps(typed, referencePrice));
         }}
-        className="mt-1 w-full border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight text-brass outline-none"
+        className={`mt-1 w-full border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight outline-none ${
+          tooLoose ? 'text-refuse' : 'text-brass'
+        }`}
       />
       <p className="mt-1.5 text-center text-[11px] text-faint">
         {quote} per {base} · reference {formatPrice(referencePrice)}
@@ -62,11 +73,15 @@ export function FloorControl({
         step={DETENT}
         value={bps}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-3 w-full accent-brass"
+        className={`mt-3 w-full ${tooLoose ? 'accent-refuse' : 'accent-brass'}`}
       />
+      {tooLoose && (
+        <p className="mt-2 text-center text-[11px] text-refuse">{copy.floor.tooLoose}</p>
+      )}
+
       <div className="flex justify-between text-[10.5px] text-faint">
         <span>safer · −{MIN_BPS} bps</span>
-        <span className="font-medium text-brass">−{bps} bps</span>
+        <span className={`font-medium ${tooLoose ? 'text-refuse' : 'text-brass'}`}>−{bps} bps</span>
         <span>−{MAX_BPS} bps · riskier</span>
       </div>
     </div>

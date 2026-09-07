@@ -42,7 +42,14 @@ export function SetupDialog({
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});
-  const [floorBps, setFloorBps] = useState(floor.maxAdverseBps);
+  /*
+   * An unregistered pair returns 0 bps, which is not a floor of zero distance — it is no floor.
+   * Opening the slider there proposes "settle at any price", and the reader has no way to know the
+   * number came from an absence rather than from a choice.
+   */
+  const [floorBps, setFloorBps] = useState(
+    floor.enforced && floor.maxAdverseBps > 0 ? floor.maxAdverseBps : state.calibration.houseDefaultBps,
+  );
   const [guardian, setGuardian] = useState('');
   const [delegate, setDelegate] = useState('');
 
@@ -135,10 +142,12 @@ export function SetupDialog({
                 <Ghost onClick={() => withTransition(wallet.disconnect)}>{copy.wallet.disconnect}</Ghost>
               </div>
 
-              <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">
+              {/* Each group is its own block. Three headings at the same weight with the same gap
+                  between them read as one long column of text. */}
+              <span className="text-[10.5px] font-semibold tracking-[0.11em] text-faint uppercase">
                 {copy.onboarding.inventory}
               </span>
-              <div className="mt-1 mb-6">
+              <div className="mt-2 mb-7">
                 {holdings.map((h) => (
                   <AmountRow
                     key={h.symbol}
@@ -155,7 +164,7 @@ export function SetupDialog({
                 * setting the owner had already made — the same class of mistake as a fixture
                 * labelled live, on the screen where the number is chosen.
                 */}
-              <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">
+              <span className="block border-t border-rule pt-5 text-[10.5px] font-semibold tracking-[0.11em] text-faint uppercase">
                 {floor.enforced ? copy.onboarding.worstPrice : copy.onboarding.proposedPrice}
               </span>
               {/* Shown, not hidden behind a toggle: this is the decision the sheet exists for. */}
@@ -164,6 +173,7 @@ export function SetupDialog({
                 referencePrice={reference.price}
                 base={pair.base}
                 quote={pair.quote}
+                worstEverBps={Math.max(...state.calibration.fillsBps.map(Math.abs))}
                 onChange={setFloorBps}
               />
               {!floor.enforced && (
@@ -176,8 +186,8 @@ export function SetupDialog({
                 * at again, and leaving two fields and two explanations open afterwards is most of
                 * this sheet's height spent on a decision already made.
                 */}
-              <details open={!keysReady} className="group mb-5 border-y border-rule py-3">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-[11px] tracking-[0.08em] uppercase">
+              <details open={!keysReady} className="group mt-2 mb-6 border-t border-rule pt-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-[10.5px] font-semibold tracking-[0.11em] uppercase">
                   <span className={keysReady ? 'flex items-center gap-2 text-settle' : 'text-faint'}>
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
@@ -204,7 +214,7 @@ export function SetupDialog({
                 </div>
               </details>
 
-              <p className="serif mb-4 text-[14px] text-muted">
+              <p className="serif mb-4 border-t border-rule pt-5 text-[14px] text-muted">
                 {copy.onboarding.runsFor.replace('{days}', String(mandate.expiresInDays))}
               </p>
 

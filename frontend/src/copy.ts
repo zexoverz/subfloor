@@ -314,6 +314,8 @@ export const copy = {
     set: 'SET SUBFLOOR',
     setHint: 'nothing is registered for this pair yet',
     notSet: 'not set',
+    /** Past the worst fill ever seen, the floor stops binding anything that has actually happened. */
+    tooLoose: 'past every fill this venue has ever produced',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
