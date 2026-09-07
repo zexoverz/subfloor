@@ -186,6 +186,11 @@ export const copy = {
     f6Title: 'Stop the agent in one gesture.',
     f6Sub: 'press and hold · no device needed, because stopping can only help you',
 
+    faqEyebrow: 'Objections',
+    faqTitle: 'The questions worth asking.',
+    faqStandfirst:
+      'These are the ones a reader who knows this space asks first, so they are answered here rather than avoided.',
+
     whereTitle: 'Where the check lives',
     whereBody:
       'The router computes amounts first and moves tokens second. The floor sits in the gap — after the program has had its say, before a single token leaves anyone’s balance, checked for both parties.',
@@ -210,6 +215,41 @@ export const copy = {
     scopeTitle: 'And what this does not cover',
     scopeBody:
       'The protection is venue-scoped: price, on fills through this venue. That is the trade — generality for certainty, a smart guard over everything versus an unbreakable rule over one thing.',
+
+    faq: [
+      {
+        q: 'Is this just a slippage parameter?',
+        a: 'Every router already has amountOutMinimum. It lives in calldata, and a compromised agent writes the calldata. SUBFLOOR moves the same number into storage keyed by recipient: tightening it is one cheap transaction from your own address, loosening it needs a signature from your hardware key. The same arithmetic everyone already trusts, relocated to where the attacker is not.',
+      },
+      {
+        q: 'Where exactly is the check?',
+        a: 'In the settlement function, after the program has computed its amounts and before a single token leaves anyone’s balance, for both parties of the fill and mirrored in quote(). The run loop only computes amounts; settlement is unreachable from bytecode. There is no hook to detach, no opcode to omit, and no pool to route around.',
+      },
+      {
+        q: 'Has CoW Protocol not already done this?',
+        a: 'CoW’s settlement contract already enforces on-chain that no order clears worse than what it specifies, for every order regardless of signature type. That is taker-side and per discrete order: a CoW order is its own floor, one signed order at a time. This property exists for taker orders; nobody gives it to delegated makers running continuous two-sided strategies on standing inventory. That gap is the whole of what is new here.',
+      },
+      {
+        q: 'What does it not cover?',
+        a: 'The protection is venue-scoped: price, on fills through this venue. It says nothing about bridging, lending, or any other transaction class. That is the trade — generality for certainty, a smart guard over everything against an unbreakable rule over one thing.',
+      },
+      {
+        q: 'Cannot a compromised agent simply trade somewhere else?',
+        a: 'It never holds the inventory. The vault is the maker, and the agent’s key reaches four calls: compose, ship, dock, update-quote. There is no arbitrary-call path, no transfer it can reach, and approvals leave the vault only to the canonical venue and only for finite amounts. Compromising the agent buys the ability to trade badly down to the floor, and to stop trading. That is the whole blast radius.',
+      },
+      {
+        q: 'Can the agent lower the floor?',
+        a: 'No. Tightening is free and callable by the vault itself; weakening requires an EIP-712 signature from a guardian key registered on chain, and that key is hardware the trading machine never holds. The registry entry is write-once — replacing a guardian needs a signature from the outgoing one — so a captured key cannot appoint a guardian of its own.',
+      },
+      {
+        q: 'What happens when the reference feed goes quiet?',
+        a: 'Trading stops. A stale reference fails closed into no trading, never into a bad fill; if an absolute backstop is configured, that backstop carries the floor on its own and settlement continues against it. Nothing settles at a price nobody can verify.',
+      },
+      {
+        q: 'Who would actually pay for this?',
+        a: 'A foundation lends treasury inventory to a market maker. Today that runs on a legal covenant, and nobody can enforce a document while the trade is happening — you find out afterwards, in arbitration. This turns the covenant into settlement arithmetic: the foundation’s device signs the floor, the market maker’s automation trades inside it, and the venue refuses anything below it.',
+      },
+    ],
 
     disclosure:
       'FLOOR implements ERC-8377 (Reference-Relative Slippage Bounds), a draft standard I authored (ethereum/ERCs PR #1935, public since Aug 2026). The specification is public prior art; every line of implementation here was written during the event, and none of the ERC’s reference implementation is reused.',
