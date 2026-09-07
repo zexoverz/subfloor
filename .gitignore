@@ -18,3 +18,5 @@ docs/DEMO-LIVE.md
 .playwright-mcp/
 *.png
 feedbacks/
+# Deliberate frontend assets are not browser artefacts: the hero drawing ships with the page.
+!frontend/public/*.png
