@@ -48,19 +48,24 @@ export function FuzzCounter({ fuzz }: { fuzz: VaultState['fuzz'] }) {
   }
 
   return (
-    <div className="group my-4.5 border-y border-rule py-4.5">
+    <div className="group relative my-4.5 border-y border-rule py-4.5">
+      {/*
+        * Out of the sentence and into the corner. Hidden with opacity it still occupied its place
+        * in the line, so the copy read with a hole in it whenever nobody was hovering.
+        */}
+      <button
+        onClick={() => setTheater(true)}
+        title="theater"
+        aria-label="show the counter full screen"
+        className="absolute top-3 right-0 cursor-pointer text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+      >
+        <Expand size={14} strokeWidth={1.6} />
+      </button>
       <p className="serif m-0 text-[clamp(17px,2.4vw,21px)] leading-snug font-medium tracking-tight">
         <span className={`-mx-1 rounded-[2px] px-1 ${changed ? 'value-pulse' : ''}`}>
           <RollingNumber value={fuzz.programs} className="font-semibold" />
         </span>{' '}
         hostile programs thrown at this router.{' '}
-        <button
-          onClick={() => setTheater(true)}
-          title="theater"
-          className="cursor-pointer align-middle text-faint opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <Expand size={14} strokeWidth={1.6} />
-        </button>{' '}
         <b className="text-[1.18em] font-semibold text-settle">{fuzz.settledBelowFloor}</b> settled below the floor.
       </p>
       <p className="mt-2.5 mb-0 text-[11.5px] leading-relaxed text-faint">
