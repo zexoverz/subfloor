@@ -1,0 +1,7 @@
+{
+  "name": "@ledgerhq/live-dmk-speculos",
+  "version": "0.10.0",
+  "private": true,
+  "description": "Local install shim. @ledgerhq/speculos-transport declares a hard dependency on this package, which Ledger has never published to npm. Without the shim, `npm install @ledgerhq/ledger-key-ring-protocol` fails with E404 for every version of the SDK.",
+  "main": "index.cjs"
+}

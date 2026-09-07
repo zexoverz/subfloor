@@ -1,0 +1,6 @@
+node_modules/
+# Ring state and sealed secrets are per-host runtime artifacts, never committed.
+.ring/
+*.ring.json
+*.sealed.json
+*.member.json
