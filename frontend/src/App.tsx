@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
 import { Onboarding } from './components/screens/Onboarding.tsx';
-import { FloorScreen } from './components/screens/FloorScreen.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { copy } from './copy.ts';
@@ -32,11 +31,8 @@ export default function App() {
   const withHoldings = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
   const state = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
 
-  const lower = (bps: number) => {
-    setDraftBps(bps);
-    setPurpose('lower');
-    setScreen('ceremony');
-  };
+  // Lowering is answered in the sheet on the board now; this only records what was signed.
+  const lower = (bps: number) => setDraftBps(bps);
 
   if (screen === 'landing') return <Landing onNavigate={setScreen} />;
 
@@ -68,13 +64,6 @@ export default function App() {
       // The board gets the width whoever is reading it.
       wide={screen === 'live'}
     >
-      {screen === 'floor' && (
-        <FloorScreen
-          state={state}
-          onLower={lower}
-          onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
-        />
-      )}
       {screen === 'live' && (
         <LiveView
           state={state}
@@ -93,7 +82,7 @@ export default function App() {
           draftBps={draftBps}
           purpose={purpose}
           onDone={() => setScreen('live')}
-          onBack={() => setScreen(purpose === 'mandate' ? 'onboarding' : 'floor')}
+          onBack={() => setScreen('onboarding')}
         />
       )}
     </AppShell>

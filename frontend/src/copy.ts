@@ -16,8 +16,6 @@ export const copy = {
   nav: {
     landing: 'Home',
     onboarding: 'First run',
-    /** Visitor-facing names. "Desk" and "Floor control" are what we call them, not what they are. */
-    floor: 'Your floor',
     live: 'Live',
     ceremony: 'Device',
   },

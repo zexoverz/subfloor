@@ -149,4 +149,4 @@ export type VaultState = {
  */
 export type DataSource = 'fixtures' | 'simulated' | 'chain';
 
-export type Screen = 'landing' | 'onboarding' | 'floor' | 'live' | 'ceremony';
+export type Screen = 'landing' | 'onboarding' | 'live' | 'ceremony';

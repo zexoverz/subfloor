@@ -14,7 +14,7 @@ import type { DataSource, Screen, VaultState } from '../types.ts';
  * them belong in a tab bar, and a row of links to screens a user cannot use made the whole thing
  * read as a demo of itself.
  */
-const PRIMARY: Screen[] = ['live', 'floor'];
+const PRIMARY: Screen[] = ['live'];
 
 export function AppShell({
   screen,
