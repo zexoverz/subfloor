@@ -29,7 +29,9 @@ export default function App() {
   // stops describing a vault nobody owns.
   const ceremony = useCeremony(wallet.address, 0);
   const withHoldings = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
-  const state = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
+  const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
+  // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
+  const state = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
 
   // Lowering is answered in the sheet on the board now; this only records what was signed.
   const lower = (bps: number) => setDraftBps(bps);

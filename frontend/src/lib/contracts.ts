@@ -23,6 +23,7 @@ export const erc20Abi = [
 
 export const registryAbi = [
   { type: 'function', name: 'effectiveFloor', stateMutability: 'view', inputs: [{ name: 'recipient', type: 'address' }, { name: 'base', type: 'address' }, { name: 'quote', type: 'address' }], outputs: [{ name: 'floorRate', type: 'uint256' }, { name: 'enforced', type: 'bool' }] },
+  { type: 'function', name: 'floor', stateMutability: 'view', inputs: [{ name: 'recipient', type: 'address' }, { name: 'base', type: 'address' }, { name: 'quote', type: 'address' }], outputs: [{ name: 'configured', type: 'bool' }, { name: 'maxAdverseBps', type: 'uint16' }, { name: 'absoluteRate', type: 'uint232' }] },
   { type: 'function', name: 'guardian', stateMutability: 'view', inputs: [{ name: 'recipient', type: 'address' }], outputs: [{ type: 'address' }] },
   { type: 'function', name: 'nonces', stateMutability: 'view', inputs: [{ name: 'recipient', type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'raiseFloor', stateMutability: 'nonpayable', inputs: [{ name: 'base', type: 'address' }, { name: 'quote', type: 'address' }, { name: 'newMaxAdverseBps', type: 'uint16' }, { name: 'newAbsoluteRate', type: 'uint256' }], outputs: [] },

@@ -149,8 +149,14 @@ export function Onboarding({
                 ))}
               </div>
 
+              {/*
+                * Before the registry has an entry, this figure is a proposal, and the heading says
+                * so. Rendering it under "your worst price" made the fixture default look like a
+                * setting the owner had already made — the same class of mistake as a fixture
+                * labelled live, on the screen where the number is chosen.
+                */}
               <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">
-                {copy.onboarding.worstPrice}
+                {floor.enforced ? copy.onboarding.worstPrice : copy.onboarding.proposedPrice}
               </span>
               {adjusting ? (
                 <FloorControl
@@ -169,6 +175,9 @@ export function Onboarding({
                     {pair.quote} per {pair.base} · {floorBps} bps below the live reference
                     <Ghost onClick={() => setAdjusting(true)}>{copy.onboarding.adjust}</Ghost>
                   </p>
+                  {!floor.enforced && (
+                    <p className="mt-1 text-[11px] text-faint">{copy.onboarding.proposedNote}</p>
+                  )}
                 </div>
               )}
 

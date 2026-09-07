@@ -12,6 +12,7 @@ import {
   vaultAbi,
 } from './contracts.ts';
 import { USDC, WETH } from './tokens.ts';
+import type { Floor } from '../types.ts';
 import { mocked } from './mock.ts';
 
 /**
@@ -42,6 +43,12 @@ export type CeremonyState = {
   isOwner: boolean | null;
   /** vault.delegate(), for the screens that must show the address rather than a nickname. */
   delegate: Address | null;
+  /**
+   * The floor as the registry has it, or null while nothing is deployed. Every screen reads this
+   * rather than the fixture: a proposed number rendered where a configured one goes is the same
+   * class of lie as a fixture labelled live.
+   */
+  floor: Floor | null;
   steps: Step[];
   refresh: () => void;
 };
@@ -51,6 +58,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
   const [mockDone, setMockDone] = useState(0);
   const [owner, setOwner] = useState<Address | null>(null);
   const [floorsSet, setFloorsSet] = useState(false);
+  const [floor, setFloor] = useState<Floor | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
@@ -68,13 +76,14 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
       const vault = addresses.vault as Address;
       const registry = addresses.registry as Address;
       try {
-        const [o, d, g, sell, buy, registryGuardian] = await Promise.all([
+        const [o, d, g, sell, buy, registryGuardian, configured] = await Promise.all([
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'delegate' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'guardian' }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'effectiveFloor', args: [vault, WETH, USDC] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'effectiveFloor', args: [vault, USDC, WETH] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'guardian', args: [vault] }),
+          publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'floor', args: [vault, WETH, USDC] }),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -88,6 +97,9 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
         // A floor is only real when both directions have one. One side covered is an agent that
         // can still sell the other way at any price.
         setFloorsSet(Boolean((sell as [bigint, boolean])[1] && (buy as [bigint, boolean])[1]));
+
+        const [isConfigured, bps, absolute] = configured as [boolean, number, bigint];
+        setFloor({ enforced: isConfigured, maxAdverseBps: bps, absoluteRate: absolute });
       } catch {
         if (live) setOwner(null);
       }
@@ -140,6 +152,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
     deployed: mocked || deployed,
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     delegate,
+    floor,
     steps,
     refresh,
   };

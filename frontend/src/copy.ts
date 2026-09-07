@@ -283,6 +283,9 @@ export const copy = {
     inventory: 'your inventory',
     fromWallet: 'from your wallet',
     worstPrice: 'your worst price',
+    /** Before anything is registered, this number is a suggestion and has to say so. */
+    proposedPrice: 'the worst price you will set',
+    proposedNote: 'nothing is registered yet — this is what the button below will set',
     adjust: 'adjust',
     action: 'SIGN ON YOUR DEVICE',
     /** Load-bearing: it sets up clear-signing as confirmation, before the device ever lights up. */
