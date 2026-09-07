@@ -17,9 +17,9 @@ dataSources:
     source:
       # Not canonical Aqua — canonical is not on Base Sepolia, so this is ours from
       # DeploySubfloorTestnet.s.sol. Deployed 7 Sep, 6/6 transactions successful.
-      address: "0x5A3B6dBff7d9Eea9E2fcfd22FaAf0959D4057BFF"
+      address: "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB"
       abi: Aqua
-      startBlock: 46501900
+      startBlock: 46513800
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -49,9 +49,9 @@ dataSources:
     name: FloorRouter
     network: base-sepolia
     source:
-      address: "0x653363d9EfE33898DB7948FB78EB30c43e0B8498"
+      address: "0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709"
       abi: FloorRouter
-      startBlock: 46501900
+      startBlock: 46513800
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -76,9 +76,9 @@ dataSources:
     name: FloorRegistry
     network: base-sepolia
     source:
-      address: "0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6"
+      address: "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123"
       abi: FloorRegistry
-      startBlock: 46501900
+      startBlock: 46513800
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -111,7 +111,7 @@ dataSources:
     source:
       address: "0xa24A68DD788e1D7eb4CA517765CFb2b7e217e7a3"
       abi: ChainlinkAggregator
-      startBlock: 46501900
+      startBlock: 46513800
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9

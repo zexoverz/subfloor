@@ -12,6 +12,7 @@ import { FloorRegistry } from "../src/subfloor/FloorRegistry.sol";
 import { FloorRouter } from "../src/routers/FloorRouter.sol";
 import { AquaGuardVault } from "../src/subfloor/AquaGuardVault.sol";
 import { VaultFactory } from "../src/subfloor/VaultFactory.sol";
+import { TokenCustomDecimalsMock } from "@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 
 /// @notice Base Sepolia deployment, so the frontend can integrate against real contracts and real
 ///         events without waiting for the mainnet run.
@@ -50,6 +51,17 @@ contract DeploySubfloorTestnet is Script {
         vm.startBroadcast();
 
         Aqua aqua = new Aqua();
+
+        // A stand-in for USDC that we can actually obtain.
+        //
+        // Circle's testnet USDC at 0x036CbD53... is not permissionlessly mintable — `isMinter` is
+        // false for us and the masterMinter is Circle's — so a two-sided book on WETH/USDC cannot be
+        // funded on Base Sepolia without going through their faucet by hand, for every address, every
+        // time. That blocks the frontend and the taker on something that has nothing to do with the
+        // mechanism. Six decimals, so decimal handling is exercised exactly as it is on mainnet.
+        //
+        // Testnet only. Mainnet uses real USDC and this contract does not exist there.
+        TokenCustomDecimalsMock usdc = new TokenCustomDecimalsMock("SUBFLOOR Test USD", "tUSDC", 0, 6);
         // Deployed to the broadcaster first, because the reference feeds below are onlyOwner and
         // the final owner is usually a colder key that is not the one paying gas. Ownership is
         // handed over at the end, once the write-once feeds are set.
@@ -58,6 +70,12 @@ contract DeploySubfloorTestnet is Script {
 
         registry.setReferenceFeed(SEPOLIA_WETH, SEPOLIA_USDC, SEPOLIA_ETH_USD_FEED, false, TESTNET_STALENESS_BOUND, 8, 18, 6);
         registry.setReferenceFeed(SEPOLIA_USDC, SEPOLIA_WETH, SEPOLIA_ETH_USD_FEED, true, TESTNET_STALENESS_BOUND, 8, 6, 18);
+
+        // The same feed for the pair that can actually be funded. Both pairs are configured because
+        // the real one is what mainnet will use and the test one is what runs today; a deployment
+        // that only knew about the fundable pair would drift from the thing being rehearsed.
+        registry.setReferenceFeed(SEPOLIA_WETH, address(usdc), SEPOLIA_ETH_USD_FEED, false, TESTNET_STALENESS_BOUND, 8, 18, 6);
+        registry.setReferenceFeed(address(usdc), SEPOLIA_WETH, SEPOLIA_ETH_USD_FEED, true, TESTNET_STALENESS_BOUND, 8, 6, 18);
 
         FloorRouter router = new FloorRouter(address(aqua), SEPOLIA_WETH, owner, address(registry));
         AquaGuardVault vault = new AquaGuardVault(address(aqua), owner);
@@ -77,6 +95,7 @@ contract DeploySubfloorTestnet is Script {
         console2.log("FloorRouter               ", address(router));
         console2.log("AquaGuardVault            ", address(vault));
         console2.log("VaultFactory              ", address(factory));
+        console2.log("tUSDC (mintable)          ", address(usdc));
         console2.log("owner                     ", owner);
         console2.log("");
         console2.log("WETH", SEPOLIA_WETH);
