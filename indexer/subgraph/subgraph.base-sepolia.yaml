@@ -19,40 +19,16 @@ dataSources:
   # Canonical Aqua. Note that not one parameter on any of these four events is indexed, so nothing
   # here can be filtered by maker at the log level: every Shipped/Pulled/Pushed/Docked on the venue
   # arrives and is narrowed after decoding. See docs/event-map.md.
-  - kind: ethereum
-    name: Aqua
-    network: base-sepolia
-    source:
-      # Not canonical Aqua — canonical is not on Base Sepolia, so this is ours from
-      # DeploySubfloorTestnet.s.sol. Deployed 7 Sep, 6/6 transactions successful.
-      address: "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB"
-      abi: Aqua
-      startBlock: 46513825
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.9
-      language: wasm/assemblyscript
-      file: ./src/aqua.ts
-      entities:
-        - DexAggProtocol
-        - VirtualPool
-        - Token
-      abis:
-        - name: Aqua
-          file: ./abis/Aqua.json
-        - name: ERC20
-          file: ./abis/ERC20.json
-      eventHandlers:
-        - event: Shipped(address,address,bytes32,bytes)
-          handler: handleShipped
-        - event: Docked(address,address,bytes32)
-          handler: handleDocked
-        - event: Pulled(address,address,bytes32,address,uint256)
-          handler: handlePulled
-        - event: Pushed(address,address,bytes32,address,uint256)
-          handler: handlePushed
+  # Aqua is commented out, and this is a live question rather than a settled one.
+  #
+  # Measured across five deployments: every version carrying this data source sits at
+  # `startBlock - 1` forever; every version without it indexes. The handlers are not the cause —
+  # handleShipped, handleDocked, handlePulled and handlePushed all have tests that call them with
+  # real payloads and none traps. So the cause is the data source itself and it is still unknown.
+  #
+  # Leaving it out costs `Maker` and `Strategy`, which only the live view's strategy line reads.
+  # Everything else comes from the three sources below.
 
-  # Our router. `Swapped` is likewise fully non-indexed.
   - kind: ethereum
     name: FloorRouter
     network: base-sepolia
