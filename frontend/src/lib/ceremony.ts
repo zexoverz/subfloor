@@ -12,6 +12,7 @@ import {
   vaultAbi,
 } from './contracts.ts';
 import { USDC, WETH } from './tokens.ts';
+import { mocked } from './mock.ts';
 
 /**
  * The one-time setup, as state rather than a wizard.
@@ -44,16 +45,21 @@ export type CeremonyState = {
 };
 
 export function useCeremony(address: Address | null, fundedTokens: number): CeremonyState {
+  /** Mock mode advances one step per press, so the whole flow is walkable with nothing deployed. */
+  const [mockDone, setMockDone] = useState(0);
   const [owner, setOwner] = useState<Address | null>(null);
   const [floorsSet, setFloorsSet] = useState(false);
   const [guardian, setGuardian] = useState<Address | null>(null);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
 
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const refresh = useCallback(() => {
+    if (mocked) setMockDone((n) => n + 1);
+    else setTick((t) => t + 1);
+  }, []);
 
   useEffect(() => {
-    if (!deployed) return;
+    if (!deployed || mocked) return;
     let live = true;
 
     (async () => {
@@ -95,42 +101,42 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
       id: 'fund',
       title: 'Fund the vault',
       detail: 'move inventory in. An ordinary transfer — the vault holds it, you still own it.',
-      done: fundedTokens > 0,
+      done: mocked ? mockDone > 0 : fundedTokens > 0,
       device: false,
     },
     {
       id: 'floor',
       title: 'Set the floor, both directions',
       detail: 'registered for the vault, not for your address: the vault is what settles.',
-      done: floorsSet,
+      done: mocked ? mockDone > 1 : floorsSet,
       device: false,
     },
     {
       id: 'guardian',
       title: 'Register your device',
       detail: 'on the vault and on the registry. The registry entry can only be set once.',
-      done: Boolean(guardian),
+      done: mocked ? mockDone > 2 : Boolean(guardian),
       device: false,
     },
     {
       id: 'delegate',
       title: 'Name the agent',
       detail: 'the key that may compose and ship strategies, and nothing else.',
-      done: Boolean(delegate),
+      done: mocked ? mockDone > 3 : Boolean(delegate),
       device: false,
     },
     {
       id: 'mandate',
       title: 'Sign the mandate on your device',
       detail: 'not a transaction — a signature the agent carries and the vault checks on every ship.',
-      done: false,
+      done: mocked ? mockDone > 4 : false,
       device: true,
     },
   ];
 
   return {
-    deployed,
-    isOwner: owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
+    deployed: mocked || deployed,
+    isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     steps,
     refresh,
   };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppShell } from './components/AppShell.tsx';
+import { Landing } from './components/screens/Landing.tsx';
 import { Onboarding } from './components/screens/Onboarding.tsx';
 import { FloorScreen } from './components/screens/FloorScreen.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
@@ -16,8 +17,10 @@ import type { Screen } from './types.ts';
  * Substreams refusal counter — so no component knows where its data comes from.
  */
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('live');
+  // The front door, not the desk: a stranger arriving at this URL has no vault to look at.
+  const [screen, setScreen] = useState<Screen>('landing');
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
+  const [purpose, setPurpose] = useState<'mandate' | 'lower'>('mandate');
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
   const { state: fed, source } = useSimulatedFeed(fixtures);
@@ -29,8 +32,27 @@ export default function App() {
 
   const lower = (bps: number) => {
     setDraftBps(bps);
+    setPurpose('lower');
     setScreen('ceremony');
   };
+
+  if (screen === 'landing') return <Landing onNavigate={setScreen} />;
+
+  // First run is not a page of the app, it is the door to it: no tabs, no chips, no panic control,
+  // because there is nothing yet to navigate to and nothing yet to stop.
+  if (screen === 'onboarding') {
+    return (
+      <Onboarding
+        state={state}
+        wallet={wallet}
+        onSign={() => {
+          setPurpose('mandate');
+          setScreen('ceremony');
+        }}
+        onNavigate={setScreen}
+      />
+    );
+  }
 
   return (
     <AppShell
@@ -41,14 +63,6 @@ export default function App() {
       source={source}
       wallet={wallet}
     >
-      {screen === 'onboarding' && (
-        <Onboarding
-          state={state}
-          wallet={wallet}
-          onAdjust={() => setScreen('floor')}
-          onSign={() => setScreen('ceremony')}
-        />
-      )}
       {screen === 'floor' && (
         <FloorScreen
           state={state}
@@ -58,7 +72,13 @@ export default function App() {
       )}
       {screen === 'live' && <LiveView state={state} />}
       {screen === 'ceremony' && (
-        <Ceremony state={state} draftBps={draftBps} onDone={() => setScreen('live')} onBack={() => setScreen('floor')} />
+        <Ceremony
+          state={state}
+          draftBps={draftBps}
+          purpose={purpose}
+          onDone={() => setScreen('live')}
+          onBack={() => setScreen(purpose === 'mandate' ? 'onboarding' : 'floor')}
+        />
       )}
       {screen === 'public' && <PublicPage state={state} />}
     </AppShell>

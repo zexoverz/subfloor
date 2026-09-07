@@ -19,11 +19,14 @@ type Stage = 'pre' | 'waiting' | 'declined' | 'absent' | 'scheduled';
 export function Ceremony({
   state,
   draftBps,
+  purpose,
   onDone,
   onBack,
 }: {
   state: VaultState;
   draftBps: number;
+  /** Which of the two hardware moments this is. They sign different things and must say so. */
+  purpose: 'mandate' | 'lower';
   onDone: () => void;
   onBack: () => void;
 }) {
@@ -36,20 +39,31 @@ export function Ceremony({
   // What the device will render. In the shipped app both sides come from one ERC-7730 descriptor:
   // a screen that disagrees with the device is a stop-everything bug, and this correspondence is
   // the only reason clear-signing means anything at all.
-  const rows: [string, string][] = [
-    ['Action', 'Lower price floor'],
-    ['Pair', `${pair.base} / ${pair.quote}`],
-    ['New floor', `−${draftBps} bps`],
-    ['Binds at', `${formatPrice(bindsAt)} ${pair.quote}`],
-    ['Delegate', mandate.delegateLabel],
-  ];
+  const rows: [string, string][] =
+    purpose === 'lower'
+      ? [
+          ['Action', 'Lower price floor'],
+          ['Pair', `${pair.base} / ${pair.quote}`],
+          ['New floor', `−${draftBps} bps`],
+          ['Binds at', `${formatPrice(bindsAt)} ${pair.quote}`],
+          ['Delegate', mandate.delegateLabel],
+        ]
+      : [
+          // The mandate is a different object entirely: it authorises an agent, it does not touch
+          // the floor. Rendering the lowering payload here would teach the owner to approve the
+          // wrong screen — on the one screen whose whole job is teaching them to compare.
+          ['Action', 'Authorise agent'],
+          ['Delegate', mandate.delegateLabel],
+          ['Tokens', state.inventory.map((h) => h.symbol).join(' / ')],
+          ['Expires', `${mandate.expiresInDays} days`],
+        ];
 
   return (
     <>
       <Card>
         <CardHead
           icon={Usb}
-          left="Ledger · clear-signing (ERC-7730)"
+          left={`Ledger · ${purpose === 'lower' ? 'lower the floor' : 'authorise the agent'}`}
           right={stage === 'waiting' ? 'waiting for device' : stage}
         />
         <CardBody>
@@ -77,8 +91,10 @@ export function Ceremony({
                       <b className="font-medium text-ink">›</b> building EIP-712 payload…
                     </div>
                     <div>
-                      <b className="font-medium text-ink">›</b> FloorLowering({pair.base}, {pair.quote}, {draftBps},
-                      nonce)
+                      <b className="font-medium text-ink">›</b>{' '}
+                      {purpose === 'lower'
+                        ? `FloorLowering(${pair.base}, ${pair.quote}, ${draftBps}, nonce)`
+                        : `Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)`}
                     </div>
                     <div>
                       <b className="font-medium text-ink">›</b> awaiting approval on device{' '}

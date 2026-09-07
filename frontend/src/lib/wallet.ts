@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPublicClient, formatUnits, http, type Address } from 'viem';
 import { base } from 'viem/chains';
 import { TOKENS } from './tokens.ts';
+import { MOCK_ADDRESS, mocked } from './mock.ts';
 import type { Holding } from '../types.ts';
 
 /**
@@ -46,6 +47,16 @@ export function useWallet(): Wallet {
   const unwatch = useRef<(() => void) | null>(null);
 
   const connect = useCallback(async () => {
+    // Mock mode skips the modal entirely: redesigning a five-step flow should not cost five
+    // wallet approvals, and the screen says it is mocked either way.
+    if (mocked) {
+      setAddress(MOCK_ADDRESS);
+      setHoldings([
+        { symbol: 'WETH', amount: 0.18 },
+        { symbol: 'USDC', amount: 512 },
+      ]);
+      return;
+    }
     if (!projectId) return;
     setConnecting(true);
     setError(null);
@@ -81,7 +92,7 @@ export function useWallet(): Wallet {
 
   // Balances are read on chain rather than assumed, so "from wallet" is a fact on the screen.
   useEffect(() => {
-    if (!address) return;
+    if (!address || mocked) return;
     let live = true;
 
     (async () => {
@@ -111,9 +122,9 @@ export function useWallet(): Wallet {
 
   return {
     address,
-    available: Boolean(projectId),
+    available: mocked || Boolean(projectId),
     connecting,
-    error: projectId ? error : 'wallet connection needs a Reown project id',
+    error: mocked || projectId ? error : 'wallet connection needs a Reown project id',
     holdings,
     connect: () => void connect(),
     disconnect: () => void disconnect(),

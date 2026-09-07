@@ -4,12 +4,13 @@ import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
 import { Ghost } from './Button.tsx';
 import type { Wallet } from '../lib/wallet.ts';
+import { mocked } from '../lib/mock.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
 const PRIMARY: Screen[] = ['live', 'floor'];
 /** Skeleton-only: onboarding happens once, the ceremony is mid-flow, the public page is a URL. */
-const PREVIEW: Screen[] = ['onboarding', 'ceremony', 'public'];
+const PREVIEW: Screen[] = ['landing', 'onboarding', 'ceremony', 'public'];
 
 export function AppShell({
   screen,
@@ -62,10 +63,10 @@ export function AppShell({
             * and so is the claim underneath it: "own money since Sep 8" is only true once the
             * money is actually on chain, so a fixture build does not get to say it either.
             */}
-          {source === 'chain' ? (
+          {source === 'chain' && !mocked ? (
             <Chip live>{copy.live.live}</Chip>
           ) : (
-            <Chip>{source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
+            <Chip>{mocked ? copy.live.mock : source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
           )}
           <span>
             {state.pair.base} / {state.pair.quote}

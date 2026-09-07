@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_DATA_SOURCE?: 'simulated' | 'fixtures';
   /** Reown AppKit project id. Public by design — it identifies the app, it authorises nothing. */
   readonly VITE_REOWN_PROJECT_ID?: string;
+  /** 'mock' walks the whole owner flow with nothing deployed. Says so on screen. */
+  readonly VITE_CHAIN_SOURCE?: 'mock' | 'chain';
   /** Deployment. Empty until the contracts are broadcast; every screen renders without them. */
   readonly VITE_FLOOR_REGISTRY?: `0x${string}`;
   readonly VITE_FLOOR_ROUTER?: `0x${string}`;

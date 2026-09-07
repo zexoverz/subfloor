@@ -14,6 +14,7 @@ export const copy = {
   scope: 'the worst price on this venue is the one you set',
 
   nav: {
+    landing: 'Home',
     onboarding: 'First run',
     floor: 'Floor control',
     live: 'Desk',
@@ -94,6 +95,57 @@ export const copy = {
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */
     forTheVault: 'registered for the vault — the address that actually settles',
+    amount: 'amount',
+    max: 'max',
+    inWallet: 'in wallet',
+    guardianLabel: 'your device address',
+    guardianHint: 'the key that may weaken the floor. It should be a hardware address, never this browser.',
+    useDevice: 'read it from my device',
+    delegateLabel: "the agent's address",
+    delegateHint: 'it composes and ships strategies. It can never move a token out of the vault.',
+    mandateSummary: 'what your device will sign',
+    invalidAddress: 'that is not an address',
+    nothingToFund: 'enter an amount',
+  },
+
+  landing: {
+    eyebrow: 'Settlement-level price bound · Base mainnet',
+    standfirst:
+      'Drag the fill. Below the floor, the venue itself refuses to settle — no classifier, no verdict, just arithmetic where the tokens move.',
+    settled: 'Settled',
+    refused: 'Refused',
+    settledNote: 'Above the floor, the fill settles like any other. The check costs the same either way.',
+    unchanged: 'balances unchanged',
+    launch: 'OPEN THE DESK',
+    seePublic: 'see the public page',
+
+    whereTitle: 'Where the check lives',
+    whereBody:
+      'The router computes amounts first and moves tokens second. The floor sits in the gap — after the program has had its say, before a single token leaves anyone’s balance, checked for both parties.',
+    whereAfter:
+      'There is no hook to detach, no opcode to omit, no pool to route around. The run loop only computes amounts; settlement is unreachable from bytecode. There is nothing an attacker can leave out.',
+
+    slippageTitle: 'Not a slippage parameter',
+    slippageBody:
+      'Every router already has amountOutMinimum. It lives in calldata, and a compromised agent writes the calldata. FLOOR moves the same number into storage keyed by recipient: raising it is one free transaction from your own address, lowering it needs a signature from your hardware key. The same arithmetic everyone already trusts, relocated to where the attacker is not.',
+
+    legsTitle: 'Three ways a guarantee fails',
+    legs: [
+      { mode: 'Unenforced', title: 'Settlement arithmetic', body: 'The promise is checked where value moves, not where intentions are declared.' },
+      { mode: 'Forged', title: 'Hardware key split', body: 'The agent’s key can raise a floor and ship strategies. Only the device can weaken one.' },
+      { mode: 'Unverifiable', title: 'Independent index', body: 'Every fill and every floor change reconstructed from chain data, not from our logs.' },
+    ],
+
+    priorTitle: 'What is not new here',
+    /** Naming this is mandatory (§4). Omitting it is the mistake that sinks a project on contact. */
+    priorBody:
+      'CoW Protocol’s settlement contract already enforces on-chain that no order clears worse than what it specifies, for every order regardless of signature type. That is taker-side and per discrete order: a CoW order is its own floor, one signed order at a time. This property exists for taker orders; nobody gives it to delegated makers running continuous two-sided strategies on standing inventory.',
+    scopeTitle: 'And what this does not cover',
+    scopeBody:
+      'The protection is venue-scoped: price, on fills through this venue. That is the trade — generality for certainty, a smart guard over everything versus an unbreakable rule over one thing.',
+
+    disclosure:
+      'FLOOR implements ERC-8377 (Reference-Relative Slippage Bounds), a draft standard I authored (ethereum/ERCs PR #1935, public since Aug 2026). The specification is public prior art; every line of implementation here was written during the event, and none of the ERC’s reference implementation is reused.',
   },
 
   onboarding: {
@@ -136,6 +188,8 @@ export const copy = {
     simulated: 'simulated feed',
     /** And this whenever the page is standing on fixtures — a deployed skeleton says so. */
     fixtures: 'fixture data',
+    /** Nothing is deployed and the flow is being walked anyway. Never silent about it. */
+    mock: 'mock — nothing deployed',
   },
 
   refusal: {
