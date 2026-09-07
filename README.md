@@ -59,8 +59,21 @@ route around it, switch it off, or argue with it. Watching can be fooled. A numb
       every fill  ──►  above your number, or it does not happen
 ```
 
-We prove this rather than promise it. Millions of hostile trading programs were generated and run
-against the vault, and a machine-checked proof covers every program that could ever exist.
+We prove this rather than promise it, in three layers that answer different questions.
+
+**No program can avoid the check.** It runs where tokens move, after the trade is validated and
+before anything transfers. Program code cannot reach that point or skip it, so there is nothing for
+an attacker to leave out. That is architecture, not a promise.
+
+**Hostile programs are thrown at it continuously.** Randomly generated trading bytecode, fired by
+CI every six hours, including programs that hand control to an attacker-chosen contract mid-trade.
+None has ever settled below a floor. The running count is
+[published in this repo](docs/fuzz-counter.json) and every increment maps to a CI run you can open.
+
+**And the check itself is machine-verified, in both directions.** If it passes, what moved was at
+or above the floor; if what moved was below the floor, it reverts. For every possible input, in
+0.31 seconds, reproducible. What that proof does and does not cover is written out in
+[docs/proof.md](docs/proof.md) — including the part still covered by fuzzing rather than proof.
 
 ## What you get
 
