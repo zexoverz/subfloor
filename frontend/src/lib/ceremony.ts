@@ -55,6 +55,16 @@ export type CeremonyState = {
   /** What the vault itself holds. Null until read — never the owner's wallet, which is a different address. */
   inventory: Holding[] | null;
   steps: Step[];
+  /**
+   * Whether the read has come back at all — either way.
+   *
+   * `isOwner` being null cannot carry this: null means both "not asked yet" and "asked, and the
+   * answer never arrived", and a screen that cannot tell them apart either hangs on a spinner or
+   * calls the owner a stranger. Those were the same bug twice, in opposite directions.
+   */
+  settled: boolean;
+  /** What stopped the read, so a failure can be shown rather than waited on forever. */
+  error: string | null;
   refresh: () => void;
 };
 
@@ -70,6 +80,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   const [guardian, setGuardian] = useState<Address | null>(null);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
+  const [settled, setSettled] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     if (mocked) setMockDone((n) => n + 1);
@@ -82,7 +94,15 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
      * VITE_VAULT, which has nothing to do with a vault the visitor deployed themselves — with it
      * absent, an owner's own vault was never read at all, and the board called them a stranger.
      */
-    if (!addresses.registry || mocked || !vault) return;
+    if (mocked) return;
+    if (!addresses.registry || !vault) {
+      // Nothing to read is a settled answer too: it is not the owner's vault, and not a pending one.
+      setSettled(true);
+      setError(addresses.registry ? null : 'no registry address in this build');
+      return;
+    }
+    setSettled(false);
+    setError(null);
     let live = true;
 
     (async () => {
@@ -130,8 +150,12 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
 
         const [feedAddress] = reference as [Address, boolean, number, number, bigint];
         setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
-      } catch {
-        if (live) setOwner(null);
+        setSettled(true);
+      } catch (cause) {
+        if (!live) return;
+        setOwner(null);
+        setError((cause instanceof Error ? cause.message : String(cause)).split('\n')[0]?.slice(0, 120) ?? 'the vault could not be read');
+        setSettled(true);
       }
     })();
 
@@ -186,6 +210,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     feed,
     inventory,
     steps,
+    settled: mocked || settled,
+    error,
     refresh,
   };
 }

@@ -129,8 +129,8 @@ export default function App() {
            * treating null as "not the owner" is what made the card deliver a verdict on a question
            * still in flight.
            */
-          vaultChecked={own.known && ceremony.isOwner !== null}
-          vaultError={own.error}
+          vaultChecked={own.known && ceremony.settled}
+          vaultError={own.error ?? ceremony.error}
           connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
