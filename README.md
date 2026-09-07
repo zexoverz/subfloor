@@ -125,6 +125,7 @@ identical call sits in `quote()`, so a quote can never report a price the settle
 | `GuardedSwapVM` | The fork. One hook in `swap()` and one in `quote()`, three hunks against upstream `f09a41e` |
 | `FloorRouter` | The deployed router: Aqua opcodes, the settlement guard, and three new `0x20` guard instructions |
 | `AquaGuardVault` | The smart account that **is** the Aqua maker. The agent holds a delegate credential whose whole surface is ship / dock / updateQuote / rescueApproval |
+| `VaultFactory` | Deploys a vault owned by whoever asks. Holds nothing, owns nothing, cannot act on what it creates — a factory that could would put a trusted party back into a design whose argument is that there is not one |
 | `ControlFloorRouter` | The control arm. Same floor, but as an opcode a program can decline to include — it exists to be broken, and it is |
 | `SettlementFeeLib` | Mirrors the protocol fee arithmetic without moving anything, so the maker is scored on what it actually receives |
 
@@ -139,10 +140,11 @@ mainnet uses canonical Aqua and never forks it.
 
 | Contract | Address |
 |---|---|
-| FloorRegistry | [`0xe96098eb96aC681682CD09E8413C87b22742C009`](https://sepolia.basescan.org/address/0xe96098eb96aC681682CD09E8413C87b22742C009) |
-| FloorRouter | [`0xe1E445BC60B70d4C4f3c0Db242d9cF98C632b41F`](https://sepolia.basescan.org/address/0xe1E445BC60B70d4C4f3c0Db242d9cF98C632b41F) |
-| AquaGuardVault | [`0x32E58d01AF21483a66Ab59c598667C80224441a2`](https://sepolia.basescan.org/address/0x32E58d01AF21483a66Ab59c598667C80224441a2) |
-| Aqua (ours, not canonical) | [`0xdFfeEe4f46F4dc002AB75354438C456D0bcc404F`](https://sepolia.basescan.org/address/0xdFfeEe4f46F4dc002AB75354438C456D0bcc404F) |
+| FloorRegistry | [`0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6`](https://sepolia.basescan.org/address/0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6) |
+| FloorRouter | [`0x653363d9EfE33898DB7948FB78EB30c43e0B8498`](https://sepolia.basescan.org/address/0x653363d9EfE33898DB7948FB78EB30c43e0B8498) |
+| VaultFactory | [`0x1049E6c037B3510C79AF082AF84004b7F5Ce3227`](https://sepolia.basescan.org/address/0x1049E6c037B3510C79AF082AF84004b7F5Ce3227) |
+| AquaGuardVault (ours) | [`0x441EE52d939E46A33919C4295e88d32458797503`](https://sepolia.basescan.org/address/0x441EE52d939E46A33919C4295e88d32458797503) |
+| Aqua (ours, not canonical) | [`0x5A3B6dBff7d9Eea9E2fcfd22FaAf0959D4057BFF`](https://sepolia.basescan.org/address/0x5A3B6dBff7d9Eea9E2fcfd22FaAf0959D4057BFF) |
 
 **Base mainnet** — _pending, see below._
 
