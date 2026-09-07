@@ -49,7 +49,7 @@ route around it, switch it off, or argue with it. Watching can be fooled. A numb
    2  SET ONE NUMBER "never below $2,463"
                      raising it later is free and instant
 
-   3  GIVE A PERMIT  the agent gets permission to trade
+   3  HAND IT OVER   the agent can trade your inventory
                      it never gets your keys
 
    4  IT TRADES      all day, without asking you anything
