@@ -209,6 +209,7 @@ export function SetupDialog({
                 ))}
                 {wrapping && <p className="mt-2 mb-0 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
                 <Act
+                  primary
                   onClick={() =>
                     void fund.send(
                       ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
@@ -216,7 +217,8 @@ export function SetupDialog({
                   }
                   disabled={!funded || fund.sending || !vault}
                 >
-                  {fund.step ?? copy.wallet.sendToVault}
+                  {/* Say why it cannot be pressed, rather than looking broken. */}
+                  {fund.step ?? (funded ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
                 </Act>
               </div>
 
