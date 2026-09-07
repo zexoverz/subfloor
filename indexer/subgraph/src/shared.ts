@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
+import { Address, BigDecimal, BigInt, Bytes, dataSource, ethereum } from "@graphprotocol/graph-ts";
 import { ERC20 } from "../generated/Aqua/ERC20";
 import { DexAggProtocol, Token, Account } from "../generated/schema";
 
@@ -31,7 +31,9 @@ export function getProtocol(block: ethereum.Block): DexAggProtocol {
   p.schemaVersion = "1.0.2";
   p.subgraphVersion = "1.0.0";
   p.methodologyVersion = "1.0.0";
-  p.network = "BASE";
+  // Read from the deployment rather than hardcoded, so the mainnet and Sepolia manifests cannot
+  // disagree with the row they write. `dataSource.network()` returns the manifest's own value.
+  p.network = dataSource.network() == "base" ? "BASE" : "BASE_SEPOLIA";
   p.type = "GENERIC";
   p.feeType = "FIXED_TRADING_FEE";
   p.cumulativeNetVolumeUSD = ZERO_BD;

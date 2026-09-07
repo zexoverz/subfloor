@@ -24,6 +24,18 @@ enum Network {
   OSMOSIS
   MATIC # aka Polygon
   GNOSIS
+
+  """
+  Base and Base Sepolia are not in the upstream enum: dex-agg v1.0.2 predates both, and its Network
+  list stops at the chains that existed when it was written. Being the first implementation of this
+  schema is how we found that — a subgraph writing `network: "BASE"` fails at the database with
+  `invalid input value for enum`, at 99% synced, after indexing everything else correctly.
+
+  Added here rather than worked around, because the alternative is writing a network the protocol is
+  not on. Reported upstream; see docs/indexer-schema.md.
+  """
+  BASE
+  BASE_SEPOLIA
 }
 
 enum ProtocolType {
