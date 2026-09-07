@@ -1,3 +1,11 @@
+# Deploying a new version RETIRES the previous one on Studio, and a fresh version takes roughly ten
+# minutes before it processes its first block — it sits at `startBlock - 1` with
+# `hasIndexingErrors: false` the whole time, which is indistinguishable from being broken.
+#
+# So: deploy once and wait. Deploying again to "check" kills the version that was about to start,
+# which is how 7 Sep lost two hours to a bug that did not exist.
+#
+# startBlock is the contracts' creation block, read from broadcast/*/run-latest.json.
 specVersion: 1.2.0
 description: >
   Base Sepolia build, for frontend integration only. Same schema and handlers as the mainnet
@@ -19,7 +27,7 @@ dataSources:
       # DeploySubfloorTestnet.s.sol. Deployed 7 Sep, 6/6 transactions successful.
       address: "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB"
       abi: Aqua
-      startBlock: 46513800
+      startBlock: 46513825
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -51,7 +59,7 @@ dataSources:
     source:
       address: "0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709"
       abi: FloorRouter
-      startBlock: 46513800
+      startBlock: 46513825
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -78,7 +86,7 @@ dataSources:
     source:
       address: "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123"
       abi: FloorRegistry
-      startBlock: 46513800
+      startBlock: 46513825
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -111,7 +119,7 @@ dataSources:
     source:
       address: "0xa24A68DD788e1D7eb4CA517765CFb2b7e217e7a3"
       abi: ChainlinkAggregator
-      startBlock: 46513800
+      startBlock: 46513825
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
