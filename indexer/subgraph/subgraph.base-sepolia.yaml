@@ -15,11 +15,11 @@ dataSources:
     name: Aqua
     network: base-sepolia
     source:
-      # Canonical Aqua is not deployed on Base Sepolia, so DeploySubfloorTestnet.s.sol deploys
-      # our own. Fill this in from the broadcast output, along with the startBlock it landed at.
-      address: "0x0000000000000000000000000000000000000000"
+      # Not canonical Aqua — canonical is not on Base Sepolia, so this is ours from
+      # DeploySubfloorTestnet.s.sol. Deployed 7 Sep, 6/6 transactions successful.
+      address: "0xC345811DDc2082605d14832Cd6f6de2919fF0EE5"
       abi: Aqua
-      startBlock: 0
+      startBlock: 46496551
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -47,9 +47,9 @@ dataSources:
     name: FloorRouter
     network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"  # FloorRouter, from the deploy output
+      address: "0x630074dcACdC624b191026F0d611A6ee7aE002C2"
       abi: FloorRouter
-      startBlock: 0
+      startBlock: 46496551
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -72,9 +72,9 @@ dataSources:
     name: FloorRegistry
     network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"  # FloorRegistry, from the deploy output
+      address: "0xA01de5ad9746d38a2e024a33e5C7FB0A9e76Fc74"
       abi: FloorRegistry
-      startBlock: 0
+      startBlock: 46496551
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9

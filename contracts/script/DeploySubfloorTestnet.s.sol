@@ -54,7 +54,7 @@ contract DeploySubfloorTestnet is Script {
         registry.setReferenceFeed(SEPOLIA_WETH, SEPOLIA_USDC, SEPOLIA_ETH_USD_FEED, false, TESTNET_STALENESS_BOUND, 8, 18, 6);
         registry.setReferenceFeed(SEPOLIA_USDC, SEPOLIA_WETH, SEPOLIA_ETH_USD_FEED, true, TESTNET_STALENESS_BOUND, 8, 6, 18);
 
-        FloorRouter router = new FloorRouter(address(aqua), SEPOLIA_WETH, owner, "SUBFLOOR", "1", address(registry));
+        FloorRouter router = new FloorRouter(address(aqua), SEPOLIA_WETH, owner, address(registry));
         AquaGuardVault vault = new AquaGuardVault(address(aqua), owner);
 
         vm.stopBroadcast();
