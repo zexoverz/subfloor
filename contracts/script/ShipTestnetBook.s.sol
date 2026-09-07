@@ -8,7 +8,7 @@ import { Script } from "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
 
 import { ISwapVM } from "../src/interfaces/ISwapVM.sol";
-import { MakerTraits } from "../src/libs/MakerTraits.sol";
+import { MakerTraitsLib } from "../src/libs/MakerTraits.sol";
 import { AquaGuardVault } from "../src/subfloor/AquaGuardVault.sol";
 import { FloorRegistry } from "../src/subfloor/FloorRegistry.sol";
 import { ConcentratedBook } from "../src/subfloor/strategies/ConcentratedBook.sol";
@@ -34,8 +34,15 @@ import { ConcentratedBook } from "../src/subfloor/strategies/ConcentratedBook.so
 contract ShipTestnetBook is Script {
     address internal constant WETH = 0x4200000000000000000000000000000000000006;
 
-    /// Reference price used to centre the book, 1e18 scaled: tUSDC per WETH.
-    uint256 internal constant REFERENCE = 2500e18;
+    /// Reference price used to centre the book, 1e18 scaled and in **raw** units: how many raw
+    /// tUSDC one raw WETH buys, times 1e18. tUSDC is six decimals and WETH is eighteen, so that is
+    /// `2500e6 * 1e18 / 1e18` = `2500e6`, not `2500e18`.
+    ///
+    /// The eighteen-decimal version quotes a book 1e12 out and it does not look like a bug: it
+    /// fills, it just fills at a price nobody meant. The curve works on raw balances and does not
+    /// know the tokens have different decimals — the registry's floors already carry the same raw
+    /// convention, which is why they read 2.45e9 and 4e26 rather than anything human.
+    uint256 internal constant REFERENCE = 2500e6;
     uint16 internal constant SPREAD_BPS = 50;
 
     uint256 internal constant WETH_SHIPPED = 0.004e18;
@@ -95,10 +102,36 @@ contract ShipTestnetBook is Script {
         address usdc = vm.envAddress("SUBFLOOR_TUSDC");
         bytes memory signature = vm.envBytes("SUBFLOOR_MANDATE_SIG");
 
-        ISwapVM.Order memory order =
-            ISwapVM.Order({ maker: address(vault), traits: MakerTraits.wrap(0), data: _program() });
-
         address[] memory tokens = _tokens();
+
+        // Built through MakerTraitsLib, not by hand. The traits word carries `tokenA`, `tokenB` and
+        // `useAquaInsteadOfSignature`, and the program goes in through `build` rather than straight
+        // into `data`. A hand-made order with `traits = 0` ships and hashes fine, and then never
+        // fills: the router takes the signature path, computes a different order hash, and finds no
+        // Aqua balance under it. Caught by a quote returning zero rather than by a bad fill.
+        ISwapVM.Order memory order = MakerTraitsLib.build(MakerTraitsLib.Args({
+            maker: address(vault),
+            tokenA: tokens[0],
+            tokenB: tokens[1],
+            shouldUnwrapWeth: false,
+            useAquaInsteadOfSignature: true,
+            allowZeroAmountIn: false,
+            receiver: address(0),
+            hasPreTransferInHook: false,
+            hasPostTransferInHook: false,
+            hasPreTransferOutHook: false,
+            hasPostTransferOutHook: false,
+            preTransferInTarget: address(0),
+            preTransferInData: "",
+            postTransferInTarget: address(0),
+            postTransferInData: "",
+            preTransferOutTarget: address(0),
+            preTransferOutData: "",
+            postTransferOutTarget: address(0),
+            postTransferOutData: "",
+            program: _program()
+        }));
+
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = tokens[0] == WETH ? WETH_SHIPPED : USDC_SHIPPED;
         amounts[1] = tokens[1] == WETH ? WETH_SHIPPED : USDC_SHIPPED;
