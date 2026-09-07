@@ -834,6 +834,8 @@ type Strategy @entity(immutable: false) @regularPolling {
   strategyHash: Bytes!
   " The raw program, kept so anyone can re-decode it and check this one "
   program: Bytes!
+  " True when the shipped blob was an ABI-encoded Order and the program came out of its data field. False when the maker shipped raw bytecode. Recorded rather than guessed, because the two shapes decode to completely different instructions. "
+  programWrappedInOrder: Boolean!
   " Primary curve family, in the register an interface can show a person "
   classification: String!
   " Every curve family present, for a program running more than one "

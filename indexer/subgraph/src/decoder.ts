@@ -1,4 +1,4 @@
-import { Bytes } from "@graphprotocol/graph-ts";
+import { Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { opcodeName } from "./opcodes";
 
 /// Decodes a SwapVM program into its instructions.
@@ -99,4 +99,39 @@ export function classify(families: string[]): string {
     if (families.indexOf(order[i]) >= 0) return order[i];
   }
   return "UNKNOWN";
+}
+
+/// What a `Shipped` blob turned out to be.
+export class Shipped {
+  program: Bytes;
+  /// True when the blob was an ABI-encoded `ISwapVM.Order` and the program came out of its `data`
+  /// field; false when the blob was taken as raw bytecode.
+  wrappedInOrder: bool;
+  maker: string;
+
+  constructor(program: Bytes, wrappedInOrder: bool, maker: string) {
+    this.program = program;
+    this.wrappedInOrder = wrappedInOrder;
+    this.maker = maker;
+  }
+}
+
+/// Pulls the program out of what `Aqua.ship` actually carries.
+///
+/// `AquaGuardVault.ship` sends `abi.encode(order)`, and `ISwapVM.Order` is
+/// `(address maker, MakerTraits traits, bytes data)` — the program is in `data`. Decoding the blob
+/// directly as `[opcode][argsLen][args]` reads the maker's address as the first two instructions
+/// and produces a plausible-looking program nobody sent, which is worse than failing.
+///
+/// A maker that is not our vault may ship raw bytecode instead, so an unwrappable blob is taken at
+/// face value rather than dropped — and which shape it was is recorded rather than guessed at.
+export function unwrapShipped(blob: Bytes): Shipped {
+  const decoded = ethereum.decode("(address,uint256,bytes)", blob);
+  if (decoded != null) {
+    const tuple = decoded.toTuple();
+    if (tuple.length == 3) {
+      return new Shipped(tuple[2].toBytes(), true, tuple[0].toAddress().toHexString());
+    }
+  }
+  return new Shipped(blob, false, "");
 }
