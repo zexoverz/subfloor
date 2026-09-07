@@ -99,6 +99,23 @@ export function useLedger(): Ledger {
   // narrow shape below cannot satisfy; the state object is validated at runtime instead.
   const settle = <T,>(action: { observable: { subscribe: (o: any) => unknown } }): Promise<T> =>
     new Promise((resolve, reject) => {
+      /*
+       * A device is allowed to be slow — someone reading four lines on a small screen is not to be
+       * hurried — but an action that never emits at all is not slowness. A malformed payload dies
+       * inside the observable and simply stops, and without this the screen waits on approval the
+       * hardware was never asked for. Two minutes is longer than any real approval and shorter
+       * than forever.
+       */
+      const gaveUp = setTimeout(
+        () => reject(new Error('the device did not answer — is the Ethereum app open on it?')),
+        120_000,
+      );
+      const done = <R,>(fn: (v: R) => void) => (v: R) => {
+        clearTimeout(gaveUp);
+        fn(v);
+      };
+      resolve = done(resolve);
+      reject = done(reject);
       action.observable.subscribe({
         next: (state: { status: string; output?: T; error?: unknown }) => {
           if (state.status === 'completed' && state.output !== undefined) resolve(state.output);

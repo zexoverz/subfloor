@@ -40,18 +40,36 @@ export function buildMandate({
     return Number.isNaN(amount) ? 0n : parseUnits(String(amount), token.decimals);
   });
 
+  /*
+   * Decimal strings, not bigints.
+   *
+   * The device kit serialises the payload on its way to the hardware, and `JSON.stringify` throws
+   * on a BigInt. That throw happened inside the action's observable, which then simply never
+   * emitted — so the screen sat on "awaiting approval on device" forever while the Ledger had been
+   * asked nothing. A uint256 as a decimal string is the ordinary EIP-712 encoding and hashes
+   * identically.
+   */
   return {
     domain: mandateDomain(chain.id, vault),
-    types: mandateTypes,
+    types: {
+      ...mandateTypes,
+      // Some signers want the domain spelled out; ones that do not simply ignore it.
+      EIP712Domain: [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' },
+      ],
+    },
     primaryType: 'Mandate' as const,
     message: {
       delegate: delegate as Address,
       app: addresses.aqua as Address,
       tokens: ACTIVE_TOKENS.map((t) => t.address),
-      maxAmounts: held,
-      nonce,
+      maxAmounts: held.map((amount) => amount.toString()),
+      nonce: nonce.toString(),
       // Days, from now, as seconds. The device shows the span; the struct carries the instant.
-      expiry: BigInt(Math.floor(Date.now() / 1000) + expiresInDays * 86_400),
+      expiry: String(Math.floor(Date.now() / 1000) + expiresInDays * 86_400),
     },
   };
 }
