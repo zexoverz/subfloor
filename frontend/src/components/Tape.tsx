@@ -132,7 +132,8 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
  */
 function RefusalRows({ entry }: { entry: Refusal }) {
   const [open, setOpen] = useState(false);
-  const decoded = decodeRefusal(entry.data);
+  // The index hands them over already decoded; a revert we watched ourselves is decoded here.
+  const decoded = entry.decoded ?? decodeRefusal(entry.data);
 
   // The refusal is the moment the demo is built around, so it holds the eye for a beat.
   const [fresh, setFresh] = useState(true);

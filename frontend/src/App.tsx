@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
+import { useIndex } from './lib/subgraph.ts';
 import { StoppedState } from './components/StoppedState.tsx';
 import { Toasts } from './components/Toasts.tsx';
 import { addresses } from './lib/contracts.ts';
@@ -29,13 +30,25 @@ export default function App() {
   const [setupOpen, setSetupOpen] = useState(true);
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
-  const { state: fed, source } = useSimulatedFeed(fixtures);
+  const { state: fed, source: feedSource } = useSimulatedFeed(fixtures);
+  /*
+   * §10: every number on the live view is read from the index, the same queries the public page
+   * runs. Where the index has answered, it wins over both the fixtures and the simulated feed —
+   * and where it has not, nothing pretends it did.
+   */
+  const index = useIndex();
+  const source = index.source === 'chain' ? 'chain' : feedSource;
   const wallet = useWallet();
 
   // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
   // stops describing a vault nobody owns.
   const ceremony = useCeremony(wallet.address, 0);
-  const withHoldings = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
+  const indexed = {
+    ...fed,
+    ...(index.tape ? { tape: index.tape } : {}),
+    ...(index.stats ? { stats: { ...fed.stats, ...index.stats } } : {}),
+  };
+  const withHoldings = wallet.holdings ? { ...indexed, inventory: wallet.holdings } : indexed;
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
   const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;

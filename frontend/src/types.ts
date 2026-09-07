@@ -93,6 +93,19 @@ export type Refusal = {
   tx: string;
   data: `0x${string}`;
   referencePrice?: number;
+  /**
+   * Already decoded, when the index is the source. A refusal reaches this app two ways — decoded
+   * from revert data we watched, or read from the Substreams module that watched the same
+   * transaction — and both end at the same five numbers. Nothing downstream should have to know
+   * which one it got.
+   */
+  decoded?: {
+    attemptedPrice: number;
+    floorPrice: number;
+    bpsBelowFloor: number;
+    gaveSymbol: string;
+    gotSymbol: string;
+  };
 };
 
 export type TapeEntry = Fill | Refusal;
