@@ -1,0 +1,30 @@
+syntax = "proto3";
+package subfloor.v1;
+
+// A fill the floor turned away.
+//
+// This message exists because a refusal cannot be expressed as an event. SettledBelowFloor is a
+// revert; reverted transactions emit no logs at all, so nothing log-driven can see one. The
+// Firehose block model carries every transaction with its status and its call tree, which is the
+// only place these numbers exist.
+message Refusal {
+  string tx_hash = 1;
+  uint64 block_number = 2;
+  uint64 timestamp = 3;
+
+  // Decoded from the revert data of the failing call.
+  string recipient = 4;
+  string token_in = 5;
+  string token_out = 6;
+  // Rate the fill would have settled at, and the floor it was measured against.
+  // Both in the canonical convention: received * 1e18 / given, as decimal strings.
+  string execution_rate = 7;
+  string floor_rate = 8;
+
+  // The router the call was made to.
+  string router = 9;
+}
+
+message Refusals {
+  repeated Refusal refusals = 1;
+}
