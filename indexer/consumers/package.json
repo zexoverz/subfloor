@@ -1,0 +1,15 @@
+{
+  "name": "subfloor-consumers",
+  "private": true,
+  "type": "module",
+  "description": "The two things that read the index: the floor screen's calibration, and the daily execution-quality report.",
+  "scripts": {
+    "serve": "node --experimental-strip-types src/server.ts",
+    "report": "node --experimental-strip-types src/report.ts",
+    "check": "node --experimental-strip-types --test src/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "typescript": "^5.9.0"
+  }
+}
