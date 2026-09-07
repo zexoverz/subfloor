@@ -801,3 +801,62 @@ type ExecutionQualitySamples @entity(immutable: false) {
   " Reference ages in seconds, ascending, for the snapshot's median. "
   referenceAgesSeconds: [Int!]!
 }
+
+"""
+An address that ships strategies to the venue. Not the vault specifically: nothing upstream is
+indexed, so every maker on Aqua arrives at the handlers and all of them are recorded. Narrowing to
+one vault is a query, which is what makes this reusable by anyone building on the venue rather than
+only by us.
+"""
+type Maker @entity(immutable: false) @regularPolling {
+  " The maker address "
+  id: Bytes!
+  strategies: [Strategy!]! @derivedFrom(field: "maker")
+  strategiesShipped: Int!
+  strategiesActive: Int!
+  firstSeenTimestamp: BigInt!
+  lastUpdateTimestamp: BigInt!
+}
+
+"""
+One shipped SwapVM program, decoded.
+
+`Shipped` carries the whole program in its data blob, and the venue never decodes it — the VM reads
+`[opcode][argsLen][args]` at execution time and nothing records what ran. Decoding it here is the one
+piece of this index nobody else has, and it is what lets an interface say "quoting both sides,
+decaying" instead of showing a user a hex blob.
+"""
+type Strategy @entity(immutable: false) @regularPolling {
+  " maker ++ app ++ strategyHash "
+  id: Bytes!
+  maker: Maker!
+  app: Bytes!
+  strategyHash: Bytes!
+  " The raw program, kept so anyone can re-decode it and check this one "
+  program: Bytes!
+  " Primary curve family, in the register an interface can show a person "
+  classification: String!
+  " Every curve family present, for a program running more than one "
+  families: [String!]!
+  steps: [StrategyStep!]! @derivedFrom(field: "strategy")
+  stepCount: Int!
+  " Empty when the program decoded cleanly. A truncated or malformed program is recorded with what was decoded and this set, rather than dropped. "
+  decodeError: String!
+  active: Boolean!
+  shippedTimestamp: BigInt!
+  shippedBlock: BigInt!
+  dockedTimestamp: BigInt
+  dockedBlock: BigInt
+}
+
+" One instruction of a decoded program, in program order. "
+type StrategyStep @entity(immutable: true) {
+  " strategy ++ index "
+  id: Bytes!
+  strategy: Strategy!
+  index: Int!
+  opcode: Int!
+  " The VM's own name for the opcode, generated from OpcodeList.sol. `UNKNOWN` for an unallocated slot. "
+  name: String!
+  args: Bytes!
+}
