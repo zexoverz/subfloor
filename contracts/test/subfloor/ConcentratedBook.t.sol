@@ -363,10 +363,19 @@ contract ConcentratedBookTest is Test {
         assertEq(adjustedOutBA, plainOutBA, "and nothing at all on the other one");
     }
 
-    /// The books that carry the two optional instructions cannot run on the deployed router, and
-    /// this is where that is written down rather than discovered. `AquaOpcodes` dispatches the
-    /// curve, the decay and the fee; it does not dispatch `ValidateSeriesEpoch`.
-    function test_aPinnedBookIsRefusedByTheAquaOpcodeSet() public {
+    /// A pinned book runs on the deployed router.
+    ///
+    /// This test used to assert the opposite, and it was right to at the time: `AquaOpcodes` is the
+    /// upstream set and it dispatches the curve, the decay and the fee but not `ValidateSeriesEpoch`,
+    /// so a book that pinned a series built fine and reverted `UnknownOpcode` at fill time. §4's
+    /// position is mass-invalidatable as a series, so the router was refusing a program the
+    /// submission claims it runs. `SubfloorOpcodes` now dispatches it, at a measured +1,089 bytes
+    /// for the three additions, leaving 593 under EIP-170.
+    ///
+    /// Kept pointed at the shipped router on purpose. The property worth pinning is not "the
+    /// upstream set lacks an opcode" — that is upstream's business — it is "the thing we deploy runs
+    /// the position we describe".
+    function test_aPinnedBookRunsOnTheDeployedRouter() public {
         ConcentratedBook.Book memory book = _book();
         book.pinnedToSeries = true;
         book.seriesId = SERIES;
@@ -374,8 +383,8 @@ contract ConcentratedBookTest is Test {
         (ISwapVM.Order memory order,) = _shipBook(book, address(router));
 
         _fund(taker, 1e18, true);
-        vm.expectRevert(abi.encodeWithSelector(AquaOpcodes.UnknownOpcode.selector, uint256(uint8(ValidateSeriesEpoch.opcode))));
-        _swap(order, 1e18, true);
+        (, uint256 amountOut) = _swap(order, 1e18, true);
+        assertGt(amountOut, 0, "a pinned book fills like any other");
     }
 
     // --- helpers ----------------------------------------------------------------------------------
