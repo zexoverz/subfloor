@@ -51,15 +51,18 @@ export default function App() {
   // hook below that return would change the count the moment someone navigates on to the board.
   const panic = usePanic(wallet.address, vault);
 
-  // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
-  // stops describing a vault nobody owns.
   const ceremony = useCeremony(wallet.address, vault);
   const indexed = {
     ...fed,
     ...(index.tape ? { tape: index.tape } : {}),
     ...(index.stats ? { stats: { ...fed.stats, ...index.stats } } : {}),
   };
-  const withHoldings = wallet.holdings ? { ...indexed, inventory: wallet.holdings } : indexed;
+  /*
+   * "What is in the vault" has to be the vault's balance. This used to render the owner's wallet
+   * holdings, which meant the card claimed the vault held tokens that had never left the wallet —
+   * the same lie as a fixture labelled live, on the card the whole desk is named after.
+   */
+  const withHoldings = ceremony.inventory ? { ...indexed, inventory: ceremony.inventory } : indexed;
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
   const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;

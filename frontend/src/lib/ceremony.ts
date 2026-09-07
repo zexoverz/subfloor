@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createPublicClient, http, type Address } from 'viem';
+import { createPublicClient, formatUnits, http, type Address } from 'viem';
 import { chain } from './chain.ts';
 import {
   addresses,
@@ -13,7 +13,7 @@ import {
   vaultAbi,
 } from './contracts.ts';
 import { ACTIVE_TOKENS, USDC, WETH } from './tokens.ts';
-import type { Floor } from '../types.ts';
+import type { Floor, Holding } from '../types.ts';
 import { mocked } from './mock.ts';
 
 /**
@@ -52,6 +52,8 @@ export type CeremonyState = {
   floor: Floor | null;
   /** The reference feed the registry actually consults, so the link points at the real oracle. */
   feed: Address | null;
+  /** What the vault itself holds. Null until read — never the owner's wallet, which is a different address. */
+  inventory: Holding[] | null;
   steps: Step[];
   refresh: () => void;
 };
@@ -62,7 +64,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   const [owner, setOwner] = useState<Address | null>(null);
   const [floorsSet, setFloorsSet] = useState(false);
   /** The vault's own inventory. The wallet's holdings are not the vault's, and only one settles. */
-  const [vaultFunded, setVaultFunded] = useState(false);
+  const [inventory, setInventory] = useState<Holding[] | null>(null);
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
@@ -114,7 +116,12 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
 
         // Funded means the *vault* holds something. Reading the owner's wallet here ticked the
         // step green before a single token had moved.
-        setVaultFunded((held as bigint[]).some((b) => b > 0n));
+        setInventory(
+          ACTIVE_TOKENS.map((t, i) => ({
+            symbol: t.symbol,
+            amount: Number(formatUnits((held as bigint[])[i] ?? 0n, t.decimals)),
+          })),
+        );
 
         const [feedAddress] = reference as [Address, boolean, number, number, bigint];
         setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
@@ -133,7 +140,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
       id: 'fund',
       title: 'Fund the vault',
       detail: 'move inventory in. An ordinary transfer — the vault holds it, you still own it.',
-      done: mocked ? mockDone > 0 : vaultFunded,
+      done: mocked ? mockDone > 0 : Boolean(inventory?.some((h) => h.amount > 0)),
       device: false,
     },
     {
@@ -172,6 +179,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     delegate,
     floor,
     feed,
+    inventory,
     steps,
     refresh,
   };

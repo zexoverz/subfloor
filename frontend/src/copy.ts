@@ -137,6 +137,8 @@ export const copy = {
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',
+    /** Said only when a delegate exists. With none, nothing is under any mandate. */
+    noMandate: 'no agent yet',
     /** A disabled button with no reason on it reads as broken rather than as waiting. */
     sendNeedsAmount: 'Enter an amount above',
     /** Two transactions, and saying so beforehand is cheaper than a surprise second prompt. */

@@ -133,7 +133,8 @@ export function LiveView({
             <CardHead
               icon={Wallet}
               left={copy.desk.vault}
-              right={`${inventory.length} under mandate`}
+              // Nothing is "under mandate" until a delegate exists to hold one.
+              right={state.delegate ? `${inventory.length} under mandate` : copy.wallet.noMandate}
             />
             <CardBody>
               <dl className="m-0 text-[12.5px]">

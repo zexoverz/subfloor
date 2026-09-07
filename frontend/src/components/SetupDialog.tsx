@@ -207,9 +207,11 @@ export function SetupDialog({
                     onChange={(v) => setAmounts((a) => ({ ...a, [h.symbol]: v }))}
                   />
                 ))}
-                {wrapping && <p className="mt-2 mb-0 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
+                {wrapping && <p className="mt-2 mb-2 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
+                <div className="mt-3" />
                 <Act
                   primary
+                  wide
                   onClick={() =>
                     void fund.send(
                       ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
