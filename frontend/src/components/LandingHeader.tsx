@@ -1,4 +1,5 @@
 import { copy } from '../copy.ts';
+import { Mark } from './Mark.tsx';
 import { Act } from './Button.tsx';
 import type { Screen } from '../types.ts';
 
@@ -11,7 +12,10 @@ export function LandingHeader({ onNavigate }: { onNavigate: (s: Screen) => void 
   return (
     <header className="sticky top-0 z-30 border-b border-rule bg-ground/85 backdrop-blur">
       <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-[clamp(18px,4vw,36px)] py-3.5">
-        <span className="text-[15px] font-semibold tracking-[0.22em]">{copy.brand}</span>
+        <span className="flex items-center gap-2.5 text-[15px] font-semibold tracking-[0.22em]">
+          <Mark />
+          {copy.brand}
+        </span>
 
         {/*
           * Brand and one action, nothing else. The public page and the repo are both reachable from

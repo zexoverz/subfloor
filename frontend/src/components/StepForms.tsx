@@ -25,28 +25,36 @@ export function AmountRow({
   const balance = Number.isNaN(holding.amount) ? null : holding.amount;
 
   return (
-    <div className="flex items-center gap-2 border-b border-rule py-2.5 last:border-b-0">
-      <span className="flex w-20 items-center gap-2 text-[11px] tracking-[0.08em] text-faint uppercase">
-        <TokenIcon symbol={holding.symbol} size={15} />
-        {holding.symbol}
+    <div className="flex items-center gap-3 border-b border-rule py-3 last:border-b-0">
+      {/*
+        * The token and what you hold of it, stacked. The balance is the number this row is actually
+        * about — it is the ceiling on the amount — and reading it as a footnote at the far right
+        * meant looking away from the field to find it.
+        */}
+      <TokenIcon symbol={holding.symbol} size={22} />
+      <span className="flex flex-col">
+        <span className="text-[12.5px] font-medium">{holding.symbol}</span>
+        <span className="flex items-center gap-1 text-[10.5px] text-faint">
+          <Wallet size={10} strokeWidth={1.8} />
+          {balance === null ? '—' : balance} {copy.wallet.inWallet}
+        </span>
       </span>
+
       <input
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
         placeholder="0.00"
-        className="min-w-0 flex-1 border-0 bg-transparent text-right font-mono text-[15px] tabular-nums outline-none placeholder:text-faint"
+        className="ml-auto w-24 min-w-0 border-0 bg-transparent text-right font-mono text-[16px] tabular-nums outline-none placeholder:text-faint"
       />
       <button
         type="button"
         onClick={() => balance !== null && onChange(String(balance))}
-        className="cursor-pointer rounded-[2px] border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase hover:border-brass hover:text-brass"
+        disabled={!balance}
+        className="cursor-pointer rounded-[2px] border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-brass hover:text-brass disabled:cursor-not-allowed disabled:opacity-40"
       >
         {copy.wallet.max}
       </button>
-      <span className="w-24 text-right text-[10.5px] text-faint">
-        {balance === null ? '—' : balance} {copy.wallet.inWallet}
-      </span>
     </div>
   );
 }

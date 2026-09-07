@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
+import { Mark } from './Mark.tsx';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
 import { AccountMenu } from './AccountMenu.tsx';
@@ -57,7 +58,10 @@ export function AppShell({
           onClick={() => onNavigate('landing')}
           className="cursor-pointer text-[15px] font-semibold tracking-[0.22em] hover:text-brass"
         >
-          {copy.brand}
+          <span className="flex items-center gap-2.5">
+            <Mark />
+            {copy.brand}
+          </span>
         </button>
 
         <div className="ml-auto flex items-center gap-3.5 text-[11px] text-faint">
