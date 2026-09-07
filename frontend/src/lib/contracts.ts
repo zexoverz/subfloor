@@ -100,4 +100,5 @@ export const mandateDomain = (chainId: number, vault: Address) => ({
 export const vaultFactoryAbi = [
   { type: 'function', name: 'createVault', stateMutability: 'nonpayable', inputs: [], outputs: [{ name: 'vault', type: 'address' }] },
   { type: 'function', name: 'vaultsOfOwner', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'address[]' }] },
+  { type: 'event', name: 'VaultCreated', inputs: [{ name: 'owner', type: 'address', indexed: true }, { name: 'vault', type: 'address', indexed: true }, { name: 'index', type: 'uint256', indexed: false }] },
 ] as const;

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { createPublicClient, http, type Address } from 'viem';
+import { parseEventLogs, type Address } from 'viem';
 import { chain } from './chain.ts';
+import { publicClient } from './client.ts';
 import { addresses, vaultFactoryAbi } from './contracts.ts';
 
 /**
@@ -15,7 +16,6 @@ import { addresses, vaultFactoryAbi } from './contracts.ts';
  * after they deployed theirs would put another owner's floor and holdings on their screen, which
  * is the one confusion this whole design exists to prevent.
  */
-const publicClient = createPublicClient({ chain, transport: http() });
 
 const ZERO = '0x0000000000000000000000000000000000000000';
 
@@ -38,6 +38,8 @@ export type OwnVault = {
   vault: Address | null;
   /** Null until the factory has actually answered, so "none" is never guessed from a failed read. */
   known: boolean;
+  /** Why the factory could not be read. Rendered, because a silent failure looks like loading. */
+  error: string | null;
   creating: boolean;
   create: () => Promise<void>;
 };
@@ -45,39 +47,56 @@ export type OwnVault = {
 export function useOwnVault(owner: Address | null): OwnVault {
   const [vault, setVault] = useState<Address | null>(null);
   const [known, setKnown] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!addresses.factory || !owner) {
       setVault(null);
       setKnown(false);
+      setError(addresses.factory ? null : 'no factory address in this build');
       return;
     }
+    // A new wallet must never inherit the last one's answer, not even for a frame.
+    setVault(null);
+    setKnown(false);
+    setError(null);
     let live = true;
 
     (async () => {
-      try {
-        const owned = (await publicClient.readContract({
-          address: addresses.factory as Address,
-          abi: vaultFactoryAbi,
-          functionName: 'vaultsOfOwner',
-          args: [owner],
-        })) as readonly Address[];
-        if (!live) return;
-        // The most recent one: someone who deployed twice meant the second.
-        setVault(pickVault(owned, null));
-        setKnown(true);
-      } catch {
-        // A failed read is not "you have no vault". It stays unknown and the screen says nothing.
-        if (live) setKnown(false);
+      /*
+       * Three attempts, because one is not enough to tell "you own nothing" from "the node did not
+       * answer this time", and those two have opposite consequences on screen.
+       */
+      for (let attempt = 0; attempt < 3 && live; attempt += 1) {
+        try {
+          const owned = (await publicClient.readContract({
+            address: addresses.factory as Address,
+            abi: vaultFactoryAbi,
+            functionName: 'vaultsOfOwner',
+            args: [owner],
+          })) as readonly Address[];
+          if (!live) return;
+          // The most recent one: someone who deployed twice meant the second.
+          setVault(pickVault(owned, null));
+          setKnown(true);
+          setError(null);
+          return;
+        } catch (cause) {
+          if (!live) return;
+          // A failed read is not "you have no vault" — but it must not be silent either, or a dead
+          // card is indistinguishable from one that is still loading.
+          const message = (cause instanceof Error ? cause.message : String(cause)).split('\n')[0] ?? 'the factory did not answer';
+          setError(message.slice(0, 120));
+          await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        }
       }
     })();
 
     return () => {
       live = false;
     };
-  }, [owner, tick]);
+  }, [owner]);
 
   const create = useCallback(async () => {
     if (!addresses.factory || !owner) return;
@@ -92,14 +111,22 @@ export function useOwnVault(owner: Address | null): OwnVault {
         chainId: chain.id,
       });
       const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
-      /*
-       * The address comes from the receipt rather than from the call's return value: a write
-       * returns a hash, not the return data, and re-reading the factory is the honest way to learn
-       * what it actually deployed.
-       */
       if (receipt.status !== 'success') throw new Error('the vault was not deployed');
+      /*
+       * The address comes out of the receipt's own log, not from re-reading the factory.
+       *
+       * A write returns a hash rather than return data, so the address has to be recovered
+       * somehow — but recovering it by reading `vaultsOfOwner` again races: the receipt resolves
+       * against the wallet's RPC, while the read goes to ours, which may not have that block yet.
+       * The answer comes back empty, and an empty answer is indistinguishable from "you own
+       * nothing" — so the screen keeps offering to deploy a vault that already exists. The receipt
+       * carries the log that names the vault, and it cannot disagree with itself.
+       */
+      const [created] = parseEventLogs({ abi: vaultFactoryAbi, eventName: 'VaultCreated', logs: receipt.logs });
+      if (!created) throw new Error('the vault was deployed but the transaction did not say where');
+      setVault(created.args.vault);
+      setKnown(true);
       toast.success('vault deployed');
-      setTick((t) => t + 1);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       toast.error(
@@ -112,5 +139,5 @@ export function useOwnVault(owner: Address | null): OwnVault {
     }
   }, [owner]);
 
-  return { vault, known, creating, create };
+  return { vault, known, error, creating, create };
 }

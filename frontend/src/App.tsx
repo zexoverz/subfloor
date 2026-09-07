@@ -51,15 +51,18 @@ export default function App() {
   // hook below that return would change the count the moment someone navigates on to the board.
   const panic = usePanic(wallet.address, vault);
 
-  // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
-  // stops describing a vault nobody owns.
-  const ceremony = useCeremony(wallet.address, vault, 0);
+  const ceremony = useCeremony(wallet.address, vault);
   const indexed = {
     ...fed,
     ...(index.tape ? { tape: index.tape } : {}),
     ...(index.stats ? { stats: { ...fed.stats, ...index.stats } } : {}),
   };
-  const withHoldings = wallet.holdings ? { ...indexed, inventory: wallet.holdings } : indexed;
+  /*
+   * "What is in the vault" has to be the vault's balance. This used to render the owner's wallet
+   * holdings, which meant the card claimed the vault held tokens that had never left the wallet —
+   * the same lie as a fixture labelled live, on the card the whole desk is named after.
+   */
+  const withHoldings = ceremony.inventory ? { ...indexed, inventory: ceremony.inventory } : indexed;
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
   const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
@@ -111,10 +114,23 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
+          onWithdraw={() =>
+            void panic.withdraw().then(() => {
+              ceremony.refresh();
+              wallet.refresh();
+            })
+          }
           onCreateVault={own.create}
           creatingVault={own.creating}
           // Only offer it once the factory has actually said this wallet has none.
           canCreateVault={own.known && !own.vault}
+          /*
+           * Both answers, not one. isOwner is null until the ceremony has read the vault, and
+           * treating null as "not the owner" is what made the card deliver a verdict on a question
+           * still in flight.
+           */
+          vaultChecked={own.known && ceremony.settled}
+          vaultError={own.error ?? ceremony.error}
           connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
@@ -126,6 +142,7 @@ export default function App() {
           state={state}
           wallet={wallet}
           vault={vault}
+          ceremony={ceremony}
           open={setupOpen}
           onClose={() => setSetupOpen(false)}
           onSign={() => {
@@ -147,7 +164,8 @@ export default function App() {
       )}
         </>
       )}
-      <Toasts />
+      {/* The sheet carries its own while it is open; see SetupDialog. */}
+      {!(needsSetup && setupOpen) && <Toasts />}
     </AppShell>
   );
 }

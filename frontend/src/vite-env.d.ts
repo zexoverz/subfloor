@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_CHAIN_SOURCE?: 'mock' | 'chain';
   /** 'base' for mainnet; anything else means Base Sepolia, where the integration deployment lives. */
   readonly VITE_CHAIN?: 'base' | 'baseSepolia';
+  /** A dedicated RPC. Absent, the chain's public endpoint is used, which rate-limits under a burst. */
+  readonly VITE_RPC_URL?: string;
   /** The Graph endpoint. Absent, the app stays on fixtures and says so. */
   readonly VITE_SUBGRAPH_URL?: string;
   /** Deployment. Empty until the contracts are broadcast; every screen renders without them. */
