@@ -86,3 +86,34 @@ block of the fill. Two consequences that must not be smoothed over:
 
 `protocol.slug` follows the standard: `aqua`, `uniswap-v3`. `Floor` and `FillQuality` ids are the
 `Swap` id and `{recipient}-{base}-{quote}` respectively, both `Bytes` per the standard's convention.
+
+## The Network enum has no Base, and that is a finding rather than a workaround
+
+`dex-agg` v1.0.2's `Network` enum stops at the chains that existed when it was written:
+`ARBITRUM_ONE`, `AVALANCHE`, `BSC`, `CELO`, `CRONOS`, `MAINNET`, `FANTOM`, `FUSE`, `GNOSIS`,
+`HARMONY`, `MATIC`, `MOONBEAM`, `MOONRIVER`, `OPTIMISM`, and a handful of non-EVM chains. There is no
+`BASE`, and no `BASE_SEPOLIA`.
+
+A subgraph that writes `network: "BASE"` does not fail at build, or at codegen, or in Matchstick. It
+fails at the database, on commit:
+
+```
+Failed to transact block operations: writing DexAggProtocol entities at block 46516708 failed:
+invalid input value for enum sgd909058.network: "BASE"
+```
+
+At **99% synced**, after indexing every other entity correctly, and after successfully processing
+the fills. graph-node then rolls the batch back, so `_meta.block` reports the start block again and
+the subgraph looks like it never started — which is what sent this build chasing three wrong causes
+before the Studio UI showed the actual error.
+
+**We added both values to the enum rather than writing a network the protocol is not on.** That is a
+deviation from the published schema and it is recorded here because the filing claims to be the
+first implementation of it: being first is how you find that a listed standardized schema cannot
+express a chain that has been live for two years.
+
+`DexAggProtocol.network` is read from `dataSource.network()` rather than hardcoded, so the mainnet
+and Sepolia manifests cannot disagree with the row they write.
+
+**Worth reporting upstream**, and worth saying in the submission: the value of implementing a
+standard first is that you find where it stopped, and this is a concrete place it stopped.
