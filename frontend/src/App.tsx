@@ -39,6 +39,9 @@ export default function App() {
   const index = useIndex();
   const source = index.source === 'chain' ? 'chain' : feedSource;
   const wallet = useWallet();
+  // Every hook runs before the landing screen returns early: React counts hooks per render, and a
+  // hook below that return would change the count the moment someone navigates on to the board.
+  const panic = usePanic(wallet.address);
 
   // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
   // stops describing a vault nobody owns.
@@ -69,7 +72,6 @@ export default function App() {
 
 
   const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
-  const panic = usePanic(wallet.address);
 
   return (
     <AppShell
