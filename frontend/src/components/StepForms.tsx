@@ -3,6 +3,7 @@ import { Check, Info } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { KeyRound, Wallet } from 'lucide-react';
 import { TokenIcon } from './TokenIcon.tsx';
+import { Tooltip } from './Tooltip.tsx';
 import type { Holding } from '../types.ts';
 
 /**
@@ -77,9 +78,9 @@ export function AddressField({
         */}
       <label className="flex items-center gap-1.5 text-[10.5px] tracking-[0.09em] text-muted uppercase">
         {label}
-        <span title={hint} className="cursor-help text-faint hover:text-ink">
+        <Tooltip text={hint}>
           <Info size={11} strokeWidth={1.8} />
-        </span>
+        </Tooltip>
       </label>
       {/* The mark sits inside the field: which key this is matters more than the field's border. */}
       <div
