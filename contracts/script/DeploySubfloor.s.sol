@@ -81,8 +81,6 @@ contract DeploySubfloor is Script {
             SubfloorParams.BASE_AQUA,
             SubfloorParams.BASE_WETH,
             owner,
-            "SUBFLOOR",
-            "1",
             address(registry)
         );
 
