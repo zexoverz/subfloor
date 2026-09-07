@@ -65,6 +65,11 @@ dataSources:
       eventHandlers:
         - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
           handler: handleSwapped
+          # `router.ts` reads `event.receipt.gasUsed`, and graph-node only populates `receipt` when
+          # the handler asks for it. Without this line the field access traps, graph-node retries the
+          # block forever, and the subgraph stops at the first fill with `hasIndexingErrors: false` —
+          # which is indistinguishable from a slow sync. Cost most of 7 Sep.
+          receipt: true
 
   # The registry's events are the one place upstream indexing gets easy: recipient, base and quote
   # are all indexed, so floor history for one recipient is a topic filter rather than a scan.
