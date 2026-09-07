@@ -143,6 +143,7 @@ export const copy = {
     registerDeviceHint: 'writes your device to the vault and to the registry. The registry entry can only be set once — after this, changing it needs a signature from the device being replaced.',
     deviceRegistered: 'Registered on both.',
     nameAgent: 'Name the agent',
+    changeAgent: 'Change the agent',
     nameAgentHint: 'the address allowed to compose and ship strategies. It can never move a token out, and you can change it whenever you like.',
     agentNamed: 'Named. Change it whenever you like.',
     /** Two transactions: a floor on one side only is the absence of a floor, not half of one. */

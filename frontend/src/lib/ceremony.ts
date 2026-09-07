@@ -213,12 +213,24 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
       title: 'Sign the mandate on your device',
       detail: 'not a transaction — a signature the agent carries and the vault checks on every ship.',
       /*
-       * Signed, which is all there is to know. The chain records a mandate only once the agent
-       * ships with it, so waiting for on-chain evidence meant a step that could never complete and
-       * a board that said "finish setup" over a finished vault. What this asserts is exactly what
-       * it checks: a signature for this vault exists here.
+       * Signed, for the delegate the vault currently names.
+       *
+       * The chain records a mandate only when the agent ships with it, so waiting for on-chain
+       * evidence meant a step that could never complete. What this checks instead is the strongest
+       * thing available locally — and it has to include the delegate, because `_consumeMandate`
+       * requires `m.delegate == msg.sender`. Replace the agent and the old signature authorises
+       * nobody: the step correctly goes back to unfinished rather than reporting an authorisation
+       * that the vault would now reject.
+       *
+       * ponytail: the signature itself is not verified here, and the spec puts a mandate in the
+       * Key Ring rather than in a browser. Both are wrong for the same reason and both are #143's
+       * territory now that the agent exists.
        */
-      done: mocked ? mockDone > 4 : Boolean(loadMandate(vault)),
+      done: mocked
+        ? mockDone > 4
+        : Boolean(
+            delegate && loadMandate(vault)?.delegate?.toLowerCase() === delegate.toLowerCase(),
+          ),
       device: true,
     },
   ];

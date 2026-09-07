@@ -35,6 +35,7 @@ export function LiveView({
   vaultChecked,
   vaultError,
   onSetup,
+  onEditAgent,
   connected,
 }: {
   state: VaultState;
@@ -55,6 +56,8 @@ export function LiveView({
   connected: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
   onSetup: (() => void) | null;
+  /** Replacing the agent is an ordinary owner action, so it needs a way in after setup. */
+  onEditAgent: (() => void) | null;
 }) {
   const [adjusting, setAdjusting] = useState(false);
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
@@ -240,7 +243,25 @@ export function LiveView({
           </Card>
 
           <Card>
-            <CardHead icon={Bot} left={copy.live.agentNow} right={<Activity size={12} strokeWidth={1.6} />} />
+            <CardHead
+              icon={Bot}
+              left={copy.live.agentNow}
+              right={
+                onEditAgent ? (
+                  <button
+                    type="button"
+                    onClick={onEditAgent}
+                    aria-label={copy.wallet.changeAgent}
+                    title={copy.wallet.changeAgent}
+                    className="cursor-pointer border-0 bg-transparent p-0 text-faint transition-colors hover:text-brass"
+                  >
+                    <Pencil size={12} strokeWidth={1.7} />
+                  </button>
+                ) : (
+                  <Activity size={12} strokeWidth={1.6} />
+                )
+              }
+            />
             <CardBody>
               {/* #111: the address, not a nickname — the published key has to be checkable. */}
               {state.delegate && (
