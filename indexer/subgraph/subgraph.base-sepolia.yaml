@@ -7,7 +7,8 @@
 #
 # startBlock is the contracts' creation block, read from broadcast/*/run-latest.json.
 specVersion: 1.2.0
-description: >
+description: >-
+  Network enum carries BASE and BASE_SEPOLIA; dex-agg v1.0.2 has neither.
   Base Sepolia build, for frontend integration only. Same schema and handlers as the mainnet
   manifest; the addresses come from DeploySubfloorTestnet.s.sol and the Aqua here is ours rather
   than canonical, because canonical Aqua is not deployed on Sepolia.
