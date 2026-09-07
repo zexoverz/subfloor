@@ -23,6 +23,7 @@ export function AppShell({
   state,
   source,
   wallet,
+  owner,
   wide = false,
   children,
 }: {
@@ -32,6 +33,8 @@ export function AppShell({
   state: VaultState;
   source: DataSource;
   wallet: Wallet;
+  /** The panic control belongs to whoever can actually stop the agent. */
+  owner: boolean;
   /** The public page is a board, not a document: it gets the width to lay one out. */
   wide?: boolean;
   children: ReactNode;
@@ -84,7 +87,7 @@ export function AppShell({
 
         <AccountMenu wallet={wallet} />
 
-        {screen !== 'public' && (
+        {owner && (
           <div className="flex items-center gap-3.5 border-l border-rule pl-3.5">
             <PanicButton onFire={onPanic} />
           </div>

@@ -20,7 +20,6 @@ export const copy = {
     floor: 'Your floor',
     live: 'Live',
     ceremony: 'Device',
-    public: 'Public',
   },
 
   /** The skeleton-only picker. The shipped app reaches these by flow, not by a tab. */

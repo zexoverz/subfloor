@@ -300,7 +300,7 @@ export function Onboarding({
         {import.meta.env.DEV && (
         <div className="mt-10 flex justify-center gap-4 text-[10.5px] tracking-[0.1em] text-faint uppercase">
           <span>{copy.preview}</span>
-          {(['landing', 'live', 'floor', 'public'] as Screen[]).map((s) => (
+          {(['landing', 'live', 'floor'] as Screen[]).map((s) => (
             <button key={s} onClick={() => onNavigate(s)} className="cursor-pointer hover:text-muted">
               {copy.nav[s]}
             </button>

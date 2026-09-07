@@ -64,6 +64,7 @@ export default function App() {
       state={state}
       source={source}
       wallet={wallet}
+      owner={ceremony.isOwner === true}
       // The board gets the width whoever is reading it.
       wide={screen === 'live'}
     >
