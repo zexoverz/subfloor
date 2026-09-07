@@ -149,6 +149,8 @@ export const copy = {
     eyebrow: 'Settlement-level price bound · Base mainnet',
     standfirst:
       'Drag the fill. Below the floor, the venue itself refuses to settle — no classifier, no verdict, just arithmetic where the tokens move.',
+    /** What the poisoned agent asks for, in its own words. Act one of the drawing. */
+    bubbleAgent: 'sell it all — any price',
     settled: 'Settled',
     refused: 'Refused',
     settledNote: 'Above the floor, the fill settles like any other. The check costs the same either way.',

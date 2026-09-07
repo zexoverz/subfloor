@@ -2,6 +2,10 @@ import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Act, Ghost } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
+import { LetterGlitch } from '../LetterGlitch.tsx';
+import { LandingHeader } from '../LandingHeader.tsx';
+import { HeroAnnotations } from '../HeroAnnotations.tsx';
+import { ScrambleText } from '../ScrambleText.tsx';
 import type { Screen } from '../../types.ts';
 
 /**
@@ -15,32 +19,67 @@ import type { Screen } from '../../types.ts';
  */
 export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   return (
-    <div className="relative mx-auto max-w-[900px] px-[clamp(18px,4vw,36px)] pt-[clamp(48px,8vw,88px)] pb-24">
-      <header className="relative grid items-center gap-8 md:grid-cols-[1fr_1fr]">
+    <>
+      <LandingHeader onNavigate={onNavigate} />
+
+      <div className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] pb-24">
+      {/*
+        * Texture behind the hero band. Quieter than it was, because the drawing now carries the
+        * argument and the noise only carries atmosphere — whichever of the two the eye lands on
+        * first should be the one that means something.
+        */}
+      {/*
+        * Texture behind the hero band, and masked away from the column the words are in. Noise
+        * under body text is not atmosphere, it is a reading problem.
+        */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[92vh] opacity-[0.22]"
+        style={{ maskImage: 'linear-gradient(to right, #000 0%, #000 42%, transparent 62%)' }}
+      >
+        <LetterGlitch />
+      </div>
+
+      <header className="relative grid min-h-[calc(100vh-60px)] items-center gap-10 py-10 md:grid-cols-[1fr_1fr]">
         {/*
           * The argument as a drawing: a fill stops dead on the floor and nothing passes beneath it.
           * It carries the claim, so it sits beside the headline rather than behind it — and if the
           * file is not there, the hero is text and loses nothing.
           */}
-        <img
-          src="/hero.png"
-          alt=""
-          onError={(e) => (e.currentTarget.style.display = 'none')}
-          className="order-2 w-full max-w-[520px] justify-self-center md:order-1"
-        />
+        <div className="relative order-2 w-full max-w-[560px] justify-self-center md:order-1">
+          <img
+            src="/hero.png"
+            alt=""
+            onError={(e) => (e.currentTarget.style.display = 'none')}
+            className="w-full"
+          />
+          <HeroAnnotations />
+        </div>
 
         <div className="order-1 md:order-2">
           <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">
             {copy.landing.eyebrow}
           </p>
           <h1 className="mt-3 mb-0 text-[clamp(30px,5.2vw,44px)] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">
-            {copy.onboarding.title}
+            <ScrambleText text={copy.onboarding.title} />
             <br />
-            <span className="text-faint">{copy.onboarding.lede}</span>
+            <ScrambleText text={copy.onboarding.lede} className="text-faint" delay={700} />
           </h1>
           <p className="serif mt-4 max-w-[40ch] text-[clamp(16px,2.2vw,19px)] leading-snug font-light text-muted">
             {copy.landing.standfirst}
           </p>
+
+          {/* The action belongs in the hero, not eight sections down. */}
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <div className="w-full max-w-[220px]">
+              <Act primary onClick={() => onNavigate('onboarding')}>
+                <span className="flex items-center justify-center gap-2">
+                  {copy.landing.launch}
+                  <ArrowRight size={14} strokeWidth={1.8} />
+                </span>
+              </Act>
+            </div>
+            <Ghost onClick={() => onNavigate('public')}>{copy.landing.seePublic}</Ghost>
+          </div>
         </div>
       </header>
 
@@ -109,7 +148,8 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
           {copy.landing.disclosure}
         </p>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
 

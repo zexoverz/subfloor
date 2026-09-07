@@ -233,3 +233,32 @@ body {
     transform: translateY(6px);
   }
 }
+
+/*
+ * The hero annotations: the agent's intent, then the refusal. They loop because the drawing is
+ * static and the sequence is the argument — a thing tried, and a thing that did not happen.
+ *
+ * Base state is fully visible, so when prefers-reduced-motion disables the animation both labels
+ * simply sit there and the picture still reads.
+ */
+@keyframes hero-bubble {
+  0%,
+  6% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  14%,
+  46% {
+    opacity: 1;
+    transform: none;
+  }
+  56%,
+  100% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.hero-bubble {
+  animation: hero-bubble 7s ease-in-out infinite;
+}
