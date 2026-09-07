@@ -43,6 +43,8 @@ export type CeremonyState = {
   isOwner: boolean | null;
   /** vault.delegate(), for the screens that must show the address rather than a nickname. */
   delegate: Address | null;
+  /** The registered device, so the field can show what is set rather than an empty box. */
+  guardian: Address | null;
   /**
    * The floor as the registry has it, or null while nothing is deployed. Every screen reads this
    * rather than the fixture: a proposed number rendered where a configured one goes is the same
@@ -218,6 +220,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     deployed: mocked || deployed,
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     delegate,
+    guardian,
     floor,
     feed,
     inventory,

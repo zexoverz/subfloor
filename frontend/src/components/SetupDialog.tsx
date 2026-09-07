@@ -81,6 +81,18 @@ export function SetupDialog({
   const [delegate, setDelegate] = useState('');
 
   /*
+   * Seed the fields from the chain once it answers.
+   *
+   * These were form state and nothing else, so a reload showed two empty boxes over a vault that
+   * already had both addresses set — and the section went on calling itself required. Only fills a
+   * field that is still empty, so it never overwrites something being typed.
+   */
+  useEffect(() => {
+    if (ceremony.guardian) setGuardian((current) => current || ceremony.guardian!);
+    if (ceremony.delegate) setDelegate((current) => current || ceremony.delegate!);
+  }, [ceremony.guardian, ceremony.delegate]);
+
+  /*
    * Funded means the vault holds something, read from the vault's own balance by the ceremony —
    * not that a number has been typed into a field. Typing is a proposal; the mandate is about
    * inventory that exists. The typed version was wrong in both directions: it let the sheet look
@@ -92,7 +104,13 @@ export function SetupDialog({
   const hasAmount = holdings.some((h) => Number(amounts[h.symbol]) > 0);
   // WETH is the one that needs a wrap, and only when the wallet is short of what was typed.
   const wrapping = Number(amounts.WETH ?? 0) > (holdings.find((h) => h.symbol === 'WETH')?.amount ?? 0);
-  const keysReady = isAddress(guardian) && isAddress(delegate);
+  /*
+   * Registered on chain counts, whatever the boxes say. Reading only the inputs meant a vault with
+   * both keys set still reported the section as unfinished.
+   */
+  const guardianDone = Boolean(ceremony.steps.find((x) => x.id === 'guardian')?.done);
+  const delegateDone = Boolean(ceremony.delegate);
+  const keysReady = (guardianDone || isAddress(guardian)) && (delegateDone || isAddress(delegate));
   const blocked = !ceremony.deployed
     ? copy.wallet.notDeployed
     : ceremony.isOwner === false
@@ -389,15 +407,13 @@ export function SetupDialog({
                 <div>
                   <Act
                     wide
-                    disabled={!isAddress(guardian) || keys.sending || Boolean(ceremony.steps.find((x) => x.id === 'guardian')?.done)}
+                    disabled={!isAddress(guardian) || keys.sending || guardianDone}
                     onClick={() => void keys.setGuardian(guardian as `0x${string}`)}
                   >
                     {keys.step ?? copy.wallet.registerDevice}
                   </Act>
                   <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
-                    {ceremony.steps.find((x) => x.id === 'guardian')?.done
-                      ? copy.wallet.deviceRegistered
-                      : copy.wallet.registerDeviceHint}
+                    {guardianDone ? copy.wallet.deviceRegistered : copy.wallet.registerDeviceHint}
                   </p>
                 </div>
                 <div>
@@ -409,9 +425,7 @@ export function SetupDialog({
                     {copy.wallet.nameAgent}
                   </Act>
                   <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
-                    {ceremony.steps.find((x) => x.id === 'delegate')?.done
-                      ? copy.wallet.agentNamed
-                      : copy.wallet.nameAgentHint}
+                    {delegateDone ? copy.wallet.agentNamed : copy.wallet.nameAgentHint}
                   </p>
                 </div>
               </div>
