@@ -131,6 +131,10 @@ export const copy = {
     notOwner: 'This wallet does not own the vault.',
     notOwnerAction: 'OPEN THE BOARD',
     notOwnerHint: 'Everything the vault trades is public — the tape, the floor distance on every fill, and the refusals.',
+    /** #132 made this real: the factory deploys a vault owned by whoever asks. */
+    createVault: 'Deploy your own vault',
+    createVaultHint: 'One transaction. It comes out owned by this wallet, empty, and with no agent connected — you set the floor before anything can trade.',
+    creatingVault: 'Deploying…',
     ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */

@@ -55,7 +55,7 @@ export type CeremonyState = {
   refresh: () => void;
 };
 
-export function useCeremony(address: Address | null, fundedTokens: number): CeremonyState {
+export function useCeremony(address: Address | null, vault: Address | null, fundedTokens: number): CeremonyState {
   /** Mock mode advances one step per press, so the whole flow is walkable with nothing deployed. */
   const [mockDone, setMockDone] = useState(0);
   const [owner, setOwner] = useState<Address | null>(null);
@@ -72,11 +72,10 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
   }, []);
 
   useEffect(() => {
-    if (!deployed || mocked) return;
+    if (!deployed || mocked || !vault) return;
     let live = true;
 
     (async () => {
-      const vault = addresses.vault as Address;
       const registry = addresses.registry as Address;
       try {
         const [o, d, g, sell, buy, registryGuardian, configured, reference] = await Promise.all([
@@ -115,7 +114,7 @@ export function useCeremony(address: Address | null, fundedTokens: number): Cere
     return () => {
       live = false;
     };
-  }, [address, tick]);
+  }, [address, vault, tick]);
 
   const steps: Step[] = [
     {

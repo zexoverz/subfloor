@@ -25,6 +25,7 @@ import type { Screen, VaultState } from '../types.ts';
 export function SetupDialog({
   state,
   wallet,
+  vault,
   open,
   onClose,
   onSign,
@@ -32,6 +33,8 @@ export function SetupDialog({
 }: {
   state: VaultState;
   wallet: Wallet;
+  /** The vault being set up — theirs if they deployed one, ours otherwise. */
+  vault: `0x${string}` | null;
   open: boolean;
   onClose: () => void;
   onSign: () => void;
@@ -41,7 +44,7 @@ export function SetupDialog({
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
-  const ceremony = useCeremony(wallet.address, holdings.filter((h) => h.amount > 0).length);
+  const ceremony = useCeremony(wallet.address, vault, holdings.filter((h) => h.amount > 0).length);
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});

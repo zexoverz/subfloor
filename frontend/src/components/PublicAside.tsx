@@ -18,11 +18,18 @@ export function PublicAside({
   state,
   connected,
   onConnect,
+  onCreateVault,
+  creatingVault,
+  canCreateVault,
 }: {
   state: VaultState;
   /** A connected wallet that is not the owner is a different message, not the same button again. */
   connected: boolean;
   onConnect: () => void;
+  onCreateVault: () => void;
+  creatingVault: boolean;
+  /** Only true once the factory has confirmed this wallet owns none — never guessed from silence. */
+  canCreateVault: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4.5">
@@ -76,11 +83,24 @@ export function PublicAside({
           {connected ? (
             /*
              * Already connected, and this vault is someone else's. Offering the same connect
-             * button again asks them to fix something that is not broken.
+             * button again asks them to fix something that is not broken — but since #132 there
+             * is somewhere for them to go, so the dead end became an action.
              */
-            <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">
-              {copy.wallet.notOwner} {copy.wallet.notOwnerHint}
-            </p>
+            <>
+              <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">
+                {copy.wallet.notOwner} {copy.wallet.notOwnerHint}
+              </p>
+              {canCreateVault && (
+                <>
+                  <p className="serif mt-3 mb-3 text-[13.5px] leading-relaxed text-muted">
+                    {copy.wallet.createVaultHint}
+                  </p>
+                  <Act primary onClick={onCreateVault} disabled={creatingVault}>
+                    {creatingVault ? copy.wallet.creatingVault : copy.wallet.createVault}
+                  </Act>
+                </>
+              )}
+            </>
           ) : (
             /*
              * Connects, exactly like the control in the header. It used to navigate to first run,

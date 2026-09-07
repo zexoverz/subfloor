@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import { encodeFunctionData, type Address } from 'viem';
-import { addresses, erc20Abi, vaultAbi } from './contracts.ts';
+import { erc20Abi, vaultAbi } from './contracts.ts';
 import { ACTIVE_TOKENS } from './tokens.ts';
 import { chain } from './chain.ts';
 
@@ -36,7 +36,7 @@ function reason(error: unknown): string {
   return message.split('\n')[0]?.slice(0, 140) ?? 'the transaction was not sent';
 }
 
-export function usePanic(owner: Address | null): PanicState {
+export function usePanic(owner: Address | null, vault: Address | null): PanicState {
   const [stage, setStage] = useState<PanicState['stage']>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -47,12 +47,12 @@ export function usePanic(owner: Address | null): PanicState {
 
   const stop = useCallback(
     async (app: Address, strategyHash: `0x${string}`) => {
-      if (!addresses.vault) return;
+      if (!vault) return;
       setStage('docking');
       setError(null);
       try {
         await send(
-          addresses.vault as Address,
+          vault,
           encodeFunctionData({
             abi: vaultAbi,
             functionName: 'dock',
@@ -73,7 +73,7 @@ export function usePanic(owner: Address | null): PanicState {
   );
 
   const withdraw = useCallback(async () => {
-    if (!addresses.vault || !owner) return;
+    if (!vault || !owner) return;
     try {
       for (const token of ACTIVE_TOKENS) {
         const balance = await import('viem').then(async ({ createPublicClient, http }) =>
@@ -81,12 +81,12 @@ export function usePanic(owner: Address | null): PanicState {
             address: token.address,
             abi: erc20Abi,
             functionName: 'balanceOf',
-            args: [addresses.vault as Address],
+            args: [vault],
           }),
         );
         if ((balance as bigint) === 0n) continue;
         await send(
-          addresses.vault as Address,
+          vault,
           encodeFunctionData({
             abi: vaultAbi,
             functionName: 'withdraw',

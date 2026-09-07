@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
+import { useOwnVault } from './lib/vault.ts';
 import { useIndex } from './lib/subgraph.ts';
 import { StoppedState } from './components/StoppedState.tsx';
 import { Toasts } from './components/Toasts.tsx';
@@ -36,16 +37,23 @@ export default function App() {
    * runs. Where the index has answered, it wins over both the fixtures and the simulated feed —
    * and where it has not, nothing pretends it did.
    */
-  const index = useIndex();
-  const source = index.source === 'chain' ? 'chain' : feedSource;
   const wallet = useWallet();
+  /*
+   * Whose vault is on screen. A wallet that deployed its own through the factory (#132) sees that
+   * one; everyone else reads ours. Resolving it here rather than per component is what stops half
+   * the board describing one vault while the other half describes another.
+   */
+  const own = useOwnVault(wallet.address);
+  const vault = own.vault ?? ((addresses.vault || null) as `0x${string}` | null);
+  const index = useIndex(vault);
+  const source = index.source === 'chain' ? 'chain' : feedSource;
   // Every hook runs before the landing screen returns early: React counts hooks per render, and a
   // hook below that return would change the count the moment someone navigates on to the board.
-  const panic = usePanic(wallet.address);
+  const panic = usePanic(wallet.address, vault);
 
   // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
   // stops describing a vault nobody owns.
-  const ceremony = useCeremony(wallet.address, 0);
+  const ceremony = useCeremony(wallet.address, vault, 0);
   const indexed = {
     ...fed,
     ...(index.tape ? { tape: index.tape } : {}),
@@ -103,6 +111,10 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
+          onCreateVault={own.create}
+          creatingVault={own.creating}
+          // Only offer it once the factory has actually said this wallet has none.
+          canCreateVault={own.known && !own.vault}
           connected={Boolean(wallet.address)}
           onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
@@ -113,6 +125,7 @@ export default function App() {
         <SetupDialog
           state={state}
           wallet={wallet}
+          vault={vault}
           open={setupOpen}
           onClose={() => setSetupOpen(false)}
           onSign={() => {

@@ -15,6 +15,8 @@ interface ImportMetaEnv {
   readonly VITE_FLOOR_REGISTRY?: `0x${string}`;
   readonly VITE_FLOOR_ROUTER?: `0x${string}`;
   readonly VITE_VAULT?: `0x${string}`;
+  /** VaultFactory (#132). Absent, the board reads our vault only and offers no way to deploy one. */
+  readonly VITE_VAULT_FACTORY?: `0x${string}`;
   readonly VITE_AQUA?: `0x${string}`;
 }
 

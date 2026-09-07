@@ -11,6 +11,7 @@ export const addresses = {
   registry: (import.meta.env?.VITE_FLOOR_REGISTRY ?? '') as Address | '',
   router: (import.meta.env?.VITE_FLOOR_ROUTER ?? '') as Address | '',
   vault: (import.meta.env?.VITE_VAULT ?? '') as Address | '',
+  factory: (import.meta.env?.VITE_VAULT_FACTORY ?? '') as Address | '',
   aqua: (import.meta.env?.VITE_AQUA ?? '') as Address | '',
 };
 
@@ -51,24 +52,25 @@ export const vaultAbi = [
  * trades: the screen would say "floor set" while the vault settles unprotected. The owner reaches
  * the registry through the vault instead.
  */
-export function asVault(callData: `0x${string}`) {
+export function asVault(vault: Address, callData: `0x${string}`) {
   return {
-    address: addresses.vault as Address,
+    address: vault,
     abi: vaultAbi,
     functionName: 'execute' as const,
     args: [addresses.registry as Address, 0n, callData] as const,
   };
 }
 
-export function raiseFloorAsVault(base: Address, quote: Address, maxAdverseBps: number, absoluteRate: bigint) {
+export function raiseFloorAsVault(vault: Address, base: Address, quote: Address, maxAdverseBps: number, absoluteRate: bigint) {
   return asVault(
+    vault,
     encodeFunctionData({ abi: registryAbi, functionName: 'raiseFloor', args: [base, quote, maxAdverseBps, absoluteRate] }),
   );
 }
 
 /** The registry's guardian is recipient-keyed and write-once, so this is the vault's one shot. */
-export function setRegistryGuardianAsVault(guardian: Address) {
-  return asVault(encodeFunctionData({ abi: registryAbi, functionName: 'setGuardian', args: [guardian] }));
+export function setRegistryGuardianAsVault(vault: Address, guardian: Address) {
+  return asVault(vault, encodeFunctionData({ abi: registryAbi, functionName: 'setGuardian', args: [guardian] }));
 }
 
 /** EIP-712 types for the mandate. The signature IS the agent's connection; it is not a transaction. */
@@ -83,9 +85,19 @@ export const mandateTypes = {
   ],
 } as const;
 
-export const mandateDomain = (chainId: number) => ({
+export const mandateDomain = (chainId: number, vault: Address) => ({
   name: 'SUBFLOOR AquaGuardVault',
   version: '1',
   chainId,
-  verifyingContract: addresses.vault as Address,
+  verifyingContract: vault,
 });
+
+/**
+ * The factory from #132. It deploys a vault owned by whoever asks and keeps nothing: it cannot
+ * act on what it creates, which is the point — a factory that could would put a trusted party
+ * back into a design whose whole argument is that there is not one.
+ */
+export const vaultFactoryAbi = [
+  { type: 'function', name: 'createVault', stateMutability: 'nonpayable', inputs: [], outputs: [{ name: 'vault', type: 'address' }] },
+  { type: 'function', name: 'vaultsOfOwner', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'address[]' }] },
+] as const;

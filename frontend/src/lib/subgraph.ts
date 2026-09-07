@@ -1,6 +1,5 @@
-import { formatUnits } from 'viem';
+import { formatUnits, type Address } from 'viem';
 import { useEffect, useState } from 'react';
-import { addresses } from './contracts.ts';
 import { TOKENS, USDC, WETH } from './tokens.ts';
 import type { DataSource, Stats, TapeEntry } from '../types.ts';
 
@@ -97,11 +96,11 @@ const decimalsOf = (address: string) => TOKENS[address.toLowerCase()]?.decimals 
 const price = (rate: string, base: string, quote: string) =>
   (Number(rate) / 1e18) * 10 ** (decimalsOf(base) - decimalsOf(quote));
 
-export function useIndex(): IndexData {
+export function useIndex(vault: Address | null): IndexData {
   const [data, setData] = useState<IndexData>({ source: 'fixtures', tape: null, stats: null });
 
   useEffect(() => {
-    if (!ENDPOINT || !addresses.vault) return;
+    if (!ENDPOINT || !vault) return;
     let live = true;
 
     (async () => {
@@ -109,7 +108,7 @@ export function useIndex(): IndexData {
         fillQualities: FillRow[];
         refusals: RefusalRow[];
         executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
-      }>({ query: FILLS, variables: { vault: addresses.vault.toLowerCase() } });
+      }>({ query: FILLS, variables: { vault: vault.toLowerCase() } });
 
       if (!live || !result) return;
 
@@ -171,7 +170,7 @@ export function useIndex(): IndexData {
     return () => {
       live = false;
     };
-  }, []);
+  }, [vault]);
 
   return data;
 }

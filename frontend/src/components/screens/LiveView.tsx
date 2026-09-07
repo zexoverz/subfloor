@@ -28,6 +28,9 @@ export function LiveView({
   onLower,
   onRaise,
   onConnect,
+  onCreateVault,
+  creatingVault,
+  canCreateVault,
   onSetup,
   connected,
 }: {
@@ -39,6 +42,9 @@ export function LiveView({
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
   onConnect: () => void;
+  onCreateVault: () => void;
+  creatingVault: boolean;
+  canCreateVault: boolean;
   connected: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
   onSetup: (() => void) | null;
@@ -245,7 +251,14 @@ export function LiveView({
           </Card>
         </div>
         ) : (
-          <PublicAside state={state} connected={connected} onConnect={onConnect} />
+          <PublicAside
+            state={state}
+            connected={connected}
+            onConnect={onConnect}
+            onCreateVault={onCreateVault}
+            creatingVault={creatingVault}
+            canCreateVault={canCreateVault}
+          />
         )}
       </div>
 
