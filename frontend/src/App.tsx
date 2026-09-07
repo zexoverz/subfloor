@@ -114,6 +114,12 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
+          onWithdraw={() =>
+            void panic.withdraw().then(() => {
+              ceremony.refresh();
+              wallet.refresh();
+            })
+          }
           onCreateVault={own.create}
           creatingVault={own.creating}
           // Only offer it once the factory has actually said this wallet has none.
@@ -152,7 +158,8 @@ export default function App() {
       )}
         </>
       )}
-      <Toasts />
+      {/* The sheet carries its own while it is open; see SetupDialog. */}
+      {!(needsSetup && setupOpen) && <Toasts />}
     </AppShell>
   );
 }

@@ -139,6 +139,9 @@ export const copy = {
     sendToVault: 'Send to the vault',
     /** Said only when a delegate exists. With none, nothing is under any mandate. */
     noMandate: 'no agent yet',
+    withdraw: 'Withdraw everything',
+    /** The owner's standing exit, not the panic path. Both exist; only this one is one press. */
+    withdrawHint: 'sends the full balance of each token back to your address. Yours to call at any time, and the agent can never reach it.',
     /** A disabled button with no reason on it reads as broken rather than as waiting. */
     sendNeedsAmount: 'Enter an amount above',
     /** Two transactions, and saying so beforehand is cheaper than a surprise second prompt. */

@@ -7,6 +7,7 @@ import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
+import { Toasts } from './Toasts.tsx';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
@@ -316,6 +317,9 @@ export function SetupDialog({
           )}
         </div>
       </div>
+      {/* Inside the sheet, because a modal dialog is in the top layer and a toast painted
+          outside it cannot rise above it however high its z-index goes. */}
+      <Toasts />
     </dialog>
   );
 }
