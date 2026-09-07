@@ -36,6 +36,26 @@ export default function App() {
 
   if (screen === 'landing') return <Landing onNavigate={setScreen} />;
 
+  /*
+   * First run is a state, not a destination. §10 wants the owner of an unconfigured vault to meet
+   * the ceremony instead of a board of zeros — but only the owner, and only while it is
+   * unconfigured. Everyone else goes straight to the board, which is public.
+   */
+  const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
+  if (screen === 'live' && needsSetup) {
+    return (
+      <Onboarding
+        state={state}
+        wallet={wallet}
+        onSign={() => {
+          setPurpose('mandate');
+          setScreen('ceremony');
+        }}
+        onNavigate={setScreen}
+      />
+    );
+  }
+
   // First run is not a page of the app, it is the door to it: no tabs, no chips, no panic control,
   // because there is nothing yet to navigate to and nothing yet to stop.
   if (screen === 'onboarding') {
