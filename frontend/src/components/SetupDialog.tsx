@@ -75,7 +75,12 @@ export function SetupDialog({
   return (
     <dialog
       ref={ref}
-      className="sheet max-h-[88vh] w-[min(960px,calc(100vw-48px))] overflow-y-auto"
+      /*
+        * A fixed height, not a maximum. Expanding the keys used to grow the sheet under the
+        * cursor: the panel beside it jumped, the buttons moved, and the whole thing resized around
+        * a disclosure. The frame holds and the form column scrolls inside it instead.
+        */
+      className="sheet h-[min(720px,88vh)] w-[min(960px,calc(100vw-48px))] overflow-hidden"
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
@@ -100,9 +105,9 @@ export function SetupDialog({
         * form. The column widths are not a ratio for the same reason: at a ratio the form squeezed
         * and every label wrapped, which is a worse outcome than no orb at all.
         */}
-      <div className="grid md:grid-cols-[320px_minmax(380px,1fr)]">
+      <div className="grid h-[calc(100%-49px)] md:grid-cols-[320px_minmax(380px,1fr)]">
         <div className="hidden border-r border-rule bg-sunken md:block">
-          <div className="sticky top-0 flex flex-col gap-6 p-6">
+          <div className="flex h-full flex-col gap-6 overflow-hidden p-6">
             {/*
               * The word, not the mark. At this size inside a ring that big the two shapes lose
               * their relationship and read as a scribble; the name survives being small and says
@@ -132,7 +137,7 @@ export function SetupDialog({
           </div>
         </div>
 
-        <div className="p-5">
+        <div className="no-bar overflow-y-auto p-5">
           {!connected ? (
             <>
               <h1 className="m-0 text-center text-[17px] font-semibold">{copy.wallet.step1}</h1>

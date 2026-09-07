@@ -375,6 +375,16 @@ body {
 
 /* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is
    nearly white, so the backdrop came out as a pale wash over a dark page. */
+/* Scrolls without drawing a track. Used by the panel inside a fixed-height sheet as well as the
+   sheet itself. */
+.no-bar {
+  scrollbar-width: none;
+}
+
+.no-bar::-webkit-scrollbar {
+  display: none;
+}
+
 /* The sheet scrolls without saying so. A bar down the side of a small panel is chrome inside the
    one place that should be nothing but the decision. */
 .sheet {
