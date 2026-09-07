@@ -12,6 +12,7 @@ import { useKeys } from '../lib/keys.ts';
 import { DeviceSign } from './DeviceSign.tsx';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import { buildMandate } from '../lib/mandate.ts';
+import { saveMandate } from '../lib/mandateStore.ts';
 import { Toasts } from './Toasts.tsx';
 import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
@@ -240,6 +241,16 @@ export function SetupDialog({
               })}
               payloadLine="Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)"
               standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
+              onSigned={(signature) => {
+                if (!vault) return;
+                saveMandate({
+                  vault,
+                  delegate: (ceremony.delegate ?? delegate) as `0x${string}`,
+                  nonce: String(ceremony.nonce ?? 0n),
+                  signature,
+                  at: Date.now(),
+                });
+              }}
               onDone={() => {
                 setSigning(false);
                 ceremony.refresh();

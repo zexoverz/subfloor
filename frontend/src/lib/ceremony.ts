@@ -13,6 +13,7 @@ import {
   vaultAbi,
 } from './contracts.ts';
 import { ACTIVE_TOKENS, USDC, WETH } from './tokens.ts';
+import { loadMandate } from './mandateStore.ts';
 import type { Floor, Holding } from '../types.ts';
 import { mocked } from './mock.ts';
 
@@ -211,7 +212,13 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
       id: 'mandate',
       title: 'Sign the mandate on your device',
       detail: 'not a transaction — a signature the agent carries and the vault checks on every ship.',
-      done: mocked ? mockDone > 4 : false,
+      /*
+       * Signed, which is all there is to know. The chain records a mandate only once the agent
+       * ships with it, so waiting for on-chain evidence meant a step that could never complete and
+       * a board that said "finish setup" over a finished vault. What this asserts is exactly what
+       * it checks: a signature for this vault exists here.
+       */
+      done: mocked ? mockDone > 4 : Boolean(loadMandate(vault)),
       device: true,
     },
   ];

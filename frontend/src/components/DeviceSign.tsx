@@ -29,6 +29,7 @@ export function DeviceSign({
   scheduledAt,
   typedData,
   ledger,
+  onSigned,
   onDone,
   onBack,
 }: {
@@ -58,6 +59,8 @@ export function DeviceSign({
    * reaching the device: nothing appeared on the Ledger and the screen called it a decline.
    */
   ledger: Ledger;
+  /** Receives the signature, because producing one and dropping it is how the step never finished. */
+  onSigned?: (signature: string) => void;
   onDone: () => void;
   onBack: () => void;
 }) {
@@ -107,6 +110,7 @@ export function DeviceSign({
                     // `rows` is what the screen renders; this is what the device verifies. They
                     // must describe the same thing, and only one of them can be signed.
                     const signature = await ledger.signTypedData(typedData, setStep);
+                    if (signature) onSigned?.(signature);
                     setStage(signature ? 'signed' : 'declined');
                   }}
                 >
