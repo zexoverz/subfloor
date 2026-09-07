@@ -1,0 +1,69 @@
+name: fuzz
+
+on:
+  schedule:
+    # Every six hours. The counter on the showcase page is the sum of these runs, so the cadence is
+    # the claim: a number that grew once before submission would be a screenshot, not a campaign.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Fuzz runs per suite"
+        default: "20000"
+
+permissions:
+  contents: write
+
+jobs:
+  campaign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: contracts/yarn.lock
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Restore forge build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            contracts/out
+            contracts/cache
+          key: forge-${{ runner.os }}-${{ hashFiles('contracts/foundry.toml', 'contracts/yarn.lock') }}-${{ hashFiles('contracts/src/**/*.sol', 'contracts/test/**/*.sol', 'contracts/mocks/**/*.sol') }}
+          restore-keys: |
+            forge-${{ runner.os }}-${{ hashFiles('contracts/foundry.toml', 'contracts/yarn.lock') }}-
+
+      - run: yarn install --frozen-lockfile
+        working-directory: contracts
+
+      - name: Run the campaign
+        id: campaign
+        env:
+          FUZZ_RUNS: ${{ github.event.inputs.runs || '20000' }}
+        run: |
+          set -o pipefail
+          RESULT=$(./scripts/fuzz-campaign.sh)
+          echo "$RESULT"
+          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+
+      # A failed campaign is a counterexample. It must be loud, and it must not advance the counter.
+      - name: Fail loudly on a counterexample
+        run: |
+          echo '${{ steps.campaign.outputs.result }}' | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)['ok'] else 1)"
+
+      - name: Update the counter
+        run: |
+          python3 scripts/update-fuzz-counter.py '${{ steps.campaign.outputs.result }}'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/fuzz-counter.json
+          git diff --staged --quiet || git commit -m "chore: fuzz campaign, cumulative counter"
+          git push
