@@ -1,7 +1,7 @@
 import { Bytes, ethereum, BigInt } from "@graphprotocol/graph-ts";
 import { Shipped, Docked, Pulled, Pushed } from "../generated/Aqua/Aqua";
 import { Maker, Strategy, StrategyStep } from "../generated/schema";
-import { classify, decode, familiesOf } from "./decoder";
+import { classify, decode, familiesOf, unwrapShipped } from "./decoder";
 import { getProtocol, getToken } from "./shared";
 
 /// Aqua's four events carry the position lifecycle. None of their parameters is indexed, so every
@@ -38,7 +38,11 @@ export function handleShipped(event: Shipped): void {
   const isNew = s == null;
   if (s == null) s = new Strategy(id);
 
-  const program = event.params.strategy;
+  // What Aqua carries is not the program. `AquaGuardVault.ship` sends `abi.encode(order)` and the
+  // program sits in the Order's `data` field, so decoding the blob directly reads the maker address
+  // as instructions.
+  const shipped = unwrapShipped(event.params.strategy);
+  const program = shipped.program;
   const decoded = decode(program);
   const families = familiesOf(decoded.steps);
 
@@ -46,6 +50,7 @@ export function handleShipped(event: Shipped): void {
   s.app = Bytes.fromHexString(event.params.app.toHexString());
   s.strategyHash = event.params.strategyHash;
   s.program = program;
+  s.programWrappedInOrder = shipped.wrappedInOrder;
   s.families = families;
   s.classification = classify(families);
   s.stepCount = decoded.steps.length;

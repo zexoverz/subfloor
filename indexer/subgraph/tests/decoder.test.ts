@@ -1,6 +1,6 @@
 import { assert, describe, test } from "matchstick-as/assembly/index";
 import { Bytes } from "@graphprotocol/graph-ts";
-import { classify, decode, familiesOf } from "../src/decoder";
+import { classify, decode, familiesOf, unwrapShipped } from "../src/decoder";
 import { opcodeName } from "../src/opcodes";
 
 /// The decoder is the piece of this index nobody else has, and its input is attacker-influenced:
@@ -83,5 +83,62 @@ describe("classification", () => {
   test("a program with no curve at all is UNKNOWN rather than mislabelled", () => {
     const p = decode(Bytes.fromHexString("0x20040000000000 00".replace(" ", "")));
     assert.stringEquals(classify(familiesOf(p.steps)), "UNKNOWN");
+  });
+});
+
+const SHIPPED_BLOB = Bytes.fromHexString(
+  "0x0000000000000000000000000000000000000000000000000000000000000020" +
+  "000000000000000000000000441ee52d939e46a33919c4295e88d32458797503" +
+  "0000000000000000000000000000000000000000000000000000000000000000" +
+  "0000000000000000000000000000000000000000000000000000000000000060" +
+  "0000000000000000000000000000000000000000000000000000000000000055" +
+  "0208000000000000002a9c0202587003000bb85140000000000000000000000000000000000000000000000002b42709c936c81e09000000000000000000000000000000000000000000000002b79f382c074475a00000000000000000000000",
+);
+const PROGRAM = "0x0208000000000000002a9c0202587003000bb85140000000000000000000000000000000000000000000000002b42709c936c81e09000000000000000000000000000000000000000000000002b79f382c074475a0";
+
+describe("what Aqua actually ships", () => {
+  // Produced by `contracts/test/subfloor/ShippedBlobVector.t.sol` —
+  // `forge test --match-contract ShippedBlobVector -vv`. These are the bytes the chain emits, not
+  // bytes this test wrote for itself, which is the whole point: the decoder was checked against its
+  // own idea of the format and passed while reading the wrong thing.
+
+
+  test("the program comes out of the Order, not off the front of the blob", () => {
+    const shipped = unwrapShipped(SHIPPED_BLOB);
+    assert.assertTrue(shipped.wrappedInOrder);
+    assert.stringEquals(shipped.program.toHexString(), PROGRAM);
+    assert.stringEquals(shipped.maker, "0x441ee52d939e46a33919c4295e88d32458797503");
+  });
+
+  test("the unwrapped program decodes to the book that was shipped", () => {
+    const p = decode(unwrapShipped(SHIPPED_BLOB).program);
+    assert.stringEquals(p.error, "");
+    assert.stringEquals(p.steps[0].name, "Salt");
+    assert.stringEquals(p.steps[1].name, "Decay");
+    assert.stringEquals(p.steps[2].name, "FeeFlatIn");
+    assert.stringEquals(p.steps[3].name, "XYCConcentrateSwap");
+    assert.stringEquals(classify(familiesOf(p.steps)), "CONCENTRATED");
+  });
+
+  test("decoding the blob directly reads instructions nobody shipped", () => {
+    // What the handler used to do. On this blob it happens to run off the end and report a
+    // truncation, but that is luck rather than a safety net: before erroring it has already decoded
+    // instructions out of the ABI header, none of which were shipped. A blob whose lengths happened
+    // to line up would have produced a clean, entirely fictional program.
+    const wrong = decode(SHIPPED_BLOB);
+    assert.assertTrue(wrong.steps.length > 0);
+    assert.stringEquals(wrong.steps[0].name, "Stop");
+    assert.stringEquals(classify(familiesOf(wrong.steps)), "UNKNOWN");
+
+    // And it is a different program from the real one, which is the thing that matters.
+    const right = decode(unwrapShipped(SHIPPED_BLOB).program);
+    assert.assertTrue(wrong.steps.length != right.steps.length);
+    assert.stringEquals(right.steps[0].name, "Salt");
+  });
+
+  test("a maker that ships raw bytecode is still read, and says so", () => {
+    const shipped = unwrapShipped(Bytes.fromHexString(PROGRAM));
+    assert.assertTrue(!shipped.wrappedInOrder);
+    assert.stringEquals(shipped.program.toHexString(), PROGRAM);
   });
 });
