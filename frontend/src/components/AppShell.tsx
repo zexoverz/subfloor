@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
+import { Ghost } from './Button.tsx';
+import type { Wallet } from '../lib/wallet.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
@@ -15,6 +17,7 @@ export function AppShell({
   onPanic,
   state,
   source,
+  wallet,
   children,
 }: {
   screen: Screen;
@@ -22,6 +25,7 @@ export function AppShell({
   onPanic: () => void;
   state: VaultState;
   source: DataSource;
+  wallet: Wallet;
   children: ReactNode;
 }) {
   return (
@@ -68,6 +72,15 @@ export function AppShell({
           </span>
           <span>Base · {state.addresses.chainId}</span>
           {source === 'chain' && <span className="hidden sm:inline">own money since {state.stats.since}</span>}
+          {/* The address is the one piece of wallet machinery worth showing: it says whose desk this is. */}
+          {wallet.address ? (
+            <span className="flex items-center gap-2">
+              {wallet.address.slice(0, 6)}…{wallet.address.slice(-4)}
+              <Ghost onClick={wallet.disconnect}>{copy.wallet.disconnect}</Ghost>
+            </span>
+          ) : (
+            <Ghost onClick={() => onNavigate('onboarding')}>{copy.wallet.connect}</Ghost>
+          )}
         </div>
 
         {screen !== 'public' && (

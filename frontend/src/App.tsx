@@ -8,6 +8,7 @@ import { PublicPage } from './components/screens/PublicPage.tsx';
 import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
+import { useWallet } from './lib/wallet.ts';
 import type { Screen } from './types.ts';
 
 /**
@@ -19,7 +20,12 @@ export default function App() {
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
-  const { state, source } = useSimulatedFeed(fixtures);
+  const { state: fed, source } = useSimulatedFeed(fixtures);
+  const wallet = useWallet();
+
+  // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
+  // stops describing a vault nobody owns.
+  const state = wallet.holdings ? { ...fed, inventory: wallet.holdings } : fed;
 
   const lower = (bps: number) => {
     setDraftBps(bps);
@@ -33,9 +39,15 @@ export default function App() {
       onPanic={() => alert(copy.panic.done)}
       state={state}
       source={source}
+      wallet={wallet}
     >
       {screen === 'onboarding' && (
-        <Onboarding state={state} onAdjust={() => setScreen('floor')} onSign={() => setScreen('ceremony')} />
+        <Onboarding
+          state={state}
+          wallet={wallet}
+          onAdjust={() => setScreen('floor')}
+          onSign={() => setScreen('ceremony')}
+        />
       )}
       {screen === 'floor' && (
         <FloorScreen

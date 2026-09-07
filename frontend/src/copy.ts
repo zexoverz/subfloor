@@ -76,6 +76,20 @@ export const copy = {
     done: 'Trading stopped. The agent’s credential is revoked and cannot be restored — issuing a new one takes your device. Your funds are yours to withdraw.',
   },
 
+  wallet: {
+    connect: 'CONNECT YOUR WALLET',
+    connecting: 'waiting for your wallet…',
+    /** A prerequisite, not a step of the ceremony — §10 keeps that to one signature. */
+    why: 'so the vault can read what you hold. Nothing moves until you sign on the device.',
+    none: 'no wallet found in this browser',
+    disconnect: 'disconnect',
+    step1: 'Connect your wallet',
+    step2: 'Connect the agent',
+    /** The mandate is the connection. The delegate address stays hidden: it is machinery. */
+    agentWhat: 'the agent may trade inside your floor, for a fixed term. It never holds your keys, and it can never lower the floor.',
+    agentLocked: 'connect your wallet first',
+  },
+
   onboarding: {
     title: 'An agent trades your whole portfolio.',
     lede: 'The worst price is the one you set.',
