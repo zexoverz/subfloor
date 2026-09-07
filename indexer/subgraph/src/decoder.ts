@@ -1,4 +1,4 @@
-import { Bytes, ethereum } from "@graphprotocol/graph-ts";
+import { Bytes } from "@graphprotocol/graph-ts";
 import { opcodeName } from "./opcodes";
 
 /// Decodes a SwapVM program into its instructions.
@@ -126,12 +126,55 @@ export class Shipped {
 /// A maker that is not our vault may ship raw bytecode instead, so an unwrappable blob is taken at
 /// face value rather than dropped — and which shape it was is recorded rather than guessed at.
 export function unwrapShipped(blob: Bytes): Shipped {
-  const decoded = ethereum.decode("(address,uint256,bytes)", blob);
-  if (decoded != null) {
-    const tuple = decoded.toTuple();
-    if (tuple.length == 3) {
-      return new Shipped(tuple[2].toBytes(), true, tuple[0].toAddress().toHexString());
-    }
+  // Parsed by hand rather than through `ethereum.decode`.
+  //
+  // `abi.encode(order)` has a fixed shape and reading it directly is a dozen lines, whereas
+  // `ethereum.decode` is a host function whose behaviour on a tuple containing dynamic `bytes`
+  // differs between graph-node and the local test host — which is the worst possible place for a
+  // difference, because it passes locally and strands the subgraph in production.
+  //
+  // The layout, from `abi.encode` of `(address maker, uint256 traits, bytes data)`:
+  //
+  //   [  0.. 32)  offset to the tuple, always 0x20
+  //   [ 32.. 64)  maker, left-padded
+  //   [ 64.. 96)  traits
+  //   [ 96..128)  offset to `data`, relative to the tuple start at 32
+  //   [128..160)  length of `data`          (when that offset is the usual 0x60)
+  //   [160..   )  the program
+  if (blob.length < 160) return new Shipped(blob, false, "");
+
+  const tupleAt = readU32(blob, 0);
+  if (tupleAt != 32) return new Shipped(blob, false, "");
+
+  const dataAt = tupleAt + readU32(blob, tupleAt + 64);
+  if (dataAt + 32 > blob.length) return new Shipped(blob, false, "");
+
+  const length = readU32(blob, dataAt);
+  if (dataAt + 32 + length > blob.length) return new Shipped(blob, false, "");
+
+  const out = new Uint8Array(length);
+  for (let i = 0; i < length; i++) out[i] = blob[dataAt + 32 + i];
+
+  let maker = "0x";
+  for (let i = 12; i < 32; i++) {
+    const b = blob[tupleAt + i];
+    maker += (b < 16 ? "0" : "") + b.toString(16);
   }
-  return new Shipped(blob, false, "");
+
+  return new Shipped(Bytes.fromUint8Array(out), true, maker);
+}
+
+/// Reads the low 32 bits of the 32-byte word at `at`. Every offset and length in this layout is far
+/// below 2^32, and anything that is not is not an order we can read anyway.
+function readU32(b: Bytes, at: i32): i32 {
+  if (at + 32 > b.length) return -1;
+  for (let i = 0; i < 28; i++) {
+    if (b[at + i] != 0) return -1;
+  }
+  return (
+    ((b[at + 28] as i32) << 24) |
+    ((b[at + 29] as i32) << 16) |
+    ((b[at + 30] as i32) << 8) |
+    (b[at + 31] as i32)
+  );
 }
