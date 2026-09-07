@@ -1,45 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isAddress } from 'viem';
 import { Check, KeyRound, Wallet as WalletIcon } from 'lucide-react';
-import { copy } from '../../copy.ts';
-import { Act, Ghost } from '../Button.tsx';
-import { AddressField, AmountRow } from '../StepForms.tsx';
-import { FloorControl } from '../FloorControl.tsx';
-import { LetterGlitch } from '../LetterGlitch.tsx';
-import { floorPriceFromBps, formatPrice } from '../../lib/rate.ts';
-import { useCeremony } from '../../lib/ceremony.ts';
-import { useLedger } from '../../lib/ledger.ts';
-import { mocked } from '../../lib/mock.ts';
-import { withTransition } from '../../lib/transition.ts';
-import type { Wallet } from '../../lib/wallet.ts';
-import type { Screen, VaultState } from '../../types.ts';
+import { copy } from '../copy.ts';
+import { Act, Ghost } from './Button.tsx';
+import { AddressField, AmountRow } from './StepForms.tsx';
+import { FloorControl } from './FloorControl.tsx';
+import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
+import { useCeremony } from '../lib/ceremony.ts';
+import { useLedger } from '../lib/ledger.ts';
+import { withTransition } from '../lib/transition.ts';
+import type { Wallet } from '../lib/wallet.ts';
+import type { Screen, VaultState } from '../types.ts';
 
 /**
- * First run, and the empty state IS the onboarding.
+ * Setting the vault up, in a sheet over the board.
  *
- * One screen whose entire job is the ceremony, and one primary action: money in, one worst price,
- * one signature, fourteen days. §10 is explicit that the deposit, the mandate and the first floor
- * collapse into a single device signature — an earlier version of this screen made them five
- * numbered steps, which turned four pieces of machinery into four decisions the owner had no basis
- * to make.
- *
- * What stays hidden: the token approvals, the mandate's notional bound, the EIP-712 structure, the
- * contract addresses. What is deliberately *not* hidden any more is the delegate address (#111):
- * the proof went green, so the agent's private key is published, and a judge cannot connect "this
- * key is public" to "this is the address the vault trades through" if the interface only ever shows
- * a nickname.
+ * §10 wants the owner of an unconfigured vault to meet the ceremony rather than a board of zeros,
+ * and this still opens on its own the first time. What it no longer does is trap them there: "not
+ * now" closes it, the board is behind it, and a card in the owner's column brings it back. An
+ * owner who wants to look before signing is not a case worth blocking.
  */
-export function Onboarding({
+export function SetupDialog({
   state,
   wallet,
+  open,
+  onClose,
   onSign,
   onNavigate,
 }: {
   state: VaultState;
   wallet: Wallet;
+  open: boolean;
+  onClose: () => void;
   onSign: () => void;
   onNavigate: (s: Screen) => void;
 }) {
+  const ref = useRef<HTMLDialogElement>(null);
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
@@ -61,26 +57,26 @@ export function Onboarding({
       : null;
   const ready = connected && !blocked && funded && keysReady;
 
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (open && !dialog.open) dialog.showModal();
+    if (!open && dialog.open) dialog.close();
+  }, [open]);
+
   return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden px-6 py-16">
-      <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
-        <LetterGlitch />
+    <dialog
+      ref={ref}
+      className="sheet max-h-[88vh] w-[min(520px,calc(100vw-32px))] overflow-y-auto"
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+    >
+      <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
+        <h2 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">{copy.onboarding.finishSetup}</h2>
+        <Ghost onClick={onClose}>{copy.onboarding.notNow}</Ghost>
       </div>
 
-      <div className="relative w-full max-w-[520px]">
-        <div className="mb-8 text-center">
-          <div className="text-[15px] font-semibold tracking-[0.3em]">{copy.brand}</div>
-          {mocked && (
-            <span className="mt-3 inline-block rounded-[2px] border border-brass/40 bg-brass-wash px-2 py-[3px] text-[10px] tracking-[0.12em] text-brass uppercase">
-              {copy.live.mock}
-            </span>
-          )}
-          <p className="serif mx-auto mt-3 max-w-[34ch] text-[15px] leading-snug text-muted">
-            {copy.onboarding.title} {copy.onboarding.lede}
-          </p>
-        </div>
-
-        <div className="rounded-[3px] border border-rule bg-surface p-6 shadow-card">
+      <div className="p-5">
           {!connected ? (
             <>
               <h1 className="m-0 text-center text-[17px] font-semibold">{copy.wallet.step1}</h1>
@@ -230,8 +226,7 @@ export function Onboarding({
               </ol>
             </>
           )}
-        </div>
       </div>
-    </div>
+    </dialog>
   );
 }

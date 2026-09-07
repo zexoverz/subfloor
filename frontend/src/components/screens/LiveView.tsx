@@ -9,6 +9,7 @@ import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
+import { Act } from '../Button.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
 import type { DataSource, Screen, VaultState } from '../../types.ts';
@@ -26,6 +27,7 @@ export function LiveView({
   onLower,
   onRaise,
   onConnect,
+  onSetup,
 }: {
   state: VaultState;
   source: DataSource;
@@ -35,6 +37,8 @@ export function LiveView({
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
   onConnect: () => void;
+  /** Null when the vault is configured; otherwise the way back into the ceremony. */
+  onSetup: (() => void) | null;
 }) {
   const [adjusting, setAdjusting] = useState(false);
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
@@ -99,6 +103,19 @@ export function LiveView({
 
         {owner ? (
         <div className="flex flex-col gap-4.5">
+          {onSetup && (
+            <Card>
+              <CardHead icon={ArrowDownToLine} left={copy.onboarding.finishSetup} />
+              <CardBody>
+                <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
+                  {copy.onboarding.finishSetupNote}
+                </p>
+                <Act primary onClick={onSetup}>
+                  {copy.onboarding.finishSetup}
+                </Act>
+              </CardBody>
+            </Card>
+          )}
           <Card>
             <CardHead
               icon={Wallet}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
-import { Onboarding } from './components/screens/Onboarding.tsx';
+import { SetupDialog } from './components/SetupDialog.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { copy } from './copy.ts';
@@ -20,6 +20,9 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('landing');
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
   const [purpose, setPurpose] = useState<'mandate' | 'lower'>('mandate');
+  // Opens itself once for an owner whose vault is not configured, and closes for good if they
+  // would rather look around first.
+  const [setupOpen, setSetupOpen] = useState(true);
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
   const { state: fed, source } = useSimulatedFeed(fixtures);
@@ -38,41 +41,8 @@ export default function App() {
 
   if (screen === 'landing') return <Landing onNavigate={setScreen} />;
 
-  /*
-   * First run is a state, not a destination. §10 wants the owner of an unconfigured vault to meet
-   * the ceremony instead of a board of zeros — but only the owner, and only while it is
-   * unconfigured. Everyone else goes straight to the board, which is public.
-   */
-  const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
-  if (screen === 'live' && needsSetup) {
-    return (
-      <Onboarding
-        state={state}
-        wallet={wallet}
-        onSign={() => {
-          setPurpose('mandate');
-          setScreen('ceremony');
-        }}
-        onNavigate={setScreen}
-      />
-    );
-  }
 
-  // First run is not a page of the app, it is the door to it: no tabs, no chips, no panic control,
-  // because there is nothing yet to navigate to and nothing yet to stop.
-  if (screen === 'onboarding') {
-    return (
-      <Onboarding
-        state={state}
-        wallet={wallet}
-        onSign={() => {
-          setPurpose('mandate');
-          setScreen('ceremony');
-        }}
-        onNavigate={setScreen}
-      />
-    );
-  }
+  const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
 
   return (
     <AppShell
@@ -95,17 +65,32 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
+          onSetup={needsSetup ? () => setSetupOpen(true) : null}
           onLower={lower}
           onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
         />
       )}
+      {needsSetup && (
+        <SetupDialog
+          state={state}
+          wallet={wallet}
+          open={setupOpen}
+          onClose={() => setSetupOpen(false)}
+          onSign={() => {
+            setPurpose('mandate');
+            setScreen('ceremony');
+          }}
+          onNavigate={setScreen}
+        />
+      )}
+
       {screen === 'ceremony' && (
         <Ceremony
           state={state}
           draftBps={draftBps}
           purpose={purpose}
           onDone={() => setScreen('live')}
-          onBack={() => setScreen('onboarding')}
+          onBack={() => setScreen('live')}
         />
       )}
     </AppShell>
