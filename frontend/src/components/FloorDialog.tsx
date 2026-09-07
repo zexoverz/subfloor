@@ -54,6 +54,13 @@ export function FloorDialog({
   const tightening = bps <= current;
   const price = floorPriceFromBps(state.reference.price, bps);
   const worstEver = Math.max(...state.calibration.fillsBps.map(Math.abs));
+  /*
+   * Nothing registered means there is nothing to tighten or loosen: the first entry is the whole
+   * decision. On chain it is still raiseFloor -- an unconfigured pair reads as maximum tolerance,
+   * so any number is an improvement on it -- but calling that "raise" to someone who has never set
+   * one describes a comparison they cannot see.
+   */
+  const unset = !state.floor.enforced;
   const coldStart = state.calibration.sampleCount < 100;
 
   return (
@@ -65,7 +72,7 @@ export function FloorDialog({
     >
       <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
         <h2 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">
-          {onDevice ? copy.ceremony.willDisplay : copy.floor.title}
+          {onDevice ? copy.ceremony.willDisplay : unset ? copy.onboarding.proposedPrice : copy.floor.title}
         </h2>
         <button
           onClick={onClose}
@@ -126,7 +133,8 @@ export function FloorDialog({
             {copy.floorControl.worstEver} <b className="font-semibold text-ink">−{worstEver}</b>
           </span>
           <span>
-            now <b className="font-semibold text-brass">−{current} bps</b>
+            now{' '}
+            <b className="font-semibold text-brass">{unset ? copy.floor.notSet : `−${current} bps`}</b>
           </span>
         </div>
 
@@ -134,12 +142,14 @@ export function FloorDialog({
           {copy.floor.failClosed}
         </p>
 
-        {tightening ? (
+        {unset || tightening ? (
           <>
-            <Act primary disabled={bps === current} onClick={() => onRaise(bps)}>
-              {copy.floor.raise}
+            <Act primary disabled={!unset && bps === current} onClick={() => onRaise(bps)}>
+              {unset ? copy.floor.set : copy.floor.raise}
             </Act>
-            <p className="mt-2 text-center text-[11.5px] text-faint">{copy.floor.raiseHint}</p>
+            <p className="mt-2 text-center text-[11.5px] text-faint">
+              {unset ? copy.floor.setHint : copy.floor.raiseHint}
+            </p>
           </>
         ) : (
           <>

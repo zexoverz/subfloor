@@ -47,6 +47,8 @@ export function LiveView({
   // line under the tape can never again claim different things about the same rows.
   const live = source === 'chain';
   const { pair, stats, tape, agent, inventory, floor, floorBuy, reference, fuzz } = state;
+  // An unregistered floor is not a floor of zero, and rendering 0.00 would read as one.
+  const price = (value: number) => (floor.enforced ? formatPrice(value) : copy.floor.notSet);
   const sellFloor = rateToPrice(floor.absoluteRate, pair.baseDecimals, pair.quoteDecimals);
   const buyCeiling = 1 / rateToPrice(floorBuy.absoluteRate, pair.quoteDecimals, pair.baseDecimals);
   const feedFresh = reference.ageSeconds < reference.stalenessBoundSeconds;
@@ -163,16 +165,16 @@ export function LiveView({
                 <Ghost onClick={() => setAdjusting(true)}>
                   <span className="flex items-center gap-1.5">
                     <Pencil size={11} strokeWidth={1.8} />
-                    {copy.onboarding.adjust}
+                    {floor.enforced ? copy.onboarding.adjust : copy.floor.set}
                   </span>
                 </Ghost>
               }
             />
             <CardBody className="py-1">
               {[
-                [`${copy.desk.selling} ${pair.base}`, `${copy.desk.neverBelow} ${formatPrice(sellFloor)}`, `−${floor.maxAdverseBps} bps from the reference`],
-                [`${copy.desk.buying} ${pair.base}`, `${copy.desk.neverAbove} ${formatPrice(buyCeiling)}`, `−${floorBuy.maxAdverseBps} bps from the reference`],
-                [copy.desk.feedDies, `${copy.desk.neverBelow} ${formatPrice(sellFloor)}`, copy.desk.backstopNote],
+                [`${copy.desk.selling} ${pair.base}`, `${copy.desk.neverBelow} ${price(sellFloor)}`, floor.enforced ? `−${floor.maxAdverseBps} bps from the reference` : copy.floor.setHint],
+                [`${copy.desk.buying} ${pair.base}`, `${copy.desk.neverAbove} ${price(buyCeiling)}`, floor.enforced ? `−${floorBuy.maxAdverseBps} bps from the reference` : copy.floor.setHint],
+                [copy.desk.feedDies, `${copy.desk.neverBelow} ${price(sellFloor)}`, copy.desk.backstopNote],
               ].map(([label, value, note]) => (
                 <div key={label} className="flex flex-col gap-0.5 border-b border-rule py-2.5 last:border-b-0">
                   <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">{label}</span>

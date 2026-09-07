@@ -308,6 +308,10 @@ export const copy = {
     failClosed:
       'if the reference feed goes quiet, trading stops until it returns — nothing settles at an unknown price',
     raise: 'RAISE SUBFLOOR',
+    /** The first entry is still a raise on chain — from no protection — but not in anyone's words. */
+    set: 'SET SUBFLOOR',
+    setHint: 'nothing is registered for this pair yet',
+    notSet: 'not set',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
