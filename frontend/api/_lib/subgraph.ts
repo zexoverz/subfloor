@@ -8,7 +8,7 @@
 
 export const DEFAULT_ENDPOINT =
   process.env.SUBFLOOR_SUBGRAPH ??
-  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.3";
+  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.4";
 
 export const DAILY_QUALITY_QUERY = `query DailyQuality($since: Int!) {
   executionQualityDailySnapshots(
