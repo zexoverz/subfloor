@@ -25,6 +25,9 @@ optimizer             = true
 optimizer_runs        = 700
 via_ir                = true
 dynamic_test_linking  = false
+# Halmos reads the solc AST; without this the artifacts are skipped and it reports "no tests".
+ast                   = true
+extra_output          = ["storageLayout"]
 
 [profile.ci]
 solc_version   = "0.8.30"
