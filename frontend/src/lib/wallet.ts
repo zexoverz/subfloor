@@ -1,21 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { createPublicClient, createWalletClient, custom, formatUnits, http, type Address } from 'viem';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPublicClient, formatUnits, http, type Address } from 'viem';
 import { base } from 'viem/chains';
 import { TOKENS } from './tokens.ts';
 import type { Holding } from '../types.ts';
 
 /**
- * The owner's wallet. It is a prerequisite, not a step in the ceremony: §10 collapses deposit,
- * mandate and first floor into one signature, and a connection that happens before any of that is
- * not part of it. The screen reads inventory "from wallet", which is only true once this exists.
+ * The owner's wallet, behind one interface so no screen knows which connector library is under it —
+ * which is what let the injected-provider version become AppKit without a screen changing.
  *
- * Injected provider only, deliberately. WalletConnect and a connector library are a dependency and
- * a modal for a run with one owner on one machine; add them when a second person needs to connect.
+ * Connecting is a prerequisite, not a step in the ceremony: §10 collapses deposit, mandate and
+ * first floor into one signature, and a connection that happens before any of that is not part of
+ * it. The screen reads inventory "from wallet", which is only true once this exists.
  */
-type Injected = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
-
-const injected = (): Injected | undefined => (globalThis as { ethereum?: Injected }).ethereum;
-
 const publicClient = createPublicClient({ chain: base, transport: http() });
 
 const BALANCE_OF = [
@@ -28,6 +24,9 @@ const BALANCE_OF = [
   },
 ] as const;
 
+/** Public by design: it identifies the app to Reown's relay, it authorises nothing. */
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID ?? '';
+
 export type Wallet = {
   address: Address | null;
   available: boolean;
@@ -35,7 +34,7 @@ export type Wallet = {
   error: string | null;
   /** Real balances for the mandate's token set, or null until an address exists. */
   holdings: Holding[] | null;
-  connect: () => Promise<void>;
+  connect: () => void;
   disconnect: () => void;
 };
 
@@ -44,31 +43,41 @@ export function useWallet(): Wallet {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
+  const unwatch = useRef<(() => void) | null>(null);
 
   const connect = useCallback(async () => {
-    const provider = injected();
-    if (!provider) {
-      setError('no wallet found in this browser');
-      return;
-    }
+    if (!projectId) return;
     setConnecting(true);
     setError(null);
     try {
-      const client = createWalletClient({ chain: base, transport: custom(provider) });
-      const [account] = await client.requestAddresses();
-      setAddress(account ?? null);
+      // The heavy import happens here and nowhere else.
+      const [{ startAppKit }, { watchAccount }] = await Promise.all([
+        import('./appkit.ts'),
+        import('@wagmi/core'),
+      ]);
+      const { modal, config } = startAppKit();
+
+      unwatch.current?.();
+      unwatch.current = watchAccount(config, {
+        onChange: (account) => setAddress((account.address as Address | undefined) ?? null),
+      });
+
+      await modal.open({ view: 'Connect' });
     } catch {
-      // A declined connection is a choice, not a failure, and is worded as one.
-      setError('you declined the connection');
+      setError('could not open the wallet modal');
     } finally {
       setConnecting(false);
     }
   }, []);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     setAddress(null);
     setHoldings(null);
+    const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
+    await core.disconnect(startAppKit().config).catch(() => {});
   }, []);
+
+  useEffect(() => () => unwatch.current?.(), []);
 
   // Balances are read on chain rather than assumed, so "from wallet" is a fact on the screen.
   useEffect(() => {
@@ -76,9 +85,8 @@ export function useWallet(): Wallet {
     let live = true;
 
     (async () => {
-      const entries = Object.entries(TOKENS);
       const balances = await Promise.all(
-        entries.map(async ([token, meta]) => {
+        Object.entries(TOKENS).map(async ([token, meta]) => {
           try {
             const raw = await publicClient.readContract({
               address: token as Address,
@@ -101,14 +109,13 @@ export function useWallet(): Wallet {
     };
   }, [address]);
 
-  // A wallet switched or locked in another tab is a disconnection here too.
-  useEffect(() => {
-    const provider = injected() as (Injected & { on?: Function; removeListener?: Function }) | undefined;
-    if (!provider?.on) return;
-    const onAccounts = (accounts: string[]) => setAddress((accounts[0] as Address) ?? null);
-    provider.on('accountsChanged', onAccounts);
-    return () => provider.removeListener?.('accountsChanged', onAccounts);
-  }, []);
-
-  return { address, available: Boolean(injected()), connecting, error, holdings, connect, disconnect };
+  return {
+    address,
+    available: Boolean(projectId),
+    connecting,
+    error: projectId ? error : 'wallet connection needs a Reown project id',
+    holdings,
+    connect: () => void connect(),
+    disconnect: () => void disconnect(),
+  };
 }

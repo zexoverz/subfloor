@@ -9,11 +9,15 @@
     "check": "node --experimental-strip-types --test src/lib/*.test.ts && node check-copy.mjs"
   },
   "dependencies": {
+    "@reown/appkit": "^1.8.23",
+    "@reown/appkit-adapter-wagmi": "^1.8.23",
+    "@tanstack/react-query": "^5.102.8",
     "lightweight-charts": "^5.2.1",
     "lucide-react": "^1.41.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "viem": "^2.56.3"
+    "viem": "^2.56.3",
+    "wagmi": "^3.7.7"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",
