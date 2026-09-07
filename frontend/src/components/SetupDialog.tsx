@@ -250,6 +250,10 @@ export function SetupDialog({
                   signature,
                   at: Date.now(),
                 });
+                // Tick the step now rather than when the owner presses continue: the thing the
+                // step checks has already happened, and a list that lags the fact it reads is the
+                // same complaint as a list that never updates.
+                ceremony.refresh();
               }}
               onDone={() => {
                 setSigning(false);
