@@ -46,6 +46,48 @@ export function useWallet(): Wallet {
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
   const unwatch = useRef<(() => void) | null>(null);
 
+  /** Attach the account watcher and take the current answer. Shared by connect and by restore. */
+  const subscribe = useCallback(async () => {
+    const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
+    const { modal, config } = startAppKit();
+
+    unwatch.current?.();
+    unwatch.current = core.watchAccount(config, {
+      onChange: (account) => setAddress((account.address as Address | undefined) ?? null),
+    });
+
+    return { modal, config, core };
+  }, []);
+
+  /**
+   * A session survives a reload, and the page has to know that on load rather than the first time
+   * someone opens the modal. AppKit stays lazy for a genuine first visit: wagmi's own persisted
+   * state is read first, and the kit is only imported when it says there is something to restore.
+   */
+  useEffect(() => {
+    if (mocked) return;
+    let live = true;
+
+    (async () => {
+      try {
+        const stored = globalThis.localStorage?.getItem('wagmi.store');
+        if (!stored) return;
+        const parsed = JSON.parse(stored) as { state?: { current?: string | null } };
+        if (!parsed.state?.current) return;
+
+        const { config, core } = await subscribe();
+        if (!live) return;
+        await core.reconnect(config);
+      } catch {
+        // A stored session that will not come back is not an error worth showing anyone.
+      }
+    })();
+
+    return () => {
+      live = false;
+    };
+  }, [subscribe]);
+
   const connect = useCallback(async () => {
     // Mock mode skips the modal entirely: redesigning a five-step flow should not cost five
     // wallet approvals, and the screen says it is mocked either way.
@@ -61,25 +103,15 @@ export function useWallet(): Wallet {
     setConnecting(true);
     setError(null);
     try {
-      // The heavy import happens here and nowhere else.
-      const [{ startAppKit }, { watchAccount }] = await Promise.all([
-        import('./appkit.ts'),
-        import('@wagmi/core'),
-      ]);
-      const { modal, config } = startAppKit();
-
-      unwatch.current?.();
-      unwatch.current = watchAccount(config, {
-        onChange: (account) => setAddress((account.address as Address | undefined) ?? null),
-      });
-
+      // The heavy import happens here, or in the restore above, and nowhere else.
+      const { modal } = await subscribe();
       await modal.open({ view: 'Connect' });
     } catch {
       setError('could not open the wallet modal');
     } finally {
       setConnecting(false);
     }
-  }, []);
+  }, [subscribe]);
 
   const disconnect = useCallback(async () => {
     setAddress(null);
