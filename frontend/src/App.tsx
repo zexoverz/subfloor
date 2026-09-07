@@ -53,7 +53,7 @@ export default function App() {
 
   // Real balances replace the fixture inventory the moment a wallet is connected, so the desk
   // stops describing a vault nobody owns.
-  const ceremony = useCeremony(wallet.address, vault, 0);
+  const ceremony = useCeremony(wallet.address, vault);
   const indexed = {
     ...fed,
     ...(index.tape ? { tape: index.tape } : {}),

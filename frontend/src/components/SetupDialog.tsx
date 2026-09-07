@@ -6,6 +6,8 @@ import { Act } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { useCeremony } from '../lib/ceremony.ts';
+import { useFund } from '../lib/fund.ts';
+import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
 // Lazy, like every other heavy thing here: a WebGL library is not something a visitor who never
@@ -44,7 +46,8 @@ export function SetupDialog({
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
-  const ceremony = useCeremony(wallet.address, vault, holdings.filter((h) => h.amount > 0).length);
+  const ceremony = useCeremony(wallet.address, vault);
+  const fund = useFund(vault, wallet.address);
   const ledger = useLedger();
 
   const [amounts, setAmounts] = useState<Record<string, string>>({});
@@ -60,6 +63,8 @@ export function SetupDialog({
   const [delegate, setDelegate] = useState('');
 
   const funded = holdings.some((h) => Number(amounts[h.symbol]) > 0);
+  // WETH is the one that needs a wrap, and only when the wallet is short of what was typed.
+  const wrapping = Number(amounts.WETH ?? 0) > (holdings.find((h) => h.symbol === 'WETH')?.amount ?? 0);
   const keysReady = isAddress(guardian) && isAddress(delegate);
   const blocked = !ceremony.deployed
     ? copy.wallet.notDeployed
@@ -202,6 +207,17 @@ export function SetupDialog({
                     onChange={(v) => setAmounts((a) => ({ ...a, [h.symbol]: v }))}
                   />
                 ))}
+                {wrapping && <p className="mt-2 mb-0 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
+                <Act
+                  onClick={() =>
+                    void fund.send(
+                      ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
+                    )
+                  }
+                  disabled={!funded || fund.sending || !vault}
+                >
+                  {fund.step ?? copy.wallet.sendToVault}
+                </Act>
               </div>
 
               {/*

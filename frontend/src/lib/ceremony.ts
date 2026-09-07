@@ -3,6 +3,7 @@ import { createPublicClient, http, type Address } from 'viem';
 import { chain } from './chain.ts';
 import {
   addresses,
+  erc20Abi,
   deployed,
   mandateDomain,
   mandateTypes,
@@ -11,7 +12,7 @@ import {
   setRegistryGuardianAsVault,
   vaultAbi,
 } from './contracts.ts';
-import { USDC, WETH } from './tokens.ts';
+import { ACTIVE_TOKENS, USDC, WETH } from './tokens.ts';
 import type { Floor } from '../types.ts';
 import { mocked } from './mock.ts';
 
@@ -55,11 +56,13 @@ export type CeremonyState = {
   refresh: () => void;
 };
 
-export function useCeremony(address: Address | null, vault: Address | null, fundedTokens: number): CeremonyState {
+export function useCeremony(address: Address | null, vault: Address | null): CeremonyState {
   /** Mock mode advances one step per press, so the whole flow is walkable with nothing deployed. */
   const [mockDone, setMockDone] = useState(0);
   const [owner, setOwner] = useState<Address | null>(null);
   const [floorsSet, setFloorsSet] = useState(false);
+  /** The vault's own inventory. The wallet's holdings are not the vault's, and only one settles. */
+  const [vaultFunded, setVaultFunded] = useState(false);
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
@@ -78,7 +81,7 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
     (async () => {
       const registry = addresses.registry as Address;
       try {
-        const [o, d, g, sell, buy, registryGuardian, configured, reference] = await Promise.all([
+        const [o, d, g, sell, buy, registryGuardian, configured, reference, held] = await Promise.all([
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'delegate' }),
           publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'guardian' }),
@@ -87,6 +90,11 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'guardian', args: [vault] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'floor', args: [vault, WETH, USDC] }),
           publicClient.readContract({ address: registry, abi: registryAbi, functionName: 'referenceFeed', args: [WETH, USDC] }),
+          Promise.all(
+            ACTIVE_TOKENS.map((t) =>
+              publicClient.readContract({ address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [vault] }),
+            ),
+          ),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -103,6 +111,10 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
 
         const [isConfigured, bps, absolute] = configured as [boolean, number, bigint];
         setFloor({ enforced: isConfigured, maxAdverseBps: bps, absoluteRate: absolute });
+
+        // Funded means the *vault* holds something. Reading the owner's wallet here ticked the
+        // step green before a single token had moved.
+        setVaultFunded((held as bigint[]).some((b) => b > 0n));
 
         const [feedAddress] = reference as [Address, boolean, number, number, bigint];
         setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
@@ -121,7 +133,7 @@ export function useCeremony(address: Address | null, vault: Address | null, fund
       id: 'fund',
       title: 'Fund the vault',
       detail: 'move inventory in. An ordinary transfer — the vault holds it, you still own it.',
-      done: mocked ? mockDone > 0 : fundedTokens > 0,
+      done: mocked ? mockDone > 0 : vaultFunded,
       device: false,
     },
     {
