@@ -14,11 +14,14 @@ RUN npm run build
 FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
-COPY indexer/consumers/package.json indexer/consumers/package-lock.json* ./indexer/consumers/
-# The consumers had no runtime dependencies until `/api/fills` needed viem to read the chain
-# directly. Without this the import resolves to nothing and the service 502s on boot, which is what
-# happened the first time.
-RUN cd indexer/consumers && npm install --omit=dev --no-audit --no-fund
+# Dependencies go at the image root, not inside indexer/consumers.
+#
+# Node resolves from the importing file's directory upward, and the shared library lives at
+# /app/frontend/api/_lib — so a node_modules under /app/indexer/consumers is invisible to it. That
+# is exactly how this 502'd: `Cannot find package 'viem' imported from /app/frontend/api/_lib/chain.ts`.
+# At /app both entry points resolve.
+COPY indexer/consumers/package.json ./package.json
+RUN npm install --omit=dev --no-audit --no-fund
 COPY indexer/consumers/src ./indexer/consumers/src
 COPY frontend/api/_lib ./frontend/api/_lib
 COPY --from=frontend /app/frontend/dist ./frontend/dist
