@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { isAddress } from 'viem';
 import { Check, ChevronDown, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
-import { Act, Ghost } from './Button.tsx';
+import { Act } from './Button.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { useCeremony } from '../lib/ceremony.ts';
@@ -184,16 +184,9 @@ export function SetupDialog({
             </div>
           ) : (
             <>
-              <div className="mb-5 flex items-center justify-between border-b border-rule pb-4 text-[11.5px]">
-                <span className="flex items-center gap-2 text-muted">
-                  <span className="size-[6px] rounded-full bg-settle" />
-                  {wallet.address?.slice(0, 6)}…{wallet.address?.slice(-4)}
-                </span>
-                <Ghost onClick={() => withTransition(wallet.disconnect)}>{copy.wallet.disconnect}</Ghost>
-              </div>
-
-              {/* Each group is its own block. Three headings at the same weight with the same gap
-                  between them read as one long column of text. */}
+              {/* No address row here: the header already shows which wallet this is and offers
+                  the only disconnect the app needs. Two of each invites the reader to wonder
+                  whether they do different things. */}
               <span className="text-[10.5px] font-semibold tracking-[0.11em] text-faint uppercase">
                 {copy.onboarding.inventory}
               </span>
