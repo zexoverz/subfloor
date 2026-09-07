@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRoute } from './lib/route.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
 import { SetupDialog } from './components/SetupDialog.tsx';
@@ -9,15 +10,15 @@ import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
 import { useCeremony } from './lib/ceremony.ts';
-import type { Screen } from './types.ts';
 
 /**
  * Skeleton wiring. `fixtures` stands in for every reader — contract reads, the subgraph, and the
  * Substreams refusal counter — so no component knows where its data comes from.
  */
 export default function App() {
-  // The front door, not the desk: a stranger arriving at this URL has no vault to look at.
-  const [screen, setScreen] = useState<Screen>('landing');
+  // The address bar decides which screen this is, so a reload stays where it was and the board can
+  // be linked to.
+  const [screen, setScreen] = useRoute();
   const [draftBps, setDraftBps] = useState(fixtures.floor.maxAdverseBps);
   const [purpose, setPurpose] = useState<'mandate' | 'lower'>('mandate');
   // Opens itself once for an owner whose vault is not configured, and closes for good if they

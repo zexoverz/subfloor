@@ -3,6 +3,7 @@ import { copy } from '../copy.ts';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
 import { AccountMenu } from './AccountMenu.tsx';
+import { LetterGlitch } from './LetterGlitch.tsx';
 import type { Wallet } from '../lib/wallet.ts';
 import { mocked } from '../lib/mock.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
@@ -32,7 +33,17 @@ export function AppShell({
   children: ReactNode;
 }) {
   return (
-    <div className={`mx-auto px-[clamp(12px,3vw,28px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
+    <>
+      {/*
+        * The same texture as the landing, fixed behind the board and much quieter than it is there.
+        * This screen is read for numbers, so the noise sits well under them — enough to belong to
+        * the same product, not enough to compete with a price.
+        */}
+      <div className="pointer-events-none fixed inset-0 -z-10 opacity-[0.07]">
+        <LetterGlitch speed={90} />
+      </div>
+
+      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
       {/*
        * One row. The brand and the two real screens sit together on the left because they are the
        * same thing — where you are — and the status reads right to left in falling importance:
@@ -77,6 +88,7 @@ export function AppShell({
       </div>
 
       <div className="pt-3">{children}</div>
-    </div>
+      </div>
+    </>
   );
 }
