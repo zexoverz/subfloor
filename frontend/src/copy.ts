@@ -99,8 +99,9 @@ export const copy = {
   },
 
   wallet: {
-    connect: 'CONNECT YOUR WALLET',
-    connectLedger: 'CONNECT A LEDGER DIRECTLY',
+    /** Short enough not to wrap in the header chip or the aside card. */
+    connect: 'CONNECT WALLET',
+    connectLedger: 'CONNECT A LEDGER',
     /** Not a convenience: routing the device through a browser wallet hides the split it proves. */
     ledgerWhy: 'no browser wallet in between — the device is where the rule is authored, not a signing accessory.',
     ledgerUnsupported: 'this browser cannot talk to a Ledger directly — try Chrome or Edge',

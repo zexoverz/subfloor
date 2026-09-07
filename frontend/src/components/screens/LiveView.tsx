@@ -25,6 +25,7 @@ export function LiveView({
   onNavigate,
   onLower,
   onRaise,
+  onConnect,
 }: {
   state: VaultState;
   source: DataSource;
@@ -33,6 +34,7 @@ export function LiveView({
   onNavigate: (s: Screen) => void;
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
+  onConnect: () => void;
 }) {
   const [adjusting, setAdjusting] = useState(false);
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
@@ -199,7 +201,7 @@ export function LiveView({
           </Card>
         </div>
         ) : (
-          <PublicAside state={state} onNavigate={onNavigate} />
+          <PublicAside state={state} onConnect={onConnect} />
         )}
       </div>
 

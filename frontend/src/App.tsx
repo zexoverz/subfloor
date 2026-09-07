@@ -92,6 +92,7 @@ export default function App() {
           // everyone else sees the proof counter and the contracts in that column.
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
+          onConnect={wallet.connect}
           onLower={lower}
           onRaise={(bps) => alert(`raiseFloor(${state.pair.base}, ${state.pair.quote}, ${bps}, absoluteRate)`)}
         />

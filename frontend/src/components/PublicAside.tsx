@@ -5,7 +5,7 @@ import { Card, CardHead } from './Card.tsx';
 import { RollingNumber } from './RollingNumber.tsx';
 import { addresses } from '../lib/contracts.ts';
 import { addressUrl } from '../lib/chain.ts';
-import type { Screen, VaultState } from '../types.ts';
+import type { VaultState } from '../types.ts';
 
 /**
  * What sits where the owner's inventory would be, when the reader is not the owner.
@@ -14,7 +14,7 @@ import type { Screen, VaultState } from '../types.ts';
  * a floor keyed to a recipient, or anything mapping an address to a position size, because on that
  * branch those components are not rendered at all.
  */
-export function PublicAside({ state, onNavigate }: { state: VaultState; onNavigate: (s: Screen) => void }) {
+export function PublicAside({ state, onConnect }: { state: VaultState; onConnect: () => void }) {
   return (
     <div className="flex flex-col gap-4.5">
       <Card>
@@ -64,7 +64,13 @@ export function PublicAside({ state, onNavigate }: { state: VaultState; onNaviga
       <Card>
         <CardHead left={copy.landing.publicOwnTitle} />
         <div className="p-4">
-          <Act primary onClick={() => onNavigate('onboarding')}>
+          {/*
+            * Connects, exactly like the control in the header. It used to navigate to first run,
+            * which then bounced anyone whose vault was already set up — two buttons with the same
+            * words doing different things. Where you go next is decided by what the chain says,
+            * not by which button you happened to press.
+            */}
+          <Act primary onClick={onConnect}>
             {copy.wallet.connect}
           </Act>
         </div>

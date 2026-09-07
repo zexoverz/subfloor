@@ -8,14 +8,6 @@ import { mocked } from '../lib/mock.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
-/**
- * The three pages someone navigates between. Onboarding happens once, the ceremony is reached from
- * the step or the action that needs it, and the landing page is where a visitor arrives — none of
- * them belong in a tab bar, and a row of links to screens a user cannot use made the whole thing
- * read as a demo of itself.
- */
-const PRIMARY: Screen[] = ['live'];
-
 export function AppShell({
   screen,
   onNavigate,
@@ -49,23 +41,13 @@ export function AppShell({
        * the chips that merely state facts.
        */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-rule py-3.5">
-        <span className="text-[15px] font-semibold tracking-[0.22em]">{copy.brand}</span>
-
-        <nav className="-mb-3.5 flex gap-5 self-end" role="tablist">
-          {PRIMARY.map((s) => (
-            <button
-              key={s}
-              role="tab"
-              aria-selected={screen === s}
-              onClick={() => onNavigate(s)}
-              className={`cursor-pointer border-b-2 bg-transparent px-0.5 pt-1 pb-3 text-[12.5px] transition-colors ${
-                screen === s ? 'border-brass text-ink' : 'border-transparent text-muted hover:text-ink'
-              }`}
-            >
-              {copy.nav[s]}
-            </button>
-          ))}
-        </nav>
+        {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
+        <button
+          onClick={() => onNavigate('landing')}
+          className="cursor-pointer text-[15px] font-semibold tracking-[0.22em] hover:text-brass"
+        >
+          {copy.brand}
+        </button>
 
         <div className="ml-auto flex items-center gap-3.5 text-[11px] text-faint">
           {/*
