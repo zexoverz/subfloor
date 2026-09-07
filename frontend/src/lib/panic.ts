@@ -40,9 +40,22 @@ export function usePanic(owner: Address | null, vault: Address | null): PanicSta
   const [stage, setStage] = useState<PanicState['stage']>('idle');
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Submitted is not done.
+   *
+   * `sendTransaction` resolves the moment the wallet accepts it, which is before it is in a block
+   * and before anyone knows whether it succeeded. Returning there let the panic path report
+   * "withdrawn" for transactions that had not landed, and left every balance the screen re-read
+   * afterwards showing the state before the money moved. Both halves of that are the same mistake:
+   * claiming an outcome nobody has checked.
+   */
   const send = useCallback(async (to: Address, data: `0x${string}`) => {
     const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
-    return core.sendTransaction(startAppKit().config, { to, data, chainId: chain.id });
+    const config = startAppKit().config;
+    const hash = await core.sendTransaction(config, { to, data, chainId: chain.id });
+    const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
+    if (receipt.status !== 'success') throw new Error('the transaction reverted');
+    return hash;
   }, []);
 
   const stop = useCallback(
