@@ -26,8 +26,13 @@ import { chain } from './chain.ts';
  * All six were verified on 7 Sep 2026 at 60 concurrent reads: every one returned 60/60.
  */
 const PUBLIC_NODES = [
-  'https://sepolia.base.org',
+  /*
+   * publicnode first, deliberately. Base's own endpoint answers 403 to some clients — not 429,
+   * a flat refusal — and being first in the list meant every read started with a rejection and
+   * only reached a working node on the retry. It stays in the list; it is just not the opener.
+   */
   'https://base-sepolia-rpc.publicnode.com',
+  'https://sepolia.base.org',
   'https://base-sepolia.gateway.tenderly.co',
   'https://base-sepolia-public.nodies.app',
   'https://base-sepolia.drpc.org',

@@ -51,16 +51,7 @@ export function buildMandate({
    */
   return {
     domain: mandateDomain(chain.id, vault),
-    types: {
-      ...mandateTypes,
-      // Some signers want the domain spelled out; ones that do not simply ignore it.
-      EIP712Domain: [
-        { name: 'name', type: 'string' },
-        { name: 'version', type: 'string' },
-        { name: 'chainId', type: 'uint256' },
-        { name: 'verifyingContract', type: 'address' },
-      ],
-    },
+    types: mandateTypes,
     primaryType: 'Mandate' as const,
     message: {
       delegate: delegate as Address,

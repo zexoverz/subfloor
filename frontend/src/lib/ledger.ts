@@ -213,9 +213,13 @@ export function useLedger(): Ledger {
       return null;
     }
     try {
-      const signed = await settle<{ r: string; s: string; v: number }>(
-        session.current.signer.signTypedData(DERIVATION_PATH, typedData),
-      );
+      /*
+       * The builder can throw before it returns an action at all — a payload it cannot encode
+       * fails here, synchronously, with no observable to carry the error. Wrapping only the stream
+       * left that throw to escape as an unhandled rejection while the screen went on waiting.
+       */
+      const action = session.current.signer.signTypedData(DERIVATION_PATH, typedData);
+      const signed = await settle<{ r: string; s: string; v: number }>(action);
       return `${signed.r}${signed.s.slice(2)}${signed.v.toString(16).padStart(2, '0')}`;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'the device declined');
