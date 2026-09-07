@@ -1,5 +1,6 @@
 import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
+import { TokenIcon } from './TokenIcon.tsx';
 import type { Holding } from '../types.ts';
 
 /**
@@ -22,7 +23,10 @@ export function AmountRow({
 
   return (
     <div className="flex items-center gap-2 border-b border-rule py-2.5 last:border-b-0">
-      <span className="w-14 text-[11px] tracking-[0.08em] text-faint uppercase">{holding.symbol}</span>
+      <span className="flex w-20 items-center gap-2 text-[11px] tracking-[0.08em] text-faint uppercase">
+        <TokenIcon symbol={holding.symbol} size={15} />
+        {holding.symbol}
+      </span>
       <input
         inputMode="decimal"
         value={value}

@@ -9,6 +9,7 @@ import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
+import { TokenIcon } from '../TokenIcon.tsx';
 import { Act } from '../Button.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
@@ -130,7 +131,10 @@ export function LiveView({
               <dl className="m-0 text-[12.5px]">
                 {inventory.map((h) => (
                   <div key={h.symbol} className="flex items-baseline justify-between gap-3 py-1">
-                    <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{h.symbol}</dt>
+                    <dt className="flex items-center gap-2 text-[10.5px] tracking-[0.08em] text-faint uppercase">
+                      <TokenIcon symbol={h.symbol} size={15} />
+                      {h.symbol}
+                    </dt>
                     <dd className="m-0 text-right font-medium">
                       {/* A read that failed is not a zero balance and must not be rendered as one. */}
                       {Number.isNaN(h.amount) ? '—' : h.amount}
