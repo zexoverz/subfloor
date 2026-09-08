@@ -16,12 +16,37 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
   const hero = intensity === 'hero';
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/*
+       * Recessed, not removed.
+       *
+       * At full strength the drawing averages three times the canvas's luminance, so every glass
+       * panel sat over something brighter than itself and the whole board read washed out — the
+       * text was fighting an illustration for the same pixels. At 32% it lands just under twice
+       * the canvas: still legibly a seabed, no longer competing with a price.
+       *
+       * The board is where this matters; the hero has no data over it and keeps the drawing.
+       */}
       <img
         src="/seabed.webp"
         alt=""
         draggable={false}
         className="h-full w-full object-cover object-center select-none"
+        style={{ opacity: hero ? 0.85 : 0.32 }}
       />
+      {/*
+       * A wash in the canvas colour on top of it, heaviest in the middle band where the panels
+       * sit. Opacity alone flattens the drawing evenly; this keeps the edges of the frame alive
+       * while the working area goes quiet.
+       */}
+      {!hero && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(to bottom, rgba(4,18,36,0.35), rgba(4,18,36,0.72) 45%, rgba(4,18,36,0.72) 70%, rgba(4,18,36,0.3))',
+          }}
+        />
+      )}
       {hero && (
         <div
           className="absolute inset-x-0 bottom-0 h-40"
