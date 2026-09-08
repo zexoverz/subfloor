@@ -1,5 +1,17 @@
-import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowRight, Clock, Crosshair, ExternalLink, Filter, ShieldCheck, TrendingUp } from 'lucide-react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ArrowDown,
+  ArrowDownLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Clock,
+  Crosshair,
+  ExternalLink,
+  Filter,
+  ShieldCheck,
+  TrendingUp,
+  UserRound,
+} from 'lucide-react';
 import { FillBar } from './FillBar.tsx';
 import { copy } from '../copy.ts';
 import { formatBps, formatPrice } from '../lib/rate.ts';
@@ -129,6 +141,27 @@ export function Tape({
    */
   const [only, setOnly] = useState<string | null>(null);
   const [hint, setHint] = useState<Hint>(null);
+  /*
+   * A mousemove fires per pixel, and setting state here re-renders a hundred rows each time. The
+   * rows are memoised so they no longer take part, and this coalesces the remaining updates to one
+   * per frame — the pointer produces far more events than the screen can show.
+   */
+  const frame = useRef<number | null>(null);
+  const onHint = useCallback((next: Hint) => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    if (next === null) {
+      frame.current = null;
+      setHint(null);
+      return;
+    }
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      setHint(next);
+    });
+  }, []);
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
   const takers = new Map<string, number>();
   for (const e of entries) {
     const who = e.kind === 'fill' ? e.taker : e.from;
@@ -200,9 +233,9 @@ export function Tape({
           )}
           {status !== 'loading' && shown.map((entry) =>
             entry.kind === 'fill' ? (
-              <FillRows key={entry.tx} entry={entry} pair={pair} onHint={setHint} />
+              <FillRows key={entry.tx} entry={entry} pair={pair} onHint={onHint} />
             ) : (
-              <RefusalRows key={entry.tx} entry={entry} onHint={setHint} />
+              <RefusalRows key={entry.tx} entry={entry} onHint={onHint} />
             ),
           )}
         </tbody>
@@ -310,9 +343,52 @@ function TxCell({ hash, stub, time }: { hash?: string; stub: string; time: strin
 }
 
 /** What the row cannot fit, shown on hover rather than hidden behind a click. */
-function FillHint({ entry }: { entry: Fill }) {
+function FillHint({ entry, pair }: { entry: Fill; pair: Pair }) {
+  const gave = entry.gave ?? { amount: entry.amount, symbol: pair.base };
+  const got = entry.got;
   return (
     <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
+      {/*
+       * The trade itself first. The row shows it too, but a card that opens over a table has to
+       * say which line it belongs to — otherwise reading the numbers means looking away to check
+       * which row the cursor is still on.
+       */}
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <ArrowUpRight size={12} strokeWidth={1.9} />
+        sent
+      </dt>
+      <dd className="m-0 text-right font-medium">
+        {gave.amount < 0.01 ? gave.amount.toPrecision(2) : gave.amount.toFixed(4)}{' '}
+        <span className="text-muted">{gave.symbol}</span>
+      </dd>
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <ArrowDownLeft size={12} strokeWidth={1.9} />
+        received
+      </dt>
+      <dd className="m-0 text-right font-medium">
+        {got ? (
+          <>
+            {got.amount < 0.01 ? got.amount.toPrecision(2) : got.amount.toFixed(4)}{' '}
+            <span className="text-muted">{got.symbol}</span>
+          </>
+        ) : (
+          '—'
+        )}
+      </dd>
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <UserRound size={12} strokeWidth={1.9} />
+        taker
+      </dt>
+      <dd className="m-0 text-right">
+        {entry.taker ? (
+          <span className="font-mono text-[11.5px] text-muted">
+            {entry.taker.slice(0, 6)}…{entry.taker.slice(-4)}
+          </span>
+        ) : (
+          '—'
+        )}
+      </dd>
+      <dd className="col-span-2 m-0 border-t border-rule/60" />
       {/* An icon per line, because four rows of identical grey labels read as one block of text. */}
       <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <Crosshair size={12} strokeWidth={1.9} />
@@ -359,7 +435,7 @@ function FillHint({ entry }: { entry: Fill }) {
   );
 }
 
-function FillRows({
+const FillRows = memo(function FillRows({
   entry,
   pair,
   onHint,
@@ -379,7 +455,7 @@ function FillRows({
   return (
     <>
       <tr
-        onMouseMove={(e) => onHint({ content: <FillHint entry={entry} />, x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onHint({ content: <FillHint entry={entry} pair={pair} />, x: e.clientX, y: e.clientY })}
         onMouseLeave={() => onHint(null)}
         /*
          * Glass rather than a flat fill: the seabed is behind this table, and a solid row would
@@ -435,7 +511,7 @@ function FillRows({
 
     </>
   );
-}
+});
 
 
 
@@ -493,7 +569,7 @@ function RefusalHint({
   );
 }
 
-function RefusalRows({ entry, onHint }: { entry: Refusal; onHint: (hint: Hint) => void }) {
+const RefusalRows = memo(function RefusalRows({ entry, onHint }: { entry: Refusal; onHint: (hint: Hint) => void }) {
   const [open, setOpen] = useState(false);
   // The index hands them over already decoded; a revert we watched ourselves is decoded here.
   const decoded = entry.decoded ?? decodeRefusal(entry.data);
@@ -585,4 +661,4 @@ function RefusalRows({ entry, onHint }: { entry: Refusal; onHint: (hint: Hint) =
       )}
     </>
   );
-}
+});
