@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LedgerHQ/clear-signing-erc7730-registry/master/specs/erc7730-v2.schema.json",
+  "context": {
+    "eip712": {
+      "deployments": [
+        { "chainId": 84532, "address": "0xaf6b337440FFEa63c47f077eee2663987aEEc33f" }
+      ],
+      "domain": {
+        "name": "SUBFLOOR AquaGuardVault",
+        "version": "1"
+      }
+    }
+  },
+  "metadata": {
+    "owner": "SUBFLOOR",
+    "info": {
+      "legalName": "SUBFLOOR",
+      "url": "https://github.com/zexoverz/subfloor"
+    }
+  },
+  "display": {
+    "formats": {
+      "Mandate(address delegate,address app,address[] tokens,uint256[] maxAmounts,uint256 nonce,uint256 expiry)": {
+        "intent": "Let an agent trade this vault",
+        "fields": [
+          { "path": "delegate", "label": "Agent", "format": "addressName", "visible": "always" },
+          { "path": "app", "label": "Venue app", "format": "addressName", "visible": "always" },
+          { "path": "tokens.[]", "label": "May commit", "format": "addressName", "visible": "always" },
+          { "path": "maxAmounts.[]", "label": "Up to", "format": "raw", "visible": "always" },
+          { "path": "expiry", "label": "Expires", "format": "date", "params": { "encoding": "timestamp" }, "visible": "always" },
+          { "path": "nonce", "label": "Nonce", "format": "raw" }
+        ],
+        "required": ["delegate", "app", "tokens.[]", "maxAmounts.[]", "expiry"]
+      }
+    }
+  }
+}
