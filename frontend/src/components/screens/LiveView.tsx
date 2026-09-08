@@ -150,6 +150,11 @@ export function LiveView({
                 {scope === 'mine' && vault && <AddressChip address={vault} size={14} />}
               </span>
             }
+            /*
+             * No pair label beside the tabs. The chart above already names the pair, every row
+             * carries both tokens, and a third statement of it was crowding the one control on
+             * this card that changes what the card is about.
+             */
             right={
               <span className="flex items-center gap-3">
                 {/*
@@ -171,10 +176,6 @@ export function LiveView({
                       {s === 'mine' ? copy.desk.scopeMine : copy.desk.scopePublic}
                     </button>
                   ))}
-                </span>
-                <span className="flex items-center gap-2">
-                  <PairIcons base={pair.base} quote={pair.quote} />
-                  {pair.base} / {pair.quote}
                 </span>
               </span>
             }
