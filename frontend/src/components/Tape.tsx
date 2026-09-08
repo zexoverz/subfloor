@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Clock, Crosshair, ExternalLink, Filter, ShieldCheck, TrendingUp } from 'lucide-react';
+import { ArrowDown, ArrowRight, Clock, Crosshair, ExternalLink, Filter, ShieldCheck, TrendingUp } from 'lucide-react';
 import { FillBar } from './FillBar.tsx';
 import { copy } from '../copy.ts';
 import { formatBps, formatPrice } from '../lib/rate.ts';
@@ -377,6 +377,53 @@ function FillRows({
  * Size stays em-dash on purpose. The revert carries rates, not amounts — the fill never happened,
  * so there is no size to report, and inventing one would undo the point of decoding.
  */
+/**
+ * The refusal's five numbers, on hover like every other row.
+ *
+ * It kept a click of its own because the detail is the argument rather than a footnote — but that
+ * made the most important row on the tape the only one that behaved differently, and a reader who
+ * had learned to hover everything else would never find it.
+ */
+function RefusalHint({
+  decoded,
+  vsRef,
+}: {
+  decoded: { attemptedPrice: number; floorPrice: number; bpsBelowFloor: number; gaveSymbol: string; gotSymbol: string };
+  vsRef: number | null;
+}) {
+  return (
+    <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
+      <dt className="flex items-center gap-2 text-faint">
+        <ArrowDown size={12} strokeWidth={1.9} />
+        tried to settle at
+      </dt>
+      <dd className="m-0 text-right font-medium text-refuse">${formatPrice(decoded.attemptedPrice)}</dd>
+      <dt className="flex items-center gap-2 text-faint">
+        <ShieldCheck size={12} strokeWidth={1.9} />
+        your floor
+      </dt>
+      <dd className="m-0 text-right font-medium text-floor">${formatPrice(decoded.floorPrice)}</dd>
+      <dt className="flex items-center gap-2 text-faint">
+        <Crosshair size={12} strokeWidth={1.9} />
+        below the floor by
+      </dt>
+      <dd className="m-0 text-right font-medium text-refuse">−{decoded.bpsBelowFloor} bps</dd>
+      {vsRef !== null && (
+        <>
+          <dt className="flex items-center gap-2 text-faint">
+            <TrendingUp size={12} strokeWidth={1.9} />
+            vs reference
+          </dt>
+          <dd className="m-0 text-right font-medium">{formatBps(vsRef)}</dd>
+        </>
+      )}
+      <dd className="col-span-2 m-0 mt-1 border-t border-rule/60 pt-2.5 text-[11.5px] leading-relaxed text-faint">
+        {copy.refusal.hint}
+      </dd>
+    </dl>
+  );
+}
+
 function RefusalRows({ entry, onHint }: { entry: Refusal; onHint: (hint: Hint) => void }) {
   const [open, setOpen] = useState(false);
   // The index hands them over already decoded; a revert we watched ourselves is decoded here.
@@ -402,9 +449,7 @@ function RefusalRows({ entry, onHint }: { entry: Refusal; onHint: (hint: Hint) =
         onClick={() => setOpen(!open)}
         onMouseMove={(e) =>
           onHint({
-            content: (
-              <p className="m-0 text-[12px] leading-relaxed text-muted">{copy.refusal.hint}</p>
-            ),
+            content: <RefusalHint decoded={decoded} vsRef={vsRef} />,
             x: e.clientX,
             y: e.clientY,
           })

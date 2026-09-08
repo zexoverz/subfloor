@@ -2,11 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encodeErrorResult } from 'viem';
 import { decodeRefusal, SETTLED_BELOW_FLOOR, SETTLED_BELOW_FLOOR_SELECTOR } from './refusal.ts';
-import { USDC, WETH } from './tokens.ts';
+import { USDC, USDC_SYMBOL, WETH } from './tokens.ts';
 
 const RECIPIENT = '0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a' as const;
 
-// A taker selling WETH for USDC at 2,391.6 against a floor of 2,445.40.
+// A taker selling WETH for the quote token at 2,391.6 against a floor of 2,445.40. The quote
+// is tUSDC on the testnet and USDC on mainnet, so the assertion reads the symbol rather than
+// naming one — the decoder's job is to render whatever the deployment trades.
 const takerRefusal = encodeErrorResult({
   abi: [SETTLED_BELOW_FLOOR],
   args: [RECIPIENT, WETH, USDC, 2_391_600_000n, 2_445_400_000n],
@@ -23,7 +25,7 @@ test('revert data becomes the numbers the card renders', () => {
   assert.equal(r.floorPrice, 2445.4);
   assert.equal(r.bpsBelowFloor, 220);
   assert.equal(r.gaveSymbol, 'WETH');
-  assert.equal(r.gotSymbol, 'USDC');
+  assert.equal(r.gotSymbol, USDC_SYMBOL);
 });
 
 // checkSettlement scores the maker with the pair the other way round, so a maker-side refusal
@@ -35,7 +37,7 @@ test('a maker-side refusal decodes upright, not inverted', () => {
   });
   const r = decodeRefusal(makerRefusal);
   assert.ok(r);
-  assert.equal(r.gaveSymbol, 'USDC');
+  assert.equal(r.gaveSymbol, USDC_SYMBOL);
   assert.equal(r.gotSymbol, 'WETH');
   assert.equal(r.attemptedPrice, 0.0004);   // WETH per USDC, i.e. 2,500 the other way up
   assert.equal(r.bpsBelowFloor, 220);

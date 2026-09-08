@@ -404,7 +404,7 @@ export const copy = {
     yourFloor: 'your floor',
     /** The sentence a worried owner is actually looking for. It leads; the forensics follow. */
     unchanged: 'balances unchanged',
-    hint: 'Click to open the five numbers the revert carried. Nothing moved: the balances are the same either side of this row.',
+    hint: 'Nothing moved. The balances are the same either side of this row — the venue refused rather than settling, and the transaction reverted.',
     view: 'view',
   },
 
