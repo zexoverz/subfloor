@@ -8,6 +8,7 @@ import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
 import { ExternalLink } from 'lucide-react';
 import { txUrl } from '../lib/chain.ts';
 import { AddressChip } from './AddressChip.tsx';
+import { TokenIcon } from './TokenIcon.tsx';
 import { TradeMark } from './TradeMark.tsx';
 
 /*
@@ -163,11 +164,17 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
            */}
           {entry.taker ? <AddressChip address={entry.taker} /> : <span className="text-faint">—</span>}
         </td>
-        <td className="px-4 py-3 text-right font-mono text-[12.5px] tabular-nums">
-          {/* Three decimals turned a 0.0003 WETH fill into "0.000" — a real trade rendered as
-              nothing at all. Small sizes get the digits they need; large ones stay readable. */}
-          {entry.amount < 0.01 ? entry.amount.toPrecision(2) : entry.amount.toFixed(3)}{' '}
-          <span className="text-faint">{pair.base}</span>
+        <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums">
+          <span className="flex items-center justify-end gap-1.5">
+            {/* Three decimals turned a 0.0003 WETH fill into "0.000" — a real trade rendered as
+                nothing at all. Small sizes get the digits they need; large ones stay readable. */}
+            {entry.amount < 0.01 ? entry.amount.toPrecision(2) : entry.amount.toFixed(3)}
+            {/*
+             * The mark rather than the ticker. The number and its unit read as one thing this way,
+             * and the size column stops repeating a word the row above it already carries.
+             */}
+            <TokenIcon symbol={pair.base} size={14} />
+          </span>
         </td>
         <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold tabular-nums">
           {formatPrice(entry.price)}
