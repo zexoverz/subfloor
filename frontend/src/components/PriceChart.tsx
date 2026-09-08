@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AreaSeries, createChart, LineStyle, type IChartApi, type ISeriesApi, type UTCTimestamp } from 'lightweight-charts';
 import { floorPriceFromBps, rateToPrice } from '../lib/rate.ts';
 import type { VaultState } from '../types.ts';
+import { copy } from '../copy.ts';
 
 /**
  * Fills over time, with the floor drawn across them.
@@ -17,7 +18,19 @@ function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-export function PriceChart({ state }: { state: VaultState }) {
+export function PriceChart({
+  state,
+  status = 'live',
+}: {
+  state: VaultState;
+  /*
+   * The chart draws whatever is in `state.tape`, so while the reader is still asking it was
+   * drawing nothing — or worse, sample fills — as a price history. A chart is read faster than a
+   * table and argued with less, so an invented line is the most persuasive wrong thing on the
+   * page. It waits instead.
+   */
+  status?: 'loading' | 'live' | 'empty' | 'failed';
+}) {
   const box = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
   const fills = useRef<ISeriesApi<'Area'> | null>(null);
@@ -109,5 +122,25 @@ export function PriceChart({ state }: { state: VaultState }) {
     reference.current.setData(points.map((p) => ({ time: p.time, value: state.reference.price })));
   }, [state.tape, state.reference.price]);
 
-  return <div ref={box} className="h-[300px] w-full" />;
+  return (
+    <div className="relative h-[300px] w-full">
+      <div ref={box} className="h-full w-full" />
+      {status !== 'live' && (
+        /*
+         * Covered rather than merely empty. A chart with axes and no line still reads as a price
+         * history that happens to be flat, which is a claim; this says what is actually going on.
+         */
+        <div className="absolute inset-0 grid place-items-center bg-surface/85 text-[12px] text-faint">
+          {status === 'loading' ? (
+            <span className="flex items-center gap-2">
+              <span className="size-1.5 animate-pulse rounded-full bg-floor" />
+              {copy.desk.chartLoading}
+            </span>
+          ) : (
+            <span>{status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

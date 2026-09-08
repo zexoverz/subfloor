@@ -111,7 +111,7 @@ export function LiveView({
           left={`${pair.base} / ${pair.quote} · fills against your floor`}
           right={`reference ${formatPrice(reference.price)}`}
         />
-        <PriceChart state={state} />
+        <PriceChart state={state} status={tapeStatus} />
       </Card>
 
       <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-4.5 max-[1000px]:grid-cols-1">

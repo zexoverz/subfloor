@@ -69,6 +69,7 @@ export const copy = {
     fillsSubPending: 'illustration · the vault is not funded yet',
     leadLive: 'The vault has been traded against {fills} times. It refused {refused}. It has never once settled at a bad price.',
     /** Answered, and the answer was nothing. Different from not having asked. */
+    chartLoading: 'Reading what this venue has traded…',
     tapeEmpty: 'No fills yet. The vault has not traded on this venue.',
     /** We could not ask. Says whose failure it is rather than reporting an empty venue. */
     tapeUnreachable: 'The index could not be reached, so what has traded here is unknown.',

@@ -84,7 +84,16 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; source:
   // anything else falls back to fixtures. Whatever it says, the badge says the same thing — the
   // point of the switch is which honest state the page is in, never whether it tells you.
   const configured = import.meta.env?.VITE_DATA_SOURCE as DataSource | undefined;
-  const simulated = configured === 'simulated' || (configured === undefined && import.meta.env.DEV);
+  /*
+   * Opt-in only, never automatic.
+   *
+   * This used to switch itself on in dev, which made sense while nothing had ever traded and made
+   * the board unbuildable otherwise. It does not now: the venue has fills, and defaulting to
+   * invented ones meant every local run showed fabricated trades over real data that was one
+   * fetch away — including while the real fetch was still in flight. Set VITE_DATA_SOURCE to
+   * `simulated` to get it back; the screen says so when it is on.
+   */
+  const simulated = configured === 'simulated';
   const [extra, setExtra] = useState<TapeEntry[]>([]);
 
   useEffect(() => {
