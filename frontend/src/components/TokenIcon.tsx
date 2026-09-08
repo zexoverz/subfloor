@@ -23,7 +23,7 @@ export function TokenIcon({ symbol, size = 16 }: { symbol: string; size?: number
     );
   }
 
-  if (symbol === 'USDC') {
+  if (symbol === 'USDC' || symbol === 'tUSDC') {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">
         <circle cx="12" cy="12" r="12" fill="#2775CA" />

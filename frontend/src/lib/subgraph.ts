@@ -41,7 +41,7 @@ async function ask<T>(body: Query): Promise<T | null> {
 }
 
 const FILLS = `
-  query Fills($vault: Bytes!) {
+  query Fills {
     fillQualities(first: 24, orderBy: timestamp, orderDirection: desc) {
       id
       executionRate
@@ -50,15 +50,6 @@ const FILLS = `
       floorAtFill
       timestamp
       swap { hash tokensIn amountsIn tokensOut amountsOut }
-    }
-    refusals(first: 12, orderBy: timestamp, orderDirection: desc, where: { recipient: $vault }) {
-      id
-      hash
-      attemptedRate
-      floorRate
-      timestamp
-      base { id }
-      quote { id }
     }
     executionQualityDailySnapshots(first: 1, orderBy: day, orderDirection: desc) {
       fills
@@ -78,14 +69,61 @@ type FillRow = {
   swap: { hash: string; tokensIn: string[]; amountsIn: string[]; tokensOut: string[]; amountsOut: string[] };
 };
 
+/**
+ * A refusal as `/api/refusals` reports it: recovered from transaction status, then the revert
+ * payload replayed one block earlier to get the arguments back. The endpoint reads the chain, so
+ * it survives the index being behind, republished, or missing the entity entirely.
+ */
 type RefusalRow = {
   hash: string;
+  ts: number;
   attemptedRate: string;
   floorRate: string;
-  timestamp: string;
   base: { id: string };
   quote: { id: string };
 };
+
+type RefusalsBody = {
+  floorRefusals: number;
+  fills: number;
+  recent: {
+    hash: string;
+    blockNumber: string;
+    reason: string;
+    tokenIn: string;
+    tokenOut: string;
+    executionRate: string;
+    floorRate: string;
+    timestamp?: number;
+  }[];
+};
+
+async function askRefusals(): Promise<{ count: number; fills: number; recent: RefusalRow[] } | null> {
+  try {
+    // No query string: the endpoint's own default returns more rows than this tape shows.
+    const response = await fetch('/api/refusals');
+    if (!response.ok) return null;
+    const body = (await response.json()) as RefusalsBody;
+    return {
+      count: body.floorRefusals ?? 0,
+      fills: body.fills ?? 0,
+      recent: (body.recent ?? [])
+        // Only the floor's own refusal belongs on this tape. Another revert is a different story.
+        .filter((r) => r.reason === 'SettledBelowFloor')
+        .map((r) => ({
+          hash: r.hash,
+          // No timestamp on the record, so the block stands in for one and the tape still sorts.
+          ts: r.timestamp ?? Number(r.blockNumber),
+          attemptedRate: r.executionRate,
+          floorRate: r.floorRate,
+          base: { id: r.tokenIn },
+          quote: { id: r.tokenOut },
+        })),
+    };
+  } catch {
+    return null;
+  }
+}
 
 export type IndexData = {
   source: DataSource;
@@ -110,22 +148,31 @@ export function useIndex(vault: Address | null): IndexData {
     let live = true;
 
     (async () => {
-      const result = await ask<{
-        fillQualities: FillRow[];
-        refusals: RefusalRow[];
-        executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
-      }>({ query: FILLS, variables: { vault: vault.toLowerCase() } });
+      /*
+       * Two sources, because a refusal cannot come from the index at all. It is a reverted
+       * transaction; reverts emit no logs; a subgraph handler is log-driven. The Refusal entity
+       * was removed upstream for exactly that reason, and asking for it here failed the whole
+       * query and took the fills down with it. Refusals come from the endpoint that reads
+       * transaction status instead.
+       */
+      const [result, refused] = await Promise.all([
+        ask<{
+          fillQualities: FillRow[];
+          executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
+        }>({ query: FILLS }),
+        askRefusals(),
+      ]);
 
-      if (!live || !result) return;
+      if (!live) return;
 
-      const fills = result.fillQualities ?? [];
-      const refusals = result.refusals ?? [];
+      const fills = result?.fillQualities ?? [];
+      const refusals = refused?.recent ?? [];
 
       // Nothing indexed yet is not "live and empty". The screens stay on fixtures and keep saying so.
       if (fills.length === 0 && refusals.length === 0) return;
 
       const tape: TapeEntry[] = [
-        ...fills.map((fill) => {
+        ...fills.map((fill: FillRow) => {
           const gave = fill.swap.tokensIn[0] ?? WETH;
           const got = fill.swap.tokensOut[0] ?? USDC;
           const amount = Number(formatUnits(BigInt(fill.swap.amountsIn[0] ?? '0'), decimalsOf(gave)));
@@ -144,10 +191,10 @@ export function useIndex(vault: Address | null): IndexData {
         }),
         // The decoder wants revert data; the index has the arguments already decoded, so the tape
         // takes them as they are and the card renders from the same five numbers either way.
-        ...refusals.map((refusal) => ({
+        ...refusals.map((refusal: RefusalRow) => ({
           kind: 'refusal' as const,
-          ts: Number(refusal.timestamp),
-          time: clock(refusal.timestamp),
+          ts: refusal.ts,
+          time: clock(String(refusal.ts)),
           tx: refusal.hash.slice(0, 6),
           data: '0x' as `0x${string}`,
           decoded: {
@@ -162,14 +209,22 @@ export function useIndex(vault: Address | null): IndexData {
         })),
       ].sort((a, b) => b.ts - a.ts);
 
-      const snapshot = result.executionQualityDailySnapshots?.[0];
+      const snapshot = result?.executionQualityDailySnapshots?.[0];
 
+      /*
+       * The refusal count never comes from the snapshot. Its `refusals` field is structurally
+       * zero — the index cannot see a reverted transaction — so taking it would publish a zero
+       * that means "not visible from here" as though it meant "never happened", on the one number
+       * this product is judged by.
+       */
       setData({
         source: 'chain',
         tape,
-        stats: snapshot
-          ? { fills: snapshot.fills, refused: snapshot.refusals, medianVsMidBps: snapshot.adverseDeviationP50Bps }
-          : { fills: fills.length, refused: refusals.length },
+        stats: {
+          fills: snapshot?.fills ?? refused?.fills ?? fills.length,
+          refused: refused?.count ?? refusals.length,
+          ...(snapshot ? { medianVsMidBps: snapshot.adverseDeviationP50Bps } : {}),
+        },
       });
     })();
 
