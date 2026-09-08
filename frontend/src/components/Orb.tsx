@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
  * A slowly turning orb, rendered on a fragment shader.
  *
  * Two changes from the version this came from, both about belonging to this page rather than
- * sitting on top of it: the hue is rotated toward brass so it reads as the same product, and the
+ * sitting on top of it: the hue is rotated toward floor so it reads as the same product, and the
  * loop stops when the tab is hidden or the reader has asked for reduced motion. A WebGL context
  * spinning behind a modal nobody is looking at is a cost with no reader on the other end.
  *

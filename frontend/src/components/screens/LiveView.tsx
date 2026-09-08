@@ -186,7 +186,7 @@ export function LiveView({
                     href={addressUrl(reference.feed)}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-brass"
+                    className="hover:text-floor"
                   >
                     {reference.name}
                   </a>
@@ -232,7 +232,7 @@ export function LiveView({
                   <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">{label}</span>
                   <span className="serif text-[15px] text-muted">
                     {value?.split(' ').slice(0, -1).join(' ')}{' '}
-                    <b className="font-mono text-base font-semibold text-brass tabular-nums">
+                    <b className="font-mono text-base font-semibold text-floor tabular-nums">
                       {value?.split(' ').at(-1)}
                     </b>
                   </span>
@@ -253,7 +253,7 @@ export function LiveView({
                     onClick={onEditAgent}
                     aria-label={copy.wallet.changeAgent}
                     title={copy.wallet.changeAgent}
-                    className="cursor-pointer border-0 bg-transparent p-0 text-faint transition-colors hover:text-brass"
+                    className="cursor-pointer border-0 bg-transparent p-0 text-faint transition-colors hover:text-floor"
                   >
                     <Pencil size={12} strokeWidth={1.7} />
                   </button>
@@ -273,7 +273,7 @@ export function LiveView({
                     href={addressUrl(state.delegate)}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium break-all hover:text-brass"
+                    className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium break-all hover:text-floor"
                   >
                     {state.delegate}
                     <ExternalLink size={11} strokeWidth={1.7} className="shrink-0 text-faint" />
@@ -283,7 +283,7 @@ export function LiveView({
               <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
                 {agent.map((line) => (
                   <li key={line} className="text-muted">
-                    <span className="mr-2 text-brass">›</span>
+                    <span className="mr-2 text-floor">›</span>
                     <span className="text-ink">{line}</span>
                   </li>
                 ))}

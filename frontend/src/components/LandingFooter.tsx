@@ -74,7 +74,7 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
               <ul className="mt-3 list-none space-y-2 p-0 text-[12.5px]">
                 {links.map(([label, href]) => (
                   <li key={label}>
-                    <a href={href} target="_blank" rel="noreferrer" className="text-muted hover:text-brass">
+                    <a href={href} target="_blank" rel="noreferrer" className="text-muted hover:text-floor">
                       {label}
                     </a>
                   </li>

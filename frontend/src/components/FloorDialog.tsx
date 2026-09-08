@@ -139,7 +139,7 @@ export function FloorDialog({
           </span>
           <span>
             now{' '}
-            <b className="font-semibold text-brass">{unset ? copy.floor.notSet : `−${current} bps`}</b>
+            <b className="font-semibold text-floor">{unset ? copy.floor.notSet : `−${current} bps`}</b>
           </span>
         </div>
 

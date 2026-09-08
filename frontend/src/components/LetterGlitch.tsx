@@ -61,7 +61,7 @@ export function LetterGlitch({
 
     // The page's own palette, so the texture belongs to the page rather than sitting on top of it.
     const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    const palette = [token('--c-brass'), token('--c-settle'), token('--c-faint'), token('--c-rule')].map(hexToRgb);
+    const palette = [token('--c-floor'), token('--c-settle'), token('--c-faint'), token('--c-rule')].map(hexToRgb);
     const pick = () => palette[Math.floor(Math.random() * palette.length)] as Rgb;
 
     const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

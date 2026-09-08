@@ -158,7 +158,7 @@ export function DeviceSign({
               <>
                 <p className="serif mt-0 text-[14.5px] text-muted">
                   {copy.ceremony.declined} Your floor is still{' '}
-                  <b className="font-mono font-semibold text-brass tabular-nums">{standing}</b>.
+                  <b className="font-mono font-semibold text-floor tabular-nums">{standing}</b>.
                 </p>
                 <Ghost onClick={onBack}>back</Ghost>
               </>
@@ -178,7 +178,7 @@ export function DeviceSign({
             {stage === 'scheduled' && (
               <p className="serif mt-0 text-[14.5px] text-muted">
                 {copy.ceremony.scheduled}{' '}
-                <b className="font-mono font-semibold text-brass tabular-nums">
+                <b className="font-mono font-semibold text-floor tabular-nums">
                   {new Date((scheduledAt ?? 0) * 1000).toLocaleTimeString('en-US')}
                 </b>
                 . Until then the standing floor of{' '}

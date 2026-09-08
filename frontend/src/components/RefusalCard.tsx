@@ -27,7 +27,7 @@ export function RefusalDetail({ entry, decoded }: { entry: Refusal; decoded: Sho
           {vsRef !== null && <span className="ml-2 font-normal text-faint">{vsRef} bps vs ref</span>}
         </dd>
         <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.yourFloor}</dt>
-        <dd className="m-0 font-semibold text-brass">
+        <dd className="m-0 font-semibold text-floor">
           {formatPrice(decoded.floorPrice)} {decoded.gotSymbol}
           {floorVsRef !== null && <span className="ml-2 font-normal text-faint">{floorVsRef} bps</span>}
         </dd>

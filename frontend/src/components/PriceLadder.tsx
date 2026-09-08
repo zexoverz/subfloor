@@ -58,7 +58,7 @@ export function PriceLadder() {
             if (e.key === 'ArrowUp') setPrice((p) => Math.min(TOP, p + 2));
             if (e.key === 'ArrowDown') setPrice((p) => Math.max(BOTTOM, p - 2));
           }}
-          className="relative ml-16 h-[300px] cursor-grab touch-none border-l border-rule outline-none focus-visible:ring-2 focus-visible:ring-brass active:cursor-grabbing"
+          className="relative ml-16 h-[300px] cursor-grab touch-none border-l border-rule outline-none focus-visible:ring-2 focus-visible:ring-floor active:cursor-grabbing"
         >
           {/* Everything under the floor is the zone that cannot settle. */}
           <div
@@ -96,7 +96,7 @@ export function PriceLadder() {
             <button
               key={s.id}
               onClick={() => setPrice(s.price)}
-              className="cursor-pointer rounded-lg border border-rule bg-surface px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-brass hover:text-ink"
+              className="cursor-pointer rounded-lg border border-rule bg-surface px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-floor hover:text-ink"
             >
               {s.label}
             </button>
@@ -125,7 +125,7 @@ export function PriceLadder() {
           <dt className="text-[11px] tracking-[0.08em] text-faint uppercase">vs ref</dt>
           <dd className="m-0 font-medium">{Math.round(((price - REFERENCE) / REFERENCE) * 10_000)} bps</dd>
           <dt className="text-[11px] tracking-[0.08em] text-faint uppercase">Floor</dt>
-          <dd className="m-0 font-medium text-brass">{formatPrice(FLOOR)} USDC</dd>
+          <dd className="m-0 font-medium text-floor">{formatPrice(FLOOR)} USDC</dd>
         </dl>
 
         {refused ? (
@@ -147,17 +147,17 @@ function Line({ price, label, tone }: { price: number; label: string; tone: 'ref
   const floor = tone === 'floor';
   return (
     <div className="absolute inset-x-0" style={{ top: `${toY(price)}%` }}>
-      <div className={floor ? 'h-0 border-t-[3px] border-brass' : 'h-0 border-t border-dashed border-faint'} />
+      <div className={floor ? 'h-0 border-t-[3px] border-floor' : 'h-0 border-t border-dashed border-faint'} />
       <span
         className={`absolute top-0 right-full -translate-y-1/2 pr-2 text-[12px] whitespace-nowrap ${
-          floor ? 'font-semibold text-brass' : 'text-faint'
+          floor ? 'font-semibold text-floor' : 'text-faint'
         }`}
       >
         {formatPrice(price)}
       </span>
       <span
         className={`absolute top-0 left-2 -translate-y-1/2 rounded-lg text-[10px] font-semibold tracking-[0.1em] uppercase ${
-          floor ? 'bg-brass-wash px-1.5 py-0.5 text-brass' : 'text-faint'
+          floor ? 'bg-floor-wash px-1.5 py-0.5 text-floor' : 'text-faint'
         }`}
       >
         {label}

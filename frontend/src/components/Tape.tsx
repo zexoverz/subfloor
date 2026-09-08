@@ -70,7 +70,7 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
         className="tape-arrive cursor-pointer [&>td]:border-b [&>td]:border-rule"
       >
         <td className="px-4 py-1.5 text-left whitespace-nowrap">{entry.time}</td>
-        <td className={`px-4 py-1.5 ${entry.side === 'bought' ? 'text-settle' : 'text-brass'}`}>
+        <td className={`px-4 py-1.5 ${entry.side === 'bought' ? 'text-settle' : 'text-floor'}`}>
           <span className="flex items-center justify-end gap-1.5">
             {entry.side === 'bought' ? (
               <ArrowUpRight size={13} strokeWidth={1.8} />

@@ -20,7 +20,7 @@ export function CardHead({ left, right, icon: Icon }: { left: ReactNode; right?:
   return (
     <div className="flex items-center justify-between gap-3 border-b border-rule bg-sunken px-4 py-2.5 text-[10.5px] tracking-[0.11em] text-faint uppercase">
       <span className="flex items-center gap-2">
-        {Icon && <Icon size={13} strokeWidth={1.6} className="text-brass" />}
+        {Icon && <Icon size={13} strokeWidth={1.6} className="text-floor" />}
         {left}
       </span>
       {right && <span>{right}</span>}
@@ -59,7 +59,7 @@ export function Note({ children, className = '' }: { children: ReactNode; classN
 /** A deliberate simplification, marked on screen rather than buried in a commit message. */
 export function Todo({ children }: { children: ReactNode }) {
   return (
-    <p className="serif mt-4 border-l-2 border-brass bg-brass-wash px-3 py-2 text-[13.5px] leading-relaxed text-ink">
+    <p className="serif mt-4 border-l-2 border-floor bg-floor-wash px-3 py-2 text-[13.5px] leading-relaxed text-ink">
       {children}
     </p>
   );

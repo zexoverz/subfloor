@@ -31,7 +31,7 @@ export function PriceChart({ state }: { state: VaultState }) {
     const rule = cssVar('--c-rule');
     const faint = cssVar('--c-faint');
     const settle = cssVar('--c-settle');
-    const brass = cssVar('--c-brass');
+    const floor = cssVar('--c-floor');
 
     const c = createChart(box.current, {
       autoSize: true,
@@ -70,7 +70,7 @@ export function PriceChart({ state }: { state: VaultState }) {
     // The floor. Brass, solid, labelled — the one line on this chart that is not market data.
     fills.current.createPriceLine({
       price: floorPriceFromBps(state.reference.price, state.floor.maxAdverseBps),
-      color: brass,
+      color: floor,
       lineWidth: 2,
       lineStyle: LineStyle.Solid,
       axisLabelVisible: true,
@@ -80,7 +80,7 @@ export function PriceChart({ state }: { state: VaultState }) {
     // The absolute backstop: what holds if the reference goes quiet.
     fills.current.createPriceLine({
       price: rateToPrice(state.floor.absoluteRate, state.pair.baseDecimals, state.pair.quoteDecimals),
-      color: brass,
+      color: floor,
       lineWidth: 1,
       lineStyle: LineStyle.Dotted,
       axisLabelVisible: false,

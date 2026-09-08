@@ -36,14 +36,14 @@ export function Tile({
   value: number | ReactNode;
   format?: (n: number) => string;
   sub: string;
-  tone?: 'settle' | 'refuse' | 'brass';
+  tone?: 'settle' | 'refuse' | 'floor';
   /** The guarantee is anyone's query, never our claim — so the sentence is made clickable. */
   onQuery?: () => void;
 }) {
   const toneClass =
-    tone === 'settle' ? 'text-settle' : tone === 'refuse' ? 'text-refuse' : tone === 'brass' ? 'text-brass' : '';
+    tone === 'settle' ? 'text-settle' : tone === 'refuse' ? 'text-refuse' : tone === 'floor' ? 'text-floor' : '';
   const changed = useChanged(value);
-  // A refusal pulses red, everything else brass: the colour of a change is the colour of what it
+  // A refusal pulses red, everything else floor: the colour of a change is the colour of what it
   // is. It washes the figure alone — pulsing the whole panel makes the tile look like the thing
   // that changed, when the only thing that changed is one number inside it.
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
@@ -60,7 +60,7 @@ export function Tile({
       {onQuery && (
         <button
           onClick={onQuery}
-          className="mt-0.5 cursor-pointer self-start text-[10.5px] tracking-[0.08em] text-brass uppercase hover:underline"
+          className="mt-0.5 cursor-pointer self-start text-[10.5px] tracking-[0.08em] text-floor uppercase hover:underline"
         >
           run query
         </button>

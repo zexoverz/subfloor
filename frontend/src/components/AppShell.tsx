@@ -56,7 +56,7 @@ export function AppShell({
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button
           onClick={() => onNavigate('landing')}
-          className="cursor-pointer text-[15px] font-semibold tracking-[0.22em] hover:text-brass"
+          className="cursor-pointer text-[15px] font-semibold tracking-[0.22em] hover:text-floor"
         >
           <span className="flex items-center gap-2.5">
             <Mark />

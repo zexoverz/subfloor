@@ -7,7 +7,7 @@ type Props = { children: ReactNode; onClick?: () => void; disabled?: boolean };
  * The affirmative action.
  *
  * Blue, as everywhere in Oku: it is what the application does. Brass is kept for the floor — the
- * owner's own number — so the two never compete. When every button was brass, the one colour that
+ * owner's own number — so the two never compete. When every button was floor, the one colour that
  * was supposed to mean "your decision" meant "a button", and the floor stopped standing out on
  * the screen built around it.
  */
@@ -26,7 +26,7 @@ export function Act({
         wide ? 'w-full' : ''
       } ${
         primary
-          ? 'border-transparent bg-action font-semibold text-white hover:bg-action-hover'
+          ? 'border-transparent bg-action font-semibold text-action-ink hover:bg-action-hover'
           : 'border-rule bg-raise text-ink hover:border-action'
       }`}
     >
@@ -43,10 +43,10 @@ export function Locked({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-lg border border-rule bg-raise px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-brass"
+      className="cursor-pointer rounded-lg border border-rule bg-raise px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-floor"
     >
       <span className="flex items-center gap-2">
-        <KeyRound size={13} strokeWidth={1.7} className="text-brass" />
+        <KeyRound size={13} strokeWidth={1.7} className="text-floor" />
         {children}
       </span>
     </button>

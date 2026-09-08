@@ -21,7 +21,7 @@ export function ProductShot() {
         <div className="flex items-center gap-2 border-b border-rule bg-sunken px-4 py-2.5">
           <span className="flex gap-1.5">
             <span className="size-2 rounded-full bg-refuse/50" />
-            <span className="size-2 rounded-full bg-brass/50" />
+            <span className="size-2 rounded-full bg-floor/50" />
             <span className="size-2 rounded-full bg-settle/50" />
           </span>
           <span className="mx-auto rounded-lg border border-rule bg-surface px-3 py-0.5 text-[10.5px] text-faint">

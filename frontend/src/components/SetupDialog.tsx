@@ -224,7 +224,7 @@ export function SetupDialog({
 
               <Act wide onClick={ledger.connect} disabled={ledger.connecting || !ledger.supported}>
                 <span className="flex items-center justify-center gap-2">
-                  <KeyRound size={14} strokeWidth={1.7} className="text-brass" />
+                  <KeyRound size={14} strokeWidth={1.7} className="text-floor" />
                   {copy.wallet.connectLedger}
                 </span>
               </Act>
@@ -377,7 +377,7 @@ export function SetupDialog({
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
                     {!keysReady && (
-                      <span className="rounded-lg border border-brass/40 bg-brass-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-brass">
+                      <span className="rounded-lg border border-floor/40 bg-floor-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-floor">
                         {copy.onboarding.required}
                       </span>
                     )}

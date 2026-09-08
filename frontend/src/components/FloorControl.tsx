@@ -60,7 +60,7 @@ export function FloorControl({
           if (typed > 0) onChange(toBps(typed, referencePrice));
         }}
         className={`mt-1 w-full border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight outline-none ${
-          tooTight ? 'text-refuse' : 'text-brass'
+          tooTight ? 'text-refuse' : 'text-floor'
         }`}
       />
       <p className="mt-1.5 text-center text-[11px] text-faint">
@@ -75,7 +75,7 @@ export function FloorControl({
         step={DETENT}
         value={bps}
         onChange={(e) => onChange(Number(e.target.value))}
-        className={`mt-3 w-full ${tooTight ? 'accent-refuse' : 'accent-brass'}`}
+        className={`mt-3 w-full ${tooTight ? 'accent-refuse' : 'accent-floor'}`}
       />
       {fillsBps && (
         <p className={`mt-2 text-center text-[11px] ${tooTight ? 'text-refuse' : 'text-muted'}`}>
@@ -87,7 +87,7 @@ export function FloorControl({
 
       <div className="flex justify-between text-[10.5px] text-faint">
         <span>safer · −{MIN_BPS} bps</span>
-        <span className={`font-medium ${tooTight ? 'text-refuse' : 'text-brass'}`}>−{bps} bps</span>
+        <span className={`font-medium ${tooTight ? 'text-refuse' : 'text-floor'}`}>−{bps} bps</span>
         <span>−{MAX_BPS} bps · riskier</span>
       </div>
     </div>

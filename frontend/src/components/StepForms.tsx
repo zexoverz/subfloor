@@ -51,7 +51,7 @@ export function AmountRow({
         type="button"
         onClick={() => balance !== null && onChange(String(balance))}
         disabled={!balance}
-        className="shrink-0 cursor-pointer rounded-lg border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-brass hover:text-brass disabled:cursor-not-allowed disabled:opacity-40"
+        className="shrink-0 cursor-pointer rounded-lg border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-floor hover:text-floor disabled:cursor-not-allowed disabled:opacity-40"
       >
         {copy.wallet.max}
       </button>
@@ -92,7 +92,7 @@ export function AddressField({
       </label>
       {/* The mark sits inside the field: which key this is matters more than the field's border. */}
       <div
-        className={`mt-1.5 flex items-center gap-2 rounded-lg border bg-sunken px-3 focus-within:border-brass ${
+        className={`mt-1.5 flex items-center gap-2 rounded-lg border bg-sunken px-3 focus-within:border-floor ${
           invalid ? 'border-refuse' : 'border-rule'
         }`}
       >
@@ -116,7 +116,7 @@ export function AddressField({
           type="button"
           onClick={action.onClick}
           disabled={action.disabled}
-          className="mt-1 cursor-pointer text-[11px] text-brass underline underline-offset-4 disabled:cursor-not-allowed disabled:text-faint disabled:no-underline"
+          className="mt-1 cursor-pointer text-[11px] text-floor underline underline-offset-4 disabled:cursor-not-allowed disabled:text-faint disabled:no-underline"
         >
           {action.label}
         </button>

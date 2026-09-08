@@ -7,7 +7,7 @@ import { HeroAnnotations } from './HeroAnnotations.tsx';
  * fixed thing in the picture and in the product. Everything above it is the attempt, and it is the
  * only part that moves.
  *
- * `RAIL_TOP` is measured off the image, not guessed: the brass band occupies rows 779–846 of 1024,
+ * `RAIL_TOP` is measured off the image, not guessed: the floor band occupies rows 779–846 of 1024,
  * so it begins at 76.1%. The first attempt cut at 72% and left the debris stranded in the static
  * layer — fragments hanging over the rail with no arrow to explain them. Change the drawing and
  * this number has to be measured again.
@@ -41,7 +41,7 @@ export function HeroStrike() {
       {/* The attempt: descends into the frame, holds, fades, repeats. */}
       <img
         src="/hero.png"
-        alt="A falling fill stops dead against a brass floor and shatters upward"
+        alt="A falling fill stops dead against a floor floor and shatters upward"
         onError={hide}
         // `inset-0` would stretch this copy to the container's height and scale it a fraction
         // differently from the static one, which misregisters the two by a subpixel and prints as

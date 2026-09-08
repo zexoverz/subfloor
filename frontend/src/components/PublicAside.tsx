@@ -71,7 +71,7 @@ export function PublicAside({
                     href={addressUrl(address)}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 hover:text-brass"
+                    className="flex items-center gap-1 hover:text-floor"
                   >
                     {address.slice(0, 6)}…{address.slice(-4)}
                     <ExternalLink size={10} strokeWidth={1.7} className="text-faint" />

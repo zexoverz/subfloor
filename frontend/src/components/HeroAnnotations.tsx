@@ -5,7 +5,7 @@ import { copy } from '../copy.ts';
  * did about it. The picture is static and the argument is a sequence, so the labels carry the beat
  * the drawing cannot.
  *
- * Red is the attempted price and brass is the floor, exactly as in the refusal card on the desk —
+ * Red is the attempted price and floor is the floor, exactly as in the refusal card on the desk —
  * the colours mean the same thing here as they do there, or they mean nothing anywhere.
  */
 export function HeroAnnotations() {
@@ -19,7 +19,7 @@ export function HeroAnnotations() {
       </span>
 
       <span
-        className="hero-bubble absolute rounded-lg border border-brass/45 bg-brass-wash px-2.5 py-1.5 text-[11px] leading-tight text-brass shadow-card"
+        className="hero-bubble absolute rounded-lg border border-floor/45 bg-floor-wash px-2.5 py-1.5 text-[11px] leading-tight text-floor shadow-card"
         style={{ left: '46%', top: '58%', animationDelay: '1.9s' }}
       >
         <b className="block font-semibold">{copy.refusal.heading}</b>

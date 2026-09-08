@@ -1,58 +1,63 @@
 @import "tailwindcss";
 
 /*
- * The palette is Oku's, because SUBFLOOR is built by the team that ships Oku and reading like a
- * different company is a cost with nothing bought. Values are lifted from `trade/src/style.css`
- * rather than eyeballed from a screenshot, so the two stay in step: gray-1000 is the canvas,
- * gray-900 and gray-800 the two surfaces, blue-450 the action, and green-300/red-300 the two
- * outcomes.
+ * The palette is the logomark's, sampled out of the PNG rather than chosen beside it — #041224
+ * and #061c34 are its outlines, #113860 and #18406e its bodies, #0ee6ea its one light. Guessing
+ * had put the cyan two steps too blue. The mark is an S half-submerged — above the
+ * waterline navy, below it cyan — which is the product in one glyph, so the interface uses the
+ * same two colours for the same two things.
  *
- * Dark first. Oku has no light mode, the demo is filmed dark, and a light default meant whoever
- * opened the link on a light machine saw a product that looks like neither.
+ * `floor` is cyan and means one thing: the number the owner set. It was called brass, and brass
+ * was also the colour of every button, so the one colour meant to say "your decision" ended up
+ * saying "this is clickable" — the floor stopped standing out on the screen built around it.
  *
- * One thing does not come from Oku: brass. It marks the owner's own number — the floor — and it
- * is the one colour on the board that means a single thing. Blue is what the app does; brass is
- * what the owner decided.
+ * Navy, not neutral black. The canvas is the water the mark sits in.
  */
 :root {
-  --c-ground: #0b0b0e;
-  --c-surface: #0e111a;
-  --c-sunken: #11151f;
-  --c-raise: #141b2b;
-  --c-ink: #ffffff;
-  --c-muted: #99a1bd;
-  --c-faint: #6f7ba4;
-  --c-rule: #202c46;
-  --c-brass: #dda53f;
-  --c-brass-wash: rgba(221, 165, 63, 0.12);
-  --c-action: #1561ef;
-  --c-action-hover: #4c82fb;
+  --c-ground: #041224;
+  --c-surface: #061c34;
+  --c-sunken: #04162a;
+  --c-raise: #113860;
+  --c-ink: #e9f1fb;
+  --c-muted: #93a9c4;
+  --c-faint: #5f7ba1;
+  --c-rule: #18406e;
+  --c-floor: #0ee6ea;
+  --c-floor-wash: rgba(14, 230, 234, 0.13);
+  /*
+   * The action is the same cyan, filled rather than drawn. One accent, two forms: a solid cyan
+   * button is what the app does, cyan type and cyan rules are what the owner set. Adding a second
+   * hue for buttons would have put a colour on screen the mark does not contain.
+   */
+  --c-action: #0ee6ea;
+  --c-action-ink: #041224;
+  --c-action-hover: #5cf2f5;
   --c-settle: #40b66b;
   --c-settle-wash: rgba(64, 182, 107, 0.16);
   --c-refuse: #fa2b39;
   --c-refuse-wash: rgba(250, 43, 57, 0.14);
-  --c-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 36px -20px rgba(0, 0, 0, 0.8);
+  --c-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 36px -20px rgba(0, 0, 0, 0.85);
 }
 
-/* Kept, but no longer the default: someone reading the tape in daylight still gets a page. */
 :root[data-theme='light'] {
-  --c-ground: #edeff2;
+  --c-ground: #eef2f7;
   --c-surface: #ffffff;
-  --c-sunken: #e4e7ec;
-  --c-raise: #f7f8fa;
-  --c-ink: #12161c;
-  --c-muted: #5b6673;
-  --c-faint: #98a2ae;
-  --c-rule: #d3d8df;
-  --c-brass: #b57a1e;
-  --c-brass-wash: #f0e4cc;
-  --c-action: #1267d6;
-  --c-action-hover: #1561ef;
+  --c-sunken: #e2e8f0;
+  --c-raise: #f6f9fc;
+  --c-ink: #0a1524;
+  --c-muted: #4a5c73;
+  --c-faint: #8496ad;
+  --c-rule: #cdd8e5;
+  --c-floor: #0a7f88;
+  --c-floor-wash: rgba(10, 127, 136, 0.12);
+  --c-action: #0a7f88;
+  --c-action-ink: #ffffff;
+  --c-action-hover: #12a0bd;
   --c-settle: #209853;
   --c-settle-wash: rgba(32, 152, 83, 0.12);
   --c-refuse: #c41926;
   --c-refuse-wash: rgba(196, 25, 38, 0.1);
-  --c-shadow: 0 1px 2px rgba(18, 22, 28, 0.05), 0 10px 30px -18px rgba(18, 22, 28, 0.3);
+  --c-shadow: 0 1px 2px rgba(10, 21, 36, 0.05), 0 10px 30px -18px rgba(10, 21, 36, 0.3);
 }
 /* `inline` keeps the var reference at the use site, so one class follows the theme. */
 @theme inline {
@@ -64,10 +69,11 @@
   --color-muted: var(--c-muted);
   --color-faint: var(--c-faint);
   --color-rule: var(--c-rule);
-  --color-brass: var(--c-brass);
-  --color-brass-wash: var(--c-brass-wash);
+  --color-floor: var(--c-floor);
+  --color-floor-wash: var(--c-floor-wash);
   --color-action: var(--c-action);
   --color-action-hover: var(--c-action-hover);
+  --color-action-ink: var(--c-action-ink);
   --color-settle: var(--c-settle);
   --color-settle-wash: var(--c-settle-wash);
   --color-refuse: var(--c-refuse);
@@ -109,11 +115,11 @@ body {
 /*
  * A new row announces itself and then gets out of the way. The tape is the one place on the desk
  * where something happens without the owner doing anything, so arrival has to be visible without
- * being an alert — brass wash fading out, once, on mount.
+ * being an alert — a cyan wash fading out, once, on mount.
  */
 @keyframes tape-arrive {
   from {
-    background-color: var(--c-brass-wash);
+    background-color: var(--c-floor-wash);
   }
   to {
     background-color: transparent;
@@ -166,7 +172,7 @@ body {
 }
 
 .value-pulse {
-  --pulse-wash: var(--c-brass-wash);
+  --pulse-wash: var(--c-floor-wash);
   animation: value-pulse 0.9s ease-out;
 }
 
@@ -279,7 +285,7 @@ body {
 
 /*
  * The engraving was drawn for warm paper. On the dark ground its ink greys sink into the
- * background, so they are lifted — brass included, which only gets warmer for it.
+ * background, so they are lifted — the floor's cyan included, which only gets brighter for it.
  */
 :root:not([data-theme='light']) .hero-art img,
 :root[data-theme='dark'] .hero-art img {

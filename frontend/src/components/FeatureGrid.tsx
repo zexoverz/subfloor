@@ -15,7 +15,7 @@ import { decodeRefusal } from '../lib/refusal.ts';
 function Feature({ label, title, children }: { label: string; title: string; children?: ReactNode }) {
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
-      <span className="text-[10.5px] font-semibold tracking-[0.13em] text-brass uppercase">{label}</span>
+      <span className="text-[10.5px] font-semibold tracking-[0.13em] text-floor uppercase">{label}</span>
       <h3 className="m-0 max-w-[22ch] text-[17px] leading-snug font-semibold tracking-tight">{title}</h3>
       {children && <div className="mt-auto pt-2">{children}</div>}
     </div>
