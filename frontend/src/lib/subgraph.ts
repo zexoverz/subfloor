@@ -60,13 +60,27 @@ const FILLS = `
   }
 `;
 
+/**
+ * Every field here is optional on purpose.
+ *
+ * GraphQL omits a null field from the response rather than sending `null`, so a column the index
+ * has not filled in simply is not there — and reading `swap.tokensIn[0]` off an absent array threw
+ * inside the async block, killed it, and left the board on fixtures with nothing on screen or in
+ * the console to say why. The schema having a field is not a promise that a row carries it.
+ */
 type FillRow = {
   executionRate: string;
-  referencePrice: string;
+  referencePrice?: string;
   adverseDeviationBps: number;
-  floorAtFill: string;
+  floorAtFill?: string | null;
   timestamp: string;
-  swap: { hash: string; tokensIn: string[]; amountsIn: string[]; tokensOut: string[]; amountsOut: string[] };
+  swap: {
+    hash: string;
+    tokensIn?: string[] | null;
+    amountsIn?: string[] | null;
+    tokensOut?: string[] | null;
+    amountsOut?: string[] | null;
+  };
 };
 
 /**
@@ -173,10 +187,12 @@ export function useIndex(vault: Address | null): IndexData {
 
       const tape: TapeEntry[] = [
         ...fills.map((fill: FillRow) => {
-          const gave = fill.swap.tokensIn[0] ?? WETH;
-          const got = fill.swap.tokensOut[0] ?? USDC;
-          const amount = Number(formatUnits(BigInt(fill.swap.amountsIn[0] ?? '0'), decimalsOf(gave)));
+          // The pair this deployment trades, when the row does not name one.
+          const gave = fill.swap.tokensIn?.[0] ?? WETH;
+          const got = fill.swap.tokensOut?.[0] ?? USDC;
+          const amount = Number(formatUnits(BigInt(fill.swap.amountsIn?.[0] ?? '0'), decimalsOf(gave)));
           const rate = Number(fill.executionRate) / 1e18;
+          const floorAt = Number(fill.floorAtFill ?? 0);
           return {
             kind: 'fill' as const,
             ts: Number(fill.timestamp),
@@ -184,7 +200,14 @@ export function useIndex(vault: Address | null): IndexData {
             side: gave.toLowerCase() === WETH.toLowerCase() ? ('sold' as const) : ('bought' as const),
             amount,
             price: rate * 10 ** (decimalsOf(gave) - decimalsOf(got)),
-            bpsAboveFloor: Math.max(0, Math.round(((Number(fill.executionRate) - Number(fill.floorAtFill)) / Number(fill.floorAtFill)) * 10_000)),
+            /*
+             * Undefined, not zero, when the index has no floor for the fill. Dividing by an absent
+             * floor gives Infinity, and rendering that as "0 bps above your floor" would put the
+             * worst possible number on the screen the product is named after.
+             */
+            bpsAboveFloor: floorAt
+              ? Math.max(0, Math.round(((Number(fill.executionRate) - floorAt) / floorAt) * 10_000))
+              : undefined,
             vsReferenceBps: fill.adverseDeviationBps,
             tx: fill.swap.hash.slice(0, 6),
           };
@@ -226,7 +249,15 @@ export function useIndex(vault: Address | null): IndexData {
           ...(snapshot ? { medianVsMidBps: snapshot.adverseDeviationP50Bps } : {}),
         },
       });
-    })();
+    })().catch((cause) => {
+      /*
+       * A throw in here used to end the effect and nothing else: no row, no message, no console
+       * entry, and a board that looked exactly like one with no data. That is how a missing
+       * `tokensIn` — a field the schema has and the row did not — kept the tape on fixtures while
+       * the index was answering perfectly.
+       */
+      console.error('[index] the reader failed while shaping the response', cause);
+    });
 
     return () => {
       live = false;

@@ -89,8 +89,10 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
         </td>
         <td className="py-1.5 pr-4 pl-2">
           <span className="flex items-center gap-2">
-            <FillBar bpsAboveFloor={entry.bpsAboveFloor} />
-            <span className="w-9 text-right font-semibold text-settle">+{entry.bpsAboveFloor}</span>
+            <FillBar bpsAboveFloor={entry.bpsAboveFloor ?? 0} />
+            <span className="w-9 text-right font-semibold text-settle">
+              {entry.bpsAboveFloor === undefined ? <span className="text-faint">—</span> : `+${entry.bpsAboveFloor}`}
+            </span>
           </span>
         </td>
       </tr>
@@ -108,7 +110,9 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
                 {entry.vsCexMidBps === undefined ? '—' : formatBps(entry.vsCexMidBps)}
               </dd>
               <dt className="text-faint">clear of floor</dt>
-              <dd className="m-0 font-medium text-settle">+{entry.bpsAboveFloor} bps</dd>
+              <dd className="m-0 font-medium text-settle">
+                {entry.bpsAboveFloor === undefined ? <span className="text-faint">—</span> : `+${entry.bpsAboveFloor} bps`}
+              </dd>
               <dt className="text-faint">tx</dt>
               <dd className="m-0 font-medium">{entry.tx}…</dd>
             </dl>

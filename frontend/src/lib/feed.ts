@@ -111,9 +111,15 @@ export function useSimulatedFeed(base: VaultState): { state: VaultState; source:
         ...base.stats,
         fills: base.stats.fills + extra.filter((e) => e.kind === 'fill').length,
         refused: base.stats.refused + extra.filter((e) => e.kind === 'refusal').length,
-        worstFillAboveFloorBps: fills.length
-          ? Math.min(...fills.map((e) => e.bpsAboveFloor))
-          : base.stats.worstFillAboveFloorBps,
+        /*
+         * Only fills whose distance from the floor is known. A fill the index recorded without a
+         * floor is not a fill at zero — including it as one would report the worst possible
+         * execution on a row that never said anything about the floor at all.
+         */
+        worstFillAboveFloorBps: (() => {
+          const known = fills.map((e) => e.bpsAboveFloor).filter((b): b is number => b !== undefined);
+          return known.length ? Math.min(...known) : base.stats.worstFillAboveFloorBps;
+        })(),
       },
     };
   }, [base, extra, simulated]);

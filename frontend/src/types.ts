@@ -67,7 +67,12 @@ export type Fill = {
   side: 'sold' | 'bought';
   amount: number;
   price: number;
-  bpsAboveFloor: number;
+  /**
+   * Undefined when the index recorded the fill without a floor to compare it against. The tape
+   * shows a dash there rather than a number: a fill whose distance from the floor is unknown is
+   * not a fill that was zero away from it.
+   */
+  bpsAboveFloor?: number;
   /** Against the reference at that block. Undefined until that read exists — never guessed. */
   vsReferenceBps?: number;
   /** Markout: where the reference sat 30s after the fill. The honest measure of whether it was good. */
