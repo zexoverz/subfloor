@@ -762,6 +762,26 @@ body {
   background: color-mix(in srgb, var(--c-faint) 30%, transparent);
 }
 
+/*
+ * The page must not scroll behind an open modal.
+ *
+ * `showModal()` makes the page inert to clicks and to the keyboard, and it is easy to assume it
+ * does the same for the wheel. It does not: the document keeps scrolling under the dialog, so the
+ * sheet — which centres itself in the viewport — slid off the top of the screen while the board
+ * moved behind it.
+ *
+ * `:has` rather than a class toggled from every dialog, because there are three of them and a
+ * fourth would have to remember. The gutter is reserved on <html> so removing the scrollbar does
+ * not shift the whole page sideways at the moment the sheet opens.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
 /* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is
    nearly white, so the backdrop came out as a pale wash over a dark page. */
 /* Scrolls without drawing a track. Used by the panel inside a fixed-height sheet as well as the

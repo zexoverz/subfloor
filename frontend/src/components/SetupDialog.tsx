@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { isAddress } from 'viem';
 import { Check, ChevronDown, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
@@ -20,8 +20,6 @@ import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
 // Lazy, like every other heavy thing here: a WebGL library is not something a visitor who never
-// opens this sheet should have paid to download.
-const Orb = lazy(() => import('./Orb.tsx').then((m) => ({ default: m.Orb })));
 import type { Wallet } from '../lib/wallet.ts';
 import type { Screen, VaultState } from '../types.ts';
 
@@ -201,26 +199,43 @@ export function SetupDialog({
         * and every label wrapped, which is a worse outcome than no orb at all.
         */}
       <div className="grid h-full md:grid-cols-[300px_minmax(380px,1fr)]">
-        <div className="hidden border-r border-rule bg-sunken md:block">
-          <div className="flex h-full flex-col gap-6 overflow-hidden p-6">
-            {/*
-              * The word, not the mark. At this size inside a ring that big the two shapes lose
-              * their relationship and read as a scribble; the name survives being small and says
-              * the same thing.
-              */}
-            <div className="relative aspect-square w-full">
-              <Suspense fallback={null}>{open && <Orb />}</Suspense>
-              <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                <Wordmark height={16} />
-              </div>
-            </div>
+        {/*
+          * The rail is the drawing, full bleed, with the sequence over its dark half.
+          *
+          * It replaced a WebGL orb, and the orb's own note said the honest thing about itself: it
+          * carried nothing, every number was in the column on the right. This carries nothing
+          * either — but it costs 72KB of image rather than a lazy WebGL chunk and a canvas that
+          * runs for as long as the sheet is open.
+          *
+          * Anchored at 38% across rather than centred: the rail is far taller than the picture is
+          * wide, so `cover` crops hard from the sides, and centring cut the mascot in half to keep
+          * empty water on both edges.
+          */}
+        <div className="relative hidden overflow-hidden border-r border-rule bg-sunken md:block">
+          <img
+            src="/setup-scene.webp"
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-cover select-none"
+            style={{ objectPosition: '38% 22%' }}
+          />
+          {/*
+            * The scrim is a gradient, not a flat wash: the top of the picture is the part worth
+            * seeing and the bottom is where the words go, so it darkens only where it has to.
+            */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(0,14,36,0.05) 0%, rgba(0,14,36,0.35) 40%, rgba(0,14,36,0.92) 62%, rgba(0,14,36,0.97) 100%)',
+            }}
+          />
 
-            {/*
-              * The sequence belongs beside the form rather than under the button. It answers "what
-              * am I about to do" while the form is being filled in, which is when that question is
-              * asked — under the action it was answering a question already committed to.
-              */}
-            <p className="m-0 text-center text-[11px] tracking-[0.16em] text-floor uppercase">
+          <div className="relative flex h-full flex-col justify-end gap-5 p-6">
+            <Wordmark height={18} />
+
+            <p className="m-0 text-[11px] tracking-[0.16em] text-floor uppercase">
               {copy.onboarding.tagline}
             </p>
 
@@ -236,7 +251,7 @@ export function SetupDialog({
                 {copy.onboarding.doing}
               </li>
               {ceremony.steps.map((step, i) => (
-                <li key={step.id} className={`flex items-center gap-2.5 ${step.done ? 'text-settle' : 'text-muted'}`}>
+                <li key={step.id} className={`flex items-center gap-2.5 ${step.done ? 'text-settle' : 'text-ink'}`}>
                   <span
                     className={`grid size-[21px] shrink-0 place-items-center rounded-full border text-[10px] font-semibold ${
                       step.done ? 'border-settle text-settle' : 'border-floor/45 text-floor'
