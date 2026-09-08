@@ -8,7 +8,7 @@ description: Query realized execution quality, price floors and decoded SwapVM s
 A public index of 1inch Aqua built on Messari's DEX Aggregator standardized schema, extended with
 what Aqua needs and the venue does not record.
 
-Endpoint: `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.4`
+Endpoint: `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0`
 
 ## What it answers that nothing else does
 
