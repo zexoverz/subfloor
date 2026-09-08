@@ -91,10 +91,18 @@ const SNAPSHOT = `
     }
 `;
 
+/*
+ * A hundred, not twenty-four.
+ *
+ * The tape shows a screenful and scrolls; the chart draws all of them at once, and two dozen
+ * points make a shape too short to read a distribution from. The venue has two hundred.
+ */
+const HISTORY = 100;
+
 /** This vault's own trading. */
 const MINE = `
   query Fills($maker: Bytes!) {
-    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $maker }) {
+    fillQualities(first: ${HISTORY}, orderBy: timestamp, orderDirection: desc, where: { maker: $maker }) {
 ${FILL_FIELDS}    }
 ${SNAPSHOT}  }
 `;
@@ -102,7 +110,7 @@ ${SNAPSHOT}  }
 /** Everything that settled here, whoever made it. */
 const EVERY = `
   query Fills {
-    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc) {
+    fillQualities(first: ${HISTORY}, orderBy: timestamp, orderDirection: desc) {
 ${FILL_FIELDS}    }
 ${SNAPSHOT}  }
 `;

@@ -61,17 +61,51 @@ function EmptyTape({ line }: { line: string }) {
  * whole product is read from. Waiting looks like waiting.
  */
 function SkeletonRows() {
+  /*
+   * One block per cell, shaped like the thing that will land in it — an identity column gets a
+   * disc and two bars, a numeric column gets one short bar hard against the right edge. A single
+   * wide bar per row was cheaper to write and promised a layout the table does not have, so the
+   * rows jumped into a different shape the moment they arrived.
+   *
+   * The widths vary on the row index rather than at random, so the same skeleton draws twice the
+   * same way and nothing shifts between renders.
+   */
+  const IDENTITY = [88, 76, 92, 80];
+  const NUMBER = [56, 48, 62, 52];
+
   return (
     <>
-      {Array.from({ length: 8 }, (_, i) => (
-        <tr key={i} className="border-b border-rule/40">
-          <td colSpan={8} className="py-2.5">
-            <span
-              className="block h-3 animate-pulse rounded bg-rule/60"
-              // Uneven widths, so it reads as a tape loading rather than a progress bar.
-              style={{ width: `${88 - (i % 4) * 9}%`, animationDelay: `${i * 90}ms` }}
-            />
-          </td>
+      {Array.from({ length: 12 }, (_, row) => (
+        <tr key={row} className="border-b border-rule/40">
+          {Array.from({ length: 8 }, (_, col) => {
+            const wide = col === 0 || col === 2 || col === 3;
+            const arrow = col === 1;
+            const width = (wide ? IDENTITY[(row + col) % 4] : NUMBER[(row + col) % 4]) ?? 64;
+            return (
+              <td key={col} className="px-4 py-3">
+                <span
+                  className={`flex items-center gap-2 ${wide ? '' : 'justify-end'}`}
+                  style={{ animationDelay: `${(row * 8 + col) * 28}ms` }}
+                >
+                  {wide && <span className="size-[22px] shrink-0 animate-pulse rounded-full bg-rule/70" />}
+                  {!arrow && (
+                    <span className="flex flex-col gap-1">
+                      <span
+                        className="block h-2.5 animate-pulse rounded bg-rule/70"
+                        style={{ width: `${width}px`, animationDelay: `${(row * 8 + col) * 28}ms` }}
+                      />
+                      {wide && (
+                        <span
+                          className="block h-2 animate-pulse rounded bg-rule/45"
+                          style={{ width: `${width * 0.55}px`, animationDelay: `${(row * 8 + col) * 28 + 90}ms` }}
+                        />
+                      )}
+                    </span>
+                  )}
+                </span>
+              </td>
+            );
+          })}
         </tr>
       ))}
     </>

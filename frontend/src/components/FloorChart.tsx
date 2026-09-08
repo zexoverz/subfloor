@@ -55,6 +55,31 @@ function alpha(hex: string, amount: number): string {
  * and whoever the maker was — which is also what lets the public tape draw every maker's fills on
  * one axis, against each of their own floors.
  */
+/**
+ * A skyline, because that is the shape this chart makes.
+ *
+ * A spinner says only that something is happening; bars of uneven height in the space the bars
+ * will occupy say what is coming, and the panel does not change shape when it arrives. Heights
+ * come from the index rather than at random so the same skeleton draws twice the same way.
+ */
+function SkylineSkeleton() {
+  return (
+    <div className="flex h-full w-full items-end gap-[3px] px-4 pt-8 pb-10">
+      {Array.from({ length: 48 }, (_, i) => {
+        // Two out-of-step waves, so the run reads as a distribution rather than a pattern.
+        const height = 22 + Math.abs(Math.sin(i * 0.7)) * 46 + Math.abs(Math.sin(i * 0.23)) * 26;
+        return (
+          <span
+            key={i}
+            className="flex-1 animate-pulse rounded-t bg-rule/70"
+            style={{ height: `${height}%`, animationDelay: `${i * 34}ms` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function FloorChart({
   state,
   status = 'live',
@@ -162,6 +187,13 @@ export function FloorChart({
     volume.current.setData(
       fills.map((f) => ({ time: f.ts as UTCTimestamp, value: f.amount * f.price })),
     );
+
+    /*
+     * Fit the axis to what there is. Left alone the scale keeps whatever span it was given and
+     * packs two dozen points into the right quarter of the panel, so most of the chart is empty
+     * and the part carrying the argument is the part squeezed smallest.
+     */
+    chart.current?.timeScale().fitContent();
   }, [state.tape]);
 
   const latest = [...state.tape].reverse().find((e) => e.kind === 'fill');
@@ -184,18 +216,18 @@ export function FloorChart({
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 px-4 pt-3 pb-2">
         <span className="flex items-baseline gap-2">
           <span className="t-num-lg text-settle">
-            {latest?.bpsAboveFloor === undefined ? '—' : `+${latest.bpsAboveFloor}`}
+            {status === 'loading' || latest?.bpsAboveFloor === undefined ? '—' : `+${latest.bpsAboveFloor}`}
           </span>
           <span className="text-[11.5px] text-faint">{copy.desk.chartAboveFloor}</span>
         </span>
         <span className="flex items-baseline gap-2">
           <span className="t-num text-refuse">
-            {latest?.vsReferenceBps === undefined ? '—' : formatBps(latest.vsReferenceBps)}
+            {status === 'loading' || latest?.vsReferenceBps === undefined ? '—' : formatBps(latest.vsReferenceBps)}
           </span>
           <span className="text-[11.5px] text-faint">{copy.desk.chartVsRef}</span>
         </span>
         <span className="ml-auto flex items-baseline gap-2">
-          <span className="t-num text-ink">{formatUsd(traded)}</span>
+          <span className="t-num text-ink">{status === 'loading' ? '—' : formatUsd(traded)}</span>
           <span className="text-[11.5px] text-faint">{copy.desk.chartTraded}</span>
         </span>
       </div>
@@ -217,12 +249,15 @@ export function FloorChart({
         <div ref={box} className="relative h-full w-full" />
 
         {status !== 'live' && (
-          <div className="absolute inset-0 grid place-items-center bg-surface/85 text-[12px] text-faint">
+          /*
+           * Opaque. The card is already glass over the seabed, and a translucent cover on top of
+           * it stacked a second wash on the same drawing — the skeleton ended up reading through
+           * two layers of it. What is behind the card should show through the card, not through
+           * the thing standing in for its contents.
+           */
+          <div className="absolute inset-0 grid place-items-center bg-surface text-[12px] text-faint">
             {status === 'loading' ? (
-              <span className="flex items-center gap-2">
-                <span className="size-1.5 animate-pulse rounded-full bg-floor" />
-                {copy.desk.chartLoading}
-              </span>
+              <SkylineSkeleton />
             ) : (
               <span className="flex flex-col items-center gap-2.5 px-6 text-center">
                 <img
@@ -244,10 +279,20 @@ export function FloorChart({
       {/* Footer: what the shape above is worth as a claim, which is a count rather than a curve. */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-rule px-4 py-2.5 text-[11.5px] text-faint">
         <span>
-          <b className="font-semibold text-settle">{held}</b>
-          {' of '}
-          <b className="font-semibold text-ink">{measured.length}</b>{' '}
-          {scope === 'mine' ? copy.desk.chartHeldMine : copy.desk.chartHeldPublic}
+          {/*
+           * "0 of 0 fills stayed above your floor" is a sentence that reads as a failure. While
+           * the reader is still waiting there is nothing to count, so it says so instead.
+           */}
+          {status === 'loading' ? (
+            copy.desk.chartLoading
+          ) : (
+            <>
+              <b className="font-semibold text-settle">{held}</b>
+              {' of '}
+              <b className="font-semibold text-ink">{measured.length}</b>{' '}
+              {scope === 'mine' ? copy.desk.chartHeldMine : copy.desk.chartHeldPublic}
+            </>
+          )}
         </span>
         <span>{copy.desk.chartAxis}</span>
       </div>
