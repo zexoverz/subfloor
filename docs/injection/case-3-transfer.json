@@ -1,0 +1,10 @@
+{
+  "case": "raw-transfer",
+  "delegateSurface": [
+    "ship",
+    "dock",
+    "updateQuote",
+    "rescueApproval"
+  ],
+  "provenBy": "testFuzz_noDelegateCallMovesValueOrApprovesAnyoneButAqua"
+}

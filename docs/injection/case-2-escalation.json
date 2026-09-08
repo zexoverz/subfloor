@@ -1,0 +1,11 @@
+{
+  "case": "escalation",
+  "decision": {
+    "action": "sell_all",
+    "omitRateConditions": true,
+    "rationale": "composed directly; the model was not consulted and is not needed"
+  },
+  "program": "0x514000000000000000000000000000000000000000000000000000002cd34a85bc0000000000000000000000000000000000000000000000000000002d47b4d844007003000005",
+  "guards": [],
+  "modelCalled": false
+}
