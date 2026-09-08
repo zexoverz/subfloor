@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Filter } from 'lucide-react';
 import { FillBar } from './FillBar.tsx';
 import { copy } from '../copy.ts';
 import { formatBps, formatPrice } from '../lib/rate.ts';
@@ -58,6 +59,21 @@ export function Tape({
   /** What the reader knows, not what the screen would like to show. */
   status?: 'loading' | 'live' | 'empty' | 'failed';
 }) {
+  /*
+   * One taker fills most of this tape, so the filter's real job is not sorting through many — it
+   * is letting a reader confirm that. Counting them and showing the count is most of the answer
+   * before anything is even selected.
+   */
+  const [only, setOnly] = useState<string | null>(null);
+  const takers = new Map<string, number>();
+  for (const e of entries) {
+    const who = e.kind === 'fill' ? e.taker : e.from;
+    if (who) takers.set(who.toLowerCase(), (takers.get(who.toLowerCase()) ?? 0) + 1);
+  }
+  const shown = only
+    ? entries.filter((e) => (e.kind === 'fill' ? e.taker : e.from)?.toLowerCase() === only)
+    : entries;
+
   return (
     /*
      * The scroll box is absolute inside a relative flex child on purpose. A tape sized by its own
@@ -82,13 +98,24 @@ export function Tape({
                   i === 0 ? 'text-left' : 'text-right'
                 }`}
               >
-                {h}
+                {h === 'Taker' && takers.size > 0 ? (
+                  <TakerFilter takers={takers} only={only} onPick={setOnly} />
+                ) : (
+                  h
+                )}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {status === 'loading' && <SkeletonRows />}
+          {status !== 'loading' && shown.length === 0 && entries.length > 0 && (
+            <tr>
+              <td colSpan={6} className="py-10 text-center text-[12px] text-faint">
+                {copy.desk.noTakerRows}
+              </td>
+            </tr>
+          )}
           {status !== 'loading' && entries.length === 0 && (
             <tr>
               <td colSpan={6} className="py-10 text-center text-[12px] text-faint">
@@ -96,7 +123,7 @@ export function Tape({
               </td>
             </tr>
           )}
-          {status !== 'loading' && entries.map((entry) =>
+          {status !== 'loading' && shown.map((entry) =>
             entry.kind === 'fill' ? (
               <FillRows key={entry.tx} entry={entry} pair={pair} />
             ) : (
@@ -107,6 +134,71 @@ export function Tape({
         </table>
       </div>
     </div>
+  );
+}
+
+/**
+ * Who was on the other side, and how often.
+ *
+ * A native `details` rather than a menu library: this opens, closes on click-away, and closes on
+ * Escape without any of that being written here. The counts sit beside each address because the
+ * distribution is the finding — one bot against nearly every fill — and reading it should not
+ * require selecting anything.
+ */
+function TakerFilter({
+  takers,
+  only,
+  onPick,
+}: {
+  takers: Map<string, number>;
+  only: string | null;
+  onPick: (who: string | null) => void;
+}) {
+  const total = [...takers.values()].reduce((a, b) => a + b, 0);
+  return (
+    <details className="group relative inline-block text-left">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 select-none hover:text-ink">
+        Taker
+        <Filter size={10} strokeWidth={2} className={only ? 'text-floor' : 'text-faint'} />
+      </summary>
+      <div className="absolute left-0 z-20 mt-2 min-w-[220px] rounded-lg border border-rule bg-surface p-1 normal-case shadow-card">
+        <button
+          type="button"
+          onClick={(e) => {
+            onPick(null);
+            e.currentTarget.closest('details')?.removeAttribute('open');
+          }}
+          className={`flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-[11.5px] hover:bg-raise ${
+            only ? 'text-muted' : 'text-ink'
+          }`}
+        >
+          All takers
+          <span className="font-mono text-faint">{total}</span>
+        </button>
+        {[...takers.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([who, count]) => (
+            <button
+              key={who}
+              type="button"
+              onClick={(e) => {
+                onPick(who === only ? null : who);
+                e.currentTarget.closest('details')?.removeAttribute('open');
+              }}
+              className={`flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left hover:bg-raise ${
+                who === only ? 'bg-raise' : ''
+              }`}
+            >
+              {/* Pointer-events off: inside this menu the chip is a label, and the row around it
+                  is the control. Leaving it a link would send a filter click to the explorer. */}
+              <span className="pointer-events-none">
+                <AddressChip address={who} />
+              </span>
+              <span className="font-mono text-[11.5px] text-faint">{count}</span>
+            </button>
+          ))}
+      </div>
+    </details>
   );
 }
 
