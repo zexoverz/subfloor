@@ -32,11 +32,16 @@ const PUBLIC_NODES = [
    * only reached a working node on the retry. It stays in the list; it is just not the opener.
    */
   'https://base-sepolia-rpc.publicnode.com',
-  'https://sepolia.base.org',
   'https://base-sepolia.gateway.tenderly.co',
   'https://base-sepolia-public.nodies.app',
   'https://base-sepolia.drpc.org',
   'https://base-sepolia.api.onfinality.io/public',
+  /*
+   * Last. Base's own endpoint answers 403 to some clients — a flat refusal, not a rate limit — and
+   * every read that starts here spends a round trip being rejected before the fallback moves on.
+   * It stays in the list because it is the canonical one and the refusal is not universal.
+   */
+  'https://sepolia.base.org',
 ];
 
 const dedicated = import.meta.env?.VITE_RPC_URL;

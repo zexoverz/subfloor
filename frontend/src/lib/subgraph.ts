@@ -299,9 +299,21 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
 
       const tape: TapeEntry[] = [
         ...fills.map((fill: FillRow) => {
-          // The pair this deployment trades, when the row does not name one.
-          const gave = fill.swap.tokensIn?.[0] ?? WETH;
-          const got = fill.swap.tokensOut?.[0] ?? USDC;
+          /*
+           * Which way round this fill went, inferred when the row does not say.
+           *
+           * `tokensIn`/`tokensOut` come back absent, and assuming every fill is WETH→quote was
+           * survivable while one vault traded one direction. The public tape has both, and a
+           * reverse fill read forwards produces a price of 4.01e20 — which the chart rejects
+           * outright, taking the whole board down with it.
+           *
+           * The rate convention decides it: received × 1e18 ÷ given. Selling an 18-decimal token
+           * for a 6-decimal one lands near 1e9; the other way round lands near 1e26. Nothing
+           * either token could plausibly trade at falls between them.
+           */
+          const inverted = Number(fill.executionRate) > 1e18;
+          const gave = fill.swap.tokensIn?.[0] ?? (inverted ? USDC : WETH);
+          const got = fill.swap.tokensOut?.[0] ?? (inverted ? WETH : USDC);
           const amount = Number(formatUnits(BigInt(fill.swap.amountsIn?.[0] ?? '0'), decimalsOf(gave)));
           const received = Number(formatUnits(BigInt(fill.swap.amountsOut?.[0] ?? '0'), decimalsOf(got)));
           const rate = Number(fill.executionRate) / 1e18;

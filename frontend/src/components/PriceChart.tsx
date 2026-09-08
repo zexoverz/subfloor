@@ -114,6 +114,12 @@ export function PriceChart({
 
     const points = state.tape
       .filter((e) => e.kind === 'fill')
+      /*
+       * A price the library refuses is an exception thrown during render, which takes the whole
+       * board with it — so one unusable point must cost its own row and nothing else. The bound is
+       * the library's own: it rejects anything outside ±9.007e13.
+       */
+      .filter((e) => Number.isFinite(e.price) && Math.abs(e.price) < 9e13)
       .map((e) => ({ time: e.ts as UTCTimestamp, value: e.price }))
       .sort((a, b) => a.time - b.time)
       .filter((p, i, all) => i === 0 || p.time !== all[i - 1]?.time);
