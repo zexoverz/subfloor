@@ -56,20 +56,20 @@ export function AppShell({
        * the chips that merely state facts.
        */}
       {/*
-       * The header sits on the seabed, so it needs a ground of its own. Its text was reading
-       * straight over the drawing — a wordmark and a wallet address competing with a jellyfish —
-       * and the rule underneath was drawing a line across the artwork rather than separating
-       * anything, because there is no block above it to separate from.
+       * The header sits straight on the seabed, with no ground of its own.
        *
-       * Full-bleed and blurred: the panels below are glass, and a header that stopped at the
-       * column's edge would leave the drawing sharp either side of a blurred strip.
+       * It had one, and the reason it had one is measured: half the drawing's top band — 49.7% of
+       * it — is bright enough that #e9f1fb text falls under 4.5 against it, because that band is
+       * the water surface and the light comes through it. So the panel is gone but the problem is
+       * not, and a shadow does the work instead: it darkens only the pixels under the glyphs
+       * rather than a strip across the artwork, which is the difference between protecting the
+       * text and covering the picture.
        *
-       * `z-30` is load-bearing. `backdrop-filter` opens a stacking context, so the account menu's
-       * own z-index became relative to this header rather than to the page — and the stat row
-       * below, which has a blur and therefore a context of its own, painted straight through the
-       * open dropdown.
+       * `z-30` is still load-bearing, for a different reason than before. The blur that used to
+       * open this stacking context is gone, but the stat row below has one of its own, and without
+       * a context here the open account menu paints underneath it.
        */}
-      <div className="relative z-30 -mx-[clamp(12px,3vw,28px)] mb-1 panel-fill px-[clamp(12px,3vw,28px)] shadow-card backdrop-blur-xl">
+      <div className="on-art relative z-30 mb-1">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button
