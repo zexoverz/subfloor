@@ -6,6 +6,10 @@ type Props = { children: ReactNode; onClick?: () => void; disabled?: boolean };
 /**
  * The affirmative action.
  *
+ * Blue, and pushable when it is primary: the affirmative action on this board deploys, funds or
+ * signs something, so it should feel like a key going down rather than a link lighting up. The
+ * secondary stays flat — if both are raised, neither is.
+ *
  * Blue, as everywhere in Oku: it is what the application does. Brass is kept for the floor — the
  * owner's own number — so the two never compete. When every button was floor, the one colour that
  * was supposed to mean "your decision" meant "a button", and the floor stopped standing out on
@@ -22,12 +26,12 @@ export function Act({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`cursor-pointer rounded-xl border px-3.5 py-2.5 text-xs tracking-[0.06em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+      className={`cursor-pointer rounded-xl px-3.5 py-2.5 text-xs tracking-[0.06em] disabled:cursor-not-allowed ${
         wide ? 'w-full' : ''
       } ${
         primary
-          ? 'border-transparent bg-action font-semibold text-action-ink hover:bg-action-hover'
-          : 'border-rule bg-raise text-ink hover:border-action'
+          ? 'pushable push-action mb-1.5 font-semibold'
+          : 'pushable push-quiet mb-1.5'
       }`}
     >
       {children}
@@ -43,7 +47,7 @@ export function Locked({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-xl border border-rule bg-raise px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-floor"
+      className="pushable push-quiet mb-1.5 cursor-pointer rounded-xl px-3.5 py-2.5 text-xs tracking-[0.06em]"
     >
       <span className="flex items-center gap-2">
         <KeyRound size={13} strokeWidth={1.7} className="text-floor" />
@@ -57,7 +61,7 @@ export function Ghost({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-xl border border-rule bg-raise px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-action hover:text-ink"
+      className="pushable push-quiet mb-1 cursor-pointer rounded-lg px-2.5 py-1.5 text-[11.5px]"
     >
       {children}
     </button>

@@ -136,7 +136,16 @@ export const copy = {
 
   panic: {
     label: 'STOP THE AGENT',
-    hint: 'press and hold',
+    hint: 'stops trading and revokes the agent’s credential',
+    confirmTitle: 'Stop the agent',
+    confirmLead: 'This cannot be undone. Two things happen, in this order.',
+    step1: 'Every strategy is docked through canonical Aqua. Trading stops — this works even if the router is unreachable.',
+    step2: 'The agent’s credential is revoked. It cannot be restored, and issuing a new one takes your device.',
+    keep: 'Your funds stay yours either way, and are yours to withdraw now and after.',
+    ack: 'I understand the credential cannot be restored.',
+    ackHint: 'Tick the box above first',
+    cancel: 'Not now',
+    undone: 'Some decisions can’t be undone',
     done: 'Trading stopped.',
     /** §10, near verbatim: the two effects, in the order they happen, and what cannot be undone. */
     doneDocked: 'Every strategy is docked. The agent’s credential is revoked and cannot be restored — issuing a new one takes your device.',
@@ -274,7 +283,7 @@ export const copy = {
     f5Title: 'Every number here is somebody else’s query.',
     f6Label: 'The panic path',
     f6Title: 'Stop the agent in one gesture.',
-    f6Sub: 'press and hold · no device needed, because stopping can only help you',
+    f6Sub: 'one press, one acknowledgement · no device needed, because stopping can only help you',
 
     faqEyebrow: 'Objections',
     faqTitle: 'The questions worth asking.',

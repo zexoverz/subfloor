@@ -244,67 +244,94 @@ body {
 }
 
 /*
- * The panic control, as a key that is physically there.
+ * Buttons that are physically there.
  *
- * A solid block of colour standing 6px on a darker edge of itself, which collapses when the button
+ * A solid face standing 6px on a darker edge of itself, and the edge collapses when the button
  * goes down — the button really moves, and the shadow it was standing on is gone while it is held.
- * It suits this control better than any other on the board: this one is not a link that navigates,
- * it is a switch that stops a machine, and it should feel like one under the finger.
+ * It suits the three controls that do something to the vault: they are not links that navigate.
  *
- * The depressed state is held, not momentary, because firing takes 1.5 seconds of hold. So it is
- * driven by `data-armed` rather than `:active`: the button stays down for as long as the owner
- * keeps it down, and springs back the instant they let go — which is also the visible proof that
- * letting go cancelled it.
+ * The mechanic is shared; the four colours are per variant, because the pressed state is where a
+ * shared palette breaks. Panic carries white ink so darkening on press helps it — 9.4. The action
+ * blue carries dark ink, so darkening as far hurts it: #1c5f9c puts the label at 2.86. Its press
+ * colour is therefore only as deep as the ink survives, and the shadow underneath — which nothing
+ * is read on — stays as dark as it likes.
  */
 .pushable {
-  background: var(--c-panic-face);
-  color: var(--c-panic-ink);
-  box-shadow: 0 6px 0 var(--c-panic-side);
+  /*
+   * Defaults on the base class, not only on the variants. A variant that is left off should give
+   * the quiet button, never a button with no face — which is exactly what happened when the panic
+   * control was split into variants and did not get one.
+   */
+  --push-face: var(--c-raise);
+  --push-hover: #14406f;
+  --push-press: #0a2850;
+  --push-side: #061e3f;
+  --push-ink: var(--c-ink);
+
+  background: var(--push-face);
+  color: var(--push-ink);
+  box-shadow: 0 6px 0 var(--push-side);
   transition:
     transform 110ms cubic-bezier(0.2, 0.7, 0.3, 1),
     box-shadow 110ms cubic-bezier(0.2, 0.7, 0.3, 1),
     background-color 140ms ease;
 }
 
-.pushable:hover {
-  background: var(--c-panic-hover);
+.pushable:hover:not([aria-disabled='true']):not(:disabled) {
+  background: var(--push-hover);
   transform: translateY(-1px);
-  box-shadow: 0 7px 0 var(--c-panic-side);
+  box-shadow: 0 7px 0 var(--push-side);
 }
 
 .pushable:focus-visible {
-  outline: 2px solid var(--c-panic-ink);
+  outline: 2px solid var(--push-ink);
   outline-offset: 3px;
 }
 
-/* A stray click must not be able to fire this, so a plain press only presses it. */
-.pushable:active,
-.pushable[data-armed='true'] {
-  background: var(--c-panic-side);
+.pushable:active:not([aria-disabled='true']):not(:disabled) {
+  background: var(--push-press);
   transform: translateY(6px);
-  box-shadow: 0 0 0 var(--c-panic-side);
+  box-shadow: 0 0 0 var(--push-side);
+}
+
+/* Nothing to stand on if it cannot be pressed, so it sits flat rather than looking pressable. */
+.pushable:disabled,
+.pushable[aria-disabled='true'] {
+  box-shadow: 0 2px 0 var(--push-side);
+  opacity: 0.5;
+}
+
+.push-panic {
+  --push-face: var(--c-panic-face);
+  --push-hover: var(--c-panic-hover);
+  --push-press: var(--c-panic-side);
+  --push-side: var(--c-panic-side);
+  --push-ink: var(--c-panic-ink);
+}
+
+.push-action {
+  --push-face: var(--c-action);
+  --push-hover: var(--c-action-hover);
+  --push-press: #2f82c2;
+  --push-side: #1a5b95;
+  --push-ink: var(--c-action-ink);
 }
 
 /*
- * A tremor while it is held down, under a pixel wide. Not decoration: a control that takes a
- * second and a half of deliberate pressure has to say it is doing something during that second and
- * a half, or the owner lets go thinking it did not take.
+ * The quiet one, and it is the default: the surface a panel already uses, so it reads as raised
+ * rather than as loud. Everything that is not the affirmative action or the destructive one gets
+ * this — secondary actions, ghosts, cancels, and the device's own key.
  */
-.pushable[data-armed='true'] {
-  animation: panic-tremor 90ms linear infinite;
-}
-
-@keyframes panic-tremor {
-  0%   { transform: translate(0, 6px); }
-  25%  { transform: translate(0.7px, 6px); }
-  75%  { transform: translate(-0.7px, 6px); }
-  100% { transform: translate(0, 6px); }
+.push-quiet {
+  --push-face: var(--c-raise);
+  --push-hover: #14406f;
+  --push-press: #0a2850;
+  --push-side: #061e3f;
+  --push-ink: var(--c-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pushable,
-  .pushable[data-armed='true'] {
-    animation: none;
+  .pushable {
     transition: background-color 140ms ease;
   }
 }
@@ -634,6 +661,60 @@ body {
   /* A modal <dialog> centres itself with `margin: auto`, and the CSS reset zeroes every margin —
      so without this it sits in the top-left corner looking like a mistake, which it was. */
   margin: auto;
+}
+
+/*
+ * The destructive sheet.
+ *
+ * Everything the ordinary sheet is, plus three things it must not have. The frame glows red rather
+ * than sitting on a rule, so the dialog reads as the dangerous one before a word of it is; the
+ * corners are round enough to look like a card rather than a system alert, because the mascot
+ * leaning on it has to belong to the same drawing; and `overflow: visible` is load-bearing —
+ * without it the mascot is cut off at the edge it is meant to lean over.
+ */
+.danger-sheet {
+  border: 1px solid color-mix(in srgb, var(--c-refuse) 42%, transparent);
+  background: linear-gradient(to bottom, #0b1b34, #061225);
+  color: var(--c-ink);
+  padding: 0;
+  border-radius: 18px;
+  overflow: visible;
+  margin: auto;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 0 34px -6px color-mix(in srgb, var(--c-refuse) 45%, transparent),
+    0 30px 70px -30px rgba(0, 0, 0, 0.95);
+}
+
+/*
+ * Hazard tape. Drawn rather than an image so it stays crisp at any width, and clipped to the
+ * sheet's own top corners — a straight bar across a rounded card is the detail that makes a
+ * dialog look assembled from parts.
+ */
+.danger-tape {
+  height: 10px;
+  border-radius: 17px 17px 0 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--c-panic-face) 0 10px,
+    #0b1b34 10px 20px
+  );
+}
+
+/* A hairline either side of the closing line, so it reads as a footer rather than as another
+   sentence that ran out of room. */
+.danger-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.danger-rule::before,
+.danger-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--c-faint) 30%, transparent);
 }
 
 /* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is
