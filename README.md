@@ -161,8 +161,17 @@ six decimals, so decimal handling is exercised exactly as it is on mainnet. The 
 uses real USDC and this contract does not exist there.
 
 The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
-concentrated book is shipped and live — `strategyHash 0xc54042b1…`, mandate signed EIP-712 by the
-guardian.
+two-sided book is shipped and live under a mandate signed EIP-712 by the guardian.
+
+**The live book is not yet the full position, and the router is why.** The deployed router predates
+the commit that added `ValidateSeriesEpoch`, `OraclePriceAdjuster` and `JumpIfDirection`, so the
+shipped book is the simpler four-instruction build rather than the seven `ConcentratedBook` emits
+today. The router is also the one contract not verified, for the same reason: its bytecode matches
+no commit, because it went out from a working tree that was never committed. Both are the same fix —
+redeploy the router and reship — and it is tracked in
+[#167](https://github.com/zexoverz/subfloor/issues/167). Written here rather than quietly corrected
+later, because the gap was found by trying to verify the contract and would otherwise have reached
+the submission as a claim about a position that is not the one trading.
 
 **Base mainnet** — _pending, see below._
 
@@ -172,7 +181,7 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.1.0
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v1.3.0
 ```
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
@@ -307,10 +316,11 @@ it worth less.
 |---|---|
 | Contracts, Base Sepolia | **live**, [addresses above](#deployed); three of four verified on Sourcify |
 | Floors, both directions | **set on chain**, keyed to the vault |
-| A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
+| A two-sided book | **shipped and live** on Aqua under a device-shaped mandate; the full concentrated position awaits the router redeploy ([#167](https://github.com/zexoverz/subfloor/issues/167)) |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
 | Calibration and the daily report | **live** at `/api/calibration` and `/api/report` |
-| Fills, and the execution-quality dataset | _none yet_ — the book is quoting, nothing has taken it |
+| Fills, and the execution-quality dataset | **115 fills**, both directions, scored against the same Chainlink answer settlement used |
+| Refusals | **produced on cue** — `SettledBelowFloor`, and a guardian-signed lowering exercised end to end |
 | Base mainnet, with our own money | _pending_ |
 | A rogue agent, refused, on chain | _pending_ |
 

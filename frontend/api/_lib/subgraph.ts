@@ -6,9 +6,17 @@
 /// query the screen advertises is literally the query the calibration ran, so it travels with the
 /// response rather than being retyped into a docs page that drifts.
 
+/// The fallback is pinned to a version rather than a floating alias because Studio has no floating
+/// alias. That makes it a thing to update on every subgraph deploy, and forgetting is not loud: the
+/// endpoint keeps answering, with `indexing_error` from a version that halted, and `/api/report` and
+/// `/api/calibration` return 503 while `/api/fills` — which reads the chain — stays green. That is
+/// what was live for several hours: the deploy moved to v1.3.0 and this line still said v1.2.0.
+///
+/// `SUBFLOOR_SUBGRAPH` overrides it, and Railway should set it so a subgraph deploy does not need a
+/// code deploy to follow.
 export const DEFAULT_ENDPOINT =
   process.env.SUBFLOOR_SUBGRAPH ??
-  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v1.2.0";
+  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v1.3.0";
 
 export const DAILY_QUALITY_QUERY = `query DailyQuality($since: Int!) {
   executionQualityDailySnapshots(
