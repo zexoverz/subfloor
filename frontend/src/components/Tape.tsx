@@ -21,6 +21,7 @@ import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
 import { txUrl } from '../lib/chain.ts';
 import { AddressChip } from './AddressChip.tsx';
 import { RowHint, type Hint } from './RowHint.tsx';
+import { identicon } from '../lib/identicon.ts';
 import { SwapLeg } from './SwapLeg.tsx';
 import { TokenIcon } from './TokenIcon.tsx';
 import { TradeMark } from './TradeMark.tsx';
@@ -362,19 +363,21 @@ export function FillHint({ entry, pair }: { entry: Fill; pair: Pair }) {
         <ArrowUpRight size={12} strokeWidth={1.9} />
         sent
       </dt>
-      <dd className="m-0 text-right font-medium">
-        {gave.amount < 0.01 ? gave.amount.toPrecision(2) : gave.amount.toFixed(4)}{' '}
+      <dd className="m-0 flex items-center justify-end gap-1.5 font-medium">
+        {gave.amount < 0.01 ? gave.amount.toPrecision(2) : gave.amount.toFixed(4)}
         <span className="text-muted">{gave.symbol}</span>
+        <TokenIcon symbol={gave.symbol} size={15} />
       </dd>
       <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <ArrowDownLeft size={12} strokeWidth={1.9} />
         received
       </dt>
-      <dd className="m-0 text-right font-medium">
+      <dd className="m-0 flex items-center justify-end gap-1.5 font-medium">
         {got ? (
           <>
-            {got.amount < 0.01 ? got.amount.toPrecision(2) : got.amount.toFixed(4)}{' '}
+            {got.amount < 0.01 ? got.amount.toPrecision(2) : got.amount.toFixed(4)}
             <span className="text-muted">{got.symbol}</span>
+            <TokenIcon symbol={got.symbol} size={15} />
           </>
         ) : (
           '—'
@@ -384,11 +387,24 @@ export function FillHint({ entry, pair }: { entry: Fill; pair: Pair }) {
         <UserRound size={12} strokeWidth={1.9} />
         taker
       </dt>
-      <dd className="m-0 text-right">
+      <dd className="m-0 flex items-center justify-end gap-1.5">
         {entry.taker ? (
-          <span className="font-mono text-[11.5px] text-muted">
-            {entry.taker.slice(0, 6)}…{entry.taker.slice(-4)}
-          </span>
+          <>
+            <span className="font-mono text-[11.5px] text-muted">
+              {entry.taker.slice(0, 6)}…{entry.taker.slice(-4)}
+            </span>
+            {/*
+             * The blockie, not the chip. Inside a card the address is a fact being reported, and
+             * the chip is a link — a second way out of a panel that is already hovering over the
+             * row it describes.
+             */}
+            <img
+              src={identicon(entry.taker)}
+              alt=""
+              aria-hidden
+              className="size-[15px] shrink-0 rounded-full"
+            />
+          </>
         ) : (
           '—'
         )}
