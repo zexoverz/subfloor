@@ -61,9 +61,14 @@ async function ask<T>(body: Query): Promise<T | null> {
  * `maker` also makes the filter possible. Without it the tape mixed every vault on the venue and
  * called the result this one's trading.
  */
-const FILLS = `
-  query Fills($maker: Bytes) {
-    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $maker }) {
+/*
+ * Two queries rather than one with a nullable filter.
+ *
+ * `where: { maker: null }` does not mean "no filter" to The Graph — it means "maker equals null",
+ * which nothing is, so the public tape came back empty while the venue had a hundred fills. A
+ * filter that is sometimes absent has to be absent from the query, not present holding a null.
+ */
+const FILL_FIELDS = `
       id
       maker
       taker
@@ -75,14 +80,31 @@ const FILLS = `
       referenceAgeSeconds
       timestamp
       swap { hash tokensIn amountsIn tokensOut amountsOut }
-    }
+`;
+
+const SNAPSHOT = `
     executionQualityDailySnapshots(first: 1, orderBy: day, orderDirection: desc) {
       fills
       refusals
       adverseDeviationP50Bps
       adverseDeviationP99Bps
     }
-  }
+`;
+
+/** This vault's own trading. */
+const MINE = `
+  query Fills($maker: Bytes!) {
+    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $maker }) {
+${FILL_FIELDS}    }
+${SNAPSHOT}  }
+`;
+
+/** Everything that settled here, whoever made it. */
+const EVERY = `
+  query Fills {
+    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc) {
+${FILL_FIELDS}    }
+${SNAPSHOT}  }
 `;
 
 /**
@@ -256,7 +278,11 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
         ask<{
           fillQualities: FillRow[];
           executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
-        }>({ query: FILLS, variables: { maker: scope === 'mine' ? vault?.toLowerCase() : null } }),
+        }>(
+          scope === 'mine'
+            ? { query: MINE, variables: { maker: vault?.toLowerCase() } }
+            : { query: EVERY },
+        ),
         askRefusals(scope === 'mine' ? vault : null),
       ]);
 
