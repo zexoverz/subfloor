@@ -20,7 +20,20 @@ function useChanged(value: unknown, ms = 900): boolean {
 
 /** The number strip as tiles: headline value, what it is, and what it is measured against. */
 export function Tiles({ children }: { children: ReactNode }) {
-  return <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px bg-rule">{children}</div>;
+  /*
+   * The blur lives on the row rather than on each tile. Applied per tile, every one of them
+   * becomes its own containing block and its own backdrop sample, so the seabed behind them ends
+   * up sampled five times at five offsets — the band reads as five separate windows onto the same
+   * drawing instead of one pane laid across it.
+   *
+   * The hairlines between tiles are the grid's own background showing through a one-pixel gap, so
+   * the row keeps a solid rule colour under the translucent tiles.
+   */
+  return (
+    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-lg border border-rule bg-rule backdrop-blur-md">
+      {children}
+    </div>
+  );
 }
 
 export function Tile({
@@ -49,7 +62,7 @@ export function Tile({
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
 
   return (
-    <div className="flex flex-col gap-1 bg-surface p-4">
+    <div className="flex flex-col gap-1 bg-surface/85 p-4">
       <span className="text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
       <span className={`text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
         <span className={`-mx-1 rounded-lg px-1 ${pulseClass}`}>
