@@ -62,8 +62,8 @@ async function ask<T>(body: Query): Promise<T | null> {
  * called the result this one's trading.
  */
 const FILLS = `
-  query Fills($vault: Bytes!) {
-    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $vault }) {
+  query Fills($maker: Bytes) {
+    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $maker }) {
       id
       maker
       taker
@@ -137,6 +137,7 @@ type RefusalsBody = {
     blockNumber: string;
     reason: string;
     from?: string;
+    recipient?: string;
     tokenIn: string;
     tokenOut: string;
     executionRate: string;
@@ -156,19 +157,27 @@ async function blockTime(blockNumber: string): Promise<number> {
   }
 }
 
-async function askRefusals(): Promise<{ count: number; fills: number; recent: RefusalRow[] } | null> {
+/**
+ * @param vault whose refusals to count, or null for every refusal on the venue.
+ *
+ * A refusal belongs to the recipient whose floor was hit, and the payload names it — so this
+ * filters on that rather than on the sender, which is only who was turned away.
+ */
+async function askRefusals(
+  vault: Address | null,
+): Promise<{ fills: number; recent: RefusalRow[] } | null> {
   try {
     // No query string: the endpoint's own default returns more rows than this tape shows.
     const response = await fetch('/api/refusals');
     if (!response.ok) return null;
     const body = (await response.json()) as RefusalsBody;
     return {
-      count: body.floorRefusals ?? 0,
       fills: body.fills ?? 0,
       // Only the floor's own refusal belongs on this tape. Another revert is a different story.
       recent: await Promise.all(
         (body.recent ?? [])
           .filter((r) => r.reason === 'SettledBelowFloor')
+          .filter((r) => !vault || r.recipient?.toLowerCase() === vault.toLowerCase())
           .map(async (r) => ({
             hash: r.hash,
             from: r.from,
@@ -214,11 +223,18 @@ const decimalsOf = (address: string) => TOKENS[address.toLowerCase()]?.decimals 
 const price = (rate: string, base: string, quote: string) =>
   (Number(rate) / 1e18) * 10 ** (decimalsOf(base) - decimalsOf(quote));
 
-export function useIndex(vault: Address | null): IndexData {
+/**
+ * @param vault the vault whose fills to read, or null for the venue as a whole.
+ *
+ * A null maker means no filter, which is the public tape: everything that settled here, whoever
+ * made it. Passing a vault narrows it to that vault's own trading — and the two must never be
+ * conflated, because one of them is a claim about this owner and the other is not.
+ */
+export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine'): IndexData {
   const [data, setData] = useState<IndexData>({ source: 'fixtures', status: 'loading', tape: null, stats: null });
 
   useEffect(() => {
-    if (!ENDPOINT || !vault) {
+    if (!ENDPOINT || (scope === 'mine' && !vault)) {
       // Nothing configured to ask. Not a load in progress, and not an empty venue either.
       setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
       return;
@@ -240,8 +256,8 @@ export function useIndex(vault: Address | null): IndexData {
         ask<{
           fillQualities: FillRow[];
           executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
-        }>({ query: FILLS, variables: { vault: vault.toLowerCase() } }),
-        askRefusals(),
+        }>({ query: FILLS, variables: { maker: scope === 'mine' ? vault?.toLowerCase() : null } }),
+        askRefusals(scope === 'mine' ? vault : null),
       ]);
 
       if (!live) return;
@@ -333,7 +349,12 @@ export function useIndex(vault: Address | null): IndexData {
         tape,
         stats: {
           fills: snapshot?.fills ?? refused?.fills ?? fills.length,
-          refused: refused?.count ?? refusals.length,
+          /*
+           * The rows that survived the filter, never the endpoint's venue-wide total. On a vault's
+           * own board those are different numbers, and the larger one would credit this vault with
+           * refusals another vault's floor performed.
+           */
+          refused: refusals.length,
           ...(snapshot ? { medianVsMidBps: snapshot.adverseDeviationP50Bps } : {}),
         },
       });
@@ -373,7 +394,7 @@ export function useIndex(vault: Address | null): IndexData {
       window.clearInterval(tick);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [vault]);
+  }, [vault, scope]);
 
   return data;
 }

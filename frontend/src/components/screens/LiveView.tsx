@@ -26,6 +26,8 @@ export function LiveView({
   state,
   source,
   vault,
+  scope,
+  onScope,
   tapeStatus,
   owner,
   onNavigate,
@@ -48,6 +50,9 @@ export function LiveView({
   tapeStatus: 'loading' | 'live' | 'empty' | 'failed';
   /** The vault the tape is about, named on the card so a change of subject is visible. */
   vault: string | null;
+  /** Which tape is on screen. Two questions, so two tapes rather than one with a hidden filter. */
+  scope: 'mine' | 'public';
+  onScope: (scope: 'mine' | 'public') => void;
   /** True when the connected wallet owns the vault. False is what a stranger sees. */
   owner: boolean;
   onNavigate: (s: Screen) => void;
@@ -142,13 +147,35 @@ export function LiveView({
                  * trades to it is the mistake this whole screen exists to avoid — and without the
                  * address on it, that change of subject reads as the data vanishing.
                  */}
-                {vault && <AddressChip address={vault} size={14} />}
+                {scope === 'mine' && vault && <AddressChip address={vault} size={14} />}
               </span>
             }
             right={
-              <span className="flex items-center gap-2">
-                <PairIcons base={pair.base} quote={pair.quote} />
-                {pair.base} / {pair.quote}
+              <span className="flex items-center gap-3">
+                {/*
+                 * Two tapes, not one with a filter. "My vault's trades" and "everything that
+                 * settled here" answer different questions, and a board that silently switched
+                 * between them when a vault was deployed is what sent someone looking for a bug.
+                 */}
+                <span className="flex items-center gap-0.5 rounded-lg border border-rule bg-sunken p-0.5">
+                  {(['mine', 'public'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => onScope(s)}
+                      title={s === 'mine' ? copy.desk.scopeMineNote : copy.desk.scopePublicNote}
+                      className={`rounded px-2.5 py-1 text-[11px] tracking-normal normal-case transition-colors ${
+                        scope === s ? 'bg-raise font-semibold text-ink' : 'text-faint hover:text-muted'
+                      }`}
+                    >
+                      {s === 'mine' ? copy.desk.scopeMine : copy.desk.scopePublic}
+                    </button>
+                  ))}
+                </span>
+                <span className="flex items-center gap-2">
+                  <PairIcons base={pair.base} quote={pair.quote} />
+                  {pair.base} / {pair.quote}
+                </span>
               </span>
             }
           />

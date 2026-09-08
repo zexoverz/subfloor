@@ -77,6 +77,11 @@ export const copy = {
      * Says which vault, because the usual way to arrive here is by deploying one — and a board
      * that empties without explaining that it changed subject reads as a fault.
      */
+    scopeMine: 'My tape',
+    scopePublic: 'Public tape',
+    /** Whose trades are on screen, said plainly, because the two answer different questions. */
+    scopeMineNote: 'only this vault',
+    scopePublicNote: 'every maker on this venue',
     tapeEmpty: 'This vault has not traded yet. The tape follows the vault named above, so a vault you just deployed starts empty.',
     /** We could not ask. Says whose failure it is rather than reporting an empty venue. */
     tapeUnreachable: 'The index could not be reached, so what has traded here is unknown.',

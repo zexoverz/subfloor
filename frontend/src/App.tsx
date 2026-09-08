@@ -58,8 +58,13 @@ export default function App() {
    * the board describing one vault while the other half describes another.
    */
   const own = useOwnVault(wallet.address);
+  /*
+   * Which tape. Defaults to the vault's own, because that is the question the owner came with —
+   * and switches to the venue when there is no vault to be the subject of the other one.
+   */
+  const [scope, setScope] = useState<'mine' | 'public'>('mine');
   const vault = own.vault ?? ((addresses.vault || null) as `0x${string}` | null);
-  const index = useIndex(vault);
+  const index = useIndex(vault, vault ? scope : 'public');
   const source = index.source === 'chain' ? 'chain' : feedSource;
   // Every hook runs before the landing screen returns early: React counts hooks per render, and a
   // hook below that return would change the count the moment someone navigates on to the board.
@@ -136,6 +141,8 @@ export default function App() {
           /* Simulated says so on its own badge; otherwise the reader's own state, unedited. */
           tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
           vault={vault}
+          scope={vault ? scope : 'public'}
+          onScope={setScope}
           // One page in two states: the owner sees inventory, the standing floor and the agent;
           // everyone else sees the proof counter and the contracts in that column.
           owner={ceremony.isOwner === true}

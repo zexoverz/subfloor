@@ -36,13 +36,16 @@ export interface Refusal {
   floorRate?: string;
   tokenIn?: Address;
   tokenOut?: Address;
+  /// Whose floor was hit. A refusal belongs to the recipient, not to the sender that was turned
+  /// away — without it a board cannot tell its own refusals from another vault's.
+  recipient?: Address;
 }
 
 /// Decode a revert return payload into a reason and, for `SettledBelowFloor`, its arguments.
 ///
 /// Pure and offline so it can be tested against payloads captured from the chain rather than only
 /// exercised by a live query.
-export function decodeRevert(data: Hex | null | undefined): Pick<Refusal, "reason" | "selector" | "executionRate" | "floorRate" | "tokenIn" | "tokenOut"> {
+export function decodeRevert(data: Hex | null | undefined): Pick<Refusal, "reason" | "selector" | "executionRate" | "floorRate" | "tokenIn" | "tokenOut" | "recipient"> {
   if (!data || data.length < 10) return { reason: null, selector: null };
   const selector = data.slice(0, 10).toLowerCase() as Hex;
   const reason = REVERT_REASONS[selector] ?? null;
@@ -55,6 +58,12 @@ export function decodeRevert(data: Hex | null | undefined): Pick<Refusal, "reaso
   return {
     reason,
     selector,
+    /*
+     * Word 0, and it decides who a refusal belongs to. Without it every vault's board shows every
+     * other vault's refusals — the interface cannot filter what the payload does not name, and
+     * the argument was being decoded past rather than read.
+     */
+    recipient: (`0x${word(0).slice(24)}`) as Address,
     tokenIn: (`0x${word(1).slice(24)}`) as Address,
     tokenOut: (`0x${word(2).slice(24)}`) as Address,
     executionRate: BigInt(`0x${word(3)}`).toString(),
