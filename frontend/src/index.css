@@ -41,7 +41,14 @@
   --c-settle-wash: rgba(64, 182, 107, 0.16);
   --c-refuse: #fa2b39;
   --c-refuse-wash: rgba(250, 43, 57, 0.14);
-  --c-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 36px -20px rgba(0, 0, 0, 0.85);
+  /*
+   * Two shadows doing two jobs: a tight one that separates a panel from the drawing behind it, and
+   * a wide soft one that lifts it off the page. On glass the first matters more than it would on
+   * an opaque card — without an edge, a translucent panel over an illustration reads as a smudge
+   * in the illustration rather than as something in front of it.
+   */
+  --c-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 2px 4px rgba(0, 0, 0, 0.45),
+    0 18px 44px -22px rgba(0, 0, 0, 0.9);
 }
 
 :root[data-theme='light'] {
@@ -62,7 +69,8 @@
   --c-settle-wash: rgba(32, 152, 83, 0.12);
   --c-refuse: #c41926;
   --c-refuse-wash: rgba(196, 25, 38, 0.1);
-  --c-shadow: 0 1px 2px rgba(10, 21, 36, 0.05), 0 10px 30px -18px rgba(10, 21, 36, 0.3);
+  --c-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 2px 4px rgba(10, 21, 36, 0.07),
+    0 14px 34px -20px rgba(10, 21, 36, 0.35);
 }
 /* `inline` keeps the var reference at the use site, so one class follows the theme. */
 @theme inline {

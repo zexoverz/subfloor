@@ -32,7 +32,7 @@ export function Tiles({ children }: { children: ReactNode }) {
    * every other panel on the board let the drawing through.
    */
   return (
-    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-xl border border-rule bg-rule/45 backdrop-blur-md">
+    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-xl border border-rule bg-rule/45 shadow-card backdrop-blur-md">
       {children}
     </div>
   );
