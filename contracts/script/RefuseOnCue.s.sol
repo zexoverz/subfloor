@@ -154,4 +154,25 @@ contract RefuseOnCue is Script {
         ISwapVM(router).swap(_order(), amountIn, _takerData(false));
         vm.stopBroadcast();
     }
+
+    /// @notice Print the swap calldata, so the refusal can actually be broadcast.
+    ///
+    /// `forge script` simulates before it sends and aborts when the simulation reverts, so a
+    /// transaction that is *supposed* to revert never leaves the machine — `--skip-simulation` does
+    /// not change that. The refusal this project is built around therefore had no on-chain artifact
+    /// at all: every "refused on cue" run so far was a local simulation reported as if it had
+    /// happened, and a full HyperSync walk of the router's history found 143 transactions and zero
+    /// reverts.
+    ///
+    /// §8 wants the revert to be a live artifact with a hash a viewer can open. So this prints the
+    /// calldata and it goes out through `cast send` with an explicit `--gas-limit`, which skips
+    /// estimation and lets the transaction land and fail on chain, which is the point.
+    ///
+    ///     cast send $SUBFLOOR_ROUTER <calldata> --gas-limit 900000 \
+    ///       --rpc-url $RPC --account subfloor-dev
+    function refusalCalldata() external view {
+        uint256 amountIn = vm.envOr("SUBFLOOR_AMOUNT_IN", uint256(1e6));
+        console2.log("approve", vm.toString(abi.encodeCall(IERC20.approve, (vm.envAddress("SUBFLOOR_ROUTER"), amountIn))));
+        console2.log("swap", vm.toString(abi.encodeCall(ISwapVM.swap, (_order(), amountIn, _takerData(false)))));
+    }
 }
