@@ -21,8 +21,15 @@ library SubfloorParams {
     ///
     /// Why it is still provisional: those 20.6 hours were an active market, and the observed max
     /// is therefore a lower bound on the real worst case. What actually binds this number is the
-    /// feed's heartbeat during a flat weekend, which has not been observed yet. Re-read the
-    /// sampler after a quiet period and revise before the number is published anywhere.
+    /// feed's heartbeat during a flat weekend. **That has now been observed** — `docs/chainlink-gap.md`
+    /// samples Sat 5 Sep through Tue 8 Sep on Base, 400 rounds over 78 hours, and the heartbeat held:
+    /// the maximum moved from 1232s to 1234s.
+    ///
+    /// Which leaves the arithmetic marginally behind its own method. Twice 1234s is 2468s, so 2464 is
+    /// 1.997x the observed maximum rather than 2.00x. Not a safety problem at this scale — the bound
+    /// is a margin, not a quantity — but the method says "twice the observed maximum" and it no
+    /// longer exactly does. Left as it is rather than nudged, because a bound that moves whenever the
+    /// last sample moves is not a bound.
     ///
     /// Why not 300s: it is the round number a reasonable person reaches for, it sits above the
     /// p50 but well below the observed p90, and a bound there would fail the vault closed through
