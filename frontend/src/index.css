@@ -65,8 +65,17 @@
    * without an edge, a translucent panel over an illustration reads as a smudge in the
    * illustration rather than as something standing in front of it.
    */
-  --c-shadow: 0 0 0 1px rgba(20, 56, 96, 0.6) inset, 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 2px 4px rgba(0, 0, 0, 0.45), 0 18px 44px -22px rgba(0, 0, 0, 0.9);
+  /*
+   * No ring. An inset hairline is not a border in the box model and reads as one on screen, which
+   * is the only test that counts — it was drawn around every panel and looked exactly like the
+   * outline it replaced.
+   *
+   * The separation is a drop instead: a tight dark line under the top edge and a deep soft pool
+   * beneath. Panel and ground are only three units of luminance apart, so the shadow is doing the
+   * work of an edge rather than merely suggesting depth, and it has to be darker than either.
+   */
+  --c-shadow: 0 1px 1px rgba(0, 0, 0, 0.55), 0 6px 14px -6px rgba(0, 0, 0, 0.7),
+    0 26px 56px -28px rgba(0, 0, 0, 0.95);
 }
 
 :root[data-theme='light'] {
@@ -87,8 +96,8 @@
   --c-settle-wash: rgba(32, 152, 83, 0.12);
   --c-refuse: #c41926;
   --c-refuse-wash: rgba(196, 25, 38, 0.1);
-  --c-shadow: 0 0 0 1px rgba(205, 216, 229, 0.9) inset, 0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 2px 4px rgba(10, 21, 36, 0.07), 0 14px 34px -20px rgba(10, 21, 36, 0.35);
+  --c-shadow: 0 1px 1px rgba(10, 21, 36, 0.08), 0 6px 14px -6px rgba(10, 21, 36, 0.16),
+    0 22px 48px -26px rgba(10, 21, 36, 0.4);
 }
 /* `inline` keeps the var reference at the use site, so one class follows the theme. */
 @theme inline {
