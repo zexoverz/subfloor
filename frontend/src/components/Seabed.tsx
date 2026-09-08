@@ -19,10 +19,11 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
       {/*
        * Recessed, not removed.
        *
-       * At full strength the drawing averages three times the canvas's luminance, so every glass
-       * panel sat over something brighter than itself and the whole board read washed out — the
-       * text was fighting an illustration for the same pixels. At 32% it lands just under twice
-       * the canvas: still legibly a seabed, no longer competing with a price.
+       * The balance here is between two failures, and it moved once already. Too strong and the
+       * text fights an illustration for the same pixels; too weak and the page reads as a dark
+       * slab, which is what it did at 32%. The panels are opaque enough to protect their own
+       * contents, so the drawing carries the page's brightness — measured against the reference
+       * composite, which averages 29/255 to our 23.
        *
        * The board is where this matters; the hero has no data over it and keeps the drawing.
        */}
@@ -31,7 +32,7 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
         alt=""
         draggable={false}
         className="h-full w-full object-cover object-center select-none"
-        style={{ opacity: hero ? 0.85 : 0.42 }}
+        style={{ opacity: hero ? 0.9 : 0.72 }}
       />
       {/*
        * A wash in the canvas colour on top of it, heaviest in the middle band where the panels
@@ -43,7 +44,7 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(1,16,42,0.3), rgba(1,16,42,0.62) 45%, rgba(1,16,42,0.62) 70%, rgba(1,16,42,0.26))',
+              'linear-gradient(to bottom, rgba(4,28,60,0.18), rgba(4,28,60,0.4) 45%, rgba(4,28,60,0.4) 70%, rgba(4,28,60,0.15))',
           }}
         />
       )}

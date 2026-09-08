@@ -27,10 +27,18 @@
    * #00132e, its aside #021630, its ground #041838. The previous set was measured from a darker
    * reference and landed nearly black.
    */
-  --c-ground: #01102a;
+  /*
+   * The page reads dark because of what is under the panels, not the panels.
+   *
+   * Measured across the whole composite: the reference averages 29/255 with a blue channel at 64,
+   * ours 23 with blue at 46. Almost all of that gap is ground and drawing — its panels sample
+   * #00132e, which is what ours already were. So the ground comes up and turns bluer, and the
+   * drawing is allowed through, rather than lightening cards that were already right.
+   */
+  --c-ground: #041c3c;
   --c-surface: #00132e;
   --c-sunken: #000e24;
-  --c-raise: #0b2b52;
+  --c-raise: #0d3160;
   --c-ink: #e9f1fb;
   --c-muted: #93a9c4;
   /*
