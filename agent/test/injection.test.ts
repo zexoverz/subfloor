@@ -120,3 +120,36 @@ describe("reading the model's answer", () => {
     if (saved) process.env.ANTHROPIC_API_KEY = saved;
   });
 });
+
+import { describeError } from "../src/taker/bot.ts";
+
+/// What the bot writes down when a swap will not go through.
+///
+/// The old line took `message.split("\n")[0]`, and viem puts "reverted with the following
+/// signature" on that line with the selector underneath — so every failure logged the sentence and
+/// discarded the answer. An hour of logs said only that something reverted.
+describe("the taker says what actually reverted", () => {
+  const wrap = (data: string) => ({ cause: { data } });
+
+  test("a floor refusal is named", () => {
+    assert.match(describeError(wrap("0x027e4c46" + "00".repeat(160))), /SettledBelowFloor/);
+  });
+
+  test("a stale reference is named, because it is a different problem from a bad price", () => {
+    assert.match(describeError(wrap("0x50ee0156" + "00".repeat(128))), /StaleReference/);
+  });
+
+  test("an unrecognised selector is still reported, not swallowed", () => {
+    const s = describeError(wrap("0xdeadbeef" + "00".repeat(32)));
+    assert.match(s, /unknown selector 0xdeadbeef/);
+  });
+
+  test("an error with no revert data keeps two lines, since the first is never the answer", () => {
+    const s = describeError(new Error("The contract function \"swap\" reverted with the following signature:\n0x027e4c46\nmore"));
+    assert.match(s, /0x027e4c46/);
+  });
+
+  test("a plain network failure still reads as itself", () => {
+    assert.match(describeError(new Error("fetch failed")), /fetch failed/);
+  });
+});

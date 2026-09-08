@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { clientsFromEnv, configFromEnv, pass, type Outcome } from "./bot.ts";
+import { clientsFromEnv, configFromEnv, pass, type Outcome , describeError } from "./bot.ts";
 
 /// The taker loop.
 ///
@@ -48,7 +48,7 @@ async function main() {
     } catch (err) {
       // Keep going. A dropped RPC or a nonce clash is not a reason to stop taking, and stopping
       // silently would look exactly like a venue nobody wants to trade with.
-      console.error(`${new Date().toISOString().slice(11, 19)}  error    ${(err as Error).message.split("\n")[0]}`);
+      console.error(`${new Date().toISOString().slice(11, 19)}  error    ${describeError(err)}`);
       tally.other++;
     }
 
