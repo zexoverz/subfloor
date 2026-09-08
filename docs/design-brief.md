@@ -1,5 +1,8 @@
 # SUBFLOOR — design brief
 
+Indonesian: [`design-brief.id.md`](design-brief.id.md). Same content; this one stays English
+because the repository is public at submission and judges read it.
+
 What each screen shows, where each thing sits, and what it reads from. Written so someone who has
 not read the planning spec can pick up a screen and build it.
 
