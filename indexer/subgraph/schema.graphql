@@ -739,30 +739,18 @@ type FillQuality @entity(immutable: true) @transaction {
   timestamp: BigInt!
 }
 
-"""
-A fill the floor turned away.
+# `Refusal` used to be declared here, and nothing ever wrote it.
+#
+# It cannot be written: a refusal is a revert, a reverted transaction emits no logs, and a subgraph
+# is driven by logs. An entity that can only ever be empty is worse than a missing one — a consumer
+# querying `refusals` gets `[]` and reads it as "the floor has never had to hold", which is the exact
+# opposite of what the empty list means. That is the headline number of this project, so the failure
+# mode is not academic.
+#
+# Refusals are served by `/api/refusals`, which walks the router's transaction history through
+# HyperSync, filters on status, and recovers each revert payload by replaying the call one block
+# earlier. `indexer/substreams/` decodes the same thing from transaction status.
 
-Produced by the Substreams module, never by an event handler: SettledBelowFloor is a revert, and a
-reverted transaction emits no logs at all. There is nothing for a subgraph handler to listen to.
-This is the entity that makes the Substreams layer load-bearing rather than decorative.
-"""
-type Refusal @entity(immutable: true) @transaction {
-  " { Transaction hash }-{ 0 } "
-  id: Bytes!
-  hash: Bytes!
-
-  recipient: Bytes!
-  base: Token!
-  quote: Token!
-
-  " What the fill would have settled at, decoded from the revert. "
-  attemptedRate: BigInt!
-  " What the recipient had signed for. "
-  floorRate: BigInt!
-
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
 
 " Rolled up so the daily report is a query rather than a script that walks every fill. "
 type ExecutionQualityDailySnapshot @entity(immutable: false) @dailySnapshot {
