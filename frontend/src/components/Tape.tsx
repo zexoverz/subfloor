@@ -155,6 +155,25 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
               <dd className="m-0 font-medium">
                 {entry.vsCexMidBps === undefined ? '—' : formatBps(entry.vsCexMidBps)}
               </dd>
+              <dt className="text-faint">reference</dt>
+              <dd className="m-0 font-medium">
+                {entry.referencePrice === undefined ? '—' : formatPrice(entry.referencePrice)}
+              </dd>
+              <dt className="text-faint">reference age</dt>
+              <dd className="m-0 font-medium">
+                {/*
+                  * Part of the guarantee, not trivia. The guard refuses when it cannot prove its
+                  * input is fresh, so a fill cleared against a stale answer cleared a different bar
+                  * — and the row should not flatten that into the same line as a fresh one.
+                  */}
+                {entry.referenceAgeSeconds === undefined ? (
+                  '—'
+                ) : (
+                  <span className={entry.referenceAgeSeconds > 600 ? 'text-refuse' : 'text-ink'}>
+                    {entry.referenceAgeSeconds}s
+                  </span>
+                )}
+              </dd>
               <dt className="text-faint">clear of floor</dt>
               <dd className="m-0 font-medium text-settle">
                 {entry.bpsAboveFloor === undefined ? <span className="text-faint">—</span> : `+${entry.bpsAboveFloor} bps`}

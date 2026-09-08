@@ -62,6 +62,7 @@ const FILLS = `
       makerAdverseDeviationBps
       makerFloorAtFill
       referencePrice
+      referenceAgeSeconds
       timestamp
       swap { hash tokensIn amountsIn tokensOut amountsOut }
     }
@@ -91,6 +92,7 @@ type FillRow = {
   makerAdverseDeviationBps?: number | null;
   makerFloorAtFill?: string | null;
   referencePrice?: string;
+  referenceAgeSeconds?: number | null;
   timestamp: string;
   swap: {
     hash: string;
@@ -273,6 +275,8 @@ export function useIndex(vault: Address | null): IndexData {
             vsReferenceBps: fill.makerAdverseDeviationBps ?? 0,
             tx: fill.swap.hash.slice(0, 6),
             hash: fill.swap.hash,
+            referencePrice: fill.referencePrice ? Number(fill.referencePrice) / 1e6 : undefined,
+            referenceAgeSeconds: fill.referenceAgeSeconds ?? undefined,
           };
         }),
         // The decoder wants revert data; the index has the arguments already decoded, so the tape

@@ -81,6 +81,16 @@ export type Fill = {
    * a row nobody can open is a row nobody has to believe.
    */
   hash?: string;
+  /** The reference this fill was scored against, per fill rather than one flat line for all. */
+  referencePrice?: number;
+  /**
+   * How old that reference was when the fill settled.
+   *
+   * The guard refuses when it cannot prove its input is fresh, so the age is part of what the
+   * floor means — a fill cleared against a fifteen-minute-old answer cleared a different bar than
+   * one cleared against a fresh one, and the board should not flatten that into the same row.
+   */
+  referenceAgeSeconds?: number;
   /** Against the reference at that block. Undefined until that read exists — never guessed. */
   vsReferenceBps?: number;
   /** Markout: where the reference sat 30s after the fill. The honest measure of whether it was good. */
