@@ -85,9 +85,30 @@ export function AccountMenu({ wallet }: { wallet: Wallet }) {
 
       {open && (
         <div className="absolute right-0 z-40 mt-1.5 w-[240px] overflow-hidden rounded-xl border border-rule bg-surface shadow-card">
-          <div className="border-b border-rule px-3 py-2.5">
-            <p className="m-0 text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.wallet.connected}</p>
-            <p className="m-0 mt-0.5 text-[11.5px] break-all">{address}</p>
+          {/*
+           * The blockie and the short form, not the full 42 characters wrapped over two lines.
+           *
+           * Nobody reads an address to check it character by character — they check the first four
+           * and the last four, which is what the short form is, and they recognise the blockie
+           * before they read anything. The whole string is still one click away under "Copy
+           * address", which is the only use that needs every character of it.
+           */}
+          <div className="flex items-center gap-2.5 border-b border-rule px-3 py-2.5">
+            <img
+              src={avatar ?? identicon(address)}
+              alt=""
+              aria-hidden
+              className="size-7 shrink-0 rounded-lg object-cover"
+            />
+            <div className="min-w-0">
+              <p className="m-0 text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.wallet.connected}</p>
+              {/* A name is what they recognise; the address is what they are about to copy, so
+                  when there is a name both are here rather than one hiding the other. */}
+              <p className="m-0 mt-0.5 truncate text-[12px] font-medium text-ink" title={address}>
+                {name ?? short}
+              </p>
+              {name && <p className="t-num m-0 truncate text-[11px] text-faint">{short}</p>}
+            </div>
           </div>
 
           <button
