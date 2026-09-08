@@ -44,11 +44,14 @@ function Section({
   title,
   hint,
   badge,
+  asks,
   children,
 }: {
   title: string;
   hint?: string;
   badge?: ReactNode;
+  /** How many times the wallet will ask before this step is done. Said before it asks, never after. */
+  asks?: string;
   children: ReactNode;
 }) {
   return (
@@ -56,11 +59,22 @@ function Section({
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-rule px-4 py-2.5">
         <span className="text-[11.5px] font-semibold tracking-[0.11em] text-ink uppercase">{title}</span>
         {badge}
+        {asks && (
+          <span className="rounded-md bg-raise px-1.5 py-px text-[10px] tracking-[0.06em] text-muted">
+            {asks}
+          </span>
+        )}
         {hint && <span className="ml-auto text-[11px] text-faint">{hint}</span>}
       </header>
       <div className="p-4">{children}</div>
     </section>
   );
+}
+
+/** Nought asks for nothing, so it says nothing rather than "0 confirmations". */
+function asksFor(n: number): string | undefined {
+  if (n <= 0) return undefined;
+  return n === 1 ? copy.onboarding.confirmOne : copy.onboarding.confirmMany.replace('{n}', String(n));
 }
 
 export function SetupDialog({
@@ -361,7 +375,18 @@ export function SetupDialog({
               </h1>
               <p className="serif m-0 mt-1 mb-5 text-[13.5px] text-muted">{copy.onboarding.sheetLede}</p>
 
-              <Section title={copy.onboarding.inventory} hint={copy.onboarding.inventoryHint}>
+              {/*
+                * The count is computed, not written down. One transfer per token that carries an
+                * amount, plus the wrap when the wallet holds ETH rather than WETH — a number typed
+                * into copy would go stale the first time a token is added to the pair.
+                */}
+              <Section
+                title={copy.onboarding.inventory}
+                hint={copy.onboarding.inventoryHint}
+                asks={asksFor(
+                  ACTIVE_TOKENS.filter((t) => Number(amounts[t.symbol] ?? '0') > 0).length + (wrapping ? 1 : 0),
+                )}
+              >
                 {holdings.map((h) => (
                   <AmountRow
                     key={h.symbol}
@@ -393,9 +418,12 @@ export function SetupDialog({
                 * setting the owner had already made — the same class of mistake as a fixture
                 * labelled live, on the screen where the number is chosen.
                 */}
+              {/* Both directions, always: one side covered is an agent free to sell the other way
+                  at any price, so the registry is written twice or not at all. */}
               <Section
                 title={floor.enforced ? copy.onboarding.worstPrice : copy.onboarding.proposedPrice}
                 hint={copy.onboarding.floorHint}
+                asks={asksFor(2)}
               >
               {/* Shown, not hidden behind a toggle: this is the decision the sheet exists for. */}
               <FloorControl
@@ -449,9 +477,17 @@ export function SetupDialog({
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
                     {!keysReady && (
-                      <span className="rounded-xl border border-floor/40 bg-floor-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-floor">
-                        {copy.onboarding.required}
-                      </span>
+                      <>
+                        <span className="rounded-xl border border-floor/40 bg-floor-wash px-1.5 py-px text-[9px] tracking-[0.1em] text-floor">
+                          {copy.onboarding.required}
+                        </span>
+                        {/* The device is registered twice — on the vault and on the registry —
+                            and the agent once. Either one left unset is a hole in the half of the
+                            claim the device carries. */}
+                        <span className="rounded-md bg-raise px-1.5 py-px text-[10px] tracking-[0.06em] normal-case text-muted">
+                          {asksFor(3)}
+                        </span>
+                      </>
                     )}
                   </span>
                   <ChevronDown
@@ -538,6 +574,11 @@ export function SetupDialog({
               <p className="mt-2 text-center text-[11.5px] text-faint">
                 {!funded ? copy.onboarding.noInventory : copy.onboarding.underAction}
               </p>
+              {/* The one step that costs no gas, and saying so is worth a line: it is the step
+                  people brace for hardest. */}
+              {funded && (
+                <p className="mt-1 text-center text-[11px] text-faint">{copy.onboarding.confirmSign}</p>
+              )}
 
             </>
           )}

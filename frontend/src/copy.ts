@@ -403,6 +403,18 @@ export const copy = {
     floorHint: 'Set your minimum acceptable price.',
     keysHint: 'Set once. This is why the agent can trade without ever holding your tokens.',
     tagline: 'Deeper markets, brighter floors.',
+    /**
+     * How many times the wallet will ask, per step.
+     *
+     * The principle is already in this file under `wrapNote`: two signatures rather than one, and
+     * saying so beforehand is cheaper than a surprise second prompt. It was true of one step and
+     * silent about the rest — funding sends one transfer per token, the floor is written in both
+     * directions, and the device is registered on the vault and on the registry. Nine
+     * confirmations in all, and the sheet used to name five.
+     */
+    confirmOne: '1 confirmation',
+    confirmMany: '{n} confirmations',
+    confirmSign: '1 signature, no transaction',
   },
 
   floor: {
