@@ -84,6 +84,27 @@ contract ShipTestnetBook is Script {
         book.feeBps = 3000;
         book.decayPeriod = 600;
         book.salt = uint64(vm.envOr("SUBFLOOR_SALT", uint256(1)));
+
+        // Pin the book to a maker-scoped series. Advancing the epoch invalidates every book in the
+        // series in one call, without docking each one — which is the cancel path a market maker
+        // actually wants when the market moves under a whole generation of quotes.
+        book.pinnedToSeries = true;
+        book.seriesId = uint32(vm.envOr("SUBFLOOR_SERIES", uint256(1)));
+        book.epoch = uint32(vm.envOr("SUBFLOOR_EPOCH", uint256(0)));
+
+        // `book.oracle` is deliberately left unset, and it is not an oversight.
+        //
+        // `OraclePriceAdjuster` compares the feed answer rescaled to 1e18 against the swap's price
+        // computed in **raw** token units. On an eighteen-and-eighteen pair those are the same scale.
+        // On WETH/tUSDC — and on WETH/USDC, which is what mainnet trades — the raw price is 1e12
+        // smaller, so the oracle looks better on every fill and the taker is handed the clamp:
+        // `min(priceRatio, 2e18 - maxPriceDecay)`, which at the permissive setting is **twice** the
+        // tokenOut the curve priced. It does not revert. It fills, at a price nobody meant.
+        //
+        // Measured in `test/subfloor/OracleAdjusterDecimals.t.sol`. There is an exponent that lines
+        // the two sides up, but it means passing something other than the feed's decimals in the
+        // argument named `oracleDecimals`, which is a trap for the next reader rather than a fix.
+        // See #175.
         return ConcentratedBook.build(book);
     }
 
