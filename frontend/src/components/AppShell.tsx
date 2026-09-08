@@ -55,8 +55,12 @@ export function AppShell({
        * surface and the light comes through it. It falls off fast after that. Dropping the header
        * out of the first tenth is the cheap half of the fix; the shadow on the text is the half
        * that actually carries it, and neither replaces the other.
+       *
+       * 10vh rather than a fixed number, because the drawing is `object-cover`: the bright band is
+       * a fraction of the picture, so what has to clear it is a fraction of the viewport. A fixed
+       * 80px clears it on a laptop and clears nothing on a tall monitor.
        */}
-      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pt-[clamp(18px,7vh,80px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
+      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pt-[clamp(28px,10vh,120px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
       {/*
        * One row. The brand and the two real screens sit together on the left because they are the
        * same thing — where you are — and the status reads right to left in falling importance:
