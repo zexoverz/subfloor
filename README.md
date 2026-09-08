@@ -152,6 +152,23 @@ mainnet uses canonical Aqua and never forks it.
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
 | tUSDC (testnet stand-in) | [`0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD`](https://sepolia.basescan.org/address/0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD) | — |
 
+**Ethereum Sepolia** — portability, and nothing else. No vault, no funding, no taker, no live run.
+
+| Contract | Address | Verified |
+|---|---|---|
+| FloorRegistry | [`0x0af3d784d5Cd67f49DA8977A79edaC18fc594Da7`](https://sepolia.etherscan.io/address/0x0af3d784d5Cd67f49DA8977A79edaC18fc594Da7) | Sourcify |
+| FloorRouter | [`0x7A3cf5C71a6fc39a35a60159B1bC398262df1CDd`](https://sepolia.etherscan.io/address/0x7A3cf5C71a6fc39a35a60159B1bC398262df1CDd) | Sourcify, exact match |
+
+The router plugs into canonical Aqua by address and nothing else, so a verified deployment on a
+second chain is a checkable claim that the modification travels rather than an assertion that it
+would. Canonical Aqua answers at `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Base, Ethereum,
+Arbitrum, Optimism, Polygon, BSC and Sepolia — same address, same 5,619 bytes, checked with
+`eth_getCode` on each rather than read off a list.
+
+Not a second live run, deliberately. Money on two chains halves the size on each, and §14 puts the
+correlated risk in the deploy and the run: two live runs is two of everything that can fail during a
+demo, on the one axis where failure takes all three tracks down together.
+
 **Why there is a stand-in for USDC here, and only here.** Circle's testnet USDC is not
 permissionlessly mintable — `isMinter` is false for us and the masterMinter is Circle's — so funding
 a two-sided book means going through their faucet by hand, for every address, every time. That
