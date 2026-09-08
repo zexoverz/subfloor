@@ -222,12 +222,24 @@ venue a question without first learning the schema.
 
 Both consumers are live at `https://web-production-37798.up.railway.app` — `/api/calibration` and
 `/api/report` — served from the same origin as the site itself, so a number on screen and the query
-behind it come from one place.
+behind it come from one place. `/api/fills` and `/api/refusals` sit beside them and read the chain
+directly, so the interface still has something when the index does not.
+
+**The taker runs as its own service**, from its own image with no HTTP listener. It holds a signing
+key and serves nothing; the web service serves a public origin and holds no key. One image with both
+would put a key behind a listener for no reason.
 
 One detail decides the whole indexing design: **a refused fill emits nothing.**
 `SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
 log-driven. The refusal counter — the headline number — provably cannot come from a subgraph at all.
-It comes from Substreams, which sees transaction status. That is why the composition exists.
+It has to come from something that sees transaction status. `indexer/substreams/` decodes exactly
+that and the package is built; what serves the live number today is `/api/refusals`, which walks the
+router's transaction history through HyperSync, filters on status, and recovers each revert payload
+by replaying the call. Either way the point stands and is the reason the composition exists: the
+headline number is structurally outside the subgraph.
+
+Proven rather than described — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0)
+is a real reverted fill, and the endpoint decodes it to `SettledBelowFloor` with both rates.
 
 ## What is new here, stated precisely
 
@@ -291,9 +303,11 @@ The device is not a confirmation step. It is where the economic rule is authored
 
 ### The Graph
 
-A guarantee nobody can check is not a guarantee. A Substreams package decodes canonical Aqua
-settlements into a subgraph on the DEX Aggregator standardized schema, a listed Messari schema no
-one has ever implemented, alongside the Token API.
+A guarantee nobody can check is not a guarantee. The subgraph implements the DEX Aggregator
+standardized schema, a listed Messari schema no one has ever implemented, and scores every fill
+against the same Chainlink answer the settlement guard used — so a stranger can recompute any number
+on the site from the public endpoint. A Substreams package sits beside it for the one thing a
+log-driven index structurally cannot see, which is a refusal.
 
 The index is load-bearing twice, and both consumers are built rather than planned. The floor-setting
 screen's default is derived from realized adverse deviation over the trailing week, so the number a
