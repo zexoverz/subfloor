@@ -44,6 +44,7 @@ export function Tile({
   format,
   sub,
   tone,
+  art,
   onQuery,
 }: {
   label: string;
@@ -52,6 +53,13 @@ export function Tile({
   format?: (n: number) => string;
   sub: string;
   tone?: 'settle' | 'refuse' | 'floor';
+  /**
+   * The drawing for this stat, anchored bottom-right and bleeding off both edges.
+   *
+   * Decoration, and marked as such: `aria-hidden`, no alt text, and nothing here changes with the
+   * number. A tile that needs its picture to be understood is a tile whose label failed.
+   */
+  art?: string;
   /** The guarantee is anyone's query, never our claim — so the sentence is made clickable. */
   onQuery?: () => void;
 }) {
@@ -64,18 +72,36 @@ export function Tile({
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
 
   return (
-    <div className="panel-fill flex flex-col gap-1 p-4">
-      <span className="text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
-      <span className={`text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
+    <div className="panel-fill relative flex flex-col gap-1 overflow-hidden p-4">
+      {art && (
+        /*
+         * Behind the text, not beside it. The drawings are wider than the space a five-up row
+         * leaves, so laying one out inline would either shrink the number or wrap the label; sat
+         * behind and bled off the corner, it takes the room the tile already has spare.
+         *
+         * The text keeps its own stacking above it, and `.tile-art` masks the drawing's left edge
+         * away, so the half a number can reach carries no picture at all. Measured, and the reason
+         * is always the lure's glow — see the note on that class.
+         */
+        <img
+          src={art}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="tile-art pointer-events-none absolute right-0 -bottom-2 h-[86%] w-auto max-w-[64%] object-contain object-right-bottom select-none"
+        />
+      )}
+      <span className="relative text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
+      <span className={`relative text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
         <span className={`-mx-1 rounded-xl px-1 ${pulseClass}`}>
           {typeof value === 'number' ? <RollingNumber value={value} format={format} /> : value}
         </span>
       </span>
-      <span className="text-[11px] text-faint">{sub}</span>
+      <span className="relative max-w-[62%] text-[11px] text-faint">{sub}</span>
       {onQuery && (
         <button
           onClick={onQuery}
-          className="mt-0.5 cursor-pointer self-start text-[11.5px] tracking-[0.08em] text-floor uppercase hover:underline"
+          className="relative mt-0.5 cursor-pointer self-start text-[11.5px] tracking-[0.08em] text-floor uppercase hover:underline"
         >
           run query
         </button>

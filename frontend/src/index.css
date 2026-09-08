@@ -228,6 +228,24 @@ body {
 }
 
 /*
+ * The stat tiles' drawings.
+ *
+ * They sit behind the figure, and the figure has to win. Measured over the left half of each one —
+ * the part a number can reach — 6% to 19% of the pixels are too bright for the ink that sits on
+ * them, and it is always the same thing: the lure's glow, which is near-white by design.
+ *
+ * So the left edge of each drawing is masked away rather than the whole thing being dimmed.
+ * Dimming costs the drawing everywhere to fix a problem that exists in one place; the mask leaves
+ * the picture at full strength where the tile has room for it and removes it entirely where a
+ * digit might land.
+ */
+.tile-art {
+  opacity: 0.92;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 34%, #000 72%);
+  mask-image: linear-gradient(to right, transparent 0%, transparent 34%, #000 72%);
+}
+
+/*
  * Text laid directly on the drawing.
  *
  * Two shadows, because they do different jobs: the tight one gives every glyph an edge against a

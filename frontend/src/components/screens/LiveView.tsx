@@ -98,17 +98,20 @@ export function LiveView({
       <Tiles>
         <Tile
           label={copy.desk.fills}
+          art="/tiles/fills.webp"
           value={stats.fills}
           sub={live ? `${copy.desk.fillsSub} · ${stats.since}` : copy.desk.fillsSubPending}
         />
         <Tile
           label={copy.desk.notional}
+          art="/tiles/notional.webp"
           value={stats.notionalUsd}
           format={(n) => `$${n.toLocaleString('en-US')}`}
           sub={copy.desk.notionalSub}
         />
         <Tile
           label={copy.desk.markout}
+          art="/tiles/markout.webp"
           value={stats.markout.s30}
           format={formatBps}
           sub={`${formatBps(stats.markout.s30)} / ${formatBps(stats.markout.m5)} / ${formatBps(stats.markout.h1)} · ${copy.desk.horizons}`}
@@ -120,7 +123,13 @@ export function LiveView({
           format={formatBps}
           sub={copy.desk.worstSub}
         />
-        <Tile label={copy.desk.refused} value={stats.refused} sub={copy.desk.refusedSub} tone="refuse" />
+        <Tile
+          label={copy.desk.refused}
+          art="/tiles/refused.webp"
+          value={stats.refused}
+          sub={copy.desk.refusedSub}
+          tone="refuse"
+        />
       </Tiles>
 
       <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-4.5 max-[1000px]:grid-cols-1">
