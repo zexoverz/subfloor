@@ -80,6 +80,13 @@ contract DeploySubfloorTestnet is Script {
         FloorRouter router = new FloorRouter(address(aqua), SEPOLIA_WETH, owner, address(registry));
         AquaGuardVault vault = new AquaGuardVault(address(aqua), owner);
 
+        // The vault registers its guardian **on the registry**, which is a different thing from the
+        // vault's own guardian and was missed on the first deployment. Without it `guardian[vault]`
+        // is zero, `lowerFloor` reverts `NoGuardianRegistered`, and the whole device-signed
+        // floor-lowering path — the Ledger track's demo beat — cannot run at all. Found by trying to
+        // lower a floor on a live deployment, not by reading the code.
+        vault.execute(address(registry), 0, abi.encodeCall(FloorRegistry.setGuardian, (owner)));
+
         // The feeds are write-once and now set, so the owner key never needs to touch them.
         registry.transferOwnership(owner);
 

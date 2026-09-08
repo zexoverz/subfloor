@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "check": "node --experimental-strip-types --test src/lib/*.test.ts && node check-copy.mjs"
+    "check": "node scripts/gen-revert-selectors.mjs && git diff --exit-code --quiet api/_lib/revert-selectors.ts && node --experimental-strip-types --test src/lib/*.test.ts api/_lib/*.test.ts && node check-copy.mjs",
+    "gen:selectors": "node scripts/gen-revert-selectors.mjs"
   },
   "dependencies": {
     "@ledgerhq/device-management-kit": "^1.9.0",

@@ -8,7 +8,7 @@ import { Test } from "forge-std/Test.sol";
 import { console2 } from "forge-std/console2.sol";
 
 import { ISwapVM } from "../../src/interfaces/ISwapVM.sol";
-import { MakerTraits } from "../../src/libs/MakerTraits.sol";
+import { MakerTraitsLib } from "../../src/libs/MakerTraits.sol";
 import { ConcentratedBook } from "../../src/subfloor/strategies/ConcentratedBook.sol";
 
 /// @notice A real `Shipped` blob, for the subgraph decoder's test.
@@ -17,6 +17,14 @@ import { ConcentratedBook } from "../../src/subfloor/strategies/ConcentratedBook
 /// `data`. The decoder was reading the blob directly and taking the maker's address as its first
 /// instructions. Pinning that test to bytes this file produces means the decoder is checked against
 /// what the chain actually emits rather than against bytes the test wrote for itself.
+///
+/// Built through `MakerTraitsLib.build`, which is the second half of that lesson. An order assembled
+/// by hand with `traits = 0` puts the program alone in `data`; a real one puts `tokenA` and `tokenB`
+/// in the first forty bytes and the program after them. This file produced the hand-made shape for
+/// a week, the decoder was written to match it, and the two agreed with each other while disagreeing
+/// with the chain — five of six live strategies decoded into instructions nobody shipped, and a
+/// concentrated book was classified as pegged. A fixture that is not the thing it stands in for is
+/// worse than no fixture.
 ///
 /// Regenerate with `forge test --match-contract ShippedBlobVector -vv`.
 contract ShippedBlobVectorTest is Test {
@@ -32,11 +40,28 @@ contract ShippedBlobVectorTest is Test {
 
         bytes memory program = ConcentratedBook.build(book);
 
-        ISwapVM.Order memory order = ISwapVM.Order({
+        ISwapVM.Order memory order = MakerTraitsLib.build(MakerTraitsLib.Args({
             maker: 0x441EE52d939E46A33919C4295e88d32458797503,
-            traits: MakerTraits.wrap(0),
-            data: program
-        });
+            tokenA: 0x4200000000000000000000000000000000000006,
+            tokenB: 0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD,
+            shouldUnwrapWeth: false,
+            useAquaInsteadOfSignature: true,
+            allowZeroAmountIn: false,
+            receiver: address(0),
+            hasPreTransferInHook: false,
+            hasPostTransferInHook: false,
+            hasPreTransferOutHook: false,
+            hasPostTransferOutHook: false,
+            preTransferInTarget: address(0),
+            preTransferInData: "",
+            postTransferInTarget: address(0),
+            postTransferInData: "",
+            preTransferOutTarget: address(0),
+            preTransferOutData: "",
+            postTransferOutTarget: address(0),
+            postTransferOutData: "",
+            program: program
+        }));
 
         console2.log("program", vm.toString(program));
         console2.log("shippedBlob", vm.toString(abi.encode(order)));

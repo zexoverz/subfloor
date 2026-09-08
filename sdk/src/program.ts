@@ -84,6 +84,26 @@ export class Program {
 
 // --- the instructions, with the opcode and width taken from each library's own `Encoding:` note ---
 
+/// 0x02 Salt — [uint64 salt]
+///
+/// Two books with identical parameters are the same order and Aqua keys inventory by order hash, so
+/// without a distinct salt the second ship silently joins the first rather than standing beside it.
+export const salt = (value: bigint | number) => instruction(0x02, uint(value, 8));
+
+/// 0x9c Decay — [uint16 period]
+///
+/// Charges the counter-swap: each fill raises an offset against the opposite direction which decays
+/// over `period` seconds. Placed outside the fee in `ConcentratedBook`, because both wrap the rest
+/// of the program and the offsets Decay stores have to be the amounts the taker actually moved.
+export const decay = (periodSeconds: number) => instruction(0x9c, uint(periodSeconds, 2));
+
+/// 0x30 JumpIfDirection — [bool swapDirection, uint16 nextPC]
+///
+/// `nextPC` must be an instruction-aligned offset in the program; the VM does not check it for you
+/// and a misaligned target decodes the middle of an instruction as an opcode.
+export const jumpIfDirection = (swapDirection: boolean, nextPC: number) =>
+  instruction(0x30, concat([uint(swapDirection ? 1 : 0, 1), uint(nextPC, 2)]));
+
 /// 0x20 Deadline — [uint40 deadline]
 export const deadline = (unixSeconds: bigint | number) => instruction(0x20, uint(unixSeconds, 5));
 

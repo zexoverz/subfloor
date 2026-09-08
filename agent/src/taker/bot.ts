@@ -3,6 +3,7 @@ import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { AGGREGATOR_ABI, AQUA_ABI, ERC20_ABI, ROUTER_ABI } from "./abi.ts";
 import { decodeShipped, isAToB } from "./order.ts";
+import { hyperSyncFromEnv, logsSince } from "./hypersync.ts";
 import { buildTakerData } from "./takerTraits.ts";
 
 /// The self-operated taker.
@@ -136,23 +137,49 @@ export function configFromEnv(): Config {
 /// so rebuilding it off-chain means matching it byte for byte. Reading it removes that whole class
 /// of mistake, and a rebuild that differs quotes zero — which looks like an empty book rather than
 /// like a bug, and cost an hour finding out.
+/// Topic hashes from `docs/event-map.md`, computed with `cast keccak` rather than copied.
+const SHIPPED_TOPIC0 = "0xdc3622e06fb145651f567d421c9ef261d71d43e3778b761907bc0d70d42e52b0" as Hex;
+const DOCKED_TOPIC0 = "0xd173a1d140c154eb1ce9298d251d5eb8c4089cc2d16e70f1067bdc810c6fe004" as Hex;
+
+/// The live order, read off the chain rather than rebuilt.
+///
+/// `Shipped` carries `abi.encode(order)` and Aqua keys inventory by the hash of exactly those bytes,
+/// so rebuilding it off-chain means matching it byte for byte. Reading it removes that whole class
+/// of mistake, and a rebuild that differs quotes zero — which looks like an empty book rather than
+/// like a bug.
+///
+/// Through HyperSync, never `eth_getLogs`: the vault ships rarely, so the live strategy sits
+/// thousands of blocks back, and a span that wide is exactly what the public RPC refuses.
 export async function liveOrder(c: Clients, cfg: Config) {
-  const [shipped, dockedLogs] = await Promise.all([
-    c.pub.getLogs({ address: cfg.aqua, event: AQUA_ABI[0], fromBlock: cfg.fromBlock, toBlock: "latest" }),
-    c.pub.getLogs({ address: cfg.aqua, event: AQUA_ABI[1], fromBlock: cfg.fromBlock, toBlock: "latest" }),
-  ]);
-  const docked = new Set(dockedLogs.map((l) => (l.args as { strategyHash: Hex }).strategyHash));
+  const hs = hyperSyncFromEnv();
+  const logs = await logsSince(hs, cfg.fromBlock, [cfg.aqua], [SHIPPED_TOPIC0, DOCKED_TOPIC0]);
+
+  const docked = new Set<string>();
+  const shipped: { strategy: Hex; strategyHash: Hex; maker: Address }[] = [];
+
+  for (const l of logs) {
+    // Neither event has indexed parameters, so both decode out of `data`: maker, app, strategyHash,
+    // then the strategy blob's offset and length for Shipped.
+    const word = (i: number) => l.data.slice(2 + i * 64, 2 + (i + 1) * 64);
+    const maker = (`0x${word(0).slice(24)}`) as Address;
+    const strategyHash = (`0x${word(2)}`) as Hex;
+
+    if (l.topic0.toLowerCase() === DOCKED_TOPIC0) {
+      docked.add(strategyHash.toLowerCase());
+      continue;
+    }
+    const at = Number(BigInt(`0x${word(3)}`)) / 32;
+    const len = Number(BigInt(`0x${word(at)}`));
+    const strategy = (`0x${l.data.slice(2 + (at + 1) * 64, 2 + (at + 1) * 64 + len * 2)}`) as Hex;
+    shipped.push({ strategy, strategyHash, maker });
+  }
 
   const mine = shipped
-    .filter((l) => {
-      const a = l.args as { maker: Address; strategyHash: Hex };
-      return a.maker.toLowerCase() === cfg.vault.toLowerCase() && !docked.has(a.strategyHash);
-    })
+    .filter((s) => s.maker.toLowerCase() === cfg.vault.toLowerCase() && !docked.has(s.strategyHash.toLowerCase()))
     .at(-1);
 
   if (!mine) return null;
-  const a = mine.args as { strategy: Hex; strategyHash: Hex };
-  return { ...decodeShipped(a.strategy), strategyHash: a.strategyHash };
+  return { ...decodeShipped(mine.strategy), strategyHash: mine.strategyHash };
 }
 
 export async function reference(c: Clients, cfg: Config) {

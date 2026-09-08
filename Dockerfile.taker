@@ -1,0 +1,19 @@
+# The taker bot, as its own service.
+#
+# Separate from the web image on purpose: the web service serves a public origin and holds no key,
+# and this one holds the taker's key and serves nothing. One image with both would put a signing key
+# behind an HTTP listener for no reason.
+#
+# Node's own type stripping again, so what runs here is the TypeScript the tests exercise.
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY agent/package.json ./agent/package.json
+RUN cd agent && npm install --omit=dev --no-audit --no-fund --ignore-scripts
+
+COPY agent/src ./agent/src
+COPY sdk/src ./sdk/src
+
+# No listener, no healthcheck path. Railway watches the process.
+CMD ["node", "--experimental-strip-types", "agent/src/taker/run.ts"]

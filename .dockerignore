@@ -5,6 +5,10 @@ contracts/broadcast
 indexer/substreams/target
 frontend/dist
 .git
-agent
 docs/SPEC.md
 feedbacks
+# `agent` is deliberately not excluded: Dockerfile.taker needs agent/src and
+# agent/package.json. Both images COPY only the paths they use, so leaving it in the
+# context does not put it in the web image.
+agent/node_modules
+agent/vendor

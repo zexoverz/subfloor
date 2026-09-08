@@ -58,7 +58,7 @@ dataSources:
     name: FloorRouter
     network: base-sepolia
     source:
-      address: "0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709"
+      address: "0x03189D102286fa8cDd0fBF3578B492e67e665A27"
       abi: FloorRouter
       startBlock: 46513825
     mapping:
@@ -70,11 +70,18 @@ dataSources:
         - Swap
         - FillQuality
         - Account
+        - ReferenceFeed
       abis:
         - name: FloorRouter
           file: ./abis/FloorRouter.json
         - name: ERC20
           file: ./abis/ERC20.json
+        # `handleSwapped` asks the registry which way round this pair's reference runs, and
+        # graph-node resolves a contract call against the ABIs listed on the *data source running
+        # the handler* rather than the TypeScript import. Without this line the call is a
+        # deterministic failure and the subgraph stops at the first fill.
+        - name: FloorRegistry
+          file: ./abis/FloorRegistry.json
       eventHandlers:
         - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
           handler: handleSwapped

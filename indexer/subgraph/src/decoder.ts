@@ -104,13 +104,17 @@ export function classify(families: string[]): string {
 /// What a `Shipped` blob turned out to be.
 export class Shipped {
   program: Bytes;
+  /// The ordered pair the order trades, from the first 40 bytes of `data`. Empty when the blob was
+  /// taken as raw bytecode.
+  pair: Bytes;
   /// True when the blob was an ABI-encoded `ISwapVM.Order` and the program came out of its `data`
   /// field; false when the blob was taken as raw bytecode.
   wrappedInOrder: bool;
   maker: string;
 
-  constructor(program: Bytes, wrappedInOrder: bool, maker: string) {
+  constructor(program: Bytes, wrappedInOrder: bool, maker: string, pair: Bytes = Bytes.empty()) {
     this.program = program;
+    this.pair = pair;
     this.wrappedInOrder = wrappedInOrder;
     this.maker = maker;
   }
@@ -152,8 +156,27 @@ export function unwrapShipped(blob: Bytes): Shipped {
   const length = readU32(blob, dataAt);
   if (dataAt + 32 + length > blob.length) return new Shipped(blob, false, "");
 
-  const out = new Uint8Array(length);
-  for (let i = 0; i < length; i++) out[i] = blob[dataAt + 32 + i];
+  // Where the program starts is not a constant, it is in the traits — and both shapes are on chain.
+  //
+  // `MakerTraitsLib` packs four 16-bit slice indexes starting at bit 160, and the program runs from
+  // the fourth of them to the end of `data`. For an order built by the library that index is 40,
+  // because `tokenA` and `tokenB` occupy the first forty bytes. For an order assembled by hand with
+  // `traits = 0` every index is zero and `data` is the program alone.
+  //
+  // Both exist on this deployment: the book shipped before the builder was used has `traits = 0`,
+  // and hardcoding either answer misreads the other. Bit 160 + 16*3 lands on bytes 4 and 5 of the
+  // traits word, big-endian.
+  const traitsAt = tupleAt + 32;
+  const programStart: i32 = (i32(blob[traitsAt + 4]) << 8) | i32(blob[traitsAt + 5]);
+  if (programStart > length) return new Shipped(blob, false, "");
+
+  const programLength = length - programStart;
+  const out = new Uint8Array(programLength);
+  for (let i = 0; i < programLength; i++) out[i] = blob[dataAt + 32 + programStart + i];
+
+  const pairLength: i32 = programStart >= 40 ? 40 : 0;
+  const pairBytes = new Uint8Array(pairLength);
+  for (let i = 0; i < pairBytes.length; i++) pairBytes[i] = blob[dataAt + 32 + i];
 
   let maker = "0x";
   for (let i = 12; i < 32; i++) {
@@ -161,7 +184,7 @@ export function unwrapShipped(blob: Bytes): Shipped {
     maker += (b < 16 ? "0" : "") + b.toString(16);
   }
 
-  return new Shipped(Bytes.fromUint8Array(out), true, maker);
+  return new Shipped(Bytes.fromUint8Array(out), true, maker, Bytes.fromUint8Array(pairBytes));
 }
 
 /// Reads the low 32 bits of the 32-byte word at `at`. Every offset and length in this layout is far

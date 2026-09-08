@@ -55,11 +55,22 @@ mcporter call exa.web_search_exa query="<describe the ideal page, not keywords>"
 Jina Reader reads any URL: `curl https://r.jina.ai/<URL>`. There is no `timeout` binary here, so wrap
 long calls as `perl -e 'alarm 150; exec @ARGV' <cmd>`.
 
-On-chain history goes through Envio HyperSync, not an RPC loop. Public RPCs cap `eth_getLogs`
-and rate-limit under a walk; HyperSync does neither. Query
-`https://<chain|chainid>.hypersync.xyz/query` with a bearer token, paginate on `next_block` until it
-stops advancing, and remember the response returns `blocks` and `logs` as sibling arrays with log
-fields flat (`topic0`…`topic3`, `data`).
+**Log history goes through Envio HyperSync. `eth_getLogs` is forbidden — not discouraged.** Not as
+a fallback, not as a simpler first version, not "just for a narrow range". Public RPCs cap the range
+and rate-limit under a walk, so the RPC version passes every local test, ships, works for an hour,
+and then fails on every call as the chain moves past it. Chunking does not fix it: the cap and the
+rate limit are two problems and chunking trades one for the other.
+
+This rule was already here on 7 Sep and was violated twice in one night anyway — in the frontend's
+`/api/fills` endpoint and in the taker bot — with the same failure both times, the second written
+while fixing the first. If you are reaching for `getLogs`, you are about to repeat it.
+
+Query `https://<chain|chainid>.hypersync.xyz/query` with a bearer token from
+`SUBFLOOR_HYPERSYNC_TOKEN`, paginate on `next_block` until it stops advancing, and remember the
+response returns `blocks` and `logs` as sibling arrays with log fields flat (`topic0`…`topic3`,
+`data`). Code that cannot find the token should throw and say why, never fall back to an RPC.
+
+`eth_call` against current state is fine. This is about log *history*.
 
 **Prove a venue is alive from event recency before reading it.** A contract answers every call and
 returns a well-formed book whether or not anyone is trading against it. That has already cost time

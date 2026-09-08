@@ -10,7 +10,7 @@ import { DAILY_QUALITY_QUERY, DEFAULT_ENDPOINT, REFERENCE_QUERY, query, type Dai
 export interface Report {
   generatedAt: string;
   windowDays: number;
-  totals: { fills: number; refusals: number; scoredFills: number };
+  totals: { fills: number; refusals: number | null; scoredFills: number };
   worstDay: DailyQuality | null;
   days: DailyQuality[];
   reference: { aggregator: string; answer: string; updatedAt: string; roundId: string } | null;
@@ -37,7 +37,11 @@ export function renderMarkdown(r: Report): string {
   if (r.totals.fills === 0) {
     lines.push("No fills in the window. Nothing to report, which is reported rather than omitted.");
   } else {
-    lines.push(`${r.totals.fills} fills, ${r.totals.refusals} refused, over ${r.windowDays} days.`);
+    lines.push(
+      r.totals.refusals === null
+        ? `${r.totals.fills} fills over ${r.windowDays} days. Refusals are not countable from the index and are reported by /api/refusals.`
+        : `${r.totals.fills} fills, ${r.totals.refusals} refused, over ${r.windowDays} days.`,
+    );
     if (r.totals.scoredFills < r.totals.fills) {
       lines.push("");
       lines.push(
@@ -45,11 +49,13 @@ export function renderMarkdown(r: Report): string {
       );
     }
     lines.push("");
-    lines.push("| day | fills | refused | p50 bps | p99 bps | median ref age |");
-    lines.push("|---:|---:|---:|---:|---:|---:|");
+    // No refusal column. The index cannot see a refusal, so the column could only ever print zero,
+    // and a zero in a table reads as a measurement rather than an absence.
+    lines.push("| day | fills | p50 bps | p99 bps | median ref age |");
+    lines.push("|---:|---:|---:|---:|---:|");
     for (const d of r.days) {
       lines.push(
-        `| ${d.day} | ${d.fills} | ${d.refusals} | ${d.adverseDeviationP50Bps} | ${d.adverseDeviationP99Bps} | ${d.medianReferenceAgeSeconds}s |`,
+        `| ${d.day} | ${d.fills} | ${d.adverseDeviationP50Bps} | ${d.adverseDeviationP99Bps} | ${d.medianReferenceAgeSeconds}s |`,
       );
     }
     if (r.worstDay) {
@@ -102,7 +108,12 @@ export async function generate(
 
   const days = quality.executionQualityDailySnapshots;
   const fills = days.reduce((n, d) => n + d.fills, 0);
-  const refusals = days.reduce((n, d) => n + d.refusals, 0);
+  // Deliberately not `days.reduce(... d.refusals)`. That field is structurally zero: a refusal is a
+  // revert, a revert emits no logs, and a subgraph indexes logs. Summing it produced a confident
+  // zero on the one number this report exists to carry. Refusals come from /api/refusals, which
+  // reads transaction status, and this report says so rather than printing a zero it cannot stand
+  // behind.
+  const refusals: number | null = null;
   // A day contributes to the percentiles only through its scored fills; the snapshot's percentiles
   // are zero when it has none, which is how a fully unscored day is told apart from a clean one.
   const scoredFills = days.reduce((n, d) => n + (d.adverseDeviationP99Bps === 0 && d.medianReferenceAgeSeconds === 0 ? 0 : d.fills), 0);

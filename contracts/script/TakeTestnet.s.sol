@@ -32,7 +32,7 @@ import { FloorRegistry } from "../src/subfloor/FloorRegistry.sol";
 contract TakeTestnet is Script {
     address internal constant WETH = 0x4200000000000000000000000000000000000006;
 
-    uint256 internal constant REFERENCE = uint256(2480_630000);
+    uint256 internal constant REFERENCE = uint256(2478669714);
     uint16 internal constant SPREAD_BPS = 50;
 
     function _order() internal view returns (ISwapVM.Order memory) {

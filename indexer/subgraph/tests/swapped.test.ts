@@ -2,6 +2,8 @@ import { assert, createMockedFunction, describe, newMockEvent, test } from "matc
 import { Address, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { Swapped } from "../generated/FloorRouter/FloorRouter";
 import { handleSwapped } from "../src/router";
+import { ETH_USD, eventId } from "../src/shared";
+import { ReferenceAnswer } from "../generated/schema";
 
 /// `handleSwapped` is where the subgraph stops.
 ///
@@ -13,6 +15,61 @@ const TAKER = "0x8960d9c818df91e582702f6ec7e3d058244e992b";
 const MAKER = "0xaf6b337440ffea63c47f077eee2663987aeec33f";
 const WETH = "0x4200000000000000000000000000000000000006";
 const TUSDC = "0x90dcee47dc225832b8bbd7eb8eeac60766d2d1ad";
+const REGISTRY = "0x47c7abb1ffbf37ed4bcfcb20f6648b5c0cc86123";
+const FEED = "0x4adc67696ba383f43dd60a9e78f2c97fbbfc7cb1";
+
+/// The registry's reference configuration, as read off the live Base Sepolia deployment.
+///
+/// Both directions, with the values the registry actually stored: WETH/tUSDC forward at scale 1e6,
+/// tUSDC/WETH inverted at scale 1e30. Mocking only one of them is how the reverse direction went
+/// unscored for a week.
+/// A live ETH/USD answer, $2,500 at the feed's eight decimals.
+///
+/// Without this every fill takes the unscored branch, which is what the first version of these
+/// tests did: they asserted a FillQuality row appeared and never noticed that referencePrice was
+/// zero and the deviation was a default rather than a measurement.
+function seedReference(): void {
+  const r = new ReferenceAnswer(ETH_USD);
+  r.aggregator = Address.fromString(FEED);
+  r.answer = BigInt.fromString("250000000000");
+  r.updatedAt = BigInt.fromI32(1757000000);
+  r.roundId = BigInt.fromI32(1);
+  r.blockNumber = BigInt.fromI32(46514610);
+  r.save();
+}
+
+function mockReferenceFeeds(routerAddr: Address): void {
+  createMockedFunction(routerAddr, "FLOOR_REGISTRY", "FLOOR_REGISTRY():(address)")
+    .returns([ethereum.Value.fromAddress(Address.fromString(REGISTRY))]);
+
+  const sig = "referenceFeed(address,address):(address,bool,uint32,uint8,uint256)";
+
+  createMockedFunction(Address.fromString(REGISTRY), "referenceFeed", sig)
+    .withArgs([
+      ethereum.Value.fromAddress(Address.fromString(WETH)),
+      ethereum.Value.fromAddress(Address.fromString(TUSDC)),
+    ])
+    .returns([
+      ethereum.Value.fromAddress(Address.fromString(FEED)),
+      ethereum.Value.fromBoolean(false),
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(86400)),
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(8)),
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1000000")),
+    ]);
+
+  createMockedFunction(Address.fromString(REGISTRY), "referenceFeed", sig)
+    .withArgs([
+      ethereum.Value.fromAddress(Address.fromString(TUSDC)),
+      ethereum.Value.fromAddress(Address.fromString(WETH)),
+    ])
+    .returns([
+      ethereum.Value.fromAddress(Address.fromString(FEED)),
+      ethereum.Value.fromBoolean(true),
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(86400)),
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(8)),
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1000000000000000000000000000000")),
+    ]);
+}
 
 function mockToken(addr: string, sym: string, dec: i32): void {
   const a = Address.fromString(addr);
@@ -40,22 +97,44 @@ describe("handleSwapped, on the fills that actually happened", () => {
   test("tUSDC in, WETH out — the direction with a 4e26 rate", () => {
     mockToken(WETH, "WETH", 18);
     mockToken(TUSDC, "tUSDC", 6);
-    handleSwapped(swapped(TUSDC, WETH, BigInt.fromI32(1200000), BigInt.fromString("481201465082246")));
+    const ev = swapped(TUSDC, WETH, BigInt.fromI32(1200000), BigInt.fromString("481201465082246"));
+    mockReferenceFeeds(ev.address);
+    seedReference();
+    handleSwapped(ev);
     assert.entityCount("Swap", 1);
     assert.entityCount("FillQuality", 1);
+
+    // The rate itself, and then the score. Asserting only that a FillQuality row exists is what let
+    // the reverse direction sit at -9999 bps through a green test run: the row was always written,
+    // it was the number in it that was fiction.
+    const id = eventId(ev).toHexString();
+    assert.fieldEquals("FillQuality", id, "executionRate", "401001220901871666666666666");
+    assert.fieldEquals("FillQuality", id, "referencePrice", "400000000000000000000000000");
+    assert.fieldEquals("FillQuality", id, "adverseDeviationBps", "25");
   });
 
   test("WETH in, tUSDC out — the other direction", () => {
     mockToken(WETH, "WETH", 18);
     mockToken(TUSDC, "tUSDC", 6);
-    handleSwapped(swapped(WETH, TUSDC, BigInt.fromString("180000000000000"), BigInt.fromI32(448607)));
+    const ev = swapped(WETH, TUSDC, BigInt.fromString("180000000000000"), BigInt.fromI32(448607));
+    mockReferenceFeeds(ev.address);
+    seedReference();
+    handleSwapped(ev);
     assert.entityCount("FillQuality", 1);
+
+    const id = eventId(ev).toHexString();
+    assert.fieldEquals("FillQuality", id, "referencePrice", "2500000000");
+    assert.fieldEquals("FillQuality", id, "executionRate", "2492261111");
+    assert.fieldEquals("FillQuality", id, "adverseDeviationBps", "-30");
   });
 
   test("a zero amountIn does not divide by zero", () => {
     mockToken(WETH, "WETH", 18);
     mockToken(TUSDC, "tUSDC", 6);
-    handleSwapped(swapped(TUSDC, WETH, BigInt.zero(), BigInt.fromI32(1)));
+    const ev = swapped(TUSDC, WETH, BigInt.zero(), BigInt.fromI32(1));
+    mockReferenceFeeds(ev.address);
+    seedReference();
+    handleSwapped(ev);
     assert.assertTrue(true);
   });
 });

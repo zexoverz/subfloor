@@ -1,8 +1,47 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { Swapped } from "../generated/FloorRouter/FloorRouter";
-import { Swap, VirtualPool, FillQuality, Floor, ReferenceAnswer } from "../generated/schema";
+import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Swapped, FloorRouter } from "../generated/FloorRouter/FloorRouter";
+import { FloorRegistry } from "../generated/FloorRegistry/FloorRegistry";
+import { Swap, VirtualPool, FillQuality, Floor, ReferenceAnswer, ReferenceFeed, Token } from "../generated/schema";
 import { recordFill } from "./quality";
 import { deviationBps, ETH_USD, eventId, getAccount, getProtocol, getToken, rateOf, referenceRate, ZERO_BD, ZERO_BI } from "./shared";
+
+/// The registry's reference configuration for one ordered pair, read from the registry itself.
+///
+/// Directional, and that is the point: the same two tokens are registered twice, forward one way
+/// and inverted the other, and the registry applies a different formula to each. Deriving the
+/// direction here from which token has more decimals is what the earlier version did, and it scored
+/// every reverse fill at -9999 bps.
+///
+/// Cached after the first read because `setReferenceFeed` reverts `ReferenceAlreadySet` on a second
+/// call, so a pair's configuration cannot change under us once it exists.
+///
+/// Returns null when the pair has no feed. The caller must leave the fill unscored in that case
+/// rather than reach for the other direction's configuration.
+function getReferenceFeed(router: Address, tokenIn: Token, tokenOut: Token): ReferenceFeed | null {
+  const id = tokenIn.id.concat(tokenOut.id);
+  const cached = ReferenceFeed.load(id);
+  if (cached != null) return cached;
+
+  const reg = FloorRouter.bind(router).try_FLOOR_REGISTRY();
+  if (reg.reverted) return null;
+
+  const cfg = FloorRegistry.bind(reg.value).try_referenceFeed(
+    Address.fromBytes(tokenIn.id),
+    Address.fromBytes(tokenOut.id),
+  );
+  if (cfg.reverted) return null;
+  if (cfg.value.value0.equals(Address.zero())) return null;
+
+  const f = new ReferenceFeed(id);
+  f.base = tokenIn.id;
+  f.quote = tokenOut.id;
+  f.feed = cfg.value.value0;
+  f.inverted = cfg.value.value1;
+  f.stalenessBound = cfg.value.value2.toI32();
+  f.scale = cfg.value.value4;
+  f.save();
+  return f;
+}
 
 /// The standardized entity, populated exactly as the schema defines it. Nothing SUBFLOOR-specific
 /// goes in here; a consumer who knows dex-agg queries this without reading our docs.
@@ -66,8 +105,9 @@ export function handleSwapped(event: Swapped): void {
   // when the fill precedes any AnswerUpdated this subgraph has seen — and the daily report must
   // exclude those rather than average them in as if they were fresh.
   const ref = ReferenceAnswer.load(ETH_USD);
-  if (ref) {
-    const refRate = referenceRate(ref.answer, tokenIn.decimals, tokenOut.decimals);
+  const feed = getReferenceFeed(event.address, tokenIn, tokenOut);
+  if (ref && feed) {
+    const refRate = referenceRate(ref.answer, feed.scale, feed.inverted);
     q.referencePrice = refRate;
     q.adverseDeviationBps = deviationBps(q.executionRate, refRate);
     const age = event.block.timestamp.minus(ref.updatedAt);

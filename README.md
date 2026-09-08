@@ -146,7 +146,7 @@ mainnet uses canonical Aqua and never forks it.
 | Contract | Address | Verified |
 |---|---|---|
 | FloorRegistry | [`0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123`](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123) | Sourcify |
-| FloorRouter | [`0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709`](https://sepolia.basescan.org/address/0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709) | pending |
+| FloorRouter | [`0x03189D102286fa8cDd0fBF3578B492e67e665A27`](https://sepolia.basescan.org/address/0x03189D102286fa8cDd0fBF3578B492e67e665A27) | Sourcify |
 | VaultFactory | [`0xD985Ad481D396D37344f7c1229433a7D342cf1F1`](https://sepolia.basescan.org/address/0xD985Ad481D396D37344f7c1229433a7D342cf1F1) | Sourcify |
 | AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
@@ -161,8 +161,17 @@ six decimals, so decimal handling is exercised exactly as it is on mainnet. The 
 uses real USDC and this contract does not exist there.
 
 The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
-concentrated book is shipped and live — `strategyHash 0xc54042b1…`, mandate signed EIP-712 by the
-guardian.
+two-sided book is shipped and live under a mandate signed EIP-712 by the guardian.
+
+**The router was redeployed on 8 Sep, and the reason is worth stating.** The first one could not be
+built from any commit: its runtime was 23,983 bytes where every build of the source produced ~24,3xx,
+because `forge script` and `forge build` compile this contract differently and the deployment went
+out through the script. Nothing was wrong with it on chain — it settled 115 fills correctly — but a
+contract nobody can reproduce cannot be verified, and an unverified router turns the refusal card's
+`[view]` link into hex soup. The replacement was deployed from the bytecode the public verifier
+itself produces from this repo's sources, so `exact_match` is not just a pass, it is the statement
+that the chain and this repository hold the same contract. Tracked in
+[#167](https://github.com/zexoverz/subfloor/issues/167).
 
 **Base mainnet** — _pending, see below._
 
@@ -172,7 +181,7 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.1.0
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v2.3.0
 ```
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
@@ -213,12 +222,24 @@ venue a question without first learning the schema.
 
 Both consumers are live at `https://web-production-37798.up.railway.app` — `/api/calibration` and
 `/api/report` — served from the same origin as the site itself, so a number on screen and the query
-behind it come from one place.
+behind it come from one place. `/api/fills` and `/api/refusals` sit beside them and read the chain
+directly, so the interface still has something when the index does not.
+
+**The taker runs as its own service**, from its own image with no HTTP listener. It holds a signing
+key and serves nothing; the web service serves a public origin and holds no key. One image with both
+would put a key behind a listener for no reason.
 
 One detail decides the whole indexing design: **a refused fill emits nothing.**
 `SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
 log-driven. The refusal counter — the headline number — provably cannot come from a subgraph at all.
-It comes from Substreams, which sees transaction status. That is why the composition exists.
+It has to come from something that sees transaction status. `indexer/substreams/` decodes exactly
+that and the package is built; what serves the live number today is `/api/refusals`, which walks the
+router's transaction history through HyperSync, filters on status, and recovers each revert payload
+by replaying the call. Either way the point stands and is the reason the composition exists: the
+headline number is structurally outside the subgraph.
+
+Proven rather than described — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0)
+is a real reverted fill, and the endpoint decodes it to `SettledBelowFloor` with both rates.
 
 ## What is new here, stated precisely
 
@@ -282,9 +303,11 @@ The device is not a confirmation step. It is where the economic rule is authored
 
 ### The Graph
 
-A guarantee nobody can check is not a guarantee. A Substreams package decodes canonical Aqua
-settlements into a subgraph on the DEX Aggregator standardized schema, a listed Messari schema no
-one has ever implemented, alongside the Token API.
+A guarantee nobody can check is not a guarantee. The subgraph implements the DEX Aggregator
+standardized schema, a listed Messari schema no one has ever implemented, and scores every fill
+against the same Chainlink answer the settlement guard used — so a stranger can recompute any number
+on the site from the public endpoint. A Substreams package sits beside it for the one thing a
+log-driven index structurally cannot see, which is a refusal.
 
 The index is load-bearing twice, and both consumers are built rather than planned. The floor-setting
 screen's default is derived from realized adverse deviation over the trailing week, so the number a
@@ -305,12 +328,13 @@ it worth less.
 
 | | |
 |---|---|
-| Contracts, Base Sepolia | **live**, [addresses above](#deployed); three of four verified on Sourcify |
+| Contracts, Base Sepolia | **live**, [addresses above](#deployed); all four verified on Sourcify |
 | Floors, both directions | **set on chain**, keyed to the vault |
 | A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
 | Calibration and the daily report | **live** at `/api/calibration` and `/api/report` |
-| Fills, and the execution-quality dataset | _none yet_ — the book is quoting, nothing has taken it |
+| Fills, and the execution-quality dataset | **115 fills** on the previous router, both directions, scored against the same Chainlink answer settlement used; the taker is being repointed at the redeployed one |
+| Refusals | **on chain** — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0) reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000, and the floor was then lowered again under a guardian signature |
 | Base mainnet, with our own money | _pending_ |
 | A rogue agent, refused, on chain | _pending_ |
 

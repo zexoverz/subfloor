@@ -87,13 +87,9 @@ describe("classification", () => {
 });
 
 const SHIPPED_BLOB = Bytes.fromHexString(
-  "0x0000000000000000000000000000000000000000000000000000000000000020" +
-  "000000000000000000000000441ee52d939e46a33919c4295e88d32458797503" +
-  "0000000000000000000000000000000000000000000000000000000000000000" +
-  "0000000000000000000000000000000000000000000000000000000000000060" +
-  "0000000000000000000000000000000000000000000000000000000000000055" +
-  "0208000000000000002a9c0202587003000bb85140000000000000000000000000000000000000000000000002b42709c936c81e09000000000000000000000000000000000000000000000002b79f382c074475a00000000000000000000000",
+  "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000441ee52d939e46a33919c4295e88d3245879750340000000002800280028002800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007d420000000000000000000000000000000000000690dcee47dc225832b8bbd7eb8eeac60766d2d1ad0208000000000000002a9c0202587003000bb85140000000000000000000000000000000000000000000000002b42709c936c81e09000000000000000000000000000000000000000000000002b79f382c074475a0000000",
 );
+
 const PROGRAM = "0x0208000000000000002a9c0202587003000bb85140000000000000000000000000000000000000000000000002b42709c936c81e09000000000000000000000000000000000000000000000002b79f382c074475a0";
 
 describe("what Aqua actually ships", () => {
@@ -140,5 +136,43 @@ describe("what Aqua actually ships", () => {
     const shipped = unwrapShipped(Bytes.fromHexString(PROGRAM));
     assert.assertTrue(!shipped.wrappedInOrder);
     assert.stringEquals(shipped.program.toHexString(), PROGRAM);
+  });
+});
+
+/// The other shape that is live on this deployment.
+///
+/// An order assembled by hand with `traits = 0`: every slice index is zero, so `data` is the
+/// program with no token pair in front of it. `c54042b1` on Base Sepolia is exactly this, shipped
+/// before `MakerTraitsLib.build` was used. It is also an order that can never fill — the router
+/// takes the signature path and finds no Aqua balance — which is why it is worth being able to read:
+/// an index that cannot decode a broken order cannot show you that it is broken.
+const LEGACY_TRAITS_ZERO_BLOB = Bytes.fromHexString(
+  "0x0000000000000000000000000000000000000000000000000000000000000020" +
+    "000000000000000000000000441ee52d939e46a33919c4295e88d32458797503" +
+    "0000000000000000000000000000000000000000000000000000000000000000" +
+    "0000000000000000000000000000000000000000000000000000000000000060" +
+    "0000000000000000000000000000000000000000000000000000000000000055" +
+    "0208000000000000002a9c0202587003000bb85140000000000000000000000000000000000000000000000002b42709c936c81e09000000000000000000000000000000000000000000000002b79f382c074475a00000000000000000000000",
+);
+
+describe("both order shapes on chain", () => {
+  test("traits = 0 means data is the program, with nothing in front of it", () => {
+    const s = unwrapShipped(LEGACY_TRAITS_ZERO_BLOB);
+    assert.assertTrue(s.wrappedInOrder);
+    assert.i32Equals(0, s.pair.length);
+
+    const d = decode(s.program);
+    assert.stringEquals("", d.error);
+    assert.i32Equals(4, d.steps.length);
+    assert.stringEquals("CONCENTRATED", classify(familiesOf(d.steps)));
+  });
+
+  test("a built order puts the pair first, and both read as the same book", () => {
+    const built = decode(unwrapShipped(SHIPPED_BLOB).program);
+    const legacy = decode(unwrapShipped(LEGACY_TRAITS_ZERO_BLOB).program);
+    assert.i32Equals(built.steps.length, legacy.steps.length);
+    for (let i = 0; i < built.steps.length; i++) {
+      assert.i32Equals(built.steps[i].opcode, legacy.steps[i].opcode);
+    }
   });
 });

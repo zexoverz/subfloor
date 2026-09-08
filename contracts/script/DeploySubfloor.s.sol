@@ -109,7 +109,12 @@ contract DeploySubfloor is Script {
         console2.log("Next, and none of it is optional before funding:");
         console2.log("  vault.setDelegate(<agent EOA>)     - owner only");
         console2.log("  vault.setGuardian(<Ledger address>) - owner only, and mandates fail without it");
-        console2.log("  registry.setGuardian(<Ledger>)      - from the vault, once, cannot be replaced without it");
+        console2.log("  registry.setGuardian(<Ledger>)      - FROM THE VAULT, and write-once");
+        console2.log("     This is a different guardian from vault.setGuardian above, and skipping it");
+        console2.log("     is silent: guardian[vault] stays zero, lowerFloor always reverts");
+        console2.log("     NoGuardianRegistered, and the device-signed floor-lowering beat cannot be");
+        console2.log("     filmed at all. The testnet deployment shipped without it and nobody noticed");
+        console2.log("     until a floor actually needed lowering.");
         console2.log("  registry.raiseFloor(...)            - from the vault, per pair");
         console2.log("Verify on Sourcify AND Basescan today, or the mainnet reverts show as hex soup.");
     }
