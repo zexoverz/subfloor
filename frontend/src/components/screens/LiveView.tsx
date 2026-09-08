@@ -4,7 +4,6 @@ import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead } from '../Card.tsx';
 import { Ghost } from '../Button.tsx';
 import { Tile, Tiles } from '../Tiles.tsx';
-import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { FloorChart } from '../FloorChart.tsx';
 import { AddressChip } from '../AddressChip.tsx';
@@ -76,7 +75,7 @@ export function LiveView({
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
   // line under the tape can never again claim different things about the same rows.
   const live = source === 'chain';
-  const { pair, stats, tape, agent, inventory, floor, floorBuy, reference, fuzz } = state;
+  const { pair, stats, tape, agent, inventory, floor, floorBuy, reference } = state;
   // An unregistered floor is not a floor of zero, and rendering 0.00 would read as one.
   const price = (value: number) => (floor.enforced ? formatPrice(value) : copy.floor.notSet);
   const sellFloor = rateToPrice(floor.absoluteRate, pair.baseDecimals, pair.quoteDecimals);
@@ -113,30 +112,41 @@ export function LiveView({
         <Tile label={copy.desk.refused} value={stats.refused} sub={copy.desk.refusedSub} tone="refuse" />
       </Tiles>
 
-      <FuzzCounter fuzz={fuzz} />
-
-      <Card className="mb-4.5">
-        <CardHead
-          icon={ChartLine}
-          left={
-            <span className="flex items-center gap-2">
-              <PairIcons base={pair.base} quote={pair.quote} size={18} />
-              {pair.base} / {pair.quote} · {scope === 'mine' ? copy.desk.chartTitleMine : copy.desk.chartTitlePublic}
-            </span>
-          }
-          /* The reference itself, since the chart below now plots distance from it rather than it. */
-          right={`reference $${formatPrice(reference.price)}`}
-        />
-        <FloorChart state={state} status={tapeStatus} scope={scope} />
-      </Card>
-
       <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-4.5 max-[1000px]:grid-cols-1">
+        {/*
+          * The chart and the tape share one column, and the aside runs beside both.
+          *
+          * Full-bleed, the chart was a wide band drawn from a hundred points — most of its width
+          * spent on air, and the reader's eye crossing the whole viewport to get from a bar to the
+          * row that produced it. Stacked over the tape they share an x-axis by proximity, and the
+          * panel is narrow enough that the shape has to be dense to fill it.
+          */}
+        <div className="flex min-w-0 flex-col gap-4.5">
+        <Card>
+          <CardHead
+            icon={ChartLine}
+            left={
+              <span className="flex items-center gap-2">
+                <PairIcons base={pair.base} quote={pair.quote} size={18} />
+                {pair.base} / {pair.quote} · {scope === 'mine' ? copy.desk.chartTitleMine : copy.desk.chartTitlePublic}
+              </span>
+            }
+            /* The reference itself, since the chart below now plots distance from it rather than it. */
+            right={`reference $${formatPrice(reference.price)}`}
+          />
+          <FloorChart state={state} status={tapeStatus} scope={scope} />
+        </Card>
         {/*
           * No height of its own: it stretches to the row, which the column beside it defines. The
           * tape is the one thing here that changes without the owner doing anything, so its frame
           * has to be the one thing that does not move.
           */}
-        <Card className="flex flex-col">
+        {/*
+          * flex-1, because the column above it changed. The tape used to stretch to a grid row the
+          * aside defined; wrapped in a column with the chart it sizes to its own content instead,
+          * and an empty tape left the panel a third of its height with the seabed showing under it.
+          */}
+        <Card className="flex flex-1 flex-col">
           <CardHead
             icon={Receipt}
             left={
@@ -183,6 +193,7 @@ export function LiveView({
           />
           <Tape entries={tape} pair={pair} status={tapeStatus} />
         </Card>
+        </div>
 
         {owner ? (
         <div className="flex flex-col gap-4.5">

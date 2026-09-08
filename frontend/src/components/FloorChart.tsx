@@ -250,12 +250,12 @@ export function FloorChart({
 
         {status !== 'live' && (
           /*
-           * Opaque. The card is already glass over the seabed, and a translucent cover on top of
-           * it stacked a second wash on the same drawing — the skeleton ended up reading through
-           * two layers of it. What is behind the card should show through the card, not through
-           * the thing standing in for its contents.
+           * No background of its own. The card is already glass over the seabed, and any wash here
+           * — opaque or not — paints over that glass and leaves this one panel looking like a flat
+           * hole in a board made of them. The skeleton fills the space by itself, which is the job
+           * a scrim was doing badly.
            */
-          <div className="absolute inset-0 grid place-items-center bg-surface text-[12px] text-faint">
+          <div className="absolute inset-0 grid place-items-center text-[12px] text-faint">
             {status === 'loading' ? (
               <SkylineSkeleton />
             ) : (
