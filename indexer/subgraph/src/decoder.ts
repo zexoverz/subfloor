@@ -104,13 +104,17 @@ export function classify(families: string[]): string {
 /// What a `Shipped` blob turned out to be.
 export class Shipped {
   program: Bytes;
+  /// The ordered pair the order trades, from the first 40 bytes of `data`. Empty when the blob was
+  /// taken as raw bytecode.
+  pair: Bytes;
   /// True when the blob was an ABI-encoded `ISwapVM.Order` and the program came out of its `data`
   /// field; false when the blob was taken as raw bytecode.
   wrappedInOrder: bool;
   maker: string;
 
-  constructor(program: Bytes, wrappedInOrder: bool, maker: string) {
+  constructor(program: Bytes, wrappedInOrder: bool, maker: string, pair: Bytes = Bytes.empty()) {
     this.program = program;
+    this.pair = pair;
     this.wrappedInOrder = wrappedInOrder;
     this.maker = maker;
   }
@@ -152,8 +156,15 @@ export function unwrapShipped(blob: Bytes): Shipped {
   const length = readU32(blob, dataAt);
   if (dataAt + 32 + length > blob.length) return new Shipped(blob, false, "");
 
-  const out = new Uint8Array(length);
-  for (let i = 0; i < length; i++) out[i] = blob[dataAt + 32 + i];
+  // `data` is [tokenA][tokenB][program]; a shorter one carries no program at all.
+  if (length < 40) return new Shipped(blob, false, "");
+
+  const programLength = length - 40;
+  const out = new Uint8Array(programLength);
+  for (let i = 0; i < programLength; i++) out[i] = blob[dataAt + 32 + 40 + i];
+
+  const pairBytes = new Uint8Array(40);
+  for (let i = 0; i < 40; i++) pairBytes[i] = blob[dataAt + 32 + i];
 
   let maker = "0x";
   for (let i = 12; i < 32; i++) {
@@ -161,7 +172,7 @@ export function unwrapShipped(blob: Bytes): Shipped {
     maker += (b < 16 ? "0" : "") + b.toString(16);
   }
 
-  return new Shipped(Bytes.fromUint8Array(out), true, maker);
+  return new Shipped(Bytes.fromUint8Array(out), true, maker, Bytes.fromUint8Array(pairBytes));
 }
 
 /// Reads the low 32 bits of the 32-byte word at `at`. Every offset and length in this layout is far
