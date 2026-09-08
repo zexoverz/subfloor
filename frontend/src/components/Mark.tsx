@@ -1,16 +1,27 @@
 /**
- * The mark, beside the wordmark. Same two shapes as the favicon: a fill stopping dead on the floor.
+ * The mark, beside the wordmark.
  *
- * The ink is currentColor so it belongs to whatever it sits in; the floor is floor and stays floor,
- * because floor means the owner's number everywhere else in this interface and a logo is no place
- * to start making an exception.
+ * The artwork itself rather than a redrawing of it. This used to be two hand-cut paths — a wedge
+ * stopping on a bar — and a second drawing of a logo is a second logo: it drifts the moment the
+ * real one is touched, and it read thinner than the artwork at every size worth caring about.
+ *
+ * A 128px copy, not the 1254px original: an 18px icon has no use for 618KB, and the browser was
+ * downscaling the full artwork on every page load to draw something the size of a full stop.
+ *
+ * 26 rather than 18. The mark carries an outline, a highlight and a waterline, and below about 20
+ * those three collapse into each other and it stops being legible as an S at all.
  */
-export function Mark({ size = 18 }: { size?: number }) {
+export function Mark({ size = 26 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className="shrink-0">
-      <path d="M7 6l7.4 13.2h-3.6L4.8 8.6z" fill="currentColor" />
-      <path d="M10.8 19.2h8.6l-1.6 3.4h-5.4z" fill="currentColor" />
-      <rect x="3" y="23" width="26" height="4.2" className="fill-floor" />
-    </svg>
+    <img
+      src="/logo-128.png"
+      width={size}
+      height={size}
+      alt=""
+      aria-hidden
+      className="shrink-0 select-none"
+      style={{ width: size, height: size }}
+      draggable={false}
+    />
   );
 }
