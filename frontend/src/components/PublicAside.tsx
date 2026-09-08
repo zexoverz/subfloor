@@ -126,14 +126,29 @@ export function PublicAside({
                   <p className="serif mt-3 mb-3 text-[13.5px] leading-relaxed text-muted">
                     {copy.wallet.createVaultHint}
                   </p>
-                  <Act
-                    primary
-                    onClick={onCreateVault}
-                    busy={creatingVault}
-                    busyLabel={copy.wallet.creatingVault}
-                  >
-                    {copy.wallet.createVault}
-                  </Act>
+                  {/*
+                   * The same drawing as the owner's setup card, because it is the same moment seen
+                   * from the other side: the one thing on this card still to be done. Beside the
+                   * button rather than beside the paragraphs — this card is mostly prose, and a
+                   * drawing next to that would take the width the sentences need.
+                   */}
+                  <div className="flex items-end gap-1">
+                    <Act
+                      primary
+                      onClick={onCreateVault}
+                      busy={creatingVault}
+                      busyLabel={copy.wallet.creatingVault}
+                    >
+                      {copy.wallet.createVault}
+                    </Act>
+                    <img
+                      src="/mascot-setup.webp"
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                      className="tile-art pointer-events-none -mr-1 -mb-1 ml-auto w-[92px] shrink-0 select-none max-[420px]:hidden"
+                    />
+                  </div>
                 </>
               )}
             </>
