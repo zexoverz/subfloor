@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
-import { LetterGlitch } from './LetterGlitch.tsx';
+import { Seabed } from './Seabed.tsx';
 import { ScrambleText } from './ScrambleText.tsx';
 import type { Screen } from '../types.ts';
 
@@ -28,8 +28,8 @@ const LINKS = {
 export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   return (
     <div className="relative mt-24 border-t border-rule">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-[0.16]">
-        <LetterGlitch />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px]">
+        <Seabed intensity="hero" />
       </div>
 
       <section className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] py-24 text-center">

@@ -4,7 +4,7 @@ import { Mark } from './Mark.tsx';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
 import { AccountMenu } from './AccountMenu.tsx';
-import { LetterGlitch } from './LetterGlitch.tsx';
+import { Seabed } from './Seabed.tsx';
 import type { Wallet } from '../lib/wallet.ts';
 import { mocked } from '../lib/mock.ts';
 import type { DataSource, Screen, VaultState } from '../types.ts';
@@ -40,8 +40,8 @@ export function AppShell({
         * This screen is read for numbers, so the noise sits well under them — enough to belong to
         * the same product, not enough to compete with a price.
         */}
-      <div className="pointer-events-none fixed inset-0 -z-10 opacity-[0.07]">
-        <LetterGlitch speed={90} />
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <Seabed />
       </div>
 
       <div className={`mx-auto px-[clamp(12px,3vw,28px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>

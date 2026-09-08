@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
-import { LetterGlitch } from '../LetterGlitch.tsx';
+import { Seabed } from '../Seabed.tsx';
 import { ProductShot } from '../ProductShot.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
@@ -28,8 +28,8 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
       {/* Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column. */}
       <div className="relative">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)] opacity-[0.22]">
-        <LetterGlitch />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)]">
+        <Seabed intensity="hero" />
       </div>
 
       <div className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] pb-24">
