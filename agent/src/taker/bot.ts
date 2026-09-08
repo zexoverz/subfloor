@@ -273,6 +273,34 @@ export function decodeFloorRevert(err: unknown): Outcome["floor"] | null {
   }
 }
 
+/// A revert the taker can read, for the log.
+///
+/// viem puts the useful part on the second line: the first says only that the call "reverted with
+/// the following signature", and the selector is underneath it. Logging `message.split("\n")[0]`
+/// therefore printed the sentence and threw away the answer, which is how the bot spent an evening
+/// reporting errors nobody could act on.
+///
+/// The custom errors below are the ones a taker can actually provoke. Anything else is reported by
+/// selector, which is still enough to look up.
+const TAKER_VISIBLE_ERRORS: Record<string, string> = {
+  "0x027e4c46": "SettledBelowFloor",
+  "0x50ee0156": "StaleReference",
+  "0xa6fba094": "NoReferenceFeed",
+  "0x488c6ada": "BadReferenceAnswer",
+};
+
+export function describeError(err: unknown): string {
+  const data = findRevertData(err);
+  if (data) {
+    const selector = data.slice(0, 10).toLowerCase();
+    const name = TAKER_VISIBLE_ERRORS[selector];
+    return name ? `reverted ${name} (${selector})` : `reverted, unknown selector ${selector}`;
+  }
+  const msg = (err as Error).message ?? String(err);
+  // Two lines, because the first alone is never the answer.
+  return msg.split("\n").slice(0, 2).map((l) => l.trim()).filter(Boolean).join(" ");
+}
+
 function findRevertData(err: unknown): Hex | null {
   let e = err as { data?: unknown; cause?: unknown } | undefined;
   for (let i = 0; i < 8 && e; i++) {
