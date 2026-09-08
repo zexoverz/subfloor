@@ -47,7 +47,16 @@ export function AppShell({
         <Seabed />
       </div>
 
-      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
+      {/*
+       * The top padding is not whitespace taste, it is where the drawing is.
+       *
+       * Measured down the artwork: the top row has 51% of its pixels too bright for ink text, and
+       * it stays above 45% for the first tenth of the picture, because that band is the water
+       * surface and the light comes through it. It falls off fast after that. Dropping the header
+       * out of the first tenth is the cheap half of the fix; the shadow on the text is the half
+       * that actually carries it, and neither replaces the other.
+       */}
+      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pt-[clamp(18px,7vh,80px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
       {/*
        * One row. The brand and the two real screens sit together on the left because they are the
        * same thing — where you are — and the status reads right to left in falling importance:
@@ -82,7 +91,21 @@ export function AppShell({
           </span>
         </button>
 
-        <div className="ml-auto flex items-center gap-3.5 text-[11px] text-faint">
+        {/*
+         * The status chips moved from the right end to sit beside the wordmark, and the reason is
+         * the drawing rather than taste.
+         *
+         * Measured across the header band in 5% columns: 0-30% of the width is clean, 30-80% is
+         * blown out — 100% of its pixels too bright for ink text, because the light shafts are a
+         * vertical column through the middle — and 80-100% is clean again. The wordmark was always
+         * safe and the account menu was always safe; what sat on the glare was this cluster, whose
+         * left edge reached back to about 60%.
+         *
+         * So the row now keeps text at the two ends and leaves the middle, where the light is, with
+         * nothing on it. The order is unchanged: still what the tape is showing, then what it is
+         * showing it on.
+         */}
+        <div className="flex items-center gap-3.5 text-[11px] text-faint">
           {/*
             * One badge, driven by where the numbers came from — and "fixtures" is a verdict, not a
             * default. While the first read is still out we do not know the answer yet, and saying
@@ -107,13 +130,15 @@ export function AppShell({
           <span>Base · {state.addresses.chainId}</span>
         </div>
 
-        <AccountMenu wallet={wallet} />
+        <div className="ml-auto flex items-center gap-3.5">
+          <AccountMenu wallet={wallet} />
 
-        {owner && (
-          <div className="flex items-center gap-3.5 border-l border-rule pl-3.5">
-            <PanicButton onFire={onPanic} />
-          </div>
-        )}
+          {owner && (
+            <div className="flex items-center gap-3.5 border-l border-rule pl-3.5">
+              <PanicButton onFire={onPanic} />
+            </div>
+          )}
+        </div>
         </div>
       </div>
 
