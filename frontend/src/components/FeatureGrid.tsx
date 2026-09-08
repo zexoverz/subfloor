@@ -15,7 +15,7 @@ import { decodeRefusal } from '../lib/refusal.ts';
 function Feature({ label, title, children }: { label: string; title: string; children?: ReactNode }) {
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
-      <span className="text-[10.5px] font-semibold tracking-[0.13em] text-floor uppercase">{label}</span>
+      <span className="text-[11.5px] font-semibold tracking-[0.13em] text-floor uppercase">{label}</span>
       <h3 className="m-0 max-w-[22ch] text-[17px] leading-snug font-semibold tracking-tight">{title}</h3>
       {children && <div className="mt-auto pt-2">{children}</div>}
     </div>
@@ -40,7 +40,7 @@ export function FeatureGrid() {
       </Feature>
 
       <Feature label={copy.landing.f3Label} title={copy.landing.f3Title}>
-        <p className="mb-1.5 text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.landing.f3Surface}</p>
+        <p className="mb-1.5 text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.landing.f3Surface}</p>
         <div className="flex flex-wrap gap-1.5 text-[11.5px]">
           {['compose', 'ship', 'dock', 'update-quote'].map((call) => (
             <span key={call} className="rounded-lg border border-rule bg-sunken px-2 py-1">

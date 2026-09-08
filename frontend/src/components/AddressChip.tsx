@@ -16,7 +16,7 @@ export function AddressChip({ address, size = 16 }: { address: string; size?: nu
       rel="noreferrer"
       // The row beneath opens a detail panel; this must not do both.
       onClick={(e) => e.stopPropagation()}
-      className="inline-flex items-center gap-1.5 font-mono text-[11.5px] text-muted transition-colors hover:text-floor"
+      className="inline-flex items-center gap-1.5 font-mono text-[12px] font-medium text-muted transition-colors hover:text-floor"
       title={address}
     >
       <img

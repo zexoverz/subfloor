@@ -78,7 +78,7 @@ export function PriceLadder() {
             style={{ top: `${toY(price)}%` }}
           >
             <div className={`h-0 border-t-2 ${refused ? 'border-refuse' : 'border-settle'}`} />
-            <span className="absolute top-0 left-2 -translate-y-1/2 text-[10px] font-semibold tracking-[0.1em] text-muted uppercase">
+            <span className="absolute top-0 left-2 -translate-y-1/2 text-[11px] font-semibold tracking-[0.1em] text-muted uppercase">
               Fill
             </span>
             <span
@@ -101,7 +101,7 @@ export function PriceLadder() {
               {s.label}
             </button>
           ))}
-          <span className="self-center text-[10.5px] tracking-[0.08em] text-faint uppercase">
+          <span className="self-center text-[11.5px] tracking-[0.08em] text-faint uppercase">
             drag · or ↑ ↓
           </span>
         </div>
@@ -156,7 +156,7 @@ function Line({ price, label, tone }: { price: number; label: string; tone: 'ref
         {formatPrice(price)}
       </span>
       <span
-        className={`absolute top-0 left-2 -translate-y-1/2 rounded-lg text-[10px] font-semibold tracking-[0.1em] uppercase ${
+        className={`absolute top-0 left-2 -translate-y-1/2 rounded-lg text-[11px] font-semibold tracking-[0.1em] uppercase ${
           floor ? 'bg-floor-wash px-1.5 py-0.5 text-floor' : 'text-faint'
         }`}
       >

@@ -34,7 +34,7 @@ export function FloorHistogram({ calibration, floorBps }: { calibration: Calibra
         ))}
         <div className="absolute top-[-12px] bottom-0 w-0 border-l-2 border-floor transition-[left] duration-300" style={{ left: `${floorLeft}%` }}>
           <span
-            className={`absolute top-[-6px] rounded-lg bg-floor-wash px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap text-floor uppercase ${
+            className={`absolute top-[-6px] rounded-lg bg-floor-wash px-1.5 py-0.5 text-[11px] font-semibold tracking-[0.1em] whitespace-nowrap text-floor uppercase ${
               flipped ? 'right-[7px]' : 'left-[7px]'
             }`}
           >
@@ -43,7 +43,7 @@ export function FloorHistogram({ calibration, floorBps }: { calibration: Calibra
         </div>
       </div>
 
-      <div className="mt-1.5 flex justify-between text-[10.5px] text-faint">
+      <div className="mt-1.5 flex justify-between text-[11.5px] text-faint">
         <span>
           0 bps
           <br />

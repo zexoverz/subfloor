@@ -29,7 +29,7 @@ export function StoppedState({ state, onWithdraw }: { state: VaultState; onWithd
         <p className="serif mt-2 text-[15px] leading-relaxed text-ink">{copy.panic.doneFunds}</p>
 
         <div className="mt-6 border-t border-rule pt-5">
-          <span className="text-[10.5px] font-semibold tracking-[0.11em] text-faint uppercase">
+          <span className="text-[11.5px] font-semibold tracking-[0.11em] text-faint uppercase">
             {copy.desk.vault}
           </span>
           <div className="mt-2 mb-5">

@@ -18,7 +18,7 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
  */
 export function CardHead({ left, right, icon: Icon }: { left: ReactNode; right?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-rule bg-sunken px-4 py-2.5 text-[10.5px] tracking-[0.11em] text-faint uppercase">
+    <div className="flex items-center justify-between gap-3 border-b border-rule bg-sunken px-4 py-2.5 text-[11.5px] tracking-[0.11em] text-faint uppercase">
       <span className="flex items-center gap-2">
         {Icon && <Icon size={13} strokeWidth={1.6} className="text-floor" />}
         {left}
@@ -35,7 +35,7 @@ export function CardBody({ children, className = '' }: { children: ReactNode; cl
 export function Chip({ children, live = false }: { children: ReactNode; live?: boolean }) {
   return (
     <span
-      className={`rounded-lg border px-2 py-[3px] text-[10.5px] tracking-[0.1em] uppercase ${
+      className={`rounded-lg border px-2 py-[3px] text-[11.5px] tracking-[0.1em] uppercase ${
         live ? 'border-settle/35 text-settle' : 'border-rule bg-surface text-muted'
       }`}
     >

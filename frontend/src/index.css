@@ -20,7 +20,12 @@
   --c-raise: #113860;
   --c-ink: #e9f1fb;
   --c-muted: #93a9c4;
-  --c-faint: #5f7ba1;
+  /*
+   * Raised until it passes. At #5f7ba1 this measured 3.95 against the card surface — under the 4.5
+   * a body size needs — and it is the colour carrying the smallest type on the board, so the
+   * weakest contrast was sitting on the hardest text to read. #7d95b6 measures 5.60.
+   */
+  --c-faint: #7d95b6;
   --c-rule: #18406e;
   --c-floor: #0ee6ea;
   --c-floor-wash: rgba(14, 230, 234, 0.13);
@@ -83,13 +88,52 @@
   --font-serif: 'Newsreader', Georgia, serif;
 }
 
+/*
+ * A type scale, because there was not one.
+ *
+ * Sizes had accumulated as literals — 10px, 10.5px, 11px, 11.5px, 12.5px, all doing similar jobs
+ * at differences nobody can perceive — and weight was left at whatever the browser chose. Four
+ * steps, each with a weight that belongs to it, and numbers set heavier than prose because a
+ * tabular figure at 400 disappears next to the label beside it.
+ */
+.t-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+}
+
+.t-sub {
+  font-size: 12px;
+  font-weight: 450;
+}
+
+.t-body {
+  font-size: 13.5px;
+  font-weight: 450;
+}
+
+.t-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+
+.t-num-lg {
+  font-family: var(--font-mono);
+  font-size: 14.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 body {
   margin: 0;
   background: var(--c-ground);
   color: var(--c-ink);
   /* Sans for prose, mono reserved for figures that have to line up. Oku does the same. */
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.5;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;

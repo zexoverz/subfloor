@@ -151,7 +151,7 @@ export function LiveView({
               <dl className="m-0 text-[12.5px]">
                 {inventory.map((h) => (
                   <div key={h.symbol} className="flex items-baseline justify-between gap-3 py-1">
-                    <dt className="flex items-center gap-2 text-[10.5px] tracking-[0.08em] text-faint uppercase">
+                    <dt className="flex items-center gap-2 text-[11.5px] tracking-[0.08em] text-faint uppercase">
                       <TokenIcon symbol={h.symbol} size={15} />
                       {h.symbol}
                     </dt>
@@ -159,13 +159,13 @@ export function LiveView({
                       {/* A read that failed is not a zero balance and must not be rendered as one. */}
                       {Number.isNaN(h.amount) ? '—' : h.amount}
                       {h.mandateMax !== undefined && (
-                        <span className="ml-2 text-[10.5px] font-normal text-faint">of {h.mandateMax}</span>
+                        <span className="ml-2 text-[11.5px] font-normal text-faint">of {h.mandateMax}</span>
                       )}
                     </dd>
                   </div>
                 ))}
                 <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-rule pt-2">
-                  <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.desk.marketPrice}</dt>
+                  <dt className="text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.desk.marketPrice}</dt>
                   <dd className="m-0 text-right font-medium">{formatPrice(reference.price)}</dd>
                 </div>
               </dl>
@@ -232,7 +232,7 @@ export function LiveView({
                 [copy.desk.feedDies, `${copy.desk.neverBelow} ${price(sellFloor)}`, copy.desk.backstopNote],
               ].map(([label, value, note]) => (
                 <div key={label} className="flex flex-col gap-0.5 border-b border-rule py-2.5 last:border-b-0">
-                  <span className="text-[10.5px] tracking-[0.09em] text-faint uppercase">{label}</span>
+                  <span className="text-[11.5px] tracking-[0.09em] text-faint uppercase">{label}</span>
                   <span className="serif text-[15px] text-muted">
                     {value?.split(' ').slice(0, -1).join(' ')}{' '}
                     <b className="font-mono text-base font-semibold text-floor tabular-nums">
@@ -269,7 +269,7 @@ export function LiveView({
               {/* #111: the address, not a nickname — the published key has to be checkable. */}
               {state.delegate && (
                 <div className="mb-3 border-b border-rule pb-3">
-                  <span className="text-[10.5px] tracking-[0.08em] text-faint uppercase">
+                  <span className="text-[11.5px] tracking-[0.08em] text-faint uppercase">
                     {copy.wallet.agentAddress}
                   </span>
                   <a

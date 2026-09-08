@@ -47,7 +47,7 @@ export function FloorControl({
 
   return (
     <div className="mb-5 rounded-lg border border-rule bg-sunken px-4 py-3.5">
-      <label className="block text-center text-[10.5px] tracking-[0.09em] text-faint uppercase">
+      <label className="block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
         {copy.onboarding.worstPrice}
       </label>
 
@@ -85,7 +85,7 @@ export function FloorControl({
         </p>
       )}
 
-      <div className="flex justify-between text-[10.5px] text-faint">
+      <div className="flex justify-between text-[11.5px] text-faint">
         <span>safer · −{MIN_BPS} bps</span>
         <span className={`font-medium ${tooTight ? 'text-refuse' : 'text-floor'}`}>−{bps} bps</span>
         <span>−{MAX_BPS} bps · riskier</span>

@@ -94,7 +94,7 @@ export function Tape({
                  * after thead in the DOM, so at z-index auto they paint straight over a sticky
                  * header that has no stacking order of its own.
                  */
-                className={`sticky top-0 z-10 border-b border-rule bg-sunken/80 px-4 py-3 text-[10.5px] font-medium tracking-[0.09em] text-faint uppercase backdrop-blur-sm ${
+                className={`sticky top-0 z-10 border-b border-rule bg-sunken/80 t-label px-4 py-3 text-faint backdrop-blur-sm ${
                   /*
                    * The two identity columns read left, the numeric ones read right. Taker was
                    * being lumped in with the numbers, so its heading sat over the far edge of a
@@ -226,11 +226,11 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
           <span className="flex items-center gap-3">
             <TradeMark symbol={pair.base} kind={entry.side} />
             <span className="flex min-w-0 flex-col leading-tight">
-              <span className="text-[12.5px] font-semibold text-ink">
+              <span className="text-[13px] font-semibold text-ink">
                 {entry.side === 'bought' ? 'Buy' : 'Sell'} {pair.base}
               </span>
               {/* The time belongs under the trade, not in a column of its own competing for width. */}
-              <span className="flex items-center gap-1.5 text-[10.5px] text-faint">
+              <span className="flex items-center gap-1.5 text-[11.5px] text-faint">
                 {entry.time}
                 {entry.hash && (
                   <>
@@ -261,7 +261,7 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
            */}
           {entry.taker ? <AddressChip address={entry.taker} /> : <span className="text-faint">—</span>}
         </td>
-        <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums">
+        <td className="t-num px-4 py-3">
           <span className="flex items-center justify-end gap-1.5">
             {/* Three decimals turned a 0.0003 WETH fill into "0.000" — a real trade rendered as
                 nothing at all. Small sizes get the digits they need; large ones stay readable. */}
@@ -277,14 +277,14 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
            * single figure for the whole tape, so the two numbers in this cell always agree with
            * each other.
            */}
-          <span className="mt-0.5 block text-right text-[10.5px] text-faint">
+          <span className="mt-0.5 block text-right text-[11.5px] text-faint">
             {formatUsd(entry.amount * entry.price)}
           </span>
         </td>
-        <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold tabular-nums">
+        <td className="t-num-lg px-4 py-3 text-right">
           ${formatPrice(entry.price)}
         </td>
-        <td className="px-4 py-3 text-right font-mono text-[12.5px] tabular-nums">
+        <td className="t-num px-4 py-3 text-right">
           {/*
            * Signed and coloured, because this one goes both ways and the sign is the whole
            * meaning: negative is a fill that went against the vault, which is allowed — the
@@ -301,7 +301,7 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
         <td className="py-3 pr-4 pl-2">
           <span className="flex items-center justify-end gap-2.5">
             <FillBar bpsAboveFloor={entry.bpsAboveFloor ?? 0} />
-            <span className="w-11 text-right font-mono text-[12.5px] font-semibold tabular-nums text-settle">
+            <span className="t-num w-11 text-right text-settle">
               {entry.bpsAboveFloor === undefined ? (
                 <span className="text-faint">—</span>
               ) : (
@@ -414,8 +414,8 @@ function RefusalRows({ entry }: { entry: Refusal }) {
             {/* The shield is the floor holding, not an alarm: the refusal is the good outcome. */}
             <TradeMark symbol={decoded.gaveSymbol} kind="refused" />
             <span className="flex min-w-0 flex-col leading-tight">
-              <span className="text-[12.5px] font-semibold">Refused</span>
-              <span className="flex items-center gap-1.5 text-[10.5px] text-refuse/70">
+              <span className="text-[13px] font-semibold">Refused</span>
+              <span className="flex items-center gap-1.5 text-[11.5px] text-refuse/70">
                 {entry.time}
                 {entry.hash && (
                   <>
@@ -442,14 +442,14 @@ function RefusalRows({ entry }: { entry: Refusal }) {
         </td>
         {/* No size, and never a zero. The revert carries rates and no amounts, because nothing
             moved — inventing one here would contradict the line directly beneath it. */}
-        <td className="px-4 py-3 text-right font-mono text-[12.5px] text-refuse/50 tabular-nums">—</td>
-        <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold tabular-nums">
+        <td className="t-num px-4 py-3 text-right text-refuse/50">—</td>
+        <td className="t-num-lg px-4 py-3 text-right">
           ${formatPrice(decoded.attemptedPrice)}
         </td>
-        <td className="px-4 py-3 text-right font-mono text-[12.5px] tabular-nums">
+        <td className="t-num px-4 py-3 text-right">
           {vsRef === null ? <span className="text-refuse/50">—</span> : formatBps(vsRef)}
         </td>
-        <td className="px-4 py-3 text-right font-mono text-[12.5px] font-semibold tabular-nums">
+        <td className="t-num px-4 py-3 text-right font-semibold">
           −{decoded.bpsBelowFloor}
         </td>
       </tr>

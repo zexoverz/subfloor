@@ -34,7 +34,7 @@ export function AmountRow({
       <TokenIcon symbol={holding.symbol} size={22} />
       <span className="flex min-w-0 flex-col">
         <span className="text-[12.5px] font-medium">{holding.symbol}</span>
-        <span className="flex items-center gap-1 text-[10.5px] text-faint">
+        <span className="flex items-center gap-1 text-[11.5px] text-faint">
           <Wallet size={10} strokeWidth={1.8} />
           {balance === null ? '—' : balance} {copy.wallet.inWallet}
         </span>
@@ -51,7 +51,7 @@ export function AmountRow({
         type="button"
         onClick={() => balance !== null && onChange(String(balance))}
         disabled={!balance}
-        className="shrink-0 cursor-pointer rounded-lg border border-rule px-2 py-1 text-[10px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-floor hover:text-floor disabled:cursor-not-allowed disabled:opacity-40"
+        className="shrink-0 cursor-pointer rounded-lg border border-rule px-2 py-1 text-[11px] tracking-[0.08em] text-faint uppercase transition-colors hover:border-floor hover:text-floor disabled:cursor-not-allowed disabled:opacity-40"
       >
         {copy.wallet.max}
       </button>
@@ -84,7 +84,7 @@ export function AddressField({
         * what to paste, and a permanent line under every field turned three inputs into a wall of
         * grey prose — the thing that made this sheet hard to read at all.
         */}
-      <label className="flex items-center gap-1.5 text-[10.5px] tracking-[0.09em] text-muted uppercase">
+      <label className="flex items-center gap-1.5 text-[11.5px] tracking-[0.09em] text-muted uppercase">
         {label}
         <Tooltip text={hint}>
           <Info size={11} strokeWidth={1.8} />
@@ -128,7 +128,7 @@ export function AddressField({
 export function MandateSummary({ rows }: { rows: [string, string][] }) {
   return (
     <div className="rounded-lg border border-rule bg-sunken px-3 py-2.5 text-left">
-      <p className="mb-2 text-[10px] tracking-[0.12em] text-faint uppercase">{copy.wallet.mandateSummary}</p>
+      <p className="mb-2 text-[11px] tracking-[0.12em] text-faint uppercase">{copy.wallet.mandateSummary}</p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11.5px]">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">

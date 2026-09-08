@@ -75,7 +75,7 @@ export function FloorDialog({
       onClick={(e) => e.target === ref.current && onClose()}
     >
       <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
-        <h2 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">
+        <h2 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">
           {onDevice ? copy.ceremony.willDisplay : unset ? copy.onboarding.proposedPrice : copy.floor.title}
         </h2>
         <button

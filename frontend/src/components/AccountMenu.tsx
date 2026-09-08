@@ -86,7 +86,7 @@ export function AccountMenu({ wallet }: { wallet: Wallet }) {
       {open && (
         <div className="absolute right-0 z-40 mt-1.5 w-[240px] overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
           <div className="border-b border-rule px-3 py-2.5">
-            <p className="m-0 text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.wallet.connected}</p>
+            <p className="m-0 text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.wallet.connected}</p>
             <p className="m-0 mt-0.5 text-[11.5px] break-all">{address}</p>
           </div>
 

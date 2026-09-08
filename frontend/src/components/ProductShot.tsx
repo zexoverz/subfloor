@@ -24,7 +24,7 @@ export function ProductShot() {
             <span className="size-2 rounded-full bg-floor/50" />
             <span className="size-2 rounded-full bg-settle/50" />
           </span>
-          <span className="mx-auto rounded-lg border border-rule bg-surface px-3 py-0.5 text-[10.5px] text-faint">
+          <span className="mx-auto rounded-lg border border-rule bg-surface px-3 py-0.5 text-[11.5px] text-faint">
             subfloor.vercel.app
           </span>
         </div>

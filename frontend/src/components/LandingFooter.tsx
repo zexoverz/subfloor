@@ -70,7 +70,7 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
             ] as const
           ).map(([heading, links]) => (
             <div key={heading}>
-              <h3 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">{heading}</h3>
+              <h3 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">{heading}</h3>
               <ul className="mt-3 list-none space-y-2 p-0 text-[12.5px]">
                 {links.map(([label, href]) => (
                   <li key={label}>

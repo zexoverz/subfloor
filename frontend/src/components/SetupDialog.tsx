@@ -149,7 +149,7 @@ export function SetupDialog({
       onClick={(e) => e.target === ref.current && onClose()}
     >
       <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
-        <h2 className="m-0 text-[10.5px] tracking-[0.11em] text-faint uppercase">{copy.onboarding.finishSetup}</h2>
+        <h2 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">{copy.onboarding.finishSetup}</h2>
         <button
           onClick={onClose}
           aria-label="close"
@@ -216,7 +216,7 @@ export function SetupDialog({
               </Act>
               {wallet.error && <p className="mt-3 text-center text-[11.5px] text-refuse">{wallet.error}</p>}
 
-              <div className="my-4 flex items-center gap-3 text-[10.5px] tracking-[0.12em] text-faint uppercase">
+              <div className="my-4 flex items-center gap-3 text-[11.5px] tracking-[0.12em] text-faint uppercase">
                 <span className="h-px flex-1 bg-rule" />
                 {copy.wallet.or}
                 <span className="h-px flex-1 bg-rule" />
@@ -291,7 +291,7 @@ export function SetupDialog({
               {/* No address row here: the header already shows which wallet this is and offers
                   the only disconnect the app needs. Two of each invites the reader to wonder
                   whether they do different things. */}
-              <span className="text-[10.5px] font-semibold tracking-[0.11em] text-faint uppercase">
+              <span className="text-[11.5px] font-semibold tracking-[0.11em] text-faint uppercase">
                 {copy.onboarding.inventory}
               </span>
               <div className="mt-2 mb-7">
@@ -326,7 +326,7 @@ export function SetupDialog({
                 * setting the owner had already made — the same class of mistake as a fixture
                 * labelled live, on the screen where the number is chosen.
                 */}
-              <span className="block border-t border-rule pt-5 text-[10.5px] font-semibold tracking-[0.11em] text-faint uppercase">
+              <span className="block border-t border-rule pt-5 text-[11.5px] font-semibold tracking-[0.11em] text-faint uppercase">
                 {floor.enforced ? copy.onboarding.worstPrice : copy.onboarding.proposedPrice}
               </span>
               {/* Shown, not hidden behind a toggle: this is the decision the sheet exists for. */}
@@ -372,7 +372,7 @@ export function SetupDialog({
                   * incomplete section says "required" and a filled one collapses to a tick — the
                   * disclosure is a place to put a finished decision, never a way past an unmade one.
                   */}
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[10.5px] font-semibold tracking-[0.11em] uppercase">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[11.5px] font-semibold tracking-[0.11em] uppercase">
                   <span className={keysReady ? 'flex items-center gap-2 text-settle' : 'flex items-center gap-2 text-ink'}>
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}

@@ -21,12 +21,12 @@ export function RefusalDetail({ entry, decoded }: { entry: Refusal; decoded: Sho
   return (
     <div className="border-l-2 border-refuse bg-refuse-wash px-4 py-3.5">
       <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1 text-[12.5px]">
-        <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.attempted}</dt>
+        <dt className="text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.attempted}</dt>
         <dd className="m-0 font-semibold text-refuse">
           {formatPrice(decoded.attemptedPrice)} {decoded.gotSymbol}
           {vsRef !== null && <span className="ml-2 font-normal text-faint">{vsRef} bps vs ref</span>}
         </dd>
-        <dt className="text-[10.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.yourFloor}</dt>
+        <dt className="text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.refusal.yourFloor}</dt>
         <dd className="m-0 font-semibold text-floor">
           {formatPrice(decoded.floorPrice)} {decoded.gotSymbol}
           {floorVsRef !== null && <span className="ml-2 font-normal text-faint">{floorVsRef} bps</span>}
