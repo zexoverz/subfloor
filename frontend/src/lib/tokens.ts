@@ -51,9 +51,13 @@ export const ACTIVE_TOKENS: { address: Address; symbol: string; decimals: number
 export const TOKENS: Record<string, TokenMeta> = {
   [WETH.toLowerCase()]: { symbol: 'WETH', decimals: 18 },
   [CIRCLE_SEPOLIA_USDC.toLowerCase()]: { symbol: 'USDC', decimals: 6 },
-  [SEPOLIA_USDC.toLowerCase()]: { symbol: 'tUSDC', decimals: 6 },
   [MAINNET_USDC.toLowerCase()]: { symbol: 'USDC', decimals: 6 },
-  [SEPOLIA_USDC.toLowerCase()]: { symbol: 'USDC', decimals: 6 },
+  /*
+   * Last, and only once. This address was listed twice — as tUSDC and again as USDC — and an
+   * object literal keeps the last write, so the testnet token was labelled with the name of the
+   * token it stands in for on every screen that looked it up.
+   */
+  [SEPOLIA_USDC.toLowerCase()]: { symbol: 'tUSDC', decimals: 6 },
 };
 
 export function tokenMeta(address: Address): TokenMeta | null {

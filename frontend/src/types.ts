@@ -93,6 +93,15 @@ export type Fill = {
   referenceAgeSeconds?: number;
   /** The counterparty. Present on indexed fills, absent on sample rows, which is the difference. */
   taker?: string;
+  /**
+   * Both sides of the swap, named.
+   *
+   * `side` alone said "sell WETH" and left the reader to work out what came back — which is one
+   * inference too many on a row whose whole subject is an exchange. What was given and what was
+   * received are the trade; everything else on the row is a judgement about it.
+   */
+  gave?: { amount: number; symbol: string };
+  got?: { amount: number; symbol: string };
   /** Against the reference at that block. Undefined until that read exists — never guessed. */
   vsReferenceBps?: number;
   /** Markout: where the reference sat 30s after the fill. The honest measure of whether it was good. */

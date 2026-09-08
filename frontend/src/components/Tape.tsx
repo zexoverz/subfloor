@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Filter } from 'lucide-react';
+import { ArrowRight, Clock, Crosshair, ExternalLink, Filter, ShieldCheck, TrendingUp } from 'lucide-react';
 import { FillBar } from './FillBar.tsx';
 import { copy } from '../copy.ts';
-import { formatBps, formatPrice, formatUsd } from '../lib/rate.ts';
+import { formatBps, formatPrice } from '../lib/rate.ts';
 import { decodeRefusal } from '../lib/refusal.ts';
 import { RefusalDetail } from './RefusalCard.tsx';
 import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
-import { ExternalLink } from 'lucide-react';
 import { txUrl } from '../lib/chain.ts';
 import { AddressChip } from './AddressChip.tsx';
+import { RowHint, type Hint } from './RowHint.tsx';
+import { SwapLeg } from './SwapLeg.tsx';
 import { TokenIcon } from './TokenIcon.tsx';
 import { TradeMark } from './TradeMark.tsx';
 
@@ -17,7 +18,11 @@ import { TradeMark } from './TradeMark.tsx';
  * eye lands on what happened before it lands on how much. The numeric columns then read right to
  * left in falling importance, ending on the one this product is about.
  */
-const COLUMNS = ['Trade', 'Taker', 'Size', 'Price', 'vs ref', 'vs floor'];
+/*
+ * Given and received, side by side, rather than "sell WETH" and a size. A row whose whole subject
+ * is an exchange should not make the reader infer the other half of it.
+ */
+const COLUMNS = ['Sent', '', 'Received', 'Taker', 'Price', 'vs ref', 'vs floor', 'Transaction'];
 
 /**
  * The tape is a ledger, so it is a table: the same six columns on every row, numbers right-aligned
@@ -36,7 +41,7 @@ function SkeletonRows() {
     <>
       {Array.from({ length: 8 }, (_, i) => (
         <tr key={i} className="border-b border-rule/40">
-          <td colSpan={6} className="py-2.5">
+          <td colSpan={8} className="py-2.5">
             <span
               className="block h-3 animate-pulse rounded bg-rule/60"
               // Uneven widths, so it reads as a tape loading rather than a progress bar.
@@ -65,6 +70,7 @@ export function Tape({
    * before anything is even selected.
    */
   const [only, setOnly] = useState<string | null>(null);
+  const [hint, setHint] = useState<Hint>(null);
   const takers = new Map<string, number>();
   for (const e of entries) {
     const who = e.kind === 'fill' ? e.taker : e.from;
@@ -94,13 +100,13 @@ export function Tape({
                  * after thead in the DOM, so at z-index auto they paint straight over a sticky
                  * header that has no stacking order of its own.
                  */
-                className={`sticky top-0 z-10 border-b border-rule bg-sunken/80 t-label px-4 py-3 text-faint backdrop-blur-sm ${
+                className={`sticky top-0 z-10 border-b border-rule bg-sunken t-label px-4 py-3 text-faint ${
                   /*
                    * The two identity columns read left, the numeric ones read right. Taker was
                    * being lumped in with the numbers, so its heading sat over the far edge of a
                    * cell whose content starts at the near one.
                    */
-                  i <= 1 ? 'text-left' : 'text-right'
+                  i <= 3 ? 'text-left' : i === 7 ? 'text-left' : 'text-right'
                 }`}
               >
                 {h === 'Taker' && takers.size > 0 ? (
@@ -116,28 +122,29 @@ export function Tape({
           {status === 'loading' && <SkeletonRows />}
           {status !== 'loading' && shown.length === 0 && entries.length > 0 && (
             <tr>
-              <td colSpan={6} className="py-10 text-center text-[12px] text-faint">
+              <td colSpan={8} className="py-10 text-center text-[12px] text-faint">
                 {copy.desk.noTakerRows}
               </td>
             </tr>
           )}
           {status !== 'loading' && entries.length === 0 && (
             <tr>
-              <td colSpan={6} className="py-10 text-center text-[12px] text-faint">
+              <td colSpan={8} className="py-10 text-center text-[12px] text-faint">
                 {status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}
               </td>
             </tr>
           )}
           {status !== 'loading' && shown.map((entry) =>
             entry.kind === 'fill' ? (
-              <FillRows key={entry.tx} entry={entry} pair={pair} />
+              <FillRows key={entry.tx} entry={entry} pair={pair} onHint={setHint} />
             ) : (
-              <RefusalRows key={entry.tx} entry={entry} />
+              <RefusalRows key={entry.tx} entry={entry} onHint={setHint} />
             ),
           )}
         </tbody>
         </table>
       </div>
+      <RowHint hint={hint} />
     </div>
   );
 }
@@ -208,50 +215,118 @@ function TakerFilter({
 }
 
 /** Markout lives one click behind a fill, never on the surface: the tape is for what happened. */
-function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
-  const [open, setOpen] = useState(false);
+/**
+ * The transaction, with when it happened under it.
+ *
+ * Both halves answer the same question — which event was this — so they belong in one cell rather
+ * than with the trade, where the time was competing for width with the amounts.
+ */
+function TxCell({ hash, stub, time }: { hash?: string; stub: string; time: string }) {
+  return (
+    <span className="flex flex-col leading-tight">
+      {hash ? (
+        <a
+          href={txUrl(hash)}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 font-mono text-[12px] font-medium text-floor hover:underline"
+          title={hash}
+        >
+          {stub}…
+          <ExternalLink size={10} strokeWidth={1.8} />
+        </a>
+      ) : (
+        /* Sample rows have no hash and therefore no link — the honest difference between them. */
+        <span className="font-mono text-[12px] text-faint">{stub}…</span>
+      )}
+      <span className="text-[11.5px] text-faint">{time}</span>
+    </span>
+  );
+}
+
+/** What the row cannot fit, shown on hover rather than hidden behind a click. */
+function FillHint({ entry }: { entry: Fill }) {
+  return (
+    <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
+      {/* An icon per line, because four rows of identical grey labels read as one block of text. */}
+      <dt className="flex items-center gap-2 text-faint">
+        <Crosshair size={12} strokeWidth={1.9} />
+        reference
+      </dt>
+      <dd className="m-0 text-right font-medium">
+        {entry.referencePrice === undefined ? '—' : `$${formatPrice(entry.referencePrice)}`}
+      </dd>
+      <dt className="flex items-center gap-2 text-faint">
+        <Clock size={12} strokeWidth={1.9} />
+        reference age
+      </dt>
+      <dd className="m-0 text-right font-medium">
+        {/*
+         * Part of the guarantee, not trivia. The guard refuses when it cannot prove its input is
+         * fresh, so a fill cleared against a stale answer cleared a different bar.
+         */}
+        {entry.referenceAgeSeconds === undefined ? (
+          '—'
+        ) : (
+          <span className={entry.referenceAgeSeconds > 600 ? 'text-refuse' : 'text-ink'}>
+            {entry.referenceAgeSeconds}s
+          </span>
+        )}
+      </dd>
+      <dt className="flex items-center gap-2 text-faint">
+        <ShieldCheck size={12} strokeWidth={1.9} />
+        clear of floor
+      </dt>
+      <dd className="m-0 text-right font-medium text-settle">
+        {entry.bpsAboveFloor === undefined ? '—' : `+${entry.bpsAboveFloor} bps`}
+      </dd>
+      <dt className="flex items-center gap-2 text-faint">
+        <TrendingUp size={12} strokeWidth={1.9} />
+        markout 30s
+      </dt>
+      <dd className="m-0 text-right font-medium">
+        {entry.markout30sBps === undefined ? '—' : formatBps(entry.markout30sBps)}
+      </dd>
+      <dd className="col-span-2 m-0 mt-1 border-t border-rule/60 pt-2.5 text-[11.5px] leading-relaxed text-faint">
+        {copy.desk.markoutNote}
+      </dd>
+    </dl>
+  );
+}
+
+function FillRows({
+  entry,
+  pair,
+  onHint,
+}: {
+  entry: Fill;
+  pair: Pair;
+  onHint: (hint: Hint) => void;
+}) {
+  // Both legs of one swap are worth the same thing; only the asset changed.
+  const usdIn = entry.amount * entry.price;
 
   return (
     <>
       <tr
-        onClick={() => setOpen(!open)}
+        onMouseMove={(e) => onHint({ content: <FillHint entry={entry} />, x: e.clientX, y: e.clientY })}
+        onMouseLeave={() => onHint(null)}
         /*
          * Glass rather than a flat fill: the seabed is behind this table, and a solid row would
          * cut a hole in it. The tint is white at a few per cent, so it reads as depth over the
          * artwork rather than as a second colour competing with it.
          */
-        className="tape-arrive cursor-pointer transition-colors hover:bg-white/[0.045] [&>td]:border-b [&>td]:border-rule/70"
+        className="tape-arrive transition-colors hover:bg-white/[0.045] [&>td]:border-b [&>td]:border-rule/70"
       >
-        <td className="px-4 py-3">
-          <span className="flex items-center gap-3">
-            <TradeMark symbol={pair.base} kind={entry.side} />
-            <span className="flex min-w-0 flex-col leading-tight">
-              <span className="text-[13px] font-semibold text-ink">
-                {entry.side === 'bought' ? 'Buy' : 'Sell'} {pair.base}
-              </span>
-              {/* The time belongs under the trade, not in a column of its own competing for width. */}
-              <span className="flex items-center gap-1.5 text-[11.5px] text-faint">
-                {entry.time}
-                {entry.hash && (
-                  <>
-                    ·
-                    <a
-                      href={txUrl(entry.hash)}
-                      target="_blank"
-                      rel="noreferrer"
-                      // The row toggles a panel; opening the explorer must not also do that.
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 font-mono transition-colors hover:text-floor"
-                      title={entry.hash}
-                    >
-                      {entry.tx}…
-                      <ExternalLink size={9} strokeWidth={1.8} />
-                    </a>
-                  </>
-                )}
-              </span>
-            </span>
-          </span>
+        <td className="py-3 pr-2 pl-4">
+          <SwapLeg amount={entry.gave?.amount ?? entry.amount} symbol={entry.gave?.symbol ?? pair.base} usd={usdIn} />
+        </td>
+        <td className="px-1 py-3 text-center text-faint">
+          <ArrowRight size={13} strokeWidth={2} className="inline" />
+        </td>
+        <td className="py-3 pr-4 pl-2">
+          <SwapLeg amount={entry.got?.amount ?? null} symbol={entry.got?.symbol ?? pair.quote} usd={usdIn} muted />
         </td>
         <td className="px-4 py-3">
           {/*
@@ -261,29 +336,7 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
            */}
           {entry.taker ? <AddressChip address={entry.taker} /> : <span className="text-faint">—</span>}
         </td>
-        <td className="t-num px-4 py-3">
-          <span className="flex items-center justify-end gap-1.5">
-            {/* Three decimals turned a 0.0003 WETH fill into "0.000" — a real trade rendered as
-                nothing at all. Small sizes get the digits they need; large ones stay readable. */}
-            {entry.amount < 0.01 ? entry.amount.toPrecision(2) : entry.amount.toFixed(3)}
-            {/*
-             * The mark rather than the ticker. The number and its unit read as one thing this way,
-             * and the size column stops repeating a word the row above it already carries.
-             */}
-            <TokenIcon symbol={pair.base} size={14} />
-          </span>
-          {/*
-           * What that size is worth, under it. Derived from this fill's own price rather than a
-           * single figure for the whole tape, so the two numbers in this cell always agree with
-           * each other.
-           */}
-          <span className="mt-0.5 block text-right text-[11.5px] text-faint">
-            {formatUsd(entry.amount * entry.price)}
-          </span>
-        </td>
-        <td className="t-num-lg px-4 py-3 text-right">
-          ${formatPrice(entry.price)}
-        </td>
+        <td className="t-num-lg px-4 py-3 text-right">${formatPrice(entry.price)}</td>
         <td className="t-num px-4 py-3 text-right">
           {/*
            * Signed and coloured, because this one goes both ways and the sign is the whole
@@ -302,79 +355,20 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
           <span className="flex items-center justify-end gap-2.5">
             <FillBar bpsAboveFloor={entry.bpsAboveFloor ?? 0} />
             <span className="t-num w-11 text-right text-settle">
-              {entry.bpsAboveFloor === undefined ? (
-                <span className="text-faint">—</span>
-              ) : (
-                `+${entry.bpsAboveFloor}`
-              )}
+              {entry.bpsAboveFloor === undefined ? <span className="text-faint">—</span> : `+${entry.bpsAboveFloor}`}
             </span>
           </span>
         </td>
+        <td className="px-4 py-3">
+          <TxCell hash={entry.hash} stub={entry.tx} time={entry.time} />
+        </td>
       </tr>
 
-      {open && (
-        <tr>
-          <td colSpan={6} className="border-b border-rule bg-raise px-4 py-3">
-            <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 text-[11.5px]">
-              <dt className="text-faint">markout 30s</dt>
-              <dd className="m-0 font-medium">
-                {entry.markout30sBps === undefined ? '—' : formatBps(entry.markout30sBps)}
-              </dd>
-              <dt className="text-faint">vs CEX mid</dt>
-              <dd className="m-0 font-medium">
-                {entry.vsCexMidBps === undefined ? '—' : formatBps(entry.vsCexMidBps)}
-              </dd>
-              <dt className="text-faint">reference</dt>
-              <dd className="m-0 font-medium">
-                {entry.referencePrice === undefined ? '—' : formatPrice(entry.referencePrice)}
-              </dd>
-              <dt className="text-faint">reference age</dt>
-              <dd className="m-0 font-medium">
-                {/*
-                  * Part of the guarantee, not trivia. The guard refuses when it cannot prove its
-                  * input is fresh, so a fill cleared against a stale answer cleared a different bar
-                  * — and the row should not flatten that into the same line as a fresh one.
-                  */}
-                {entry.referenceAgeSeconds === undefined ? (
-                  '—'
-                ) : (
-                  <span className={entry.referenceAgeSeconds > 600 ? 'text-refuse' : 'text-ink'}>
-                    {entry.referenceAgeSeconds}s
-                  </span>
-                )}
-              </dd>
-              <dt className="text-faint">clear of floor</dt>
-              <dd className="m-0 font-medium text-settle">
-                {entry.bpsAboveFloor === undefined ? <span className="text-faint">—</span> : `+${entry.bpsAboveFloor} bps`}
-              </dd>
-              <dt className="text-faint">tx</dt>
-              <dd className="m-0 font-medium">
-                {/* Openable, because a number nobody can check is a number nobody has to believe. */}
-                {entry.hash ? (
-                  <a
-                    href={txUrl(entry.hash)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-floor"
-                  >
-                    {entry.tx}…
-                    <ExternalLink size={10} strokeWidth={1.7} className="text-faint" />
-                  </a>
-                ) : (
-                  `${entry.tx}…`
-                )}
-              </dd>
-            </dl>
-            <p className="mt-2 text-[11px] text-faint">
-              markout is where the reference sat 30 seconds later — the honest read on whether the fill was
-              good, rather than whether it merely cleared the floor
-            </p>
-          </td>
-        </tr>
-      )}
     </>
   );
 }
+
+
 
 /**
  * A revert this decoder does not recognise is not a refusal, and the tape does not claim it is:
@@ -383,7 +377,7 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
  * Size stays em-dash on purpose. The revert carries rates, not amounts — the fill never happened,
  * so there is no size to report, and inventing one would undo the point of decoding.
  */
-function RefusalRows({ entry }: { entry: Refusal }) {
+function RefusalRows({ entry, onHint }: { entry: Refusal; onHint: (hint: Hint) => void }) {
   const [open, setOpen] = useState(false);
   // The index hands them over already decoded; a revert we watched ourselves is decoded here.
   const decoded = entry.decoded ?? decodeRefusal(entry.data);
@@ -406,56 +400,62 @@ function RefusalRows({ entry }: { entry: Refusal }) {
     <>
       <tr
         onClick={() => setOpen(!open)}
+        onMouseMove={(e) =>
+          onHint({
+            content: (
+              <p className="m-0 text-[12px] leading-relaxed text-muted">{copy.refusal.hint}</p>
+            ),
+            x: e.clientX,
+            y: e.clientY,
+          })
+        }
+        onMouseLeave={() => onHint(null)}
         title={copy.refusal.view}
         className={`cursor-pointer bg-refuse-wash text-refuse ${fresh ? 'tape-arrive-refuse' : ''}`}
       >
-        <td className="px-4 py-3 shadow-[inset_2px_0_0_var(--c-refuse)]">
+        <td className="py-3 pr-2 pl-4 shadow-[inset_2px_0_0_var(--c-refuse)]">
           <span className="flex items-center gap-3">
             {/* The shield is the floor holding, not an alarm: the refusal is the good outcome. */}
             <TradeMark symbol={decoded.gaveSymbol} kind="refused" />
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="text-[13px] font-semibold">Refused</span>
-              <span className="flex items-center gap-1.5 text-[11.5px] text-refuse/70">
-                {entry.time}
-                {entry.hash && (
-                  <>
-                    ·
-                    <a
-                      href={txUrl(entry.hash)}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 font-mono transition-colors hover:text-ink"
-                      title={entry.hash}
-                    >
-                      {entry.tx}…
-                      <ExternalLink size={9} strokeWidth={1.8} />
-                    </a>
-                  </>
-                )}
+              {/*
+               * No amounts on either leg, and never a zero. The revert carries rates only, because
+               * nothing moved — a number here would contradict the line directly beneath the row.
+               */}
+              <span className="text-[11.5px] text-refuse/70">{decoded.gaveSymbol}</span>
+            </span>
+          </span>
+        </td>
+        <td className="px-1 py-3 text-center text-refuse/50">
+          <ArrowRight size={13} strokeWidth={2} className="inline" />
+        </td>
+        <td className="py-3 pr-4 pl-2">
+          <span className="flex items-center gap-2">
+            <TokenIcon symbol={decoded.gotSymbol} size={22} />
+            <span className="flex flex-col leading-tight">
+              <span className="text-[13px] font-semibold text-refuse/70">
+                — <span className="font-medium">{decoded.gotSymbol}</span>
               </span>
+              <span className="text-[11.5px] text-refuse/50">nothing received</span>
             </span>
           </span>
         </td>
         <td className="px-4 py-3">
           {entry.from ? <AddressChip address={entry.from} /> : <span className="text-refuse/50">—</span>}
         </td>
-        {/* No size, and never a zero. The revert carries rates and no amounts, because nothing
-            moved — inventing one here would contradict the line directly beneath it. */}
-        <td className="t-num px-4 py-3 text-right text-refuse/50">—</td>
-        <td className="t-num-lg px-4 py-3 text-right">
-          ${formatPrice(decoded.attemptedPrice)}
-        </td>
+        <td className="t-num-lg px-4 py-3 text-right">${formatPrice(decoded.attemptedPrice)}</td>
         <td className="t-num px-4 py-3 text-right">
           {vsRef === null ? <span className="text-refuse/50">—</span> : formatBps(vsRef)}
         </td>
-        <td className="t-num px-4 py-3 text-right font-semibold">
-          −{decoded.bpsBelowFloor}
+        <td className="t-num px-4 py-3 text-right font-semibold">−{decoded.bpsBelowFloor}</td>
+        <td className="px-4 py-3">
+          <TxCell hash={entry.hash} stub={entry.tx} time={entry.time} />
         </td>
       </tr>
 
       <tr className={`bg-refuse-wash ${fresh ? 'tape-arrive-refuse' : ''} [&>td]:border-b [&>td]:border-rule`}>
-        <td colSpan={6} className="px-4 pb-3 text-left text-[11.5px] text-refuse">
+        <td colSpan={8} className="px-4 pb-3 text-left text-[11.5px] text-refuse">
           <b className="font-semibold">{copy.refusal.heading}</b> — the agent tried to settle at{' '}
           {formatPrice(decoded.attemptedPrice)}, the venue refused ·{' '}
           <span className="text-ink">{copy.refusal.unchanged}</span>
@@ -464,7 +464,7 @@ function RefusalRows({ entry }: { entry: Refusal }) {
 
       {open && (
         <tr>
-          <td colSpan={6} className="p-0">
+          <td colSpan={8} className="p-0">
             <RefusalDetail entry={entry} decoded={decoded} />
           </td>
         </tr>

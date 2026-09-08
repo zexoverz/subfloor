@@ -261,6 +261,7 @@ export function useIndex(vault: Address | null): IndexData {
           const gave = fill.swap.tokensIn?.[0] ?? WETH;
           const got = fill.swap.tokensOut?.[0] ?? USDC;
           const amount = Number(formatUnits(BigInt(fill.swap.amountsIn?.[0] ?? '0'), decimalsOf(gave)));
+          const received = Number(formatUnits(BigInt(fill.swap.amountsOut?.[0] ?? '0'), decimalsOf(got)));
           const rate = Number(fill.executionRate) / 1e18;
           /*
            * Both maker-side, and compared with each other. Mixing the maker's execution against a
@@ -292,6 +293,8 @@ export function useIndex(vault: Address | null): IndexData {
             referencePrice: fill.referencePrice ? Number(fill.referencePrice) / 1e6 : undefined,
             referenceAgeSeconds: fill.referenceAgeSeconds ?? undefined,
             taker: fill.taker ?? undefined,
+            gave: { amount, symbol: TOKENS[gave.toLowerCase()]?.symbol ?? '?' },
+            got: { amount: received, symbol: TOKENS[got.toLowerCase()]?.symbol ?? '?' },
           };
         }),
         // The decoder wants revert data; the index has the arguments already decoded, so the tape

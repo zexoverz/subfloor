@@ -70,6 +70,8 @@ export const copy = {
     leadLive: 'The vault has been traded against {fills} times. It refused {refused}. It has never once settled at a bad price.',
     /** Answered, and the answer was nothing. Different from not having asked. */
     chartLoading: 'Reading what this venue has traded…',
+    markoutNote:
+      'markout is where the reference sat 30 seconds later — the honest read on whether the fill was good, rather than whether it merely cleared the floor',
     noTakerRows: 'Nothing from that counterparty in this window.',
     tapeEmpty: 'No fills yet. The vault has not traded on this venue.',
     /** We could not ask. Says whose failure it is rather than reporting an empty venue. */
@@ -402,6 +404,7 @@ export const copy = {
     yourFloor: 'your floor',
     /** The sentence a worried owner is actually looking for. It leads; the forensics follow. */
     unchanged: 'balances unchanged',
+    hint: 'Click to open the five numbers the revert carried. Nothing moved: the balances are the same either side of this row.',
     view: 'view',
   },
 
