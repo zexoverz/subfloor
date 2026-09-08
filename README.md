@@ -260,6 +260,33 @@ Four things follow from that, and each is checkable:
 | **Both sides, post-fee** | The maker receives `amountIn` minus the fee. Scoring the pre-fee number would let a fill pass the check and still pay out below the floor |
 | **First implementation of ERC-8377** | Reference-Relative Slippage Bounds, authored by this project's author. The specification is public prior art; every line of implementation here was written during the event |
 
+## The attack this defends against, and what is honestly known about it
+
+The demo runs a real prompt injection against a real agent holding real inventory. That is worth
+being precise about, because the interesting claim is narrow and the uninteresting version of it is
+easy to overstate.
+
+**There is no verified real-money loss from data-channel injection of a trading agent in the public
+record.** So this is a first in the sense that the attack has no casualty to re-enact — not in the
+sense that nobody has demoed injection defence. People have. What is different here is that the
+attack runs against money on chain and the refusal is a transaction anyone can open.
+
+What is real and citable:
+
+- **Zscaler ThreatLabz, Jul 2026** — SEO-poisoned pages carrying agent instructions in JSON-LD,
+  CSS-hidden off-screen divs and `<noscript>`, telling agents to send ETH to attacker addresses.
+  Four of twenty-six models paid. The harness's poisoned page uses the off-screen-div shape from
+  this, verbatim, because a strawman attack would prove nothing.
+- **Princeton, "Fake Memories" (arXiv:2503.16248)** — memory injection against ElizaOS substituting
+  a transaction recipient, with real testnet transactions.
+- **Freysa, Nov 2024** — a $47k real-money consented contest.
+
+**Deliberately not cited: aixbt and Virtuals.** Both are commonly listed as injection precedent and
+both were credential or dashboard breaches. A judge who knows the incidents catches the
+misattribution, and it costs the credibility of everything cited beside it.
+
+The harness is in `agent/src/injection/`, three cases, each reproducible from this repo.
+
 ## What you get
 
 | | |
