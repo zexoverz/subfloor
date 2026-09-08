@@ -69,7 +69,7 @@ export function AppShell({
        * below, which has a blur and therefore a context of its own, painted straight through the
        * open dropdown.
        */}
-      <div className="relative z-30 -mx-[clamp(12px,3vw,28px)] mb-1 bg-surface/92 px-[clamp(12px,3vw,28px)] shadow-card backdrop-blur-xl">
+      <div className="relative z-30 -mx-[clamp(12px,3vw,28px)] mb-1 panel-fill px-[clamp(12px,3vw,28px)] shadow-card backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button

@@ -36,7 +36,16 @@
    * drawing is allowed through, rather than lightening cards that were already right.
    */
   --c-ground: #041c3c;
-  --c-surface: #00132e;
+  --c-surface: #011a38;
+  /*
+   * Panels are a gradient, not a fill — sampled down the reference's own cards, which run #011e3c
+   * at the top to #01142f at the foot. A flat colour always reads darker than a gradient with the
+   * same average, because the eye takes the top edge as the surface's colour and the rest as
+   * shading. Ours was flat at the darker end of that range, which is two reasons to read heavy at
+   * once.
+   */
+  --c-surface-top: #04244a;
+  --c-surface-foot: #01142f;
   --c-sunken: #000e24;
   --c-raise: #0d3160;
   --c-ink: #e9f1fb;
@@ -67,13 +76,19 @@
    * Splitting them also restores something worth having: blue is what the app does, cyan is what
    * the owner set. One of those appears on controls, the other only on the floor.
    */
-  --c-action: #2e8fd8;
+  /*
+   * Both lifted until they clear 4.5 against the panel's lightest point rather than its average.
+   * A gradient has no single background to measure against, and the top of it is where the
+   * smallest, most-coloured text sits — a figure that passes on the average and fails on the top
+   * inch is a figure that fails.
+   */
+  --c-action: #3f9ce4;
   --c-action-ink: #01102a;
   --c-action-hover: #4aa6ec;
   --c-settle: #40b66b;
   --c-settle-wash: rgba(64, 182, 107, 0.16);
-  --c-refuse: #fa2b39;
-  --c-refuse-wash: rgba(250, 43, 57, 0.14);
+  --c-refuse: #ff5f68;
+  --c-refuse-wash: rgba(255, 95, 104, 0.14);
   /*
    * Two shadows doing two jobs: a tight one that separates a panel from the drawing behind it, and
    * a wide soft one that lifts it off the page. On glass the first matters more than it would on
@@ -105,6 +120,8 @@
 :root[data-theme='light'] {
   --c-ground: #eef2f7;
   --c-surface: #ffffff;
+  --c-surface-top: #ffffff;
+  --c-surface-foot: #f4f7fb;
   --c-sunken: #e2e8f0;
   --c-raise: #f6f9fc;
   --c-ink: #0a1524;
@@ -202,6 +219,15 @@ body {
 .serif {
   font-family: var(--font-serif);
   font-variant-numeric: normal;
+}
+
+.panel-fill {
+  /*
+   * The surface as a gradient. `background-color` stays underneath it as the fallback and as what
+   * `bg-surface/94` blends against, so a panel that opts out of this class still lands on the
+   * right colour.
+   */
+  background-image: linear-gradient(to bottom, var(--c-surface-top), var(--c-surface-foot));
 }
 
 .shadow-card {

@@ -64,7 +64,7 @@ export function Tile({
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
 
   return (
-    <div className="flex flex-col gap-1 bg-surface/94 p-4">
+    <div className="panel-fill flex flex-col gap-1 p-4">
       <span className="text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
       <span className={`text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
         <span className={`-mx-1 rounded-xl px-1 ${pulseClass}`}>
