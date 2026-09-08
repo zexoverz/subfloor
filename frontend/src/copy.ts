@@ -397,6 +397,12 @@ export const copy = {
     doing: 'what happens when you press it',
     finishSetup: 'Finish setup',
     finishSetupNote: 'Your vault is deployed but not configured. Nothing trades until it is.',
+    /** The mock's own lines, kept because each one says what its card is for in a breath. */
+    sheetLede: 'A few more steps and you’re ready to deploy your agent.',
+    inventoryHint: 'Fund the vault with tokens to get started.',
+    floorHint: 'Set your minimum acceptable price.',
+    keysHint: 'Set once. This is why the agent can trade without ever holding your tokens.',
+    tagline: 'Deeper markets, brighter floors.',
   },
 
   floor: {

@@ -23,7 +23,15 @@ export function Act({
   wide = false,
   busy = false,
   busyLabel,
-}: Props & { primary?: boolean; wide?: boolean; busy?: boolean; busyLabel?: string }) {
+  ceremony = false,
+}: Props & {
+  primary?: boolean;
+  wide?: boolean;
+  busy?: boolean;
+  busyLabel?: string;
+  /** The gradient face, for the two buttons that end a step of the setup ceremony and no others. */
+  ceremony?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
@@ -36,7 +44,7 @@ export function Act({
         wide ? 'w-full' : ''
       } ${
         primary
-          ? 'pushable push-action mb-1.5 font-semibold'
+          ? `pushable mb-1.5 font-semibold ${ceremony ? 'push-floor' : 'push-action'}`
           : 'pushable push-quiet mb-1.5'
       }`}
     >

@@ -343,6 +343,30 @@ body {
  * rather than as loud. Everything that is not the affirmative action or the destructive one gets
  * this — secondary actions, ghosts, cancels, and the device's own key.
  */
+/*
+ * The ceremony's own. A gradient face rather than a flat one, kept for the two buttons that end a
+ * setup step and nowhere else — a signature spent everywhere is not a signature.
+ *
+ * The gradient does not weaken the label: dark ink measures 13.1 at the green end and 7.9 at the
+ * cyan end, and 6.0 at the darkest point of the pressed state. `--push-face` stays underneath as
+ * the fallback for anything that cannot paint an image.
+ */
+.push-floor {
+  --push-face: #2ccfe0;
+  --push-side: #0e6f86;
+  --push-ink: var(--c-action-ink);
+  background-image: linear-gradient(100deg, #5ef0b0, #22c3ea);
+}
+
+.push-floor:hover:not([aria-disabled='true']):not(:disabled) {
+  background-image: linear-gradient(100deg, #6ff5bd, #34cef2);
+}
+
+.push-floor:active:not([aria-disabled='true']):not(:disabled),
+.push-floor[data-pressed='true'] {
+  background-image: linear-gradient(100deg, #3fbf8c, #199fb8);
+}
+
 .push-quiet {
   --push-face: var(--c-raise);
   --push-hover: #14406f;

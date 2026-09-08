@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { isAddress } from 'viem';
 import { Check, ChevronDown, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
@@ -32,6 +33,38 @@ import type { Screen, VaultState } from '../types.ts';
  * now" closes it, the board is behind it, and a card in the owner's column brings it back. An
  * owner who wants to look before signing is not a case worth blocking.
  */
+/**
+ * One step of the ceremony, boxed.
+ *
+ * The sheet used to be three headings and a rule between them, which reads as one long form —
+ * and this form is three decisions, each of which can be finished and left. A box per decision
+ * says how many there are before any of them is read, and the hint on the right of each header
+ * says what the box is for in a breath, which is where a sentence of explanation belongs when the
+ * alternative is a paragraph under the title.
+ */
+function Section({
+  title,
+  hint,
+  badge,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  badge?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mb-4 overflow-hidden rounded-xl border border-rule bg-sunken/45">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-rule px-4 py-2.5">
+        <span className="text-[11.5px] font-semibold tracking-[0.11em] text-ink uppercase">{title}</span>
+        {badge}
+        {hint && <span className="ml-auto text-[11px] text-faint">{hint}</span>}
+      </header>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
 export function SetupDialog({
   state,
   wallet,
@@ -145,20 +178,17 @@ export function SetupDialog({
         * cursor: the panel beside it jumped, the buttons moved, and the whole thing resized around
         * a disclosure. The frame holds and the form column scrolls inside it instead.
         */
-      className="sheet h-[min(720px,88vh)] w-[min(960px,calc(100vw-48px))] overflow-hidden"
+      className="sheet relative h-[min(720px,88vh)] w-[min(960px,calc(100vw-48px))] overflow-hidden"
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
-      <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
-        <h2 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">{copy.onboarding.finishSetup}</h2>
-        <button
-          onClick={onClose}
-          aria-label="close"
-          className="-mr-1 cursor-pointer p-1 text-faint transition-colors hover:text-ink"
-        >
-          <X size={14} strokeWidth={1.8} />
-        </button>
-      </div>
+      <button
+        onClick={onClose}
+        aria-label="close"
+        className="absolute top-4 right-4 z-10 cursor-pointer p-1 text-faint transition-colors hover:text-ink"
+      >
+        <X size={16} strokeWidth={1.8} />
+      </button>
 
       {/*
         * Two columns on a wide screen: the orb holds the eye while the form is read, and it is
@@ -170,7 +200,7 @@ export function SetupDialog({
         * form. The column widths are not a ratio for the same reason: at a ratio the form squeezed
         * and every label wrapped, which is a worse outcome than no orb at all.
         */}
-      <div className="grid h-[calc(100%-49px)] md:grid-cols-[320px_minmax(380px,1fr)]">
+      <div className="grid h-full md:grid-cols-[300px_minmax(380px,1fr)]">
         <div className="hidden border-r border-rule bg-sunken md:block">
           <div className="flex h-full flex-col gap-6 overflow-hidden p-6">
             {/*
@@ -190,11 +220,30 @@ export function SetupDialog({
               * am I about to do" while the form is being filled in, which is when that question is
               * asked — under the action it was answering a question already committed to.
               */}
-            <ol className="m-0 grid list-none gap-1.5 p-0 text-[11px] text-faint">
-              <li className="mb-0.5 tracking-[0.08em] uppercase">{copy.onboarding.doing}</li>
-              {ceremony.steps.map((step) => (
-                <li key={step.id} className={`flex items-center gap-2 ${step.done ? 'text-settle' : ''}`}>
-                  {step.done ? <Check size={11} strokeWidth={2.4} /> : <span className="w-[11px]">·</span>}
+            <p className="m-0 text-center text-[11px] tracking-[0.16em] text-floor uppercase">
+              {copy.onboarding.tagline}
+            </p>
+
+            {/*
+              * Numbered rather than bulleted, because the order is real: nothing can be signed
+              * before the agent is named, and nothing trades before the floor is registered. A
+              * done step keeps its number and gains a tick — dropping the number would make the
+              * list renumber itself as it is completed, which is the one thing a sequence must not
+              * do while someone is following it.
+              */}
+            <ol className="m-0 grid list-none gap-2.5 p-0 text-[12px]">
+              <li className="mb-0.5 text-[11px] tracking-[0.08em] text-faint uppercase">
+                {copy.onboarding.doing}
+              </li>
+              {ceremony.steps.map((step, i) => (
+                <li key={step.id} className={`flex items-center gap-2.5 ${step.done ? 'text-settle' : 'text-muted'}`}>
+                  <span
+                    className={`grid size-[21px] shrink-0 place-items-center rounded-full border text-[10px] font-semibold ${
+                      step.done ? 'border-settle text-settle' : 'border-floor/45 text-floor'
+                    }`}
+                  >
+                    {step.done ? <Check size={11} strokeWidth={2.6} /> : i + 1}
+                  </span>
                   {step.title}
                 </li>
               ))}
@@ -202,7 +251,7 @@ export function SetupDialog({
           </div>
         </div>
 
-        <div className="no-bar overflow-y-auto p-5">
+        <div className="no-bar overflow-y-auto px-6 py-6 pr-12">
           {!connected ? (
             <>
               <h1 className="m-0 text-center text-[17px] font-semibold">{copy.wallet.step1}</h1>
@@ -292,10 +341,12 @@ export function SetupDialog({
               {/* No address row here: the header already shows which wallet this is and offers
                   the only disconnect the app needs. Two of each invites the reader to wonder
                   whether they do different things. */}
-              <span className="text-[11.5px] font-semibold tracking-[0.11em] text-faint uppercase">
-                {copy.onboarding.inventory}
-              </span>
-              <div className="mt-2 mb-7">
+              <h1 className="m-0 text-[26px] leading-tight font-semibold tracking-tight">
+                Finish <span className="text-floor">setup</span>
+              </h1>
+              <p className="serif m-0 mt-1 mb-5 text-[13.5px] text-muted">{copy.onboarding.sheetLede}</p>
+
+              <Section title={copy.onboarding.inventory} hint={copy.onboarding.inventoryHint}>
                 {holdings.map((h) => (
                   <AmountRow
                     key={h.symbol}
@@ -319,7 +370,7 @@ export function SetupDialog({
                   {/* Say why it cannot be pressed, rather than looking broken. */}
                   {fund.step ?? (hasAmount ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
                 </Act>
-              </div>
+              </Section>
 
               {/*
                 * Before the registry has an entry, this figure is a proposal, and the heading says
@@ -327,9 +378,10 @@ export function SetupDialog({
                 * setting the owner had already made — the same class of mistake as a fixture
                 * labelled live, on the screen where the number is chosen.
                 */}
-              <span className="block border-t border-rule pt-5 text-[11.5px] font-semibold tracking-[0.11em] text-faint uppercase">
-                {floor.enforced ? copy.onboarding.worstPrice : copy.onboarding.proposedPrice}
-              </span>
+              <Section
+                title={floor.enforced ? copy.onboarding.worstPrice : copy.onboarding.proposedPrice}
+                hint={copy.onboarding.floorHint}
+              >
               {/* Shown, not hidden behind a toggle: this is the decision the sheet exists for. */}
               <FloorControl
                 bps={floorBps}
@@ -347,9 +399,12 @@ export function SetupDialog({
                 * was collected and never written, so an owner left this screen believing a floor
                 * was set while the registry held none.
                 */}
-              <div className="mb-6">
+              <div>
+                {/* The gradient is spent here and on the signature, and nowhere else: these two
+                    are the buttons that end a step of the ceremony. */}
                 <Act
                   primary
+                  ceremony
                   wide
                   disabled={floorWrite.sending || !vault}
                   onClick={() => void floorWrite.raise(floorBps).then(() => ceremony.refresh())}
@@ -360,6 +415,7 @@ export function SetupDialog({
                   {floor.enforced ? copy.wallet.floorAlreadySet : copy.wallet.setFloorHint}
                 </p>
               </div>
+              </Section>
 
               {/* The one exception to hiding machinery, and the ticket that made it one. */}
               {/*
@@ -367,13 +423,13 @@ export function SetupDialog({
                 * at again, and leaving two fields and two explanations open afterwards is most of
                 * this sheet's height spent on a decision already made.
                 */}
-              <details open={!keysReady || focusKeys} className="group mt-2 mb-6 border-t border-rule pt-5">
+              <details open={!keysReady || focusKeys} className="group mb-4 overflow-hidden rounded-xl border border-rule bg-sunken/45">
                 {/*
                   * Not an aside. The signature cannot be produced without both addresses, so an
                   * incomplete section says "required" and a filled one collapses to a tick — the
                   * disclosure is a place to put a finished decision, never a way past an unmade one.
                   */}
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[11.5px] font-semibold tracking-[0.11em] uppercase">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 border-b border-rule px-4 py-2.5 text-[11.5px] font-semibold tracking-[0.11em] uppercase">
                   <span className={keysReady ? 'flex items-center gap-2 text-settle' : 'flex items-center gap-2 text-ink'}>
                     {keysReady && <Check size={11} strokeWidth={2.4} />}
                     {keysReady ? copy.onboarding.keysDone : copy.onboarding.advanced}
@@ -389,10 +445,10 @@ export function SetupDialog({
                     className="shrink-0 text-faint transition-transform group-open:rotate-180"
                   />
                 </summary>
-                <p className="serif mt-2 mb-3 text-[12.5px] leading-relaxed text-muted">
+                <p className="serif mx-4 mt-3 mb-3 text-[12.5px] leading-relaxed text-muted">
                   {copy.onboarding.advancedNote}
                 </p>
-                <div className="grid gap-3">
+                <div className="grid gap-3 px-4 pb-4">
                   <AddressField
                     label={copy.wallet.guardianLabel}
                     hint={copy.wallet.guardianHint}
@@ -461,7 +517,7 @@ export function SetupDialog({
                 {copy.onboarding.runsFor.replace('{days}', String(mandate.expiresInDays))}
               </p>
 
-              <Act wide primary disabled={!ready} onClick={() => setSigning(true)}>
+              <Act wide primary ceremony disabled={!ready} onClick={() => setSigning(true)}>
                 {copy.onboarding.action}
               </Act>
               <p className="mt-2 text-center text-[11.5px] text-faint">
