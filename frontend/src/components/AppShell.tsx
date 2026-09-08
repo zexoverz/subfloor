@@ -16,6 +16,7 @@ export function AppShell({
   onPanic,
   state,
   source,
+  loading,
   wallet,
   owner,
   wide = false,
@@ -26,6 +27,8 @@ export function AppShell({
   onPanic: () => void;
   state: VaultState;
   source: DataSource;
+  /** True until the first read answers, so the badge does not guess in the meantime. */
+  loading: boolean;
   wallet: Wallet;
   /** The panic control belongs to whoever can actually stop the agent. */
   owner: boolean;
@@ -52,7 +55,17 @@ export function AppShell({
        * kept apart by a rule, because a destructive control should not look like a neighbour of
        * the chips that merely state facts.
        */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-rule py-3.5">
+      {/*
+       * The header sits on the seabed, so it needs a ground of its own. Its text was reading
+       * straight over the drawing — a wordmark and a wallet address competing with a jellyfish —
+       * and the rule underneath was drawing a line across the artwork rather than separating
+       * anything, because there is no block above it to separate from.
+       *
+       * Full-bleed and blurred: the panels below are glass, and a header that stopped at the
+       * column's edge would leave the drawing sharp either side of a blurred strip.
+       */}
+      <div className="-mx-[clamp(12px,3vw,28px)] mb-1 bg-surface/70 px-[clamp(12px,3vw,28px)] backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button
           onClick={() => onNavigate('landing')}
@@ -66,11 +79,19 @@ export function AppShell({
 
         <div className="ml-auto flex items-center gap-3.5 text-[11px] text-faint">
           {/*
-            * One badge, driven by where the numbers came from. "live" is reserved for the chain,
-            * and so is the claim underneath it: "own money since Sep 8" is only true once the
-            * money is actually on chain, so a fixture build does not get to say it either.
+            * One badge, driven by where the numbers came from — and "fixtures" is a verdict, not a
+            * default. While the first read is still out we do not know the answer yet, and saying
+            * the strongest negative thing available in the meantime is the one mistake this badge
+            * exists to prevent.
             */}
-          {source === 'chain' && !mocked ? (
+          {loading ? (
+            <Chip>
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 animate-pulse rounded-full bg-floor" />
+                {copy.live.reading}
+              </span>
+            </Chip>
+          ) : source === 'chain' && !mocked ? (
             <Chip live>{copy.live.live}</Chip>
           ) : (
             <Chip>{mocked ? copy.live.mock : source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
@@ -79,7 +100,6 @@ export function AppShell({
             {state.pair.base} / {state.pair.quote}
           </span>
           <span>Base · {state.addresses.chainId}</span>
-          {source === 'chain' && <span className="hidden sm:inline">own money since {state.stats.since}</span>}
         </div>
 
         <AccountMenu wallet={wallet} />
@@ -89,6 +109,7 @@ export function AppShell({
             <PanicButton onFire={onPanic} />
           </div>
         )}
+        </div>
       </div>
 
       <div className="pt-3">{children}</div>

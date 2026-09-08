@@ -125,6 +125,8 @@ export default function App() {
       onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
       state={state}
       source={source}
+      // Simulated says so on its own badge; only a real read has a wait worth showing.
+      loading={feedSource !== 'simulated' && index.status === 'loading'}
       wallet={wallet}
       owner={ceremony.isOwner === true}
       // The board gets the width whoever is reading it.

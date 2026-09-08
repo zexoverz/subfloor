@@ -22,15 +22,17 @@ function useChanged(value: unknown, ms = 900): boolean {
 export function Tiles({ children }: { children: ReactNode }) {
   /*
    * The blur lives on the row rather than on each tile. Applied per tile, every one of them
-   * becomes its own containing block and its own backdrop sample, so the seabed behind them ends
-   * up sampled five times at five offsets — the band reads as five separate windows onto the same
-   * drawing instead of one pane laid across it.
+   * becomes its own containing block and its own backdrop sample, so the seabed behind them would
+   * be sampled five times at five offsets — the band reading as five windows onto one drawing
+   * instead of a single pane laid across it.
    *
-   * The hairlines between tiles are the grid's own background showing through a one-pixel gap, so
-   * the row keeps a solid rule colour under the translucent tiles.
+   * The row's background carries the hairlines through a one-pixel gap, and it has to be
+   * translucent to do that. Solid, it painted over everything the blur had just sampled: the
+   * tiles were see-through onto an opaque rule colour, which is why the band stayed flat while
+   * every other panel on the board let the drawing through.
    */
   return (
-    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-lg border border-rule bg-rule backdrop-blur-md">
+    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-lg border border-rule bg-rule/45 backdrop-blur-md">
       {children}
     </div>
   );

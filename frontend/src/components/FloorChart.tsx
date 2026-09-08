@@ -9,7 +9,9 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from 'lightweight-charts';
+import { BarChart3, Clock, Crosshair, ShieldCheck } from 'lucide-react';
 import { copy } from '../copy.ts';
+import { RowHint, type Hint } from './RowHint.tsx';
 import { formatBps, formatUsd } from '../lib/rate.ts';
 import type { VaultState } from '../types.ts';
 
@@ -68,6 +70,38 @@ function fmtBps(value: number | undefined, signed = false): string {
   return signed ? formatBps(Math.round(value)) : `+${Math.round(value)}`;
 }
 
+/** The three numbers under the cursor, in the card the rest of the board uses. */
+function ChartHint({ at }: { at: { floor?: number; ref?: number; size?: number; time?: number } }) {
+  return (
+    <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <Clock size={12} strokeWidth={1.9} />
+        {copy.desk.chartAt}
+      </dt>
+      <dd className="m-0 text-right font-medium">
+        {at.time
+          ? new Date(at.time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+          : '—'}
+      </dd>
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <ShieldCheck size={12} strokeWidth={1.9} />
+        {copy.desk.chartAboveFloor}
+      </dt>
+      <dd className="m-0 text-right font-medium text-settle">{fmtBps(at.floor)}</dd>
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <Crosshair size={12} strokeWidth={1.9} />
+        {copy.desk.chartVsRef}
+      </dt>
+      <dd className="m-0 text-right font-medium text-refuse">{fmtBps(at.ref, true)}</dd>
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
+        <BarChart3 size={12} strokeWidth={1.9} />
+        {copy.desk.chartThisFill}
+      </dt>
+      <dd className="m-0 text-right font-medium">{at.size === undefined ? '—' : formatUsd(at.size)}</dd>
+    </dl>
+  );
+}
+
 function SkylineSkeleton() {
   return (
     <div className="flex h-full w-full items-end gap-[3px] px-4 pt-8 pb-10">
@@ -115,6 +149,8 @@ export function FloorChart({
   const [window_, setWindow] = useState<string>('all');
   /** What the crosshair is over, so hovering the shape reads the numbers under it. */
   const [at, setAt] = useState<{ floor?: number; ref?: number; size?: number; time?: number } | null>(null);
+  /** The same card the tape uses, rather than a second way of saying the same thing. */
+  const [hint, setHint] = useState<Hint>(null);
   const chart = useRef<IChartApi | null>(null);
   const floorLine = useRef<ISeriesApi<'Area'> | null>(null);
   const refLine = useRef<ISeriesApi<'Line'> | null>(null);
@@ -190,15 +226,32 @@ export function FloorChart({
     c.subscribeCrosshairMove((param) => {
       if (!param.time || !floorLine.current || !refLine.current || !volume.current) {
         setAt(null);
+        setHint(null);
         return;
       }
       const num = (v: unknown) =>
         v && typeof v === 'object' && 'value' in v ? (v as { value: number }).value : undefined;
-      setAt({
+      const reading = {
         time: param.time as number,
         floor: num(param.seriesData.get(floorLine.current)),
         ref: num(param.seriesData.get(refLine.current)),
         size: num(param.seriesData.get(volume.current)),
+      };
+      setAt(reading);
+
+      /*
+       * Positioned from the chart's own box, because the crosshair reports coordinates inside the
+       * canvas and the card is placed against the viewport.
+       */
+      const rect = box.current?.getBoundingClientRect();
+      if (!rect || !param.point) {
+        setHint(null);
+        return;
+      }
+      setHint({
+        content: <ChartHint at={reading} />,
+        x: rect.left + param.point.x,
+        y: rect.top + param.point.y,
       });
     });
 
@@ -333,6 +386,7 @@ export function FloorChart({
           }}
         />
         <div ref={box} className="relative h-full w-full" />
+        <RowHint hint={hint} />
 
         {status !== 'live' && (
           /*

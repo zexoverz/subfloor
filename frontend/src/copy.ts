@@ -85,6 +85,7 @@ export const copy = {
     /** Why the block is the number here, and not the clock beside it. */
     refreshWhyBlock:
       'the clock says when this asked; the block says what it got — a fill newer than that block is not on this screen yet',
+    chartAt: 'at',
     chartAtCursor: 'above the floor, at the cursor',
     chartThisFill: 'this fill',
     chartAboveFloor: 'above the floor, latest fill',
@@ -426,6 +427,7 @@ export const copy = {
     /** Shown instead of "live" whenever the tape is the dev feed rather than the chain. */
     simulated: 'simulated feed',
     /** And this whenever the page is standing on fixtures — a deployed skeleton says so. */
+    reading: 'reading',
     fixtures: 'fixture data',
     /** Nothing is deployed and the flow is being walked anyway. Never silent about it. */
     mock: 'mock — nothing deployed',
