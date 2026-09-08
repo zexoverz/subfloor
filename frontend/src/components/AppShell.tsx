@@ -63,8 +63,13 @@ export function AppShell({
        *
        * Full-bleed and blurred: the panels below are glass, and a header that stopped at the
        * column's edge would leave the drawing sharp either side of a blurred strip.
+       *
+       * `z-30` is load-bearing. `backdrop-filter` opens a stacking context, so the account menu's
+       * own z-index became relative to this header rather than to the page — and the stat row
+       * below, which has a blur and therefore a context of its own, painted straight through the
+       * open dropdown.
        */}
-      <div className="-mx-[clamp(12px,3vw,28px)] mb-1 bg-surface/70 px-[clamp(12px,3vw,28px)] backdrop-blur-md">
+      <div className="relative z-30 -mx-[clamp(12px,3vw,28px)] mb-1 bg-surface/70 px-[clamp(12px,3vw,28px)] backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button
