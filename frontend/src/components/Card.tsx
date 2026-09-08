@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`panel-fill overflow-hidden rounded-xl shadow-card backdrop-blur-xl ${className}`}>
+    <div className={`panel-fill overflow-hidden rounded-xl shadow-card backdrop-blur-md ${className}`}>
       {children}
     </div>
   );

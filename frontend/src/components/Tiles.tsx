@@ -32,7 +32,7 @@ export function Tiles({ children }: { children: ReactNode }) {
    * every other panel on the board let the drawing through.
    */
   return (
-    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-px overflow-hidden rounded-xl bg-rule/40 shadow-card backdrop-blur-xl">
+    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-px overflow-hidden rounded-xl bg-rule/40 shadow-card backdrop-blur-md">
       {children}
     </div>
   );
@@ -93,7 +93,7 @@ export function Tile({
           alt=""
           aria-hidden
           draggable={false}
-          className="pointer-events-none absolute right-2 bottom-0 h-[70px] w-auto max-w-[44%] object-contain object-right-bottom opacity-95 select-none"
+          className="tile-art pointer-events-none absolute right-2 bottom-0 h-[70px] w-auto max-w-[44%] object-contain object-right-bottom opacity-95 select-none"
         />
       )}
       <span className="relative text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
