@@ -41,14 +41,27 @@ async function ask<T>(body: Query): Promise<T | null> {
   }
 }
 
+/*
+ * Maker-side, and filtered to this vault.
+ *
+ * The board is the owner's view and the owner is the maker, so every comparison has to be the
+ * maker's. The index also publishes the taker's — and they are near mirror images: one fill here
+ * is +91 bps to the taker and −90 to us. Reading the unprefixed field was showing the
+ * counterparty's gain in the column labelled ours.
+ *
+ * `maker` also makes the filter possible. Without it the tape mixed every vault on the venue and
+ * called the result this one's trading.
+ */
 const FILLS = `
-  query Fills {
-    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc) {
+  query Fills($vault: Bytes!) {
+    fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $vault }) {
       id
+      maker
       executionRate
+      makerExecutionRate
+      makerAdverseDeviationBps
+      makerFloorAtFill
       referencePrice
-      adverseDeviationBps
-      floorAtFill
       timestamp
       swap { hash tokensIn amountsIn tokensOut amountsOut }
     }
@@ -70,10 +83,14 @@ const FILLS = `
  * the console to say why. The schema having a field is not a promise that a row carries it.
  */
 type FillRow = {
+  maker?: string;
+  /** The pair price, the same number from either side, used for the price column. */
   executionRate: string;
+  /** What the vault received per unit given. Every judgement below is made against this. */
+  makerExecutionRate?: string | null;
+  makerAdverseDeviationBps?: number | null;
+  makerFloorAtFill?: string | null;
   referencePrice?: string;
-  adverseDeviationBps: number;
-  floorAtFill?: string | null;
   timestamp: string;
   swap: {
     hash: string;
@@ -229,7 +246,12 @@ export function useIndex(vault: Address | null): IndexData {
           const got = fill.swap.tokensOut?.[0] ?? USDC;
           const amount = Number(formatUnits(BigInt(fill.swap.amountsIn?.[0] ?? '0'), decimalsOf(gave)));
           const rate = Number(fill.executionRate) / 1e18;
-          const floorAt = Number(fill.floorAtFill ?? 0);
+          /*
+           * Both maker-side, and compared with each other. Mixing the maker's execution against a
+           * taker's floor would produce a number that is not about anything.
+           */
+          const makerRate = Number(fill.makerExecutionRate ?? 0);
+          const makerFloor = Number(fill.makerFloorAtFill ?? 0);
           return {
             kind: 'fill' as const,
             ts: Number(fill.timestamp),
@@ -242,10 +264,13 @@ export function useIndex(vault: Address | null): IndexData {
              * floor gives Infinity, and rendering that as "0 bps above your floor" would put the
              * worst possible number on the screen the product is named after.
              */
-            bpsAboveFloor: floorAt
-              ? Math.max(0, Math.round(((Number(fill.executionRate) - floorAt) / floorAt) * 10_000))
-              : undefined,
-            vsReferenceBps: fill.adverseDeviationBps,
+            bpsAboveFloor:
+              makerFloor && makerRate
+                ? Math.max(0, Math.round(((makerRate - makerFloor) / makerFloor) * 10_000))
+                : undefined,
+            // The vault's own deviation. Negative means the fill was adverse to the vault, which
+            // it often is and is allowed to be — the floor is the bound, not the reference.
+            vsReferenceBps: fill.makerAdverseDeviationBps ?? 0,
             tx: fill.swap.hash.slice(0, 6),
             hash: fill.swap.hash,
           };
