@@ -8,8 +8,8 @@ import { Tape } from '../Tape.tsx';
 import { FloorChart } from '../FloorChart.tsx';
 import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
-import { Hoverable } from '../Hoverable.tsx';
 import { RefreshBadge } from '../RefreshBadge.tsx';
+import { ScopeSwitch } from '../ScopeSwitch.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
@@ -184,28 +184,7 @@ export function LiveView({
                  * settled here" answer different questions, and a board that silently switched
                  * between them when a vault was deployed is what sent someone looking for a bug.
                  */}
-                <span className="flex items-center gap-0.5 rounded-lg border border-rule bg-sunken p-0.5">
-                  {(['mine', 'public'] as const).map((s) => (
-                    <Hoverable
-                      key={s}
-                      content={
-                        <p className="m-0 text-[12px] leading-relaxed text-muted">
-                          {s === 'mine' ? copy.desk.scopeMineNote : copy.desk.scopePublicNote}
-                        </p>
-                      }
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onScope(s)}
-                        className={`rounded px-2.5 py-1 text-[11px] tracking-normal normal-case transition-colors ${
-                          scope === s ? 'bg-raise font-semibold text-ink' : 'text-faint hover:text-muted'
-                        }`}
-                      >
-                        {s === 'mine' ? copy.desk.scopeMine : copy.desk.scopePublic}
-                      </button>
-                    </Hoverable>
-                  ))}
-                </span>
+                <ScopeSwitch scope={scope} busy={fetching} onScope={onScope} />
                 <RefreshBadge
                   fetching={fetching}
                   block={block}
