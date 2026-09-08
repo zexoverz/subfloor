@@ -64,7 +64,9 @@ export default function App() {
    */
   const [scope, setScope] = useState<'mine' | 'public'>('mine');
   const vault = own.vault ?? ((addresses.vault || null) as `0x${string}` | null);
-  const index = useIndex(vault, vault ? scope : 'public');
+  const mineIsPossible = Boolean(wallet.address && vault);
+  const shownScope = mineIsPossible ? scope : 'public';
+  const index = useIndex(vault, shownScope);
   const source = index.source === 'chain' ? 'chain' : feedSource;
   // Every hook runs before the landing screen returns early: React counts hooks per render, and a
   // hook below that return would change the count the moment someone navigates on to the board.
@@ -142,7 +144,9 @@ export default function App() {
           /* Simulated says so on its own badge; otherwise the reader's own state, unedited. */
           tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
           vault={vault}
-          scope={vault ? scope : 'public'}
+          scope={shownScope}
+          // No wallet, no "mine": the switch is hidden rather than offering a tape nobody owns.
+          canScope={mineIsPossible}
           onScope={setScope}
           fetching={index.fetching}
           block={index.block}

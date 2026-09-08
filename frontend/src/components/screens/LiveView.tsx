@@ -29,6 +29,7 @@ export function LiveView({
   vault,
   scope,
   onScope,
+  canScope,
   fetching,
   block,
   fetchedAt,
@@ -59,6 +60,8 @@ export function LiveView({
   /** Which tape is on screen. Two questions, so two tapes rather than one with a hidden filter. */
   scope: 'mine' | 'public';
   onScope: (scope: 'mine' | 'public') => void;
+  /** Whether "mine" has an owner at all. Without a wallet it does not, so the switch is not offered. */
+  canScope: boolean;
   /** Freshness, shown rather than assumed: the board polls and never said so. */
   fetching: boolean;
   block: number | null;
@@ -197,7 +200,7 @@ export function LiveView({
                  * settled here" answer different questions, and a board that silently switched
                  * between them when a vault was deployed is what sent someone looking for a bug.
                  */}
-                <ScopeSwitch scope={scope} onScope={onScope} />
+                {canScope && <ScopeSwitch scope={scope} onScope={onScope} />}
                 <RefreshBadge
                   fetching={fetching}
                   block={block}
