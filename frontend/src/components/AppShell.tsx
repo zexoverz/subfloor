@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
-import { Mark } from './Mark.tsx';
 import { Wordmark } from './Wordmark.tsx';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
@@ -88,10 +87,7 @@ export function AppShell({
           onClick={() => onNavigate('landing')}
           className="cursor-pointer transition-opacity hover:opacity-80"
         >
-          <span className="flex items-center gap-2.5">
-            <Mark />
-            <Wordmark height={19} />
-          </span>
+          <Wordmark height={19} />
         </button>
 
         {/*

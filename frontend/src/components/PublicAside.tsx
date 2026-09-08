@@ -90,12 +90,30 @@ export function PublicAside({
         <div className="p-4">
           {!connected ? (
             /*
+             * The same shape as the branch after it: a sentence, then the button, then the mascot
+             * beside it. A card that is only a button reads as a fragment of a card, and this one
+             * had the sentence written already — `publicOwnBody` existed and was never rendered.
+             *
              * Connects, exactly like the control in the header. It used to navigate to first run,
              * which then bounced anyone whose vault was already set up.
              */
-            <Act primary onClick={onConnect} busy={connecting} busyLabel={copy.wallet.connecting}>
-              {copy.wallet.connect}
-            </Act>
+            <>
+              <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
+                {copy.landing.publicOwnBody}
+              </p>
+              <div className="flex items-end gap-1">
+                <Act primary onClick={onConnect} busy={connecting} busyLabel={copy.wallet.connecting}>
+                  {copy.wallet.connect}
+                </Act>
+                <img
+                  src="/mascot-setup.webp"
+                  alt=""
+                  aria-hidden
+                  draggable={false}
+                  className="tile-art pointer-events-none -mr-1 -mb-1 ml-auto w-[92px] shrink-0 select-none max-[420px]:hidden"
+                />
+              </div>
+            </>
           ) : vaultError ? (
             /* Ours to explain, not theirs to interpret: we could not look, so we say nothing about
                what we would have found. */
