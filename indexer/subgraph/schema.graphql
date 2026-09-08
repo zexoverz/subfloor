@@ -716,8 +716,31 @@ type FillQuality @entity(immutable: true) @transaction {
   id: Bytes!
   swap: Swap!
 
-  " Realised rate, received * 1e18 / given, in the canonical convention. "
+  " The address that shipped the order. On a SUBFLOOR deployment this is the vault. "
+  maker: Bytes!
+  " The address that took the quote. "
+  taker: Bytes!
+
+  " Realised rate, received * 1e18 / given, from the **taker's** side. "
   executionRate: BigInt!
+
+  """
+  The same fill from the maker's side, which is the party this product protects.
+
+  Settlement scores both: `checkSettlement` passes the taker recipient and the maker recipient
+  separately, each against its own floor. The index used to compute only the taker's, which made the
+  headline execution-quality number a statement about how well the counterparty did against the
+  vault. On the live deployment it read +91 bps and looked like the vault doing well. It was the
+  vault paying 91 bps through the reference.
+
+  Approximate in one stated way: `Swapped` carries no fee breakdown, so this inverts the taker's
+  amounts rather than reproducing `amountIn - feeIn` and `amountOut + feeOut`. Where the fee is
+  charged in tokenIn the maker's realised rate is a little better than this says.
+  """
+  makerExecutionRate: BigInt!
+  makerAdverseDeviationBps: Int!
+  " The maker's floor at this block — the number a refusal would have been measured against. "
+  makerFloorAtFill: BigInt
 
   " Chainlink reference at or before this block. "
   referencePrice: BigInt!
@@ -729,11 +752,11 @@ type FillQuality @entity(immutable: true) @transaction {
   """
   referenceAgeSeconds: Int!
 
-  " Signed deviation from the reference in bps. Negative is worse than reference for the recipient. "
+  " Signed deviation from the reference in bps, taker side. Positive means the taker beat it. "
   adverseDeviationBps: Int!
 
-  " The floor in force at this block, or null if the recipient had not configured one. "
-  floorAtFill: BigInt
+  " The taker's floor at this block. Usually null — a taker that has not opted in has none, and most have not, which is why the old single `floorAtFill` was null on every row. "
+  takerFloorAtFill: BigInt
 
   blockNumber: BigInt!
   timestamp: BigInt!

@@ -118,14 +118,44 @@ export function handleSwapped(event: Swapped): void {
     q.adverseDeviationBps = 0;
   }
 
-  const floorId = Bytes.fromHexString(event.params.taker.toHexString()).concat(tokenIn.id).concat(tokenOut.id);
-  const floor = Floor.load(floorId);
-  q.floorAtFill = floor == null ? null : floor.absoluteRate;
+  q.maker = event.params.maker;
+  q.taker = event.params.taker;
+
+  // Both sides, because settlement checks both and only one of them is the party this product
+  // protects. The maker's rate is the taker's inverted, on the reversed pair: it gave `amountOut`
+  // and got `amountIn`.
+  q.makerExecutionRate = rateOf(event.params.amountIn, event.params.amountOut);
+  if (ref && feed) {
+    // The reverse pair has its own reference row with its own `inverted` flag, so it is read rather
+    // than derived from the forward one.
+    const makerFeed = getReferenceFeed(event.address, tokenOut, tokenIn);
+    q.makerAdverseDeviationBps = makerFeed
+      ? deviationBps(q.makerExecutionRate, referenceRate(ref.answer, makerFeed.scale, makerFeed.inverted))
+      : 0;
+  } else {
+    q.makerAdverseDeviationBps = 0;
+  }
+
+  const takerFloor = Floor.load(
+    Bytes.fromHexString(event.params.taker.toHexString()).concat(tokenIn.id).concat(tokenOut.id),
+  );
+  q.takerFloorAtFill = takerFloor == null ? null : takerFloor.absoluteRate;
+
+  // Keyed on the reversed pair, the way the registry stores it for the maker.
+  const makerFloor = Floor.load(
+    Bytes.fromHexString(event.params.maker.toHexString()).concat(tokenOut.id).concat(tokenIn.id),
+  );
+  q.makerFloorAtFill = makerFloor == null ? null : makerFloor.absoluteRate;
 
   q.blockNumber = event.block.number;
   q.timestamp = event.block.timestamp;
   q.save();
 
   // And the day's roll-up, so the report and the floor screen never walk the fills themselves.
-  recordFill(event.block, q.adverseDeviationBps, q.referenceAgeSeconds);
+  //
+  // The **maker's** deviation, not the taker's. The floor-setting screen calibrates from this, and
+  // the number a maker needs is how its own fills landed against the reference. Rolling up the
+  // taker's put the counterparty's performance on the screen: it read +32 bps and looked like the
+  // vault executing well, while the same fills were the vault paying 32 bps through the reference.
+  recordFill(event.block, q.makerAdverseDeviationBps, q.referenceAgeSeconds);
 }

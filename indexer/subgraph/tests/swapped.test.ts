@@ -111,6 +111,20 @@ describe("handleSwapped, on the fills that actually happened", () => {
     assert.fieldEquals("FillQuality", id, "executionRate", "401001220901871666666666666");
     assert.fieldEquals("FillQuality", id, "referencePrice", "400000000000000000000000000");
     assert.fieldEquals("FillQuality", id, "adverseDeviationBps", "25");
+
+    // The same fill from the vault's side. Settlement scores both, and this is the one the product
+    // protects — scoring only the taker is what made the headline number a statement about the
+    // counterparty rather than about us.
+    assert.fieldEquals("FillQuality", id, "maker", MAKER);
+    assert.fieldEquals("FillQuality", id, "taker", TAKER);
+    // The taker gave 1.2 tUSDC and got 4.812e14 WETH; the maker gave that WETH and got the tUSDC,
+    // so its rate is the inverse on the reversed pair.
+    assert.fieldEquals("FillQuality", id, "makerExecutionRate", "2493757993");
+
+    // And the two deviations point opposite ways, which is the whole reason both are recorded: a
+    // fill the taker beat the reference on is a fill the maker paid through it.
+    assert.fieldEquals("FillQuality", id, "adverseDeviationBps", "25");
+    assert.fieldEquals("FillQuality", id, "makerAdverseDeviationBps", "-24");
   });
 
   test("WETH in, tUSDC out — the other direction", () => {
