@@ -146,7 +146,7 @@ mainnet uses canonical Aqua and never forks it.
 | Contract | Address | Verified |
 |---|---|---|
 | FloorRegistry | [`0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123`](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123) | Sourcify |
-| FloorRouter | [`0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709`](https://sepolia.basescan.org/address/0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709) | pending |
+| FloorRouter | [`0x03189D102286fa8cDd0fBF3578B492e67e665A27`](https://sepolia.basescan.org/address/0x03189D102286fa8cDd0fBF3578B492e67e665A27) | pending |
 | VaultFactory | [`0xD985Ad481D396D37344f7c1229433a7D342cf1F1`](https://sepolia.basescan.org/address/0xD985Ad481D396D37344f7c1229433a7D342cf1F1) | Sourcify |
 | AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |

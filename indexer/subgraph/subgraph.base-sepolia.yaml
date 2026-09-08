@@ -58,7 +58,7 @@ dataSources:
     name: FloorRouter
     network: base-sepolia
     source:
-      address: "0xa2C76F6eF597B4E48d98A6085B9381C7b0fa0709"
+      address: "0x03189D102286fa8cDd0fBF3578B492e67e665A27"
       abi: FloorRouter
       startBlock: 46513825
     mapping:

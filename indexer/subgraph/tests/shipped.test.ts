@@ -11,7 +11,7 @@ import { handleShipped } from "../src/aqua";
 /// starting. This runs the same handler locally so the trap is a stack trace instead of a guess.
 
 const MAKER = "0xaf6b337440ffea63c47f077eee2663987aeec33f";
-const APP = "0xa2c76f6ef597b4e48d98a6085b9381c7b0fa0709";
+const APP = "0x03189d102286fa8cdd0fbf3578b492e67e665a27";
 
 const BLOB =
   "0x0000000000000000000000000000000000000000000000000000000000000020" +

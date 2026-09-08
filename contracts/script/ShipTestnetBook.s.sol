@@ -139,8 +139,14 @@ contract ShipTestnetBook is Script {
         vm.startBroadcast();
 
         // 100 bps of tolerance either way, no absolute backstop, so the floor tracks the reference.
-        vault.execute(address(registry), 0, abi.encodeCall(FloorRegistry.raiseFloor, (WETH, usdc, 100, 0)));
-        vault.execute(address(registry), 0, abi.encodeCall(FloorRegistry.raiseFloor, (usdc, WETH, 100, 0)));
+        //
+        // Only where no floor exists yet. `raiseFloor` refuses anything that weakens either
+        // component, and a re-run against a deployment whose backstop has since been raised is
+        // exactly that: passing 0 for the absolute rate when the stored one is 2457774000 reverts
+        // `NotARaise`. The asymmetry is the design and the script has no business arguing with it,
+        // so it reads the floor first and leaves a configured one alone.
+        _raiseIfUnset(vault, registry, WETH, usdc);
+        _raiseIfUnset(vault, registry, usdc, WETH);
 
         bytes32 strategyHash =
             vault.ship(vm.envAddress("SUBFLOOR_ROUTER"), abi.encode(order), tokens, amounts, _mandate(), signature);
@@ -152,5 +158,15 @@ contract ShipTestnetBook is Script {
         (uint256 f2, bool e2) = registry.effectiveFloor(address(vault), usdc, WETH);
         console2.log("floor WETH->tUSDC", f1, e1);
         console2.log("floor tUSDC->WETH", f2, e2);
+    }
+
+    function _raiseIfUnset(AquaGuardVault vault, FloorRegistry registry, address base, address quote) internal {
+        (bool configured, uint16 bps, uint232 absolute) = registry.floor(address(vault), base, quote);
+        if (configured) {
+            console2.log("floor already set, left alone:", vm.toString(base), vm.toString(quote));
+            console2.log("  maxAdverseBps", bps, "absoluteRate", uint256(absolute));
+            return;
+        }
+        vault.execute(address(registry), 0, abi.encodeCall(FloorRegistry.raiseFloor, (base, quote, 100, 0)));
     }
 }

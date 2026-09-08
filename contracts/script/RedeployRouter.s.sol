@@ -47,7 +47,10 @@ contract RedeployRouter is Script {
         address owner = vm.envAddress("SUBFLOOR_OWNER");
 
         address oldRouter = vm.envAddress("SUBFLOOR_ROUTER");
-        bytes32 oldStrategy = vm.envOr("SUBFLOOR_OLD_STRATEGY", bytes32(0));
+        // All of them, not just the concentrated one. Every book shipped to the old app still quotes
+        // and still holds the vault's inventory committed to Aqua under that app; leaving them live
+        // means a taker can find the previous generation first and inventory stays tied up.
+        bytes32[] memory oldStrategies = vm.envOr("SUBFLOOR_OLD_STRATEGIES", ",", new bytes32[](0));
 
         vm.startBroadcast();
 
@@ -55,12 +58,12 @@ contract RedeployRouter is Script {
 
         // Dock the old book on the old app. `dock` is reachable by the delegate, a dock operator or
         // the owner, because docking can only stop trading and never worsen a price.
-        if (oldStrategy != bytes32(0)) {
-            address[] memory tokens = new address[](2);
-            tokens[0] = weth;
-            tokens[1] = vm.envAddress("SUBFLOOR_TUSDC");
-            vault.dock(oldRouter, oldStrategy, tokens);
-            console2.log("docked the old book on the old router");
+        address[] memory tokens = new address[](2);
+        tokens[0] = weth;
+        tokens[1] = vm.envAddress("SUBFLOOR_TUSDC");
+        for (uint256 i = 0; i < oldStrategies.length; ++i) {
+            vault.dock(oldRouter, oldStrategies[i], tokens);
+            console2.log("docked", vm.toString(oldStrategies[i]));
         }
 
         vm.stopBroadcast();

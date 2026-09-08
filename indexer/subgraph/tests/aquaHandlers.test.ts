@@ -11,7 +11,7 @@ import { handleDocked, handlePulled, handlePushed } from "../src/aqua";
 /// suspects, and this file runs them.
 
 const MAKER = "0xaf6b337440ffea63c47f077eee2663987aeec33f";
-const APP = "0xa2c76f6ef597b4e48d98a6085b9381c7b0fa0709";
+const APP = "0x03189d102286fa8cdd0fbf3578b492e67e665a27";
 const TOKEN = "0x90dcee47dc225832b8bbd7eb8eeac60766d2d1ad";
 const HASH = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
