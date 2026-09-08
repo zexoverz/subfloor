@@ -8,6 +8,7 @@ import { Tape } from '../Tape.tsx';
 import { FloorChart } from '../FloorChart.tsx';
 import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
+import { Hoverable } from '../Hoverable.tsx';
 import { RefreshBadge } from '../RefreshBadge.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
@@ -185,17 +186,24 @@ export function LiveView({
                  */}
                 <span className="flex items-center gap-0.5 rounded-lg border border-rule bg-sunken p-0.5">
                   {(['mine', 'public'] as const).map((s) => (
-                    <button
+                    <Hoverable
                       key={s}
-                      type="button"
-                      onClick={() => onScope(s)}
-                      title={s === 'mine' ? copy.desk.scopeMineNote : copy.desk.scopePublicNote}
-                      className={`rounded px-2.5 py-1 text-[11px] tracking-normal normal-case transition-colors ${
-                        scope === s ? 'bg-raise font-semibold text-ink' : 'text-faint hover:text-muted'
-                      }`}
+                      content={
+                        <p className="m-0 text-[12px] leading-relaxed text-muted">
+                          {s === 'mine' ? copy.desk.scopeMineNote : copy.desk.scopePublicNote}
+                        </p>
+                      }
                     >
-                      {s === 'mine' ? copy.desk.scopeMine : copy.desk.scopePublic}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => onScope(s)}
+                        className={`rounded px-2.5 py-1 text-[11px] tracking-normal normal-case transition-colors ${
+                          scope === s ? 'bg-raise font-semibold text-ink' : 'text-faint hover:text-muted'
+                        }`}
+                      >
+                        {s === 'mine' ? copy.desk.scopeMine : copy.desk.scopePublic}
+                      </button>
+                    </Hoverable>
                   ))}
                 </span>
                 <RefreshBadge

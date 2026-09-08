@@ -80,7 +80,11 @@ export const copy = {
     refreshNever: 'not read yet',
     refreshRead: 'last read',
     refreshAgo: 'ago',
-    refreshEvery: 'reads again every 20s while this tab is visible',
+    refreshNext: 'reads again',
+    refreshInterval: 'every 20s',
+    /** Why the block is the number here, and not the clock beside it. */
+    refreshWhyBlock:
+      'the clock says when this asked; the block says what it got — a fill newer than that block is not on this screen yet',
     chartAtCursor: 'above the floor, at the cursor',
     chartThisFill: 'this fill',
     chartAboveFloor: 'above the floor, latest fill',
@@ -101,8 +105,8 @@ export const copy = {
     scopeMine: 'My tape',
     scopePublic: 'Public tape',
     /** Whose trades are on screen, said plainly, because the two answer different questions. */
-    scopeMineNote: 'only this vault',
-    scopePublicNote: 'every maker on this venue',
+    scopeMineNote: 'Only this vault: what it traded, against the floor it set.',
+    scopePublicNote: 'Every maker on this venue, each measured against their own floor — which is why the axis is basis points and not price.',
     tapeEmpty: 'This vault has not traded yet. The tape follows the vault named above, so a vault you just deployed starts empty.',
     /** We could not ask. Says whose failure it is rather than reporting an empty venue. */
     tapeUnreachable: 'The index could not be reached, so what has traded here is unknown.',
