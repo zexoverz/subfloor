@@ -34,7 +34,16 @@ async function ask<T>(body: Query): Promise<T | null> {
      * all — which is how a pinned version that has been republished looks from the outside. Both
      * are "no answer", and the board stays on fixtures rather than rendering an empty one as live.
      */
-    if (json.errors?.length || json.message) return null;
+    if (json.errors?.length || json.message) {
+      /*
+       * Say what the index refused, rather than returning null and letting the board look like a
+       * venue with no trades. Two of those in one day cost hours each: a field the schema had
+       * dropped, and a required variable that was not being sent — both of which the endpoint
+       * named precisely in a message nobody was printing.
+       */
+      console.error('[index] the query was rejected:', json.errors ?? json.message);
+      return null;
+    }
     return json.data ?? null;
   } catch {
     return null;
@@ -226,7 +235,7 @@ export function useIndex(vault: Address | null): IndexData {
         ask<{
           fillQualities: FillRow[];
           executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
-        }>({ query: FILLS }),
+        }>({ query: FILLS, variables: { vault: vault.toLowerCase() } }),
         askRefusals(),
       ]);
 
