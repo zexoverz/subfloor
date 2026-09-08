@@ -13,8 +13,30 @@ import { copy } from '../copy.ts';
 import { formatBps, formatUsd } from '../lib/rate.ts';
 import type { VaultState } from '../types.ts';
 
-function cssVar(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+/**
+ * A theme token, or a literal when it cannot be read.
+ *
+ * An empty string is a colour the canvas ignores, and a series drawn in nothing looks exactly like
+ * a series with no data — so a token that fails to resolve would send anyone reading this straight
+ * to the query instead of the stylesheet.
+ */
+function cssVar(name: string, fallback: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+/**
+ * A hex token with an alpha channel, because the canvas cannot take `color-mix`.
+ *
+ * That function is CSS, and this chart paints into a 2D context — which silently ignores a fill it
+ * cannot parse rather than warning about it. The area under the line and every bar were being
+ * given one, so both drew nothing while the axis, the grid and the header all worked, which is
+ * exactly the sort of failure that looks like missing data.
+ */
+function alpha(hex: string, amount: number): string {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+  const channel = Math.round(Math.min(1, Math.max(0, amount)) * 255).toString(16).padStart(2, '0');
+  return `#${full}${channel}`;
 }
 
 /**
@@ -50,11 +72,11 @@ export function FloorChart({
 
   useEffect(() => {
     if (!box.current) return;
-    const rule = cssVar('--c-rule');
-    const faint = cssVar('--c-faint');
-    const settle = cssVar('--c-settle');
-    const floor = cssVar('--c-floor');
-    const refuse = cssVar('--c-refuse');
+    const rule = cssVar('--c-rule', '#18406e');
+    const faint = cssVar('--c-faint', '#7d95b6');
+    const settle = cssVar('--c-settle', '#40b66b');
+    const floor = cssVar('--c-floor', '#0ee6ea');
+    const refuse = cssVar('--c-refuse', '#fa2b39');
 
     const c = createChart(box.current, {
       autoSize: true,
@@ -76,8 +98,8 @@ export function FloorChart({
     floorLine.current = c.addSeries(AreaSeries, {
       lineColor: settle,
       lineWidth: 2,
-      topColor: `color-mix(in srgb, ${settle} 30%, transparent)`,
-      bottomColor: 'transparent',
+      topColor: alpha(settle, 0.3),
+      bottomColor: alpha(settle, 0),
       priceLineVisible: false,
       lastValueVisible: true,
     });
@@ -106,7 +128,7 @@ export function FloorChart({
     volume.current = c.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
-      color: `color-mix(in srgb, ${floor} 45%, transparent)`,
+      color: alpha(floor, 0.45),
     });
     c.priceScale('volume').applyOptions({ scaleMargins: { top: 0.76, bottom: 0 } });
 
@@ -143,7 +165,15 @@ export function FloorChart({
   }, [state.tape]);
 
   const latest = [...state.tape].reverse().find((e) => e.kind === 'fill');
-  const held = state.tape.filter((e) => e.kind === 'fill' && (e.bpsAboveFloor ?? 0) >= 0).length;
+  /*
+   * Only fills whose distance from the floor is known. `?? 0 >= 0` counted an unknown as a pass,
+   * so the footer reported every fill clearing the floor on a tape where the index had recorded no
+   * floor at all — the one number on this card that is a claim rather than a description.
+   */
+  const measured = state.tape.flatMap((e) =>
+    e.kind === 'fill' && e.bpsAboveFloor !== undefined ? [e.bpsAboveFloor] : [],
+  );
+  const held = measured.filter((bps) => bps >= 0).length;
   const traded = state.tape
     .filter((e) => e.kind === 'fill')
     .reduce((sum, f) => sum + f.amount * f.price, 0);
@@ -216,7 +246,7 @@ export function FloorChart({
         <span>
           <b className="font-semibold text-settle">{held}</b>
           {' of '}
-          <b className="font-semibold text-ink">{state.tape.filter((e) => e.kind === 'fill').length}</b>{' '}
+          <b className="font-semibold text-ink">{measured.length}</b>{' '}
           {scope === 'mine' ? copy.desk.chartHeldMine : copy.desk.chartHeldPublic}
         </span>
         <span>{copy.desk.chartAxis}</span>
