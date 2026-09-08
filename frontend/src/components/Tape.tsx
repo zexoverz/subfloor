@@ -250,14 +250,14 @@ function FillHint({ entry }: { entry: Fill }) {
   return (
     <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
       {/* An icon per line, because four rows of identical grey labels read as one block of text. */}
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <Crosshair size={12} strokeWidth={1.9} />
         reference
       </dt>
       <dd className="m-0 text-right font-medium">
         {entry.referencePrice === undefined ? '—' : `$${formatPrice(entry.referencePrice)}`}
       </dd>
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <Clock size={12} strokeWidth={1.9} />
         reference age
       </dt>
@@ -274,14 +274,14 @@ function FillHint({ entry }: { entry: Fill }) {
           </span>
         )}
       </dd>
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <ShieldCheck size={12} strokeWidth={1.9} />
         clear of floor
       </dt>
       <dd className="m-0 text-right font-medium text-settle">
         {entry.bpsAboveFloor === undefined ? '—' : `+${entry.bpsAboveFloor} bps`}
       </dd>
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <TrendingUp size={12} strokeWidth={1.9} />
         markout 30s
       </dt>
@@ -304,8 +304,13 @@ function FillRows({
   pair: Pair;
   onHint: (hint: Hint) => void;
 }) {
-  // Both legs of one swap are worth the same thing; only the asset changed.
-  const usdIn = entry.amount * entry.price;
+  /*
+   * Both legs of one swap are worth the same thing, so one figure serves both — but it has to be
+   * read off the dollar leg. Multiplying an amount by the pair price only works when the amount is
+   * in the base token: on a reverse fill it valued 1.5 tUSDC at six hundredths of a cent.
+   */
+  const quoteLeg = entry.gave?.symbol === pair.base ? entry.got : entry.gave;
+  const usdIn = quoteLeg?.amount ?? entry.amount * entry.price;
 
   return (
     <>
@@ -393,24 +398,24 @@ function RefusalHint({
 }) {
   return (
     <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <ArrowDown size={12} strokeWidth={1.9} />
         tried to settle at
       </dt>
       <dd className="m-0 text-right font-medium text-refuse">${formatPrice(decoded.attemptedPrice)}</dd>
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <ShieldCheck size={12} strokeWidth={1.9} />
         your floor
       </dt>
       <dd className="m-0 text-right font-medium text-floor">${formatPrice(decoded.floorPrice)}</dd>
-      <dt className="flex items-center gap-2 text-faint">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
         <Crosshair size={12} strokeWidth={1.9} />
         below the floor by
       </dt>
       <dd className="m-0 text-right font-medium text-refuse">−{decoded.bpsBelowFloor} bps</dd>
       {vsRef !== null && (
         <>
-          <dt className="flex items-center gap-2 text-faint">
+          <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
             <TrendingUp size={12} strokeWidth={1.9} />
             vs reference
           </dt>

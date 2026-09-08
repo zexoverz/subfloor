@@ -53,3 +53,17 @@ test('a reverse fill is read as one, not as an impossible price', () => {
   assert.ok(Math.abs(price(forward, 18, 6) - 2490.2) < 0.1);
   assert.ok(Math.abs(price(reverse, 6, 18) - 0.0004) < 0.0001);
 });
+
+test('both directions of a pair report the same price scale', () => {
+  /*
+   * A rate is received-per-given, so the two directions of one pair are reciprocals. A tape has
+   * one price for a pair — the direction belongs in the legs — and reading the reverse rate
+   * as-is put 0.0004 in a column that rounds to two decimals, printing $0.00 for a real trade.
+   */
+  const asGiven = (raw: number, giveDec: number, getDec: number) => (raw / 1e18) * 10 ** (giveDec - getDec);
+  const forward = asGiven(2_490_200_000, 18, 6);
+  const reverse = 1 / asGiven(401_574_170_749_337_402_618_263_593, 6, 18);
+  assert.ok(Math.abs(forward - 2490.2) < 0.1);
+  // Same pair, same ballpark, whichever way the fill went.
+  assert.ok(Math.abs(reverse - 2490.2) < 5);
+});

@@ -316,7 +316,15 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
           const got = fill.swap.tokensOut?.[0] ?? (inverted ? WETH : USDC);
           const amount = Number(formatUnits(BigInt(fill.swap.amountsIn?.[0] ?? '0'), decimalsOf(gave)));
           const received = Number(formatUnits(BigInt(fill.swap.amountsOut?.[0] ?? '0'), decimalsOf(got)));
-          const rate = Number(fill.executionRate) / 1e18;
+          /*
+           * One price scale for the pair, whichever way the fill went.
+           *
+           * A rate is quoted in received-per-given, so a reverse fill's is WETH per tUSDC — 0.0004,
+           * which rounds to $0.00 in a price column and makes a real trade look like a free one.
+           * A tape has one price for a pair; the direction belongs in the legs, not the price.
+           */
+          const asGiven = (raw: number) => (raw / 1e18) * 10 ** (decimalsOf(gave) - decimalsOf(got));
+          const quotePerBase = (raw: number) => (inverted ? 1 / asGiven(raw) : asGiven(raw));
           /*
            * Both maker-side, and compared with each other. Mixing the maker's execution against a
            * taker's floor would produce a number that is not about anything.
@@ -329,7 +337,7 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
             time: clock(fill.timestamp),
             side: gave.toLowerCase() === WETH.toLowerCase() ? ('sold' as const) : ('bought' as const),
             amount,
-            price: rate * 10 ** (decimalsOf(gave) - decimalsOf(got)),
+            price: quotePerBase(Number(fill.executionRate)),
             /*
              * Undefined, not zero, when the index has no floor for the fill. Dividing by an absent
              * floor gives Infinity, and rendering that as "0 bps above your floor" would put the
@@ -344,7 +352,12 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
             vsReferenceBps: fill.makerAdverseDeviationBps ?? 0,
             tx: fill.swap.hash.slice(0, 6),
             hash: fill.swap.hash,
-            referencePrice: fill.referencePrice ? Number(fill.referencePrice) / 1e6 : undefined,
+            /*
+             * Through the same conversion as the execution price. Dividing the raw answer by 1e6
+             * assumed the forward direction, so a reverse fill reported a reference of four
+             * hundred quintillion dollars.
+             */
+            referencePrice: fill.referencePrice ? quotePerBase(Number(fill.referencePrice)) : undefined,
             referenceAgeSeconds: fill.referenceAgeSeconds ?? undefined,
             taker: fill.taker ?? undefined,
             gave: { amount, symbol: TOKENS[gave.toLowerCase()]?.symbol ?? '?' },
