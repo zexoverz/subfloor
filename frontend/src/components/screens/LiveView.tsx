@@ -214,12 +214,28 @@ export function LiveView({
             <Card>
               <CardHead icon={ArrowDownToLine} left={copy.onboarding.finishSetup} />
               <CardBody>
-                <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
-                  {copy.onboarding.finishSetupNote}
-                </p>
-                <Act primary onClick={onSetup}>
-                  {copy.onboarding.finishSetup}
-                </Act>
+                {/*
+                 * The one card on the board with something still to do, so it is the one that gets
+                 * a face. Beside the text rather than behind it: this card is short and the drawing
+                 * fits next to it, where the stat tiles had to bleed theirs off a corner.
+                 */}
+                <div className="flex items-center gap-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
+                      {copy.onboarding.finishSetupNote}
+                    </p>
+                    <Act primary onClick={onSetup}>
+                      {copy.onboarding.finishSetup}
+                    </Act>
+                  </div>
+                  <img
+                    src="/mascot-setup.webp"
+                    alt=""
+                    aria-hidden
+                    draggable={false}
+                    className="tile-art pointer-events-none -my-2 -mr-2 w-[104px] shrink-0 select-none max-[420px]:hidden"
+                  />
+                </div>
               </CardBody>
             </Card>
           )}
@@ -300,11 +316,17 @@ export function LiveView({
                  * floor registered on a vault with no funds, no guardian and no delegate protects
                  * nothing, and half-configured is the state nobody wants to explain later.
                  */
-                <Ghost onClick={() => (onSetup ? onSetup() : setAdjusting(true))}>
-                  <span className="flex items-center gap-1.5">
-                    <Pencil size={11} strokeWidth={1.8} />
-                    {floor.enforced ? copy.onboarding.adjust : copy.floor.set}
-                  </span>
+                /*
+                 * The glyph alone. "SET SUBFLOOR" wrapped to two lines in this header and spent
+                 * more of the card's top edge than the card's own title — and the pencil says
+                 * "change this" without any of it. The words move to the label, so nothing is lost
+                 * to a screen reader or to a hover.
+                 */
+                <Ghost
+                  onClick={() => (onSetup ? onSetup() : setAdjusting(true))}
+                  label={floor.enforced ? copy.onboarding.adjust : copy.floor.set}
+                >
+                  <Pencil size={13} strokeWidth={1.8} />
                 </Ghost>
               }
             />

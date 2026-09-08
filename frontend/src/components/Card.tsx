@@ -35,11 +35,11 @@ export function CardBody({ children, className = '' }: { children: ReactNode; cl
 export function Chip({ children, live = false }: { children: ReactNode; live?: boolean }) {
   return (
     <span
-      className={`rounded-xl border px-2 py-[3px] text-[11.5px] tracking-[0.1em] uppercase ${
-        live ? 'border-settle/35 text-settle' : 'border-rule bg-surface text-muted'
+      className={`rounded-xl px-2 py-[3px] text-[11.5px] font-semibold tracking-[0.1em] uppercase ${
+        live ? 'bg-live text-white' : 'border border-rule bg-surface font-normal text-muted'
       }`}
     >
-      {live && <span className="mr-1.5 inline-block size-[5px] animate-pulse rounded-full bg-settle align-[1px]" />}
+      {live && <span className="mr-1.5 inline-block size-[5px] animate-pulse rounded-full bg-white align-[1px]" />}
       {children}
     </span>
   );

@@ -57,10 +57,17 @@ export function Locked({ children, onClick }: Props) {
   );
 }
 
-export function Ghost({ children, onClick }: Props) {
+/**
+ * The quiet action in a card header. `label` makes it icon-only: the glyph carries it on screen
+ * and the label carries it everywhere else, which is the only honest way to drop the words — a
+ * button whose text is gone and whose name is gone too is a button nobody can find.
+ */
+export function Ghost({ children, onClick, label }: Props & { label?: string }) {
   return (
     <button
       onClick={onClick}
+      title={label}
+      aria-label={label}
       className="pushable push-quiet mb-1 cursor-pointer rounded-lg px-2.5 py-1.5 text-[11.5px]"
     >
       {children}

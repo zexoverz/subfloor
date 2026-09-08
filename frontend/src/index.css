@@ -92,6 +92,12 @@
   --c-action-ink: #01102a;
   --c-action-hover: #62b5f4;
   --c-settle: #40b66b;
+  /*
+   * The live badge is a filled green, not green ink on a rule, and that changes which green it
+   * can be. `--c-settle` is ink: white on it measures 2.59 and the word disappears. #238046 is
+   * the first step down that carries white at an 11.5px size, 4.94.
+   */
+  --c-live: #238046;
   --c-settle-wash: rgba(64, 182, 107, 0.16);
   --c-refuse: #ff6b73;
   --c-refuse-wash: rgba(255, 107, 115, 0.14);
@@ -178,6 +184,7 @@
   --color-action-hover: var(--c-action-hover);
   --color-action-ink: var(--c-action-ink);
   --color-settle: var(--c-settle);
+  --color-live: var(--c-live);
   --color-settle-wash: var(--c-settle-wash);
   --color-refuse: var(--c-refuse);
   --color-refuse-wash: var(--c-refuse-wash);
