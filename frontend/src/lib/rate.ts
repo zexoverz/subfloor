@@ -44,6 +44,32 @@ export function formatPrice(price: number): string {
   return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/**
+ * A quote-token amount, as money.
+ *
+ * The quote here is a dollar stablecoin — tUSDC on the testnet, USDC on mainnet — so one unit is
+ * one dollar by construction, and the reference every fill is scored against is a Chainlink
+ * ETH/USD answer. The dollar sign is therefore describing the quote asset, not a conversion
+ * anybody performed.
+ *
+ * Small values keep their cents; a fill of a ten-thousandth of an ether is worth well under a
+ * dollar, and rounding it to $1 would make every row on this testnet look the same size.
+ */
+export function formatUsd(value: number): string {
+  if (value > 0 && value < 0.01) return '<$0.01';
+  /*
+   * Both digit counts move together. Setting a maximum below the minimum throws a RangeError out
+   * of toLocaleString — so dropping the cents on large values, while leaving the minimum at two,
+   * would have taken the tape down on the first fill worth a hundred dollars. Every fill on this
+   * testnet is worth well under one, which is exactly why it would have shipped unnoticed.
+   */
+  const digits = value < 100 ? 2 : 0;
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}`;
+}
+
 export function formatBps(n: number): string {
   return `${n > 0 ? '+' : ''}${n} bps`;
 }

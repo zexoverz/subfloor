@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rateToPrice, priceToRate, floorPriceFromBps, bpsAbove } from './rate.ts';
+import { rateToPrice, priceToRate, floorPriceFromBps, bpsAbove, formatUsd } from './rate.ts';
 
 // WETH(18) given, USDC(6) received: 2,445.40 USDC per WETH is a rate of 2_445_400_000.
 test('rate and price round-trip for WETH/USDC', () => {
@@ -24,4 +24,13 @@ test('an inverted pair survives the bigint to number step', () => {
 test('a floor 100 bps under the reference is 1% under it', () => {
   assert.equal(floorPriceFromBps(2470.1, 100), 2445.399);
   assert.equal(bpsAbove(2463.1, 2445.4), 72);
+});
+
+test('a large value keeps its digit counts consistent', () => {
+  // maximumFractionDigits below minimumFractionDigits throws out of toLocaleString, and every fill
+  // on the testnet is worth under a dollar — so this would have shipped and broken on the first
+  // hundred-dollar fill instead.
+  assert.equal(formatUsd(125.5), '$126');
+  assert.equal(formatUsd(0.747), '$0.75');
+  assert.equal(formatUsd(0.000001), '<$0.01');
 });

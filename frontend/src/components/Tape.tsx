@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Filter } from 'lucide-react';
 import { FillBar } from './FillBar.tsx';
 import { copy } from '../copy.ts';
-import { formatBps, formatPrice } from '../lib/rate.ts';
+import { formatBps, formatPrice, formatUsd } from '../lib/rate.ts';
 import { decodeRefusal } from '../lib/refusal.ts';
 import { RefusalDetail } from './RefusalCard.tsx';
 import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
@@ -267,9 +267,17 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
              */}
             <TokenIcon symbol={pair.base} size={14} />
           </span>
+          {/*
+           * What that size is worth, under it. Derived from this fill's own price rather than a
+           * single figure for the whole tape, so the two numbers in this cell always agree with
+           * each other.
+           */}
+          <span className="mt-0.5 block text-right text-[10.5px] text-faint">
+            {formatUsd(entry.amount * entry.price)}
+          </span>
         </td>
         <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold tabular-nums">
-          {formatPrice(entry.price)}
+          ${formatPrice(entry.price)}
         </td>
         <td className="px-4 py-3 text-right font-mono text-[12.5px] tabular-nums">
           {/*
@@ -431,7 +439,7 @@ function RefusalRows({ entry }: { entry: Refusal }) {
             moved — inventing one here would contradict the line directly beneath it. */}
         <td className="px-4 py-3 text-right font-mono text-[12.5px] text-refuse/50 tabular-nums">—</td>
         <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold tabular-nums">
-          {formatPrice(decoded.attemptedPrice)}
+          ${formatPrice(decoded.attemptedPrice)}
         </td>
         <td className="px-4 py-3 text-right font-mono text-[12.5px] tabular-nums">
           {vsRef === null ? <span className="text-refuse/50">—</span> : formatBps(vsRef)}
