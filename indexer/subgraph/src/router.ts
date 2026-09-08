@@ -3,7 +3,7 @@ import { Swapped, FloorRouter } from "../generated/FloorRouter/FloorRouter";
 import { FloorRegistry } from "../generated/FloorRegistry/FloorRegistry";
 import { Swap, VirtualPool, FillQuality, Floor, ReferenceAnswer, ReferenceFeed, Token } from "../generated/schema";
 import { recordFill } from "./quality";
-import { deviationBps, ETH_USD, eventId, getAccount, getProtocol, getToken, rateOf, referenceRate, ZERO_BD, ZERO_BI } from "./shared";
+import { deviationBps, effectiveFloor, ETH_USD, eventId, getAccount, getProtocol, getToken, rateOf, referenceRate, ZERO_BD, ZERO_BI } from "./shared";
 
 /// The registry's reference configuration for one ordered pair, read from the registry itself.
 ///
@@ -125,27 +125,30 @@ export function handleSwapped(event: Swapped): void {
   // protects. The maker's rate is the taker's inverted, on the reversed pair: it gave `amountOut`
   // and got `amountIn`.
   q.makerExecutionRate = rateOf(event.params.amountIn, event.params.amountOut);
-  if (ref && feed) {
-    // The reverse pair has its own reference row with its own `inverted` flag, so it is read rather
-    // than derived from the forward one.
+
+  // The reverse pair has its own reference row with its own `inverted` flag, so it is read rather
+  // than derived from the forward one. Held in a variable because the floor needs it too.
+  let makerReference = ZERO_BI;
+  if (ref) {
     const makerFeed = getReferenceFeed(event.address, tokenOut, tokenIn);
-    q.makerAdverseDeviationBps = makerFeed
-      ? deviationBps(q.makerExecutionRate, referenceRate(ref.answer, makerFeed.scale, makerFeed.inverted))
-      : 0;
-  } else {
-    q.makerAdverseDeviationBps = 0;
+    if (makerFeed) makerReference = referenceRate(ref.answer, makerFeed.scale, makerFeed.inverted);
   }
+  q.makerAdverseDeviationBps = makerReference.isZero() ? 0 : deviationBps(q.makerExecutionRate, makerReference);
 
   const takerFloor = Floor.load(
     Bytes.fromHexString(event.params.taker.toHexString()).concat(tokenIn.id).concat(tokenOut.id),
   );
-  q.takerFloorAtFill = takerFloor == null ? null : takerFloor.absoluteRate;
+  q.takerFloorAtFill = takerFloor == null
+    ? null
+    : effectiveFloor(q.referencePrice, takerFloor.maxAdverseBps, takerFloor.absoluteRate);
 
   // Keyed on the reversed pair, the way the registry stores it for the maker.
   const makerFloor = Floor.load(
     Bytes.fromHexString(event.params.maker.toHexString()).concat(tokenOut.id).concat(tokenIn.id),
   );
-  q.makerFloorAtFill = makerFloor == null ? null : makerFloor.absoluteRate;
+  q.makerFloorAtFill = makerFloor == null
+    ? null
+    : effectiveFloor(makerReference, makerFloor.maxAdverseBps, makerFloor.absoluteRate);
 
   q.blockNumber = event.block.number;
   q.timestamp = event.block.timestamp;
