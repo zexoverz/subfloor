@@ -34,11 +34,24 @@ export function PanicButton({ onFire }: { onFire: () => void }) {
       onPointerDown={arm}
       onPointerUp={disarm}
       onPointerLeave={disarm}
+      // Dragging off cancels, and so does the system taking the gesture away — a touch that turns
+      // into a scroll fires cancel and never fires up, which would otherwise leave the button
+      // armed and the timer running with nobody holding it.
+      onPointerCancel={disarm}
+      data-armed={arming}
       title={copy.panic.hint}
-      className="relative cursor-pointer overflow-hidden rounded-xl border border-refuse/40 bg-surface px-2.5 py-[3px] text-[11.5px] tracking-[0.1em] text-refuse uppercase select-none"
+      className="pushable relative mb-1.5 cursor-pointer overflow-hidden rounded-lg px-3 py-[5px] text-[11.5px] font-semibold tracking-[0.1em] uppercase select-none"
     >
+      {/*
+        * The hold, drawn as it fills — in the button's own pressed colour, so the bar is the face
+        * becoming fully depressed rather than a second colour arriving from somewhere.
+        *
+        * It was a white wash first and that failed where it mattered most: at 25% white the label
+        * drops to 3.73 against its own bar, and the moment it fails is exactly the second and a
+        * half the owner is watching it. Darkening instead of lightening puts the label at 9.4.
+        */}
       <span
-        className="absolute inset-y-0 left-0 bg-refuse-wash ease-linear"
+        className="absolute inset-y-0 left-0 bg-[var(--c-panic-side)] ease-linear"
         style={{ width: arming ? '100%' : 0, transition: `width ${arming ? HOLD_MS : 0}ms linear` }}
       />
       <span className="relative flex items-center gap-1.5">

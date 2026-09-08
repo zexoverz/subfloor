@@ -96,6 +96,18 @@
   --c-refuse: #ff6b73;
   --c-refuse-wash: rgba(255, 107, 115, 0.14);
   /*
+   * The panic control's own red, and it is not the refusal red.
+   *
+   * `--c-refuse` is ink: it is read on a panel, so it is light. As a button face under a white
+   * label it measures 1.9 and the label disappears. The flat-UI red this is modelled on, #e74c3c,
+   * is not much better at 3.82 for an 11.5px label. #cf2233 carries white at 5.34 and the darker
+   * side at 8.1, which is what keeps the pressed state legible too.
+   */
+  --c-panic-face: #cf2233;
+  --c-panic-hover: #dd3040;
+  --c-panic-side: #8e0f1a;
+  --c-panic-ink: #ffffff;
+  /*
    * Two shadows doing two jobs: a tight one that separates a panel from the drawing behind it, and
    * a wide soft one that lifts it off the page. On glass the first matters more than it would on
    * an opaque card — without an edge, a translucent panel over an illustration reads as a smudge
@@ -143,6 +155,10 @@
   --c-settle-wash: rgba(32, 152, 83, 0.12);
   --c-refuse: #c41926;
   --c-refuse-wash: rgba(196, 25, 38, 0.1);
+  --c-panic-face: #c41926;
+  --c-panic-hover: #d42433;
+  --c-panic-side: #7d0c16;
+  --c-panic-ink: #ffffff;
   --c-shadow: 0 1px 1px rgba(10, 21, 36, 0.08), 0 6px 14px -6px rgba(10, 21, 36, 0.16),
     0 22px 48px -26px rgba(10, 21, 36, 0.4);
 }
@@ -225,6 +241,72 @@ body {
 .serif {
   font-family: var(--font-serif);
   font-variant-numeric: normal;
+}
+
+/*
+ * The panic control, as a key that is physically there.
+ *
+ * A solid block of colour standing 6px on a darker edge of itself, which collapses when the button
+ * goes down — the button really moves, and the shadow it was standing on is gone while it is held.
+ * It suits this control better than any other on the board: this one is not a link that navigates,
+ * it is a switch that stops a machine, and it should feel like one under the finger.
+ *
+ * The depressed state is held, not momentary, because firing takes 1.5 seconds of hold. So it is
+ * driven by `data-armed` rather than `:active`: the button stays down for as long as the owner
+ * keeps it down, and springs back the instant they let go — which is also the visible proof that
+ * letting go cancelled it.
+ */
+.pushable {
+  background: var(--c-panic-face);
+  color: var(--c-panic-ink);
+  box-shadow: 0 6px 0 var(--c-panic-side);
+  transition:
+    transform 110ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    box-shadow 110ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    background-color 140ms ease;
+}
+
+.pushable:hover {
+  background: var(--c-panic-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 0 var(--c-panic-side);
+}
+
+.pushable:focus-visible {
+  outline: 2px solid var(--c-panic-ink);
+  outline-offset: 3px;
+}
+
+/* A stray click must not be able to fire this, so a plain press only presses it. */
+.pushable:active,
+.pushable[data-armed='true'] {
+  background: var(--c-panic-side);
+  transform: translateY(6px);
+  box-shadow: 0 0 0 var(--c-panic-side);
+}
+
+/*
+ * A tremor while it is held down, under a pixel wide. Not decoration: a control that takes a
+ * second and a half of deliberate pressure has to say it is doing something during that second and
+ * a half, or the owner lets go thinking it did not take.
+ */
+.pushable[data-armed='true'] {
+  animation: panic-tremor 90ms linear infinite;
+}
+
+@keyframes panic-tremor {
+  0%   { transform: translate(0, 6px); }
+  25%  { transform: translate(0.7px, 6px); }
+  75%  { transform: translate(-0.7px, 6px); }
+  100% { transform: translate(0, 6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pushable,
+  .pushable[data-armed='true'] {
+    animation: none;
+    transition: background-color 140ms ease;
+  }
 }
 
 /*
