@@ -32,5 +32,6 @@ export const REVERT_REASONS: Record<string, string> = {
   "0xcd21db4f": "SignatureExpired", // SignatureExpired(uint256)
   "0x50ee0156": "StaleReference", // StaleReference(address,address,uint256,uint256)
   "0xc7d0d7fb": "TokenOutsideMandate", // TokenOutsideMandate(address)
+  "0xe86f59ea": "TooSoon", // TooSoon(uint256)
   "0xa3c996d3": "WrongNonce", // WrongNonce(uint256,uint256)
 };
