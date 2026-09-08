@@ -342,8 +342,13 @@ function TxCell({ hash, stub, time }: { hash?: string; stub: string; time: strin
   );
 }
 
-/** What the row cannot fit, shown on hover rather than hidden behind a click. */
-function FillHint({ entry, pair }: { entry: Fill; pair: Pair }) {
+/**
+ * What a fill is, and how it did — shown on hover rather than hidden behind a click.
+ *
+ * Exported because the chart hovers the same fills. Two cards describing one thing drift the first
+ * time either is touched, and the numbers here are the ones the product is judged on.
+ */
+export function FillHint({ entry, pair }: { entry: Fill; pair: Pair }) {
   const gave = entry.gave ?? { amount: entry.amount, symbol: pair.base };
   const got = entry.got;
   return (

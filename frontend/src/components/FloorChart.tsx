@@ -13,7 +13,8 @@ import { BarChart3, Clock, Crosshair, ShieldCheck } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { RowHint, type Hint } from './RowHint.tsx';
 import { formatBps, formatUsd } from '../lib/rate.ts';
-import type { VaultState } from '../types.ts';
+import type { Pair, TapeEntry, VaultState } from '../types.ts';
+import { FillHint } from './Tape.tsx';
 
 /**
  * A theme token, or a literal when it cannot be read.
@@ -70,8 +71,24 @@ function fmtBps(value: number | undefined, signed = false): string {
   return signed ? formatBps(Math.round(value)) : `+${Math.round(value)}`;
 }
 
-/** The three numbers under the cursor, in the card the rest of the board uses. */
-function ChartHint({ at }: { at: { floor?: number; ref?: number; size?: number; time?: number } }) {
+/** The fill under the cursor, described by the same card the tape uses. */
+function ChartHint({
+  at,
+  tape,
+  pair,
+}: {
+  at: { floor?: number; ref?: number; size?: number; time?: number };
+  tape: TapeEntry[];
+  pair: Pair;
+}) {
+  const fill = tape.find((e) => e.kind === 'fill' && e.ts === at.time);
+  if (fill && fill.kind === 'fill') return <FillHint entry={fill} pair={pair} />;
+
+  /*
+   * No fill at that second — the crosshair sits between points, or on a row the reader filtered
+   * out. The reading is still true, so it is shown rather than the card disappearing under the
+   * cursor.
+   */
   return (
     <dl className="m-0 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[12px]">
       <dt className="flex items-center gap-2 whitespace-nowrap text-faint">
@@ -151,6 +168,14 @@ export function FloorChart({
   const [at, setAt] = useState<{ floor?: number; ref?: number; size?: number; time?: number } | null>(null);
   /** The same card the tape uses, rather than a second way of saying the same thing. */
   const [hint, setHint] = useState<Hint>(null);
+  /*
+   * Read through refs inside the crosshair handler. That subscription is made once, with the chart,
+   * so a value captured there would be the one from the render that built it and would never move.
+   */
+  const tape = useRef(state.tape);
+  const pair = useRef(state.pair);
+  tape.current = state.tape;
+  pair.current = state.pair;
   const chart = useRef<IChartApi | null>(null);
   const floorLine = useRef<ISeriesApi<'Area'> | null>(null);
   const refLine = useRef<ISeriesApi<'Line'> | null>(null);
@@ -248,8 +273,13 @@ export function FloorChart({
         setHint(null);
         return;
       }
+      /*
+       * The crosshair reports a time, and the fill at that time is what the reader is pointing at
+       * — so the card is the tape's, not a second one carrying half the same numbers. A chart that
+       * can only say "+43 bps" leaves out the trade that produced it.
+       */
       setHint({
-        content: <ChartHint at={reading} />,
+        content: <ChartHint at={reading} tape={tape.current} pair={pair.current} />,
         x: rect.left + param.point.x,
         y: rect.top + param.point.y,
       });
