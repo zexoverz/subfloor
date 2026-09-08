@@ -7,6 +7,7 @@ import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
+import { PairIcons } from '../PairIcons.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
@@ -108,7 +109,12 @@ export function LiveView({
       <Card className="mb-4.5">
         <CardHead
           icon={ChartLine}
-          left={`${pair.base} / ${pair.quote} · fills against your floor`}
+          left={
+            <span className="flex items-center gap-2">
+              <PairIcons base={pair.base} quote={pair.quote} size={18} />
+              {pair.base} / {pair.quote} · fills against your floor
+            </span>
+          }
           right={`reference ${formatPrice(reference.price)}`}
         />
         <PriceChart state={state} status={tapeStatus} />
@@ -121,7 +127,16 @@ export function LiveView({
           * has to be the one thing that does not move.
           */}
         <Card className="flex flex-col">
-          <CardHead icon={Receipt} left={copy.desk.tape} right={`${pair.base} / ${pair.quote}`} />
+          <CardHead
+            icon={Receipt}
+            left={copy.desk.tape}
+            right={
+              <span className="flex items-center gap-2">
+                <PairIcons base={pair.base} quote={pair.quote} />
+                {pair.base} / {pair.quote}
+              </span>
+            }
+          />
           <Tape entries={tape} pair={pair} status={tapeStatus} />
         </Card>
 
