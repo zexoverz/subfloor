@@ -3,6 +3,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { ENDPOINT, QUERIES, run, withProvenance } from "./queries.ts";
+import { COMPOSE_TOOLS, composeTool } from "./compose.ts";
 
 /// An MCP server over the SUBFLOOR Aqua index.
 ///
@@ -77,6 +78,10 @@ export const TOOLS = [
 ];
 
 export async function callTool(name: string, args: Record<string, unknown>, fetchImpl: typeof fetch = fetch) {
+  // Compose tools compute rather than query, so they answer without the index being up. That is
+  // deliberate: an agent that cannot read the venue should still be able to see what it would ship.
+  if (COMPOSE_TOOLS.some((t) => t.name === name)) return composeTool(args);
+
   const tool = TOOLS.find((t) => t.name === name);
   if (!tool) throw new Error(`unknown tool: ${name}`);
   const query = QUERIES[tool.query];
@@ -91,7 +96,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: TOOLS.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+  tools: [...TOOLS, ...COMPOSE_TOOLS].map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (req) => {

@@ -15,7 +15,7 @@ export class ProgramError extends Error {}
 
 export type Hex = `0x${string}`;
 
-function hex(bytes: Uint8Array): Hex {
+export function hex(bytes: Uint8Array): Hex {
   let s = "0x";
   for (const b of bytes) s += b.toString(16).padStart(2, "0");
   return s as Hex;
