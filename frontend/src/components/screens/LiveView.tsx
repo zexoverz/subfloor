@@ -8,6 +8,7 @@ import { Tape } from '../Tape.tsx';
 import { FloorChart } from '../FloorChart.tsx';
 import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
+import { RefreshBadge } from '../RefreshBadge.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
@@ -27,6 +28,10 @@ export function LiveView({
   vault,
   scope,
   onScope,
+  fetching,
+  block,
+  fetchedAt,
+  onRefresh,
   tapeStatus,
   owner,
   onNavigate,
@@ -52,6 +57,11 @@ export function LiveView({
   /** Which tape is on screen. Two questions, so two tapes rather than one with a hidden filter. */
   scope: 'mine' | 'public';
   onScope: (scope: 'mine' | 'public') => void;
+  /** Freshness, shown rather than assumed: the board polls and never said so. */
+  fetching: boolean;
+  block: number | null;
+  fetchedAt: number | null;
+  onRefresh: () => void;
   /** True when the connected wallet owns the vault. False is what a stranger sees. */
   owner: boolean;
   onNavigate: (s: Screen) => void;
@@ -188,6 +198,12 @@ export function LiveView({
                     </button>
                   ))}
                 </span>
+                <RefreshBadge
+                  fetching={fetching}
+                  block={block}
+                  fetchedAt={fetchedAt}
+                  onRefresh={onRefresh}
+                />
               </span>
             }
           />

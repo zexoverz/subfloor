@@ -83,6 +83,7 @@ const FILL_FIELDS = `
 `;
 
 const SNAPSHOT = `
+    _meta { block { number } }
     executionQualityDailySnapshots(first: 1, orderBy: day, orderDirection: desc) {
       fills
       refusals
@@ -92,12 +93,13 @@ const SNAPSHOT = `
 `;
 
 /*
- * A hundred, not twenty-four.
+ * Enough to cover the range control's longest window.
  *
- * The tape shows a screenful and scrolls; the chart draws all of them at once, and two dozen
- * points make a shape too short to read a distribution from. The venue has two hundred.
+ * The tape shows a screenful and scrolls; the chart draws all of them at once and offers to narrow
+ * that by time, so the fetch has to hold more than the widest window it lets someone pick. The
+ * venue has 237 fills over four hours today.
  */
-const HISTORY = 100;
+const HISTORY = 300;
 
 /** This vault's own trading. */
 const MINE = `
@@ -242,6 +244,17 @@ export type IndexData = {
   status: 'loading' | 'live' | 'empty' | 'failed';
   tape: TapeEntry[] | null;
   stats: Partial<Stats> | null;
+  /**
+   * What the last read saw, so freshness is checkable rather than assumed.
+   *
+   * A board that polls silently asks to be trusted about how current it is. The block the index
+   * had reached is the honest answer — a clock only says when we asked, not what we got.
+   */
+  block: number | null;
+  fetchedAt: number | null;
+  /** True while a read is in flight, including the ones nobody asked for. */
+  fetching: boolean;
+  refresh: () => void;
 };
 
 const clock = (seconds: string) =>
@@ -261,12 +274,21 @@ const price = (rate: string, base: string, quote: string) =>
  * conflated, because one of them is a claim about this owner and the other is not.
  */
 export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine'): IndexData {
-  const [data, setData] = useState<IndexData>({ source: 'fixtures', status: 'loading', tape: null, stats: null });
+  const [data, setData] = useState<Omit<IndexData, 'refresh' | 'fetching'>>({
+    source: 'fixtures',
+    status: 'loading',
+    tape: null,
+    stats: null,
+    block: null,
+    fetchedAt: null,
+  });
+  const [fetching, setFetching] = useState(false);
+  const [asked, setAsked] = useState(0);
 
   useEffect(() => {
     if (!ENDPOINT || (scope === 'mine' && !vault)) {
       // Nothing configured to ask. Not a load in progress, and not an empty venue either.
-      setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
+      setData((c) => ({ ...c, source: 'fixtures', status: 'failed', tape: null, stats: null }));
       return;
     }
     // Only the first pass may blank the tape. A poll that reset to `loading` would flash skeleton
@@ -275,6 +297,8 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
     let live = true;
 
     const read = async () => {
+      setFetching(true);
+      try {
       /*
        * Two sources, because a refusal cannot come from the index at all. It is a reverted
        * transaction; reverts emit no logs; a subgraph handler is log-driven. The Refusal entity
@@ -285,6 +309,7 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
       const [result, refused] = await Promise.all([
         ask<{
           fillQualities: FillRow[];
+          _meta?: { block?: { number?: number } };
           executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
         }>(
           scope === 'mine'
@@ -301,7 +326,15 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
 
       // Answered, with nothing in it. A venue that has not traded is a fact, not a blank to fill.
       if (fills.length === 0 && refusals.length === 0) {
-        setData({ source: 'chain', status: result ? 'empty' : 'failed', tape: [], stats: null });
+        setData((c) => ({
+          ...c,
+          source: 'chain',
+          status: result ? 'empty' : 'failed',
+          tape: [],
+          stats: null,
+          block: result?._meta?.block?.number ?? c.block,
+          fetchedAt: Date.now(),
+        }));
         return;
       }
 
@@ -402,9 +435,12 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
        * that means "not visible from here" as though it meant "never happened", on the one number
        * this product is judged by.
        */
-      setData({
+      setData((c) => ({
+        ...c,
         source: 'chain',
         status: 'live',
+        block: result?._meta?.block?.number ?? c.block,
+        fetchedAt: Date.now(),
         tape,
         stats: {
           fills: snapshot?.fills ?? refused?.fills ?? fills.length,
@@ -416,7 +452,10 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
           refused: refusals.length,
           ...(snapshot ? { medianVsMidBps: snapshot.adverseDeviationP50Bps } : {}),
         },
-      });
+      }));
+      } finally {
+        if (live) setFetching(false);
+      }
     };
 
     read().catch((cause) => {
@@ -427,7 +466,7 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
        * the index was answering perfectly.
        */
       console.error('[index] the reader failed while shaping the response', cause);
-      setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
+      setData((c) => ({ ...c, source: 'fixtures', status: 'failed', tape: null, stats: null }));
     });
 
     /*
@@ -453,7 +492,12 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
       window.clearInterval(tick);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [vault, scope]);
+  }, [vault, scope, asked]);
 
-  return data;
+  return {
+    ...data,
+    fetching,
+    // A press asks the same way the timer does, so nothing has two code paths to keep in step.
+    refresh: () => setAsked((n) => n + 1),
+  };
 }

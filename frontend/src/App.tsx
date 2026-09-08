@@ -143,6 +143,10 @@ export default function App() {
           vault={vault}
           scope={vault ? scope : 'public'}
           onScope={setScope}
+          fetching={index.fetching}
+          block={index.block}
+          fetchedAt={index.fetchedAt}
+          onRefresh={index.refresh}
           // One page in two states: the owner sees inventory, the standing floor and the agent;
           // everyone else sees the proof counter and the contracts in that column.
           owner={ceremony.isOwner === true}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AreaSeries,
   HistogramSeries,
@@ -62,6 +62,12 @@ function alpha(hex: string, amount: number): string {
  * will occupy say what is coming, and the panel does not change shape when it arrives. Heights
  * come from the index rather than at random so the same skeleton draws twice the same way.
  */
+/** A signed bps figure, or a dash when there is nothing to show rather than a zero. */
+function fmtBps(value: number | undefined, signed = false): string {
+  if (value === undefined) return '—';
+  return signed ? formatBps(Math.round(value)) : `+${Math.round(value)}`;
+}
+
 function SkylineSkeleton() {
   return (
     <div className="flex h-full w-full items-end gap-[3px] px-4 pt-8 pb-10">
@@ -80,6 +86,22 @@ function SkylineSkeleton() {
   );
 }
 
+/**
+ * Windows offered only when they would change what is on screen.
+ *
+ * A control listing 7d and 30d over four hours of history is a control where four of the six
+ * options do the same thing — it looks like a product and behaves like a decoration. So the list
+ * is derived from the span that exists: a window is offered once there is more history than it
+ * covers, and `all` is always there because it is the only one that cannot be empty.
+ */
+const WINDOWS = [
+  { id: '15m', label: '15m', seconds: 15 * 60 },
+  { id: '1h', label: '1h', seconds: 60 * 60 },
+  { id: '6h', label: '6h', seconds: 6 * 60 * 60 },
+  { id: '24h', label: '24h', seconds: 24 * 60 * 60 },
+  { id: '7d', label: '7d', seconds: 7 * 24 * 60 * 60 },
+] as const;
+
 export function FloorChart({
   state,
   status = 'live',
@@ -90,6 +112,9 @@ export function FloorChart({
   scope: 'mine' | 'public';
 }) {
   const box = useRef<HTMLDivElement>(null);
+  const [window_, setWindow] = useState<string>('all');
+  /** What the crosshair is over, so hovering the shape reads the numbers under it. */
+  const [at, setAt] = useState<{ floor?: number; ref?: number; size?: number; time?: number } | null>(null);
   const chart = useRef<IChartApi | null>(null);
   const floorLine = useRef<ISeriesApi<'Area'> | null>(null);
   const refLine = useRef<ISeriesApi<'Line'> | null>(null);
@@ -157,6 +182,26 @@ export function FloorChart({
     });
     c.priceScale('volume').applyOptions({ scaleMargins: { top: 0.76, bottom: 0 } });
 
+    /*
+     * The values under the cursor. A crosshair that shows only its own coordinates makes the
+     * reader estimate two lines against an axis; this reads them off directly, which is the
+     * difference between a chart that can be checked and one that can only be admired.
+     */
+    c.subscribeCrosshairMove((param) => {
+      if (!param.time || !floorLine.current || !refLine.current || !volume.current) {
+        setAt(null);
+        return;
+      }
+      const num = (v: unknown) =>
+        v && typeof v === 'object' && 'value' in v ? (v as { value: number }).value : undefined;
+      setAt({
+        time: param.time as number,
+        floor: num(param.seriesData.get(floorLine.current)),
+        ref: num(param.seriesData.get(refLine.current)),
+        size: num(param.seriesData.get(volume.current)),
+      });
+    });
+
     chart.current = c;
     return () => {
       c.remove();
@@ -167,8 +212,13 @@ export function FloorChart({
   useEffect(() => {
     if (!floorLine.current || !refLine.current || !volume.current) return;
 
+    const chosen = WINDOWS.find((w) => w.id === window_);
+    const newest = state.tape.reduce((max, e) => Math.max(max, e.ts), 0);
     const fills = state.tape
       .filter((e) => e.kind === 'fill')
+      // Measured back from the most recent fill rather than from now: a venue that stopped trading
+      // an hour ago would otherwise show an empty 15m window and look broken.
+      .filter((e) => !chosen || e.ts >= newest - chosen.seconds)
       .slice()
       .sort((a, b) => a.ts - b.ts)
       // One point per second, because two fills in the same second are one x-position.
@@ -194,7 +244,7 @@ export function FloorChart({
      * and the part carrying the argument is the part squeezed smallest.
      */
     chart.current?.timeScale().fitContent();
-  }, [state.tape]);
+  }, [state.tape, window_]);
 
   const latest = [...state.tape].reverse().find((e) => e.kind === 'fill');
   /*
@@ -202,6 +252,14 @@ export function FloorChart({
    * so the footer reported every fill clearing the floor on a tape where the index had recorded no
    * floor at all — the one number on this card that is a claim rather than a description.
    */
+  /*
+   * Only windows narrower than the history, plus `all`. Offering 7d over four hours of data is a
+   * control where most options do nothing, which is worse than having fewer.
+   */
+  const times = state.tape.map((e) => e.ts).filter((t) => t > 0);
+  const span = times.length > 1 ? Math.max(...times) - Math.min(...times) : 0;
+  const offered = WINDOWS.filter((w) => span > w.seconds);
+
   const measured = state.tape.flatMap((e) =>
     e.kind === 'fill' && e.bpsAboveFloor !== undefined ? [e.bpsAboveFloor] : [],
   );
@@ -212,23 +270,51 @@ export function FloorChart({
 
   return (
     <div className="relative">
-      {/* Header: the three numbers a reader wants before they read the shape. */}
+      {/*
+       * The header reads the crosshair when there is one and the latest fill when there is not, so
+       * the same three slots answer "where is it now" and "what was it there" without the numbers
+       * moving somewhere else to do it.
+       */}
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 px-4 pt-3 pb-2">
         <span className="flex items-baseline gap-2">
           <span className="t-num-lg text-settle">
-            {status === 'loading' || latest?.bpsAboveFloor === undefined ? '—' : `+${latest.bpsAboveFloor}`}
+            {status === 'loading' ? '—' : fmtBps(at?.floor ?? latest?.bpsAboveFloor)}
           </span>
-          <span className="text-[11.5px] text-faint">{copy.desk.chartAboveFloor}</span>
+          <span className="text-[11.5px] text-faint">
+            {at ? copy.desk.chartAtCursor : copy.desk.chartAboveFloor}
+          </span>
         </span>
         <span className="flex items-baseline gap-2">
           <span className="t-num text-refuse">
-            {status === 'loading' || latest?.vsReferenceBps === undefined ? '—' : formatBps(latest.vsReferenceBps)}
+            {status === 'loading' ? '—' : fmtBps(at?.ref ?? latest?.vsReferenceBps, true)}
           </span>
           <span className="text-[11.5px] text-faint">{copy.desk.chartVsRef}</span>
         </span>
-        <span className="ml-auto flex items-baseline gap-2">
-          <span className="t-num text-ink">{status === 'loading' ? '—' : formatUsd(traded)}</span>
-          <span className="text-[11.5px] text-faint">{copy.desk.chartTraded}</span>
+        <span className="ml-auto flex items-center gap-3">
+          <span className="flex items-baseline gap-2">
+            <span className="t-num text-ink">
+              {status === 'loading' ? '—' : formatUsd(at?.size ?? traded)}
+            </span>
+            <span className="text-[11.5px] text-faint">
+              {at ? copy.desk.chartThisFill : copy.desk.chartTraded}
+            </span>
+          </span>
+          {offered.length > 0 && (
+            <span className="flex items-center gap-0.5 rounded-lg border border-rule bg-sunken p-0.5">
+              {[...offered, { id: 'all', label: 'All', seconds: 0 }].map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => setWindow(w.id)}
+                  className={`rounded px-2 py-0.5 text-[11px] transition-colors ${
+                    window_ === w.id ? 'bg-raise font-semibold text-ink' : 'text-faint hover:text-muted'
+                  }`}
+                >
+                  {w.label}
+                </button>
+              ))}
+            </span>
+          )}
         </span>
       </div>
 
