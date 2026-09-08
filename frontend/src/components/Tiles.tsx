@@ -32,7 +32,7 @@ export function Tiles({ children }: { children: ReactNode }) {
    * every other panel on the board let the drawing through.
    */
   return (
-    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-xl bg-rule/40 shadow-card backdrop-blur-xl">
+    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-px overflow-hidden rounded-xl bg-rule/40 shadow-card backdrop-blur-xl">
       {children}
     </div>
   );
@@ -72,32 +72,37 @@ export function Tile({
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
 
   return (
-    <div className="panel-fill relative flex flex-col gap-1 overflow-hidden p-4">
+    <div className="panel-fill relative flex flex-col gap-0.5 overflow-hidden px-3.5 py-3">
       {art && (
         /*
-         * Behind the text, not beside it. The drawings are wider than the space a five-up row
-         * leaves, so laying one out inline would either shrink the number or wrap the label; sat
-         * behind and bled off the corner, it takes the room the tile already has spare.
+         * Sized in pixels, not in percent, and that is the whole trick.
          *
-         * The text keeps its own stacking above it, and `.tile-art` masks the drawing's left edge
-         * away, so the half a number can reach carries no picture at all. Measured, and the reason
-         * is always the lure's glow — see the note on that class.
+         * A percentage height keys the drawing to the tile, and the tiles are not the same height
+         * — the markout sub-line wraps to two lines and its tile grows — so the same drawing came
+         * out at two sizes in one row. A fixed height gives every mascot the same one, and
+         * `max-w` only bites on a narrow tile, where shrinking is the right answer anyway.
+         *
+         * At 70px the widest of them is 110px, so on a tile of the row's own width the drawing
+         * starts past 58% of it and a figure never reaches it. That is what a mask was doing before, badly:
+         * fading out the left edge cut the mascot through the middle of its body, because the
+         * drawing was large enough to sit under the number in the first place. Make it the right
+         * size and there is nothing to hide.
          */
         <img
           src={art}
           alt=""
           aria-hidden
           draggable={false}
-          className="tile-art pointer-events-none absolute right-0 -bottom-2 h-[86%] w-auto max-w-[64%] object-contain object-right-bottom select-none"
+          className="pointer-events-none absolute right-2 bottom-0 h-[70px] w-auto max-w-[44%] object-contain object-right-bottom opacity-95 select-none"
         />
       )}
       <span className="relative text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
-      <span className={`relative text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
+      <span className={`relative text-[24px] leading-none font-semibold tracking-tight ${toneClass}`}>
         <span className={`-mx-1 rounded-xl px-1 ${pulseClass}`}>
           {typeof value === 'number' ? <RollingNumber value={value} format={format} /> : value}
         </span>
       </span>
-      <span className="relative max-w-[62%] text-[11px] text-faint">{sub}</span>
+      <span className="relative max-w-[58%] text-[11px] text-faint">{sub}</span>
       {onQuery && (
         <button
           onClick={onQuery}

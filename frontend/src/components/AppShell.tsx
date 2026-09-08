@@ -60,7 +60,7 @@ export function AppShell({
        * a fraction of the picture, so what has to clear it is a fraction of the viewport. A fixed
        * 80px clears it on a laptop and clears nothing on a tall monitor.
        */}
-      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pt-[clamp(28px,10vh,120px)] pb-14 ${wide ? 'max-w-[1600px]' : 'max-w-[1120px]'}`}>
+      <div className={`mx-auto px-[clamp(12px,3vw,28px)] pt-[clamp(28px,10vh,120px)] pb-14 ${wide ? 'max-w-[1400px]' : 'max-w-[1120px]'}`}>
       {/*
        * One row. The brand and the two real screens sit together on the left because they are the
        * same thing — where you are — and the status reads right to left in falling importance:

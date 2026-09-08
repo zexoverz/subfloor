@@ -119,6 +119,7 @@ export function LiveView({
         />
         <Tile
           label={copy.desk.worst}
+          art="/tiles/worst.webp"
           value={stats.worstFillAboveFloorBps}
           format={formatBps}
           sub={copy.desk.worstSub}
