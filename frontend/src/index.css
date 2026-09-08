@@ -47,8 +47,17 @@
    * an opaque card — without an edge, a translucent panel over an illustration reads as a smudge
    * in the illustration rather than as something in front of it.
    */
-  --c-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 2px 4px rgba(0, 0, 0, 0.45),
-    0 18px 44px -22px rgba(0, 0, 0, 0.9);
+  /*
+   * The edge is the shadow's job now that the panels have no border.
+   *
+   * A hairline of the rule colour as an inset ring stands in for it — same one pixel, but it
+   * follows the corner radius and does not add to the box. Then the tight dark layer, then the
+   * wide soft one. On glass that first ring matters more than a border did on an opaque card:
+   * without an edge, a translucent panel over an illustration reads as a smudge in the
+   * illustration rather than as something standing in front of it.
+   */
+  --c-shadow: 0 0 0 1px rgba(24, 64, 110, 0.55) inset, 0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 2px 4px rgba(0, 0, 0, 0.45), 0 18px 44px -22px rgba(0, 0, 0, 0.9);
 }
 
 :root[data-theme='light'] {
@@ -69,8 +78,8 @@
   --c-settle-wash: rgba(32, 152, 83, 0.12);
   --c-refuse: #c41926;
   --c-refuse-wash: rgba(196, 25, 38, 0.1);
-  --c-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 2px 4px rgba(10, 21, 36, 0.07),
-    0 14px 34px -20px rgba(10, 21, 36, 0.35);
+  --c-shadow: 0 0 0 1px rgba(205, 216, 229, 0.9) inset, 0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 2px 4px rgba(10, 21, 36, 0.07), 0 14px 34px -20px rgba(10, 21, 36, 0.35);
 }
 /* `inline` keeps the var reference at the use site, so one class follows the theme. */
 @theme inline {
