@@ -418,7 +418,7 @@ contract AquaGuardVaultTest is Test {
         uint256 before = tokenA.balanceOf(address(vault));
         vm.prank(agent);
         (bool ok,) = address(vault).call(
-            abi.encodeCall(AquaGuardVault.ship, (app, "strategy", tokens, amounts, m, sig))
+            abi.encodeCall(AquaGuardVault.ship, (app, "audit-duplicate-token", tokens, amounts, m, sig))
         );
 
         assertFalse(ok, "a mandate not signed by the guardian was accepted");
@@ -527,5 +527,60 @@ contract AquaGuardVaultTest is Test {
             0,
             abi.encodeCall(FloorRegistry.raiseFloor, (address(tokenA), address(tokenB), 10_000, 1e18))
         );
+    }
+
+    // --- audit, 8 Sep: does the per-token cap actually cap the token? -------------------------
+
+    /// The mandate's promise is a **per-token** ceiling: "this delegate may commit at most this much
+    /// of this token". `_capFor` looks the cap up fresh for each entry in `tokens`, and `committed`
+    /// accumulates across entries — so the question is what happens when the same token appears
+    /// twice in one ship. Each entry passes its own check; the sum does not.
+    ///
+    /// Written as a test rather than reasoned about, because the answer decides whether the mandate
+    /// bounds anything at all.
+    ///
+    /// **Answer: it is refused, and by Aqua rather than by us.** `Aqua.ship` requires
+    /// `balance.tokensCount == 0` for each token it is handed, so the second entry for the same
+    /// token reverts `StrategiesMustBeImmutable`. Our per-token cap therefore holds, and it holds
+    /// because of a dependency's invariant rather than one of ours.
+    ///
+    /// Not defended against separately here. Canonical Aqua is immutable, so the invariant cannot be
+    /// withdrawn, and adding a duplicate check to the vault would be a second guard on a path that
+    /// is already closed. This test is the record that the question was asked and answered.
+    function test_audit_aDuplicatedTokenInOneShip() public {
+        uint256 cap = 100e18;
+        tokenA.mint(address(vault), 1_000e18);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(tokenA);
+        tokens[1] = address(tokenA);
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = cap;
+        amounts[1] = cap;
+
+        address[] memory mandateTokens = new address[](1);
+        mandateTokens[0] = address(tokenA);
+        AquaGuardVault.Mandate memory m = _mandate(mandateTokens, cap, 99);
+
+        // Signed before the prank: `_sign` calls `vm.sign`, and a cheatcode consumes the prank, so
+        // computing it inside the call arguments sends the ship from the test contract instead of
+        // the agent and the test measures nothing.
+        bytes memory sig = _sign(m, ledgerPK);
+
+        vm.prank(agent);
+        (bool ok,) = address(vault).call(
+            abi.encodeCall(AquaGuardVault.ship, (app, "audit-duplicate-token", tokens, amounts, m, sig))
+        );
+
+        uint256 approved = tokenA.allowance(address(vault), address(aqua));
+        emit log_named_string("ship succeeded", ok ? "yes" : "no");
+        emit log_named_uint("approved to aqua", approved);
+        emit log_named_uint("mandate cap", cap);
+
+        // The claim being tested, stated so it fails loudly rather than passing on either branch:
+        // however the ship goes, the vault must never end up having approved Aqua for more of this
+        // token than the mandate authorised.
+        assertLe(approved, cap, "committed more than the mandate's per-token cap");
     }
 }
