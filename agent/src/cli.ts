@@ -12,6 +12,7 @@ import {
   writeMemberCredentials,
   writeSealedSecret,
 } from "./keyring/store.ts";
+import { attachedDeviceCount, openUsbDevice } from "./keyring/usb.ts";
 import { openSpeculosDevice, speculosOptionsFromEnv } from "./keyring/speculos.ts";
 import { ringIsInitialized } from "./keyring/walletCli.ts";
 import { enrollThisHost } from "./keyring/enroll/candidate.ts";
@@ -200,12 +201,20 @@ async function ownerDevice(
   if (flags["software-owner"] !== undefined) {
     return { device: new SoftwareDevice(toKeyPair(credentials)), close: async () => {} };
   }
+  // A real device first, because that is what the design is about and what the error message has
+  // always promised. Speculos is the fallback, not the primary — it was the only path implemented
+  // until 8 Sep, which made "attach a Ledger" a sentence with nothing behind it.
+  if (await attachedDeviceCount() > 0) {
+    const usb = await openUsbDevice();
+    return { device: usb.device, close: () => usb.close() };
+  }
+
   const speculos = speculosOptionsFromEnv();
   if (!speculos) {
     throw new Error(
-      "this operation is rooted in the device. Attach a Ledger, or set " +
-        "SUBFLOOR_SPECULOS_COINAPPS to a directory holding the Ledger Sync application ELF, " +
-        "or pass --software-owner if you are running the offline walkthrough.",
+      "this operation is rooted in the device, and no Ledger is attached to this host. Plug one in " +
+        "and unlock it, or set SUBFLOOR_SPECULOS_COINAPPS to a directory holding the Ledger Sync " +
+        "application ELF, or pass --software-owner if you are running the offline walkthrough.",
     );
   }
   const session = await openSpeculosDevice(speculos);
