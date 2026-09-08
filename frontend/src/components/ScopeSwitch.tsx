@@ -10,16 +10,17 @@ import { Hoverable } from './Hoverable.tsx';
  * two tapes, so nothing is hidden by collapsing them — the label still names the state, and the
  * card explains both.
  *
- * Disabled while a read is in flight, because the switch changes which query runs. Pressing it
- * mid-fetch queues a second read whose answer arrives out of order.
+ * It stays live while a read is in flight, and it is safe to: `useIndex` keys its effect on the
+ * scope, so switching tears the old read down before starting the new one and a late answer from
+ * the tape you left returns early instead of landing. Disabling it was guarding against a race
+ * the reader already handles, at the cost of the control going dead exactly when someone is
+ * waiting and most likely to press it.
  */
 export function ScopeSwitch({
   scope,
-  busy,
   onScope,
 }: {
   scope: 'mine' | 'public';
-  busy: boolean;
   onScope: (scope: 'mine' | 'public') => void;
 }) {
   const mine = scope === 'mine';
@@ -44,10 +45,9 @@ export function ScopeSwitch({
     >
       <button
         type="button"
-        disabled={busy}
         onClick={() => onScope(mine ? 'public' : 'mine')}
         aria-pressed={!mine}
-        className="pushable push-quiet push-sm mb-1 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[11px] tracking-normal normal-case disabled:cursor-wait"
+        className="pushable push-quiet push-sm mb-1 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[11px] tracking-normal normal-case"
       >
         <Icon size={13} strokeWidth={2} className="text-floor" />
         <span className="font-semibold text-ink">{mine ? copy.desk.scopeMine : copy.desk.scopePublic}</span>

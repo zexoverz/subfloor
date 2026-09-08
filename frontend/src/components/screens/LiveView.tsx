@@ -194,7 +194,7 @@ export function LiveView({
                  * settled here" answer different questions, and a board that silently switched
                  * between them when a vault was deployed is what sent someone looking for a bug.
                  */}
-                <ScopeSwitch scope={scope} busy={fetching} onScope={onScope} />
+                <ScopeSwitch scope={scope} onScope={onScope} />
                 <RefreshBadge
                   fetching={fetching}
                   block={block}
@@ -356,15 +356,11 @@ export function LiveView({
               left={copy.live.agentNow}
               right={
                 onEditAgent ? (
-                  <button
-                    type="button"
-                    onClick={onEditAgent}
-                    aria-label={copy.wallet.changeAgent}
-                    title={copy.wallet.changeAgent}
-                    className="cursor-pointer border-0 bg-transparent p-0 text-faint transition-colors hover:text-floor"
-                  >
-                    <Pencil size={12} strokeWidth={1.7} />
-                  </button>
+                  // The same control as the floor card's, because it is the same kind of thing:
+                  // the quiet way to change what the card is describing.
+                  <Ghost onClick={onEditAgent} label={copy.wallet.changeAgent}>
+                    <Pencil size={13} strokeWidth={1.8} />
+                  </Ghost>
                 ) : (
                   <Activity size={12} strokeWidth={1.6} />
                 )
