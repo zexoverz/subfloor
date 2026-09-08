@@ -143,7 +143,19 @@ export function PriceChart({
               {copy.desk.chartLoading}
             </span>
           ) : (
-            <span>{status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}</span>
+            <span className="flex flex-col items-center gap-2.5 px-6 text-center">
+              {/* Smaller than the tape's: the chart is the shorter of the two panels. */}
+              <img
+                src="/empty-chest.webp"
+                alt=""
+                aria-hidden
+                draggable={false}
+                className="w-[168px] max-w-[46%] select-none opacity-95"
+              />
+              <span className="serif max-w-[42ch] text-[13px] leading-relaxed text-muted">
+                {status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}
+              </span>
+            </span>
           )}
         </div>
       )}

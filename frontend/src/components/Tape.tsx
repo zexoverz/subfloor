@@ -30,6 +30,30 @@ const COLUMNS = ['Sent', '', 'Received', 'Taker', 'Price', 'vs ref', 'vs floor',
  * working belongs in the same list as the product working quietly.
  */
 /**
+ * Nothing to show, drawn rather than stated.
+ *
+ * An empty table with a grey sentence in it reads as something that failed to load. The chest is
+ * open and there is nothing in it, which is the actual situation — and on the tape that most often
+ * means a vault deployed minutes ago rather than anything wrong.
+ */
+function EmptyTape({ line }: { line: string }) {
+  return (
+    <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
+      <img
+        src="/empty-chest.webp"
+        alt=""
+        aria-hidden
+        draggable={false}
+        /* The empty area is most of a tall panel; 132px in the middle of it read as an
+           apology rather than a state. */
+        className="w-[240px] max-w-[62%] select-none opacity-95"
+      />
+      <p className="serif m-0 max-w-[44ch] text-[13px] leading-relaxed text-muted">{line}</p>
+    </div>
+  );
+}
+
+/**
  * Rows that admit they are not rows.
  *
  * A tape with nothing to show is not allowed to borrow sample trades to fill the space — an
@@ -122,15 +146,15 @@ export function Tape({
           {status === 'loading' && <SkeletonRows />}
           {status !== 'loading' && shown.length === 0 && entries.length > 0 && (
             <tr>
-              <td colSpan={8} className="py-10 text-center text-[12px] text-faint">
-                {copy.desk.noTakerRows}
+              <td colSpan={8}>
+                <EmptyTape line={copy.desk.noTakerRows} />
               </td>
             </tr>
           )}
           {status !== 'loading' && entries.length === 0 && (
             <tr>
-              <td colSpan={8} className="py-10 text-center text-[12px] text-faint">
-                {status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}
+              <td colSpan={8}>
+                <EmptyTape line={status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty} />
               </td>
             </tr>
           )}
