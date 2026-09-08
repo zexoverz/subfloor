@@ -156,15 +156,27 @@ export function unwrapShipped(blob: Bytes): Shipped {
   const length = readU32(blob, dataAt);
   if (dataAt + 32 + length > blob.length) return new Shipped(blob, false, "");
 
-  // `data` is [tokenA][tokenB][program]; a shorter one carries no program at all.
-  if (length < 40) return new Shipped(blob, false, "");
+  // Where the program starts is not a constant, it is in the traits — and both shapes are on chain.
+  //
+  // `MakerTraitsLib` packs four 16-bit slice indexes starting at bit 160, and the program runs from
+  // the fourth of them to the end of `data`. For an order built by the library that index is 40,
+  // because `tokenA` and `tokenB` occupy the first forty bytes. For an order assembled by hand with
+  // `traits = 0` every index is zero and `data` is the program alone.
+  //
+  // Both exist on this deployment: the book shipped before the builder was used has `traits = 0`,
+  // and hardcoding either answer misreads the other. Bit 160 + 16*3 lands on bytes 4 and 5 of the
+  // traits word, big-endian.
+  const traitsAt = tupleAt + 32;
+  const programStart: i32 = (i32(blob[traitsAt + 4]) << 8) | i32(blob[traitsAt + 5]);
+  if (programStart > length) return new Shipped(blob, false, "");
 
-  const programLength = length - 40;
+  const programLength = length - programStart;
   const out = new Uint8Array(programLength);
-  for (let i = 0; i < programLength; i++) out[i] = blob[dataAt + 32 + 40 + i];
+  for (let i = 0; i < programLength; i++) out[i] = blob[dataAt + 32 + programStart + i];
 
-  const pairBytes = new Uint8Array(40);
-  for (let i = 0; i < 40; i++) pairBytes[i] = blob[dataAt + 32 + i];
+  const pairLength: i32 = programStart >= 40 ? 40 : 0;
+  const pairBytes = new Uint8Array(pairLength);
+  for (let i = 0; i < pairBytes.length; i++) pairBytes[i] = blob[dataAt + 32 + i];
 
   let maker = "0x";
   for (let i = 12; i < 32; i++) {

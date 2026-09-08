@@ -16,7 +16,7 @@
 /// code deploy to follow.
 export const DEFAULT_ENDPOINT =
   process.env.SUBFLOOR_SUBGRAPH ??
-  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v2.1.0";
+  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v2.2.0";
 
 export const DAILY_QUALITY_QUERY = `query DailyQuality($since: Int!) {
   executionQualityDailySnapshots(

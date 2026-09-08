@@ -181,7 +181,7 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v2.1.0
+https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v2.2.0
 ```
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
