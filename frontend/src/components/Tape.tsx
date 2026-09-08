@@ -38,7 +38,7 @@ const COLUMNS = ['Sent', '', 'Received', 'Taker', 'Price', 'vs ref', 'vs floor',
  */
 function EmptyTape({ line }: { line: string }) {
   return (
-    <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <img
         src="/empty-chest.webp"
         alt=""
@@ -103,6 +103,12 @@ export function Tape({
   const shown = only
     ? entries.filter((e) => (e.kind === 'fill' ? e.taker : e.from)?.toLowerCase() === only)
     : entries;
+  /*
+   * A table only stretches to its container when told to, and telling it so while it has rows
+   * would space those rows out to fill the panel. So the height is only claimed when there is
+   * nothing in it, which is exactly when the empty state needs somewhere to be centred.
+   */
+  const nothingToShow = status !== 'loading' && shown.length === 0;
 
   return (
     /*
@@ -113,7 +119,7 @@ export function Tape({
      */
     <div className="relative min-h-[240px] flex-1">
       <div className="tape-scroll absolute inset-0 overflow-y-auto">
-        <table className="w-full border-collapse">
+        <table className={`w-full border-collapse ${nothingToShow ? 'h-full' : ''}`}>
         <thead>
           <tr>
             {COLUMNS.map((h, i) => (
@@ -146,14 +152,14 @@ export function Tape({
           {status === 'loading' && <SkeletonRows />}
           {status !== 'loading' && shown.length === 0 && entries.length > 0 && (
             <tr>
-              <td colSpan={8}>
+              <td colSpan={8} className="h-full align-middle">
                 <EmptyTape line={copy.desk.noTakerRows} />
               </td>
             </tr>
           )}
           {status !== 'loading' && entries.length === 0 && (
             <tr>
-              <td colSpan={8}>
+              <td colSpan={8} className="h-full align-middle">
                 <EmptyTape line={status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty} />
               </td>
             </tr>
