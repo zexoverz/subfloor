@@ -131,3 +131,24 @@ the asymmetry in our own contract, where raising a floor is one call and lowerin
 device.
 
 That idea is good enough to be reachable from the CLI.
+
+## `hw-transport-node-hid-noevents` ships an ESM build Node cannot load
+
+`@ledgerhq/hw-transport-node-hid-noevents@6.30.x` has a `lib-es` build whose internal imports carry
+no file extensions — `./hid-framing` rather than `./hid-framing.js`. Node's ESM resolver requires
+them, so a plain `import` of the package fails:
+
+```
+Cannot find module '.../lib-es/hid-framing' imported from '.../lib-es/TransportNodeHid.js'
+```
+
+The `exports` map points `import` at that build, so there is no way to reach the working CommonJS
+one through a normal import. `createRequire` does it, and that is what we ship, with a comment
+saying why so nobody tidies it back.
+
+Cost: about an hour, most of it spent assuming the fault was ours. The package installs cleanly,
+the types resolve, and it fails only at runtime with an error that reads like a missing file rather
+than a packaging problem.
+
+Suggested fix: add `.js` to the relative specifiers in the ESM build, or drop the `import` condition
+so Node falls through to CommonJS.

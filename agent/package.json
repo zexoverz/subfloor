@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ledgerhq/hw-ledger-key-ring-protocol": "0.10.7",
+    "@ledgerhq/hw-transport-node-hid-noevents": "^6.36.0",
     "@ledgerhq/ledger-key-ring-protocol": "0.15.2",
     "@ledgerhq/live-dmk-speculos": "file:./vendor/live-dmk-speculos",
     "@ledgerhq/speculos-transport": "0.10.6",
