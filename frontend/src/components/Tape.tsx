@@ -95,7 +95,12 @@ export function Tape({
                  * header that has no stacking order of its own.
                  */
                 className={`sticky top-0 z-10 border-b border-rule bg-sunken/80 px-4 py-3 text-[10.5px] font-medium tracking-[0.09em] text-faint uppercase backdrop-blur-sm ${
-                  i === 0 ? 'text-left' : 'text-right'
+                  /*
+                   * The two identity columns read left, the numeric ones read right. Taker was
+                   * being lumped in with the numbers, so its heading sat over the far edge of a
+                   * cell whose content starts at the near one.
+                   */
+                  i <= 1 ? 'text-left' : 'text-right'
                 }`}
               >
                 {h === 'Taker' && takers.size > 0 ? (
