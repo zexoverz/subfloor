@@ -1,4 +1,5 @@
 import fuzzCounter from '../../docs/fuzz-counter.json';
+import { USDC_SYMBOL } from './lib/tokens.ts';
 import type { VaultState } from './types.ts';
 
 /** The fixture tape is anchored to now so the chart has a sane axis before any live data exists. */
@@ -12,7 +13,9 @@ const t0 = Math.floor(Date.now() / 1000);
  * See docs/frontend-integration.md.
  */
 export const fixtures: VaultState = {
-  pair: { base: 'WETH', quote: 'USDC', baseDecimals: 18, quoteDecimals: 6 },
+  // The quote token this deployment actually trades. Labelling tUSDC as USDC would mislabel every
+  // price on the board against what an explorer shows for the same transaction.
+  pair: { base: 'WETH', quote: USDC_SYMBOL, baseDecimals: 18, quoteDecimals: 6 },
 
   // ERC20 balanceOf, on the owner's wallet and on the vault.
   wallet: { base: 0.2, quote: 500 },

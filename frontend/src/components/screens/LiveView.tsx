@@ -23,6 +23,7 @@ import type { DataSource, Screen, VaultState } from '../../types.ts';
 export function LiveView({
   state,
   source,
+  tapeStatus,
   owner,
   onNavigate,
   onLower,
@@ -40,6 +41,8 @@ export function LiveView({
 }: {
   state: VaultState;
   source: DataSource;
+  /** What the reader knows about the tape, so waiting is not drawn as data. */
+  tapeStatus: 'loading' | 'live' | 'empty' | 'failed';
   /** True when the connected wallet owns the vault. False is what a stranger sees. */
   owner: boolean;
   onNavigate: (s: Screen) => void;
@@ -119,7 +122,7 @@ export function LiveView({
           */}
         <Card className="flex flex-col">
           <CardHead icon={Receipt} left={copy.desk.tape} right={`${pair.base} / ${pair.quote}`} />
-          <Tape entries={tape} pair={pair} />
+          <Tape entries={tape} pair={pair} status={tapeStatus} />
         </Card>
 
         {owner ? (

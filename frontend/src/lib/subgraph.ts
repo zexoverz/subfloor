@@ -1,5 +1,6 @@
 import { formatUnits, type Address } from 'viem';
 import { useEffect, useState } from 'react';
+import { publicClient } from './client.ts';
 import { TOKENS, USDC, WETH } from './tokens.ts';
 import type { DataSource, Stats, TapeEntry } from '../types.ts';
 
@@ -112,6 +113,17 @@ type RefusalsBody = {
   }[];
 };
 
+/** A block number is not a time. This turns one into the other, and says so when it cannot. */
+async function blockTime(blockNumber: string): Promise<number> {
+  try {
+    const block = await publicClient.getBlock({ blockNumber: BigInt(blockNumber) });
+    return Number(block.timestamp);
+  } catch {
+    // Rather than invent one: sorted last, and the row still carries its rates and its hash.
+    return 0;
+  }
+}
+
 async function askRefusals(): Promise<{ count: number; fills: number; recent: RefusalRow[] } | null> {
   try {
     // No query string: the endpoint's own default returns more rows than this tape shows.
@@ -121,18 +133,25 @@ async function askRefusals(): Promise<{ count: number; fills: number; recent: Re
     return {
       count: body.floorRefusals ?? 0,
       fills: body.fills ?? 0,
-      recent: (body.recent ?? [])
-        // Only the floor's own refusal belongs on this tape. Another revert is a different story.
-        .filter((r) => r.reason === 'SettledBelowFloor')
-        .map((r) => ({
-          hash: r.hash,
-          // No timestamp on the record, so the block stands in for one and the tape still sorts.
-          ts: r.timestamp ?? Number(r.blockNumber),
-          attemptedRate: r.executionRate,
-          floorRate: r.floorRate,
-          base: { id: r.tokenIn },
-          quote: { id: r.tokenOut },
-        })),
+      // Only the floor's own refusal belongs on this tape. Another revert is a different story.
+      recent: await Promise.all(
+        (body.recent ?? [])
+          .filter((r) => r.reason === 'SettledBelowFloor')
+          .map(async (r) => ({
+            hash: r.hash,
+            /*
+             * The block's own timestamp, fetched, because the record carries a block number and no
+             * time. Using the block number as seconds put a refusal at 21:10 that happened at
+             * 10:05 — a number that looked like a clock and was not one, on the row the whole
+             * product is about.
+             */
+            ts: r.timestamp ?? (await blockTime(r.blockNumber)),
+            attemptedRate: r.executionRate,
+            floorRate: r.floorRate,
+            base: { id: r.tokenIn },
+            quote: { id: r.tokenOut },
+          })),
+      ),
     };
   } catch {
     return null;
@@ -141,6 +160,14 @@ async function askRefusals(): Promise<{ count: number; fills: number; recent: Re
 
 export type IndexData = {
   source: DataSource;
+  /**
+   * Which of four things is true, kept apart because three of them used to render identically.
+   *
+   * `loading` is not `empty`, and neither is `failed` — showing sample rows during any of them
+   * puts invented trades on screen and calls the difference cosmetic. A board that cannot say
+   * "asking" says "here is what happened" instead, which is the one thing it must never get wrong.
+   */
+  status: 'loading' | 'live' | 'empty' | 'failed';
   tape: TapeEntry[] | null;
   stats: Partial<Stats> | null;
 };
@@ -155,10 +182,15 @@ const price = (rate: string, base: string, quote: string) =>
   (Number(rate) / 1e18) * 10 ** (decimalsOf(base) - decimalsOf(quote));
 
 export function useIndex(vault: Address | null): IndexData {
-  const [data, setData] = useState<IndexData>({ source: 'fixtures', tape: null, stats: null });
+  const [data, setData] = useState<IndexData>({ source: 'fixtures', status: 'loading', tape: null, stats: null });
 
   useEffect(() => {
-    if (!ENDPOINT || !vault) return;
+    if (!ENDPOINT || !vault) {
+      // Nothing configured to ask. Not a load in progress, and not an empty venue either.
+      setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
+      return;
+    }
+    setData((current) => ({ ...current, status: 'loading' }));
     let live = true;
 
     (async () => {
@@ -182,8 +214,11 @@ export function useIndex(vault: Address | null): IndexData {
       const fills = result?.fillQualities ?? [];
       const refusals = refused?.recent ?? [];
 
-      // Nothing indexed yet is not "live and empty". The screens stay on fixtures and keep saying so.
-      if (fills.length === 0 && refusals.length === 0) return;
+      // Answered, with nothing in it. A venue that has not traded is a fact, not a blank to fill.
+      if (fills.length === 0 && refusals.length === 0) {
+        setData({ source: 'chain', status: result ? 'empty' : 'failed', tape: [], stats: null });
+        return;
+      }
 
       const tape: TapeEntry[] = [
         ...fills.map((fill: FillRow) => {
@@ -217,7 +252,7 @@ export function useIndex(vault: Address | null): IndexData {
         ...refusals.map((refusal: RefusalRow) => ({
           kind: 'refusal' as const,
           ts: refusal.ts,
-          time: clock(String(refusal.ts)),
+          time: refusal.ts ? clock(String(refusal.ts)) : '—',
           tx: refusal.hash.slice(0, 6),
           data: '0x' as `0x${string}`,
           decoded: {
@@ -242,6 +277,7 @@ export function useIndex(vault: Address | null): IndexData {
        */
       setData({
         source: 'chain',
+        status: 'live',
         tape,
         stats: {
           fills: snapshot?.fills ?? refused?.fills ?? fills.length,
@@ -257,6 +293,7 @@ export function useIndex(vault: Address | null): IndexData {
        * the index was answering perfectly.
        */
       console.error('[index] the reader failed while shaping the response', cause);
+      setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
     });
 
     return () => {

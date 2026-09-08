@@ -14,7 +14,41 @@ const COLUMNS = ['Time', 'Side', 'Size', 'Price', 'vs ref', 'vs floor'];
  * in one mono grid. Refusals are rows in it rather than an alert somewhere else — the product
  * working belongs in the same list as the product working quietly.
  */
-export function Tape({ entries, pair }: { entries: TapeEntry[]; pair: Pair }) {
+/**
+ * Rows that admit they are not rows.
+ *
+ * A tape with nothing to show is not allowed to borrow sample trades to fill the space — an
+ * invented fill is indistinguishable from a real one at a glance, and this is the surface the
+ * whole product is read from. Waiting looks like waiting.
+ */
+function SkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 8 }, (_, i) => (
+        <tr key={i} className="border-b border-rule/40">
+          <td colSpan={6} className="py-2.5">
+            <span
+              className="block h-3 animate-pulse rounded bg-rule/60"
+              // Uneven widths, so it reads as a tape loading rather than a progress bar.
+              style={{ width: `${88 - (i % 4) * 9}%`, animationDelay: `${i * 90}ms` }}
+            />
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
+export function Tape({
+  entries,
+  pair,
+  status = 'live',
+}: {
+  entries: TapeEntry[];
+  pair: Pair;
+  /** What the reader knows, not what the screen would like to show. */
+  status?: 'loading' | 'live' | 'empty' | 'failed';
+}) {
   return (
     /*
      * The scroll box is absolute inside a relative flex child on purpose. A tape sized by its own
@@ -45,7 +79,15 @@ export function Tape({ entries, pair }: { entries: TapeEntry[]; pair: Pair }) {
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) =>
+          {status === 'loading' && <SkeletonRows />}
+          {status !== 'loading' && entries.length === 0 && (
+            <tr>
+              <td colSpan={6} className="py-10 text-center text-[12px] text-faint">
+                {status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}
+              </td>
+            </tr>
+          )}
+          {status !== 'loading' && entries.map((entry) =>
             entry.kind === 'fill' ? (
               <FillRows key={entry.tx} entry={entry} pair={pair} />
             ) : (
@@ -81,7 +123,9 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
           </span>
         </td>
         <td className="px-4 py-1.5 text-right">
-          {entry.amount.toFixed(3)} {pair.base}
+          {/* Three decimals turned a 0.0003 WETH fill into "0.000" — a real trade rendered as
+              nothing at all. Small sizes get the digits they need; large ones stay readable. */}
+          {entry.amount < 0.01 ? entry.amount.toPrecision(2) : entry.amount.toFixed(3)} {pair.base}
         </td>
         <td className="px-4 py-1.5 text-right">{formatPrice(entry.price)}</td>
         <td className="px-4 py-1.5 text-right text-faint">

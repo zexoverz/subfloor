@@ -67,9 +67,17 @@ export default function App() {
   const floorWrite = useFloor(vault);
 
   const ceremony = useCeremony(wallet.address, vault);
+  /*
+   * The tape is the index's, or it is nothing.
+   *
+   * It used to fall through to the simulated feed whenever the index had not answered, so every
+   * load began with invented trades on the surface the product is read from — and a slow answer
+   * looked exactly like a busy venue. The simulated feed stays for the dev switcher, which says
+   * on screen that it is simulated; it is not a stand-in for not knowing yet.
+   */
   const indexed = {
     ...fed,
-    ...(index.tape ? { tape: index.tape } : {}),
+    tape: index.tape ?? (feedSource === 'simulated' ? fed.tape : []),
     ...(index.stats ? { stats: { ...fed.stats, ...index.stats } } : {}),
   };
   /*
@@ -125,6 +133,7 @@ export default function App() {
         <LiveView
           state={state}
           source={source}
+          tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
           // One page in two states: the owner sees inventory, the standing floor and the agent;
           // everyone else sees the proof counter and the contracts in that column.
           owner={ceremony.isOwner === true}
