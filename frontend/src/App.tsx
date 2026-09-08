@@ -171,6 +171,7 @@ export default function App() {
           vaultChecked={own.known && ceremony.settled}
           vaultError={own.error ?? ceremony.error}
           connected={Boolean(wallet.address)}
+          connecting={wallet.connecting}
           onSetup={needsSetup ? () => { setDismissed(false); setOpened(true); } : null}
           // The agent can be replaced whenever the owner likes; the chain has never stopped them.
           onEditAgent={ceremony.isOwner === true ? () => setOpened(true) : null}

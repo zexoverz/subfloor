@@ -1,4 +1,4 @@
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 type Props = { children: ReactNode; onClick?: () => void; disabled?: boolean };
@@ -21,11 +21,17 @@ export function Act({
   disabled,
   primary = false,
   wide = false,
-}: Props & { primary?: boolean; wide?: boolean }) {
+  busy = false,
+  busyLabel,
+}: Props & { primary?: boolean; wide?: boolean; busy?: boolean; busyLabel?: string }) {
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || busy}
+      // The words still exist for anyone who cannot see the spinner turn.
+      aria-busy={busy || undefined}
+      title={busy ? busyLabel : undefined}
+      aria-label={busy ? busyLabel : undefined}
       className={`cursor-pointer rounded-xl px-3.5 py-2.5 text-xs tracking-[0.06em] disabled:cursor-not-allowed ${
         wide ? 'w-full' : ''
       } ${
@@ -34,7 +40,13 @@ export function Act({
           : 'pushable push-quiet mb-1.5'
       }`}
     >
-      {children}
+      {/*
+       * A spinner rather than a sentence. "waiting for your wallet…" is longer than the label it
+       * replaces, so the button either grew or the words wrapped inside it — and a control that
+       * changes shape while you wait reads as the page breaking rather than as the page working.
+       * The sentence moves to the label, where it costs no width.
+       */}
+      {busy ? <Loader2 size={14} strokeWidth={2} className="mx-auto animate-spin" /> : children}
     </button>
   );
 }

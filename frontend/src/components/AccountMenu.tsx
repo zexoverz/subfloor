@@ -61,9 +61,9 @@ export function AccountMenu({ wallet }: { wallet: Wallet }) {
 
   if (!wallet.address) {
     return (
-      <span className="w-[168px]">
-        <Act primary onClick={wallet.connect} disabled={wallet.connecting}>
-          {wallet.connecting ? copy.wallet.connecting : copy.wallet.connect}
+      <span className="inline-block">
+        <Act primary onClick={wallet.connect} busy={wallet.connecting} busyLabel={copy.wallet.connecting}>
+          {copy.wallet.connect}
         </Act>
       </span>
     );

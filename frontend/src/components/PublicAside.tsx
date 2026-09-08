@@ -17,6 +17,7 @@ import type { VaultState } from '../types.ts';
 export function PublicAside({
   state,
   connected,
+  connecting,
   onConnect,
   onCreateVault,
   creatingVault,
@@ -27,6 +28,7 @@ export function PublicAside({
   state: VaultState;
   /** A connected wallet that is not the owner is a different message, not the same button again. */
   connected: boolean;
+  connecting: boolean;
   onConnect: () => void;
   onCreateVault: () => void;
   creatingVault: boolean;
@@ -91,7 +93,7 @@ export function PublicAside({
              * Connects, exactly like the control in the header. It used to navigate to first run,
              * which then bounced anyone whose vault was already set up.
              */
-            <Act primary onClick={onConnect}>
+            <Act primary onClick={onConnect} busy={connecting} busyLabel={copy.wallet.connecting}>
               {copy.wallet.connect}
             </Act>
           ) : vaultError ? (
@@ -124,8 +126,13 @@ export function PublicAside({
                   <p className="serif mt-3 mb-3 text-[13.5px] leading-relaxed text-muted">
                     {copy.wallet.createVaultHint}
                   </p>
-                  <Act primary onClick={onCreateVault} disabled={creatingVault}>
-                    {creatingVault ? copy.wallet.creatingVault : copy.wallet.createVault}
+                  <Act
+                    primary
+                    onClick={onCreateVault}
+                    busy={creatingVault}
+                    busyLabel={copy.wallet.creatingVault}
+                  >
+                    {copy.wallet.createVault}
                   </Act>
                 </>
               )}

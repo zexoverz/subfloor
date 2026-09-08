@@ -48,6 +48,7 @@ export function LiveView({
   onSetup,
   onEditAgent,
   connected,
+  connecting,
 }: {
   state: VaultState;
   source: DataSource;
@@ -77,6 +78,8 @@ export function LiveView({
   vaultChecked: boolean;
   vaultError: string | null;
   connected: boolean;
+  /** So the connect button can turn instead of growing a sentence. */
+  connecting: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
   onSetup: (() => void) | null;
   /** Replacing the agent is an ordinary owner action, so it needs a way in after setup. */
@@ -399,6 +402,7 @@ export function LiveView({
           <PublicAside
             state={state}
             connected={connected}
+            connecting={connecting}
             onConnect={onConnect}
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
