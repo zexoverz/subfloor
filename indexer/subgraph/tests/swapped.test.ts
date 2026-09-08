@@ -3,7 +3,7 @@ import { Address, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { Swapped } from "../generated/FloorRouter/FloorRouter";
 import { handleSwapped } from "../src/router";
 import { ETH_USD, eventId } from "../src/shared";
-import { ReferenceAnswer } from "../generated/schema";
+import { ReferenceAnswer, Floor } from "../generated/schema";
 
 /// `handleSwapped` is where the subgraph stops.
 ///
@@ -36,6 +36,24 @@ function seedReference(): void {
   r.roundId = BigInt.fromI32(1);
   r.blockNumber = BigInt.fromI32(46514610);
   r.save();
+}
+
+/// A tolerance-only floor for the maker, which is the shape this deployment actually configures:
+/// 100 bps below the reference and no absolute backstop.
+///
+/// Seeded because without it nothing exercises the difference between the floor that binds and the
+/// backstop, and a mutation putting `absoluteRate` back on the row passes every other test.
+function seedMakerFloor(): void {
+  const id = Bytes.fromHexString(MAKER).concat(Bytes.fromHexString(WETH)).concat(Bytes.fromHexString(TUSDC));
+  const f = new Floor(id);
+  f.recipient = Bytes.fromHexString(MAKER);
+  f.base = Bytes.fromHexString(WETH);
+  f.quote = Bytes.fromHexString(TUSDC);
+  f.maxAdverseBps = 100;
+  f.absoluteRate = BigInt.zero();
+  f.updatedAtBlock = BigInt.fromI32(1);
+  f.updatedAt = BigInt.fromI32(1);
+  f.save();
 }
 
 function mockReferenceFeeds(routerAddr: Address): void {
@@ -100,6 +118,7 @@ describe("handleSwapped, on the fills that actually happened", () => {
     const ev = swapped(TUSDC, WETH, BigInt.fromI32(1200000), BigInt.fromString("481201465082246"));
     mockReferenceFeeds(ev.address);
     seedReference();
+    seedMakerFloor();
     handleSwapped(ev);
     assert.entityCount("Swap", 1);
     assert.entityCount("FillQuality", 1);
@@ -125,6 +144,10 @@ describe("handleSwapped, on the fills that actually happened", () => {
     // fill the taker beat the reference on is a fill the maker paid through it.
     assert.fieldEquals("FillQuality", id, "adverseDeviationBps", "25");
     assert.fieldEquals("FillQuality", id, "makerAdverseDeviationBps", "-24");
+
+    // The floor that binds, not the backstop. The backstop here is zero; storing it would say this
+    // fill was measured against nothing.
+    assert.fieldEquals("FillQuality", id, "makerFloorAtFill", "2475000000");
   });
 
   test("WETH in, tUSDC out — the other direction", () => {
@@ -133,6 +156,7 @@ describe("handleSwapped, on the fills that actually happened", () => {
     const ev = swapped(WETH, TUSDC, BigInt.fromString("180000000000000"), BigInt.fromI32(448607));
     mockReferenceFeeds(ev.address);
     seedReference();
+    seedMakerFloor();
     handleSwapped(ev);
     assert.entityCount("FillQuality", 1);
 
@@ -148,6 +172,7 @@ describe("handleSwapped, on the fills that actually happened", () => {
     const ev = swapped(TUSDC, WETH, BigInt.zero(), BigInt.fromI32(1));
     mockReferenceFeeds(ev.address);
     seedReference();
+    seedMakerFloor();
     handleSwapped(ev);
     assert.assertTrue(true);
   });

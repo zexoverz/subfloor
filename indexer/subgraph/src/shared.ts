@@ -154,6 +154,27 @@ export function deviationBps(executionRate: BigInt, reference: BigInt): i32 {
   return diff.div(reference).toI32();
 }
 
+/// The floor a fill is actually measured against, mirroring `FloorRegistry.effectiveFloor`.
+///
+///     bps == 10000            -> only the backstop binds
+///     otherwise               -> max(ceil(reference * (10000 - bps) / 10000), backstop)
+///
+/// Storing `absoluteRate` alone and calling it the floor was wrong in a way that reads as an answer:
+/// this deployment configures tolerance-only floors, so the backstop is zero and every row said the
+/// floor was `0`. A refusal card rendering that would tell the viewer the fill was refused against
+/// nothing. The number that binds is this one.
+export function effectiveFloor(referenceRate: BigInt, maxAdverseBps: i32, absoluteRate: BigInt): BigInt {
+  let relative = ZERO_BI;
+  if (maxAdverseBps < 10000 && !referenceRate.isZero()) {
+    const numerator = referenceRate.times(BigInt.fromI32(10000 - maxAdverseBps));
+    const bps = BigInt.fromI32(10000);
+    relative = numerator.div(bps);
+    // Rounded up, because the floor is a minimum and truncation weakens it.
+    if (!numerator.mod(bps).isZero()) relative = relative.plus(BigInt.fromI32(1));
+  }
+  return relative.gt(absoluteRate) ? relative : absoluteRate;
+}
+
 /// Days since the Unix epoch. The id every daily snapshot is keyed on.
 export function dayId(timestamp: BigInt): i32 {
   return timestamp.toI32() / 86400;

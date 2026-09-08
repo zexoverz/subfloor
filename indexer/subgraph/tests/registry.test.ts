@@ -2,7 +2,7 @@ import { assert, createMockedFunction, describe, newMockEvent, test } from "matc
 import { Address, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { FloorRaised, FloorLowered } from "../generated/FloorRegistry/FloorRegistry";
 import { handleFloorRaised, handleFloorLowered } from "../src/registry";
-import { deviationBps, referenceRate, referenceScale } from "../src/shared";
+import { deviationBps, effectiveFloor, referenceRate, referenceScale } from "../src/shared";
 
 /// The registry handlers, which are the last group without a test.
 ///
@@ -115,5 +115,44 @@ describe("the reference is directional", () => {
   test("referenceScale reproduces what the registry stored for both pairs", () => {
     assert.stringEquals(FORWARD_SCALE.toString(), referenceScale(18, 6).toString());
     assert.stringEquals(INVERTED_SCALE.toString(), referenceScale(6, 18).toString());
+  });
+});
+
+/// The floor a fill is actually measured against.
+///
+/// `Floor.absoluteRate` alone is the backstop, and this deployment configures tolerance-only floors,
+/// so the backstop is zero on every row. Storing it and calling it the floor made every fill say it
+/// was measured against nothing — an answer-shaped null, which is the failure mode this project
+/// keeps finding.
+// Module scope: AssemblyScript has no closures, so a describe-body const is invisible to the tests.
+const FLOOR_REFERENCE = BigInt.fromString("2500000000");
+
+describe("the floor that binds", () => {
+
+  test("tolerance only: the floor comes from the reference, not the zero backstop", () => {
+    // 100 bps below 2.5e9.
+    assert.stringEquals("2475000000", effectiveFloor(FLOOR_REFERENCE, 100, BigInt.zero()).toString());
+  });
+
+  test("a backstop above the relative floor wins", () => {
+    assert.stringEquals("2490000000", effectiveFloor(FLOOR_REFERENCE, 100, BigInt.fromString("2490000000")).toString());
+  });
+
+  test("a backstop below it does not weaken anything", () => {
+    assert.stringEquals("2475000000", effectiveFloor(FLOOR_REFERENCE, 100, BigInt.fromString("2000000000")).toString());
+  });
+
+  test("full tolerance means only the backstop binds, which is what 10000 bps says", () => {
+    assert.stringEquals("2000000000", effectiveFloor(FLOOR_REFERENCE, 10000, BigInt.fromString("2000000000")).toString());
+    assert.stringEquals("0", effectiveFloor(FLOOR_REFERENCE, 10000, BigInt.zero()).toString());
+  });
+
+  test("it rounds up, because a floor is a minimum and truncation weakens it", () => {
+    // 1 bps below 12345 is 12343.7655, and the registry ceils.
+    assert.stringEquals("12344", effectiveFloor(BigInt.fromI32(12345), 1, BigInt.zero()).toString());
+  });
+
+  test("no reference and no backstop is zero rather than a guess", () => {
+    assert.stringEquals("0", effectiveFloor(BigInt.zero(), 100, BigInt.zero()).toString());
   });
 });
