@@ -6,7 +6,7 @@ import { Ghost } from '../Button.tsx';
 import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
-import { PriceChart } from '../PriceChart.tsx';
+import { FloorChart } from '../FloorChart.tsx';
 import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
 import { PublicAside } from '../PublicAside.tsx';
@@ -121,12 +121,13 @@ export function LiveView({
           left={
             <span className="flex items-center gap-2">
               <PairIcons base={pair.base} quote={pair.quote} size={18} />
-              {pair.base} / {pair.quote} · fills against your floor
+              {pair.base} / {pair.quote} · {scope === 'mine' ? copy.desk.chartTitleMine : copy.desk.chartTitlePublic}
             </span>
           }
-          right={`reference ${formatPrice(reference.price)}`}
+          /* The reference itself, since the chart below now plots distance from it rather than it. */
+          right={`reference $${formatPrice(reference.price)}`}
         />
-        <PriceChart state={state} status={tapeStatus} />
+        <FloorChart state={state} status={tapeStatus} scope={scope} />
       </Card>
 
       <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-4.5 max-[1000px]:grid-cols-1">

@@ -69,6 +69,18 @@ export const copy = {
     fillsSubPending: 'illustration · the vault is not funded yet',
     leadLive: 'The vault has been traded against {fills} times. It refused {refused}. It has never once settled at a bad price.',
     /** Answered, and the answer was nothing. Different from not having asked. */
+    /** Zero on this chart is the floor, so the axis label has to say whose. */
+    chartTitleMine: 'this vault against its floor',
+    chartTitlePublic: 'every maker against their own floor',
+    chartFloorMine: 'your floor',
+    chartFloorPublic: "each maker's floor",
+    chartAboveFloor: 'above the floor, latest fill',
+    chartVsRef: 'against the reference',
+    chartTraded: 'traded in view',
+    chartHeldMine: 'fills stayed above your floor',
+    chartHeldPublic: "fills stayed above their maker's floor",
+    /** Says what the numbers are, because a bps axis is not self-evident the way a price is. */
+    chartAxis: 'basis points from the floor · bars are size',
     chartLoading: 'Reading what this venue has traded…',
     markoutNote:
       'markout is where the reference sat 30 seconds later — the honest read on whether the fill was good, rather than whether it merely cleared the floor',
