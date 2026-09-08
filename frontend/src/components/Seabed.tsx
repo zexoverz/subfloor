@@ -31,7 +31,7 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
         alt=""
         draggable={false}
         className="h-full w-full object-cover object-center select-none"
-        style={{ opacity: hero ? 0.85 : 0.32 }}
+        style={{ opacity: hero ? 0.85 : 0.42 }}
       />
       {/*
        * A wash in the canvas colour on top of it, heaviest in the middle band where the panels
@@ -43,7 +43,7 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(4,18,36,0.35), rgba(4,18,36,0.72) 45%, rgba(4,18,36,0.72) 70%, rgba(4,18,36,0.3))',
+              'linear-gradient(to bottom, rgba(1,16,42,0.3), rgba(1,16,42,0.62) 45%, rgba(1,16,42,0.62) 70%, rgba(1,16,42,0.26))',
           }}
         />
       )}

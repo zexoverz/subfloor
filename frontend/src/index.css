@@ -22,10 +22,15 @@
    *
    * The order still holds: ground under panels, panels above it, heads sunk into them.
    */
-  --c-ground: #030c1c;
-  --c-surface: #010f26;
-  --c-sunken: #00091b;
-  --c-raise: #0c2749;
+  /*
+   * Sampled from the second composite, which is lighter and bluer than the first: its panels read
+   * #00132e, its aside #021630, its ground #041838. The previous set was measured from a darker
+   * reference and landed nearly black.
+   */
+  --c-ground: #01102a;
+  --c-surface: #00132e;
+  --c-sunken: #000e24;
+  --c-raise: #0b2b52;
   --c-ink: #e9f1fb;
   --c-muted: #93a9c4;
   /*
@@ -35,7 +40,7 @@
    */
   --c-faint: #7d95b6;
   /* Against a near-black panel the old #18406e read as a bright line rather than a division. */
-  --c-rule: #0f2c4f;
+  --c-rule: #123a68;
   --c-floor: #0ee6ea;
   --c-floor-wash: rgba(14, 230, 234, 0.13);
   /*
@@ -43,9 +48,20 @@
    * button is what the app does, cyan type and cyan rules are what the owner set. Adding a second
    * hue for buttons would have put a colour on screen the mark does not contain.
    */
-  --c-action: #0ee6ea;
-  --c-action-ink: #041224;
-  --c-action-hover: #5cf2f5;
+  /*
+   * The action is blue again, and the floor keeps the mark's cyan.
+   *
+   * They were one colour, on the argument that the mark has one accent. But that cyan measures
+   * G/B 0.98 — green and blue in equal parts, which is why it reads teal rather than blue — and
+   * putting it on every button made the whole interface lean green. The reference's own action
+   * blue measures 0.67.
+   *
+   * Splitting them also restores something worth having: blue is what the app does, cyan is what
+   * the owner set. One of those appears on controls, the other only on the floor.
+   */
+  --c-action: #2e8fd8;
+  --c-action-ink: #01102a;
+  --c-action-hover: #4aa6ec;
   --c-settle: #40b66b;
   --c-settle-wash: rgba(64, 182, 107, 0.16);
   --c-refuse: #fa2b39;
