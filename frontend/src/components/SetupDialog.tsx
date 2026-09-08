@@ -3,6 +3,7 @@ import { isAddress } from 'viem';
 import { Check, ChevronDown, KeyRound, Wallet as WalletIcon, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
+import { Wordmark } from './Wordmark.tsx';
 import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
@@ -180,7 +181,7 @@ export function SetupDialog({
             <div className="relative aspect-square w-full">
               <Suspense fallback={null}>{open && <Orb />}</Suspense>
               <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                <span className="text-[13px] font-semibold tracking-[0.3em] text-ink/85">{copy.brand}</span>
+                <Wordmark height={16} />
               </div>
             </div>
 

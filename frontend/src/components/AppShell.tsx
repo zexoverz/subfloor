@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Mark } from './Mark.tsx';
+import { Wordmark } from './Wordmark.tsx';
 import { Chip } from './Card.tsx';
 import { PanicButton } from './PanicButton.tsx';
 import { AccountMenu } from './AccountMenu.tsx';
@@ -85,11 +86,11 @@ export function AppShell({
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button
           onClick={() => onNavigate('landing')}
-          className="cursor-pointer text-[15px] font-semibold tracking-[0.22em] hover:text-floor"
+          className="cursor-pointer transition-opacity hover:opacity-80"
         >
           <span className="flex items-center gap-2.5">
             <Mark />
-            {copy.brand}
+            <Wordmark height={19} />
           </span>
         </button>
 

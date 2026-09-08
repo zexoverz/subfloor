@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
+import { Wordmark } from './Wordmark.tsx';
 import { Seabed } from './Seabed.tsx';
 import { ScrambleText } from './ScrambleText.tsx';
 import type { Screen } from '../types.ts';
@@ -55,7 +56,7 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
       <footer className="relative border-t border-rule">
         <div className="mx-auto grid max-w-[1100px] gap-10 px-[clamp(18px,4vw,36px)] py-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
-            <div className="text-[15px] font-semibold tracking-[0.22em]">{copy.brand}</div>
+            <Wordmark height={20} />
             <p className="serif mt-2 max-w-[30ch] text-[14px] leading-relaxed text-muted">
               {copy.landing.footerTagline}
             </p>
