@@ -10,16 +10,22 @@
  */
 export function TokenIcon({ symbol, size = 16 }: { symbol: string; size?: number }) {
   if (symbol === 'WETH' || symbol === 'ETH') {
+    /*
+     * The real WETH mark, not a drawn stand-in. The wordmark inside it is illegible at this size
+     * and that is fine — nobody reads a token logo, they recognise its shape, and a hand-drawn
+     * diamond is a shape for a different token.
+     */
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">
-        <circle cx="12" cy="12" r="12" fill="#627EEA" />
-        <path d="M12 3.5v6.3l5.3 2.4L12 3.5z" fill="#fff" fillOpacity=".6" />
-        <path d="M12 3.5L6.7 12.2l5.3-2.4V3.5z" fill="#fff" />
-        <path d="M12 16.4v4.1l5.3-7.3-5.3 3.2z" fill="#fff" fillOpacity=".6" />
-        <path d="M12 20.5v-4.1l-5.3-3.2L12 20.5z" fill="#fff" />
-        <path d="M12 15.4l5.3-3.2-5.3-2.4v5.6z" fill="#fff" fillOpacity=".2" />
-        <path d="M6.7 12.2l5.3 3.2V9.8l-5.3 2.4z" fill="#fff" fillOpacity=".6" />
-      </svg>
+      <img
+        src="/weth.png"
+        alt=""
+        aria-hidden
+        width={size}
+        height={size}
+        draggable={false}
+        className="shrink-0 select-none"
+        style={{ width: size, height: size }}
+      />
     );
   }
 

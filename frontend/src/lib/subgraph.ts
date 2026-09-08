@@ -66,6 +66,7 @@ const FILLS = `
     fillQualities(first: 24, orderBy: timestamp, orderDirection: desc, where: { maker: $vault }) {
       id
       maker
+      taker
       executionRate
       makerExecutionRate
       makerAdverseDeviationBps
@@ -94,6 +95,7 @@ const FILLS = `
  */
 type FillRow = {
   maker?: string;
+  taker?: string;
   /** The pair price, the same number from either side, used for the price column. */
   executionRate: string;
   /** What the vault received per unit given. Every judgement below is made against this. */
@@ -119,6 +121,7 @@ type FillRow = {
  */
 type RefusalRow = {
   hash: string;
+  from?: string;
   ts: number;
   attemptedRate: string;
   floorRate: string;
@@ -133,6 +136,7 @@ type RefusalsBody = {
     hash: string;
     blockNumber: string;
     reason: string;
+    from?: string;
     tokenIn: string;
     tokenOut: string;
     executionRate: string;
@@ -167,6 +171,7 @@ async function askRefusals(): Promise<{ count: number; fills: number; recent: Re
           .filter((r) => r.reason === 'SettledBelowFloor')
           .map(async (r) => ({
             hash: r.hash,
+            from: r.from,
             /*
              * The block's own timestamp, fetched, because the record carries a block number and no
              * time. Using the block number as seconds put a refusal at 21:10 that happened at
@@ -286,6 +291,7 @@ export function useIndex(vault: Address | null): IndexData {
             hash: fill.swap.hash,
             referencePrice: fill.referencePrice ? Number(fill.referencePrice) / 1e6 : undefined,
             referenceAgeSeconds: fill.referenceAgeSeconds ?? undefined,
+            taker: fill.taker ?? undefined,
           };
         }),
         // The decoder wants revert data; the index has the arguments already decoded, so the tape
@@ -296,6 +302,7 @@ export function useIndex(vault: Address | null): IndexData {
           time: refusal.ts ? clock(String(refusal.ts)) : '—',
           tx: refusal.hash.slice(0, 6),
           hash: refusal.hash,
+          from: refusal.from,
           data: '0x' as `0x${string}`,
           decoded: {
             attemptedPrice: price(refusal.attemptedRate, refusal.base.id, refusal.quote.id),

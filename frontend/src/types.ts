@@ -91,6 +91,8 @@ export type Fill = {
    * one cleared against a fresh one, and the board should not flatten that into the same row.
    */
   referenceAgeSeconds?: number;
+  /** The counterparty. Present on indexed fills, absent on sample rows, which is the difference. */
+  taker?: string;
   /** Against the reference at that block. Undefined until that read exists — never guessed. */
   vsReferenceBps?: number;
   /** Markout: where the reference sat 30s after the fill. The honest measure of whether it was good. */
@@ -116,6 +118,8 @@ export type Refusal = {
   tx: string;
   /** The full hash, so the refusal can be opened. This is the row people will want to check. */
   hash?: string;
+  /** Who was turned away. On a refusal the counterparty is the sender the venue refused. */
+  from?: string;
   data: `0x${string}`;
   referencePrice?: number;
   /**

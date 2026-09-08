@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ArrowDownRight, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { FillBar } from './FillBar.tsx';
 import { copy } from '../copy.ts';
 import { formatBps, formatPrice } from '../lib/rate.ts';
@@ -8,13 +7,15 @@ import { RefusalDetail } from './RefusalCard.tsx';
 import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
 import { ExternalLink } from 'lucide-react';
 import { txUrl } from '../lib/chain.ts';
+import { AddressChip } from './AddressChip.tsx';
+import { TradeMark } from './TradeMark.tsx';
 
 /*
  * The identity column carries the trade itself — direction, pair, and the time under it — so the
  * eye lands on what happened before it lands on how much. The numeric columns then read right to
  * left in falling importance, ending on the one this product is about.
  */
-const COLUMNS = ['Trade', 'Size', 'Price', 'vs ref', 'vs floor'];
+const COLUMNS = ['Trade', 'Taker', 'Size', 'Price', 'vs ref', 'vs floor'];
 
 /**
  * The tape is a ledger, so it is a table: the same six columns on every row, numbers right-aligned
@@ -33,7 +34,7 @@ function SkeletonRows() {
     <>
       {Array.from({ length: 8 }, (_, i) => (
         <tr key={i} className="border-b border-rule/40">
-          <td colSpan={5} className="py-2.5">
+          <td colSpan={6} className="py-2.5">
             <span
               className="block h-3 animate-pulse rounded bg-rule/60"
               // Uneven widths, so it reads as a tape loading rather than a progress bar.
@@ -89,7 +90,7 @@ export function Tape({
           {status === 'loading' && <SkeletonRows />}
           {status !== 'loading' && entries.length === 0 && (
             <tr>
-              <td colSpan={5} className="py-10 text-center text-[12px] text-faint">
+              <td colSpan={6} className="py-10 text-center text-[12px] text-faint">
                 {status === 'failed' ? copy.desk.tapeUnreachable : copy.desk.tapeEmpty}
               </td>
             </tr>
@@ -125,27 +126,42 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
       >
         <td className="px-4 py-3">
           <span className="flex items-center gap-3">
-            <span
-              className={`grid size-7 shrink-0 place-items-center rounded-full ${
-                entry.side === 'bought' ? 'bg-settle/15 text-settle' : 'bg-floor/15 text-floor'
-              }`}
-            >
-              {entry.side === 'bought' ? (
-                <ArrowUpRight size={14} strokeWidth={2.2} />
-              ) : (
-                <ArrowDownRight size={14} strokeWidth={2.2} />
-              )}
-            </span>
+            <TradeMark symbol={pair.base} kind={entry.side} />
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="text-[12.5px] font-semibold text-ink">
                 {entry.side === 'bought' ? 'Buy' : 'Sell'} {pair.base}
               </span>
               {/* The time belongs under the trade, not in a column of its own competing for width. */}
-              <span className="text-[10.5px] text-faint">
-                {entry.time} · {pair.base}/{pair.quote}
+              <span className="flex items-center gap-1.5 text-[10.5px] text-faint">
+                {entry.time}
+                {entry.hash && (
+                  <>
+                    ·
+                    <a
+                      href={txUrl(entry.hash)}
+                      target="_blank"
+                      rel="noreferrer"
+                      // The row toggles a panel; opening the explorer must not also do that.
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 font-mono transition-colors hover:text-floor"
+                      title={entry.hash}
+                    >
+                      {entry.tx}…
+                      <ExternalLink size={9} strokeWidth={1.8} />
+                    </a>
+                  </>
+                )}
               </span>
             </span>
           </span>
+        </td>
+        <td className="px-4 py-3">
+          {/*
+           * The counterparty, with a shape. The same taker repeated down the tape is invisible as
+           * truncated hex and unmistakable as an identicon — which is the honest reading of this
+           * venue right now: one bot on the other side of nearly every fill.
+           */}
+          {entry.taker ? <AddressChip address={entry.taker} /> : <span className="text-faint">—</span>}
         </td>
         <td className="px-4 py-3 text-right font-mono text-[12.5px] tabular-nums">
           {/* Three decimals turned a 0.0003 WETH fill into "0.000" — a real trade rendered as
@@ -186,7 +202,7 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
 
       {open && (
         <tr>
-          <td colSpan={5} className="border-b border-rule bg-raise px-4 py-3">
+          <td colSpan={6} className="border-b border-rule bg-raise px-4 py-3">
             <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 text-[11.5px]">
               <dt className="text-faint">markout 30s</dt>
               <dd className="m-0 font-medium">
@@ -283,17 +299,34 @@ function RefusalRows({ entry }: { entry: Refusal }) {
       >
         <td className="px-4 py-3 shadow-[inset_2px_0_0_var(--c-refuse)]">
           <span className="flex items-center gap-3">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-refuse/15">
-              {/* The shield is the floor holding, not an alarm: the refusal is the good outcome. */}
-              <ShieldCheck size={14} strokeWidth={2.2} />
-            </span>
+            {/* The shield is the floor holding, not an alarm: the refusal is the good outcome. */}
+            <TradeMark symbol={decoded.gaveSymbol} kind="refused" />
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="text-[12.5px] font-semibold">Refused</span>
-              <span className="text-[10.5px] text-refuse/70">
-                {entry.time} · {decoded.gaveSymbol}/{decoded.gotSymbol}
+              <span className="flex items-center gap-1.5 text-[10.5px] text-refuse/70">
+                {entry.time}
+                {entry.hash && (
+                  <>
+                    ·
+                    <a
+                      href={txUrl(entry.hash)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 font-mono transition-colors hover:text-ink"
+                      title={entry.hash}
+                    >
+                      {entry.tx}…
+                      <ExternalLink size={9} strokeWidth={1.8} />
+                    </a>
+                  </>
+                )}
               </span>
             </span>
           </span>
+        </td>
+        <td className="px-4 py-3">
+          {entry.from ? <AddressChip address={entry.from} /> : <span className="text-refuse/50">—</span>}
         </td>
         {/* No size, and never a zero. The revert carries rates and no amounts, because nothing
             moved — inventing one here would contradict the line directly beneath it. */}
@@ -310,7 +343,7 @@ function RefusalRows({ entry }: { entry: Refusal }) {
       </tr>
 
       <tr className={`bg-refuse-wash ${fresh ? 'tape-arrive-refuse' : ''} [&>td]:border-b [&>td]:border-rule`}>
-        <td colSpan={5} className="px-4 pb-3 text-left text-[11.5px] text-refuse">
+        <td colSpan={6} className="px-4 pb-3 text-left text-[11.5px] text-refuse">
           <b className="font-semibold">{copy.refusal.heading}</b> — the agent tried to settle at{' '}
           {formatPrice(decoded.attemptedPrice)}, the venue refused ·{' '}
           <span className="text-ink">{copy.refusal.unchanged}</span>
@@ -319,7 +352,7 @@ function RefusalRows({ entry }: { entry: Refusal }) {
 
       {open && (
         <tr>
-          <td colSpan={5} className="p-0">
+          <td colSpan={6} className="p-0">
             <RefusalDetail entry={entry} decoded={decoded} />
           </td>
         </tr>
