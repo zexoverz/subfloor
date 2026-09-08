@@ -146,7 +146,7 @@ mainnet uses canonical Aqua and never forks it.
 | Contract | Address | Verified |
 |---|---|---|
 | FloorRegistry | [`0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123`](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123) | Sourcify |
-| FloorRouter | [`0x03189D102286fa8cDd0fBF3578B492e67e665A27`](https://sepolia.basescan.org/address/0x03189D102286fa8cDd0fBF3578B492e67e665A27) | pending |
+| FloorRouter | [`0x03189D102286fa8cDd0fBF3578B492e67e665A27`](https://sepolia.basescan.org/address/0x03189D102286fa8cDd0fBF3578B492e67e665A27) | Sourcify |
 | VaultFactory | [`0xD985Ad481D396D37344f7c1229433a7D342cf1F1`](https://sepolia.basescan.org/address/0xD985Ad481D396D37344f7c1229433a7D342cf1F1) | Sourcify |
 | AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
@@ -163,15 +163,15 @@ uses real USDC and this contract does not exist there.
 The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
 two-sided book is shipped and live under a mandate signed EIP-712 by the guardian.
 
-**The live book is not yet the full position, and the router is why.** The deployed router predates
-the commit that added `ValidateSeriesEpoch`, `OraclePriceAdjuster` and `JumpIfDirection`, so the
-shipped book is the simpler four-instruction build rather than the seven `ConcentratedBook` emits
-today. The router is also the one contract not verified, for the same reason: its bytecode matches
-no commit, because it went out from a working tree that was never committed. Both are the same fix —
-redeploy the router and reship — and it is tracked in
-[#167](https://github.com/zexoverz/subfloor/issues/167). Written here rather than quietly corrected
-later, because the gap was found by trying to verify the contract and would otherwise have reached
-the submission as a claim about a position that is not the one trading.
+**The router was redeployed on 8 Sep, and the reason is worth stating.** The first one could not be
+built from any commit: its runtime was 23,983 bytes where every build of the source produced ~24,3xx,
+because `forge script` and `forge build` compile this contract differently and the deployment went
+out through the script. Nothing was wrong with it on chain — it settled 115 fills correctly — but a
+contract nobody can reproduce cannot be verified, and an unverified router turns the refusal card's
+`[view]` link into hex soup. The replacement was deployed from the bytecode the public verifier
+itself produces from this repo's sources, so `exact_match` is not just a pass, it is the statement
+that the chain and this repository hold the same contract. Tracked in
+[#167](https://github.com/zexoverz/subfloor/issues/167).
 
 **Base mainnet** — _pending, see below._
 
@@ -314,13 +314,13 @@ it worth less.
 
 | | |
 |---|---|
-| Contracts, Base Sepolia | **live**, [addresses above](#deployed); three of four verified on Sourcify |
+| Contracts, Base Sepolia | **live**, [addresses above](#deployed); all four verified on Sourcify |
 | Floors, both directions | **set on chain**, keyed to the vault |
-| A two-sided book | **shipped and live** on Aqua under a device-shaped mandate; the full concentrated position awaits the router redeploy ([#167](https://github.com/zexoverz/subfloor/issues/167)) |
+| A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
 | Calibration and the daily report | **live** at `/api/calibration` and `/api/report` |
-| Fills, and the execution-quality dataset | **115 fills**, both directions, scored against the same Chainlink answer settlement used |
-| Refusals | **produced on cue** — `SettledBelowFloor`, and a guardian-signed lowering exercised end to end |
+| Fills, and the execution-quality dataset | **115 fills** on the previous router, both directions, scored against the same Chainlink answer settlement used; the taker is being repointed at the redeployed one |
+| Refusals | **on chain** — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0) reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000, and the floor was then lowered again under a guardian signature |
 | Base mainnet, with our own money | _pending_ |
 | A rogue agent, refused, on chain | _pending_ |
 
