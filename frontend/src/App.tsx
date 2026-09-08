@@ -135,6 +135,7 @@ export default function App() {
           source={source}
           /* Simulated says so on its own badge; otherwise the reader's own state, unedited. */
           tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
+          vault={vault}
           // One page in two states: the owner sees inventory, the standing floor and the agent;
           // everyone else sees the proof counter and the contracts in that column.
           owner={ceremony.isOwner === true}

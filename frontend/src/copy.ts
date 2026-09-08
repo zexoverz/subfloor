@@ -73,7 +73,11 @@ export const copy = {
     markoutNote:
       'markout is where the reference sat 30 seconds later — the honest read on whether the fill was good, rather than whether it merely cleared the floor',
     noTakerRows: 'Nothing from that counterparty in this window.',
-    tapeEmpty: 'No fills yet. The vault has not traded on this venue.',
+    /*
+     * Says which vault, because the usual way to arrive here is by deploying one — and a board
+     * that empties without explaining that it changed subject reads as a fault.
+     */
+    tapeEmpty: 'This vault has not traded yet. The tape follows the vault named above, so a vault you just deployed starts empty.',
     /** We could not ask. Says whose failure it is rather than reporting an empty venue. */
     tapeUnreachable: 'The index could not be reached, so what has traded here is unknown.',
     leadSample: 'When the vault is live, this line reports what it actually traded and what it refused. Nothing below has happened yet.',

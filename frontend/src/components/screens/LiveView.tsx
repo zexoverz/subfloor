@@ -7,6 +7,7 @@ import { Tile, Tiles } from '../Tiles.tsx';
 import { FuzzCounter } from '../FuzzCounter.tsx';
 import { Tape } from '../Tape.tsx';
 import { PriceChart } from '../PriceChart.tsx';
+import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
@@ -24,6 +25,7 @@ import type { DataSource, Screen, VaultState } from '../../types.ts';
 export function LiveView({
   state,
   source,
+  vault,
   tapeStatus,
   owner,
   onNavigate,
@@ -44,6 +46,8 @@ export function LiveView({
   source: DataSource;
   /** What the reader knows about the tape, so waiting is not drawn as data. */
   tapeStatus: 'loading' | 'live' | 'empty' | 'failed';
+  /** The vault the tape is about, named on the card so a change of subject is visible. */
+  vault: string | null;
   /** True when the connected wallet owns the vault. False is what a stranger sees. */
   owner: boolean;
   onNavigate: (s: Screen) => void;
@@ -129,7 +133,18 @@ export function LiveView({
         <Card className="flex flex-col">
           <CardHead
             icon={Receipt}
-            left={copy.desk.tape}
+            left={
+              <span className="flex items-center gap-2">
+                {copy.desk.tape}
+                {/*
+                 * Whose tape this is. Deploying a vault changes the subject of this card — the
+                 * board follows the wallet's own vault, because attributing another vault's
+                 * trades to it is the mistake this whole screen exists to avoid — and without the
+                 * address on it, that change of subject reads as the data vanishing.
+                 */}
+                {vault && <AddressChip address={vault} size={14} />}
+              </span>
+            }
             right={
               <span className="flex items-center gap-2">
                 <PairIcons base={pair.base} quote={pair.quote} />
