@@ -16,7 +16,7 @@ import { formatBps } from '../lib/rate.ts';
 export function ProductShot() {
   return (
     <div className="relative">
-      <div className="overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+      <div className="overflow-hidden rounded-xl border border-rule bg-surface shadow-card">
         {/* Window chrome, so it reads as an application rather than a diagram. */}
         <div className="flex items-center gap-2 border-b border-rule bg-sunken px-4 py-2.5">
           <span className="flex gap-1.5">
@@ -24,7 +24,7 @@ export function ProductShot() {
             <span className="size-2 rounded-full bg-floor/50" />
             <span className="size-2 rounded-full bg-settle/50" />
           </span>
-          <span className="mx-auto rounded-lg border border-rule bg-surface px-3 py-0.5 text-[11.5px] text-faint">
+          <span className="mx-auto rounded-xl border border-rule bg-surface px-3 py-0.5 text-[11.5px] text-faint">
             subfloor.vercel.app
           </span>
         </div>
@@ -52,7 +52,7 @@ export function ProductShot() {
             />
           </Tiles>
 
-          <div className="mt-2 overflow-hidden rounded-lg border border-rule">
+          <div className="mt-2 overflow-hidden rounded-xl border border-rule">
             <Tape entries={fixtures.tape} pair={fixtures.pair} />
           </div>
         </div>

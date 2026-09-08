@@ -23,7 +23,7 @@ export function Tooltip({ text, children }: { text: string; children: ReactNode 
 
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-[230px] -translate-x-1/2 rounded-lg border border-rule bg-surface px-2.5 py-2 text-[11.5px] leading-relaxed font-normal tracking-normal text-ink normal-case opacity-0 shadow-card transition-opacity duration-100 group-hover/tip:opacity-100 group-focus-within/tip:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-[230px] -translate-x-1/2 rounded-xl border border-rule bg-surface px-2.5 py-2 text-[11.5px] leading-relaxed font-normal tracking-normal text-ink normal-case opacity-0 shadow-card transition-opacity duration-100 group-hover/tip:opacity-100 group-focus-within/tip:opacity-100"
       >
         {text}
       </span>

@@ -46,7 +46,7 @@ export function FloorControl({
   const tooTight = refused > 0;
 
   return (
-    <div className="mb-5 rounded-lg border border-rule bg-sunken px-4 py-3.5">
+    <div className="mb-5 rounded-xl border border-rule bg-sunken px-4 py-3.5">
       <label className="block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
         {copy.onboarding.worstPrice}
       </label>

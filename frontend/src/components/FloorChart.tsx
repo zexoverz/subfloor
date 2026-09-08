@@ -383,7 +383,7 @@ export function FloorChart({
             </span>
           </span>
           {offered.length > 0 && (
-            <span className="flex items-center gap-0.5 rounded-lg border border-rule bg-sunken p-0.5">
+            <span className="flex items-center gap-0.5 rounded-xl border border-rule bg-sunken p-0.5">
               {[...offered, { id: 'all', label: 'All', seconds: 0 }].map((w) => (
                 <button
                   key={w.id}

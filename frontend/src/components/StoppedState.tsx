@@ -19,7 +19,7 @@ import type { VaultState } from '../types.ts';
 export function StoppedState({ state, onWithdraw }: { state: VaultState; onWithdraw: () => void }) {
   return (
     <div className="mx-auto max-w-[560px] py-16">
-      <div className="rounded-lg border border-rule bg-surface p-7 shadow-card">
+      <div className="rounded-xl border border-rule bg-surface p-7 shadow-card">
         <h1 className="m-0 flex items-center gap-2.5 text-[17px] font-semibold">
           <OctagonX size={17} strokeWidth={1.8} className="text-refuse" />
           {copy.panic.stopped}

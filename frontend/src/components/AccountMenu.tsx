@@ -76,15 +76,15 @@ export function AccountMenu({ wallet }: { wallet: Wallet }) {
     <div ref={box} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex cursor-pointer items-center gap-2 rounded-lg border border-rule bg-surface py-1.5 pr-2 pl-1.5 text-[12px] transition-colors hover:border-floor"
+        className="flex cursor-pointer items-center gap-2 rounded-xl border border-rule bg-surface py-1.5 pr-2 pl-1.5 text-[12px] transition-colors hover:border-floor"
       >
-        <img src={avatar ?? identicon(address)} alt="" className="size-5 rounded-lg object-cover" />
+        <img src={avatar ?? identicon(address)} alt="" className="size-5 rounded-xl object-cover" />
         <span className="font-medium">{name ?? short}</span>
         <ChevronDown size={13} strokeWidth={1.8} className={`text-faint transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-1.5 w-[240px] overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+        <div className="absolute right-0 z-40 mt-1.5 w-[240px] overflow-hidden rounded-xl border border-rule bg-surface shadow-card">
           <div className="border-b border-rule px-3 py-2.5">
             <p className="m-0 text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.wallet.connected}</p>
             <p className="m-0 mt-0.5 text-[11.5px] break-all">{address}</p>

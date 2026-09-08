@@ -22,7 +22,7 @@ export function Act({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`cursor-pointer rounded-lg border px-3.5 py-2.5 text-xs tracking-[0.06em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+      className={`cursor-pointer rounded-xl border px-3.5 py-2.5 text-xs tracking-[0.06em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
         wide ? 'w-full' : ''
       } ${
         primary
@@ -43,7 +43,7 @@ export function Locked({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-lg border border-rule bg-raise px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-floor"
+      className="cursor-pointer rounded-xl border border-rule bg-raise px-3.5 py-2.5 text-xs tracking-[0.06em] text-faint transition-colors hover:border-floor"
     >
       <span className="flex items-center gap-2">
         <KeyRound size={13} strokeWidth={1.7} className="text-floor" />
@@ -57,7 +57,7 @@ export function Ghost({ children, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer rounded-lg border border-rule bg-raise px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-action hover:text-ink"
+      className="cursor-pointer rounded-xl border border-rule bg-raise px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:border-action hover:text-ink"
     >
       {children}
     </button>
@@ -81,7 +81,7 @@ export function Stepper({
   format: (n: number) => string;
 }) {
   return (
-    <span className="inline-flex overflow-hidden rounded-lg border border-rule">
+    <span className="inline-flex overflow-hidden rounded-xl border border-rule">
       <button
         onClick={() => onChange(Math.max(min, value - step))}
         aria-label="safer"

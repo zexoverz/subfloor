@@ -32,7 +32,7 @@ export function Tiles({ children }: { children: ReactNode }) {
    * every other panel on the board let the drawing through.
    */
   return (
-    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-lg border border-rule bg-rule/45 backdrop-blur-md">
+    <div className="my-4.5 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px overflow-hidden rounded-xl border border-rule bg-rule/45 backdrop-blur-md">
       {children}
     </div>
   );
@@ -67,7 +67,7 @@ export function Tile({
     <div className="flex flex-col gap-1 bg-surface/85 p-4">
       <span className="text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
       <span className={`text-[26px] leading-none font-semibold tracking-tight ${toneClass}`}>
-        <span className={`-mx-1 rounded-lg px-1 ${pulseClass}`}>
+        <span className={`-mx-1 rounded-xl px-1 ${pulseClass}`}>
           {typeof value === 'number' ? <RollingNumber value={value} format={format} /> : value}
         </span>
       </span>

@@ -104,7 +104,7 @@ function SkeletonRows() {
                   {!arrow && (
                     <span className="flex flex-col gap-1">
                       <span
-                        className="block h-2.5 animate-pulse rounded bg-rule/70"
+                        className="block h-2.5 animate-pulse rounded-md bg-rule/70"
                         style={{ width: `${width}px`, animationDelay: `${(row * 8 + col) * 28}ms` }}
                       />
                       {wide && (
@@ -271,7 +271,7 @@ function TakerFilter({
         Taker
         <Filter size={10} strokeWidth={2} className={only ? 'text-floor' : 'text-faint'} />
       </summary>
-      <div className="absolute left-0 z-20 mt-2 min-w-[220px] rounded-lg border border-rule bg-surface p-1 normal-case shadow-card">
+      <div className="absolute left-0 z-20 mt-2 min-w-[220px] rounded-xl border border-rule bg-surface p-1 normal-case shadow-card">
         <button
           type="button"
           onClick={(e) => {

@@ -62,7 +62,7 @@ export function FuzzCounter({ fuzz }: { fuzz: VaultState['fuzz'] }) {
         <Expand size={14} strokeWidth={1.6} />
       </button>
       <p className="serif m-0 text-[clamp(17px,2.4vw,21px)] leading-snug font-medium tracking-tight">
-        <span className={`-mx-1 rounded-lg px-1 ${changed ? 'value-pulse' : ''}`}>
+        <span className={`-mx-1 rounded-xl px-1 ${changed ? 'value-pulse' : ''}`}>
           <RollingNumber value={fuzz.programs} className="font-semibold" />
         </span>{' '}
         hostile programs thrown at this router.{' '}
