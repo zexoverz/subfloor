@@ -73,6 +73,14 @@ export type Fill = {
    * not a fill that was zero away from it.
    */
   bpsAboveFloor?: number;
+  /**
+   * The full transaction hash, when the row came from the chain.
+   *
+   * `tx` is a six-character stub for display and cannot be turned back into a link, so a reader who
+   * wanted to check a row had nothing to check it with. Absent on sample rows, which is the point:
+   * a row nobody can open is a row nobody has to believe.
+   */
+  hash?: string;
   /** Against the reference at that block. Undefined until that read exists — never guessed. */
   vsReferenceBps?: number;
   /** Markout: where the reference sat 30s after the fill. The honest measure of whether it was good. */
@@ -96,6 +104,8 @@ export type Refusal = {
   time: string;
   ts: number;
   tx: string;
+  /** The full hash, so the refusal can be opened. This is the row people will want to check. */
+  hash?: string;
   data: `0x${string}`;
   referencePrice?: number;
   /**

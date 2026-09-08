@@ -190,10 +190,12 @@ export function useIndex(vault: Address | null): IndexData {
       setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
       return;
     }
-    setData((current) => ({ ...current, status: 'loading' }));
+    // Only the first pass may blank the tape. A poll that reset to `loading` would flash skeleton
+    // rows over live ones every interval, which reads as the data disappearing and coming back.
+    setData((current) => (current.status === 'live' ? current : { ...current, status: 'loading' }));
     let live = true;
 
-    (async () => {
+    const read = async () => {
       /*
        * Two sources, because a refusal cannot come from the index at all. It is a reverted
        * transaction; reverts emit no logs; a subgraph handler is log-driven. The Refusal entity
@@ -245,6 +247,7 @@ export function useIndex(vault: Address | null): IndexData {
               : undefined,
             vsReferenceBps: fill.adverseDeviationBps,
             tx: fill.swap.hash.slice(0, 6),
+            hash: fill.swap.hash,
           };
         }),
         // The decoder wants revert data; the index has the arguments already decoded, so the tape
@@ -254,6 +257,7 @@ export function useIndex(vault: Address | null): IndexData {
           ts: refusal.ts,
           time: refusal.ts ? clock(String(refusal.ts)) : '—',
           tx: refusal.hash.slice(0, 6),
+          hash: refusal.hash,
           data: '0x' as `0x${string}`,
           decoded: {
             attemptedPrice: price(refusal.attemptedRate, refusal.base.id, refusal.quote.id),
@@ -285,7 +289,9 @@ export function useIndex(vault: Address | null): IndexData {
           ...(snapshot ? { medianVsMidBps: snapshot.adverseDeviationP50Bps } : {}),
         },
       });
-    })().catch((cause) => {
+    };
+
+    read().catch((cause) => {
       /*
        * A throw in here used to end the effect and nothing else: no row, no message, no console
        * entry, and a board that looked exactly like one with no data. That is how a missing
@@ -296,8 +302,28 @@ export function useIndex(vault: Address | null): IndexData {
       setData({ source: 'fixtures', status: 'failed', tape: null, stats: null });
     });
 
+    /*
+     * The venue keeps trading whether or not anyone is looking, so a board read once at mount goes
+     * stale while it is being watched — the one screen where that matters.
+     *
+     * Twenty seconds, and only while the tab is visible: a hidden tab polling two services on a
+     * timer spends someone's rate limit to update a picture nobody is looking at, and Base's public
+     * endpoint has already refused us once today for less.
+     */
+    const tick = window.setInterval(() => {
+      if (!document.hidden) void read().catch(() => {});
+    }, 20_000);
+
+    // Coming back to the tab should not mean waiting up to twenty seconds for the truth.
+    const onVisible = () => {
+      if (!document.hidden) void read().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       live = false;
+      window.clearInterval(tick);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [vault]);
 

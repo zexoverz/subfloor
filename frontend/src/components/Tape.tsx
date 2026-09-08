@@ -6,6 +6,8 @@ import { formatBps, formatPrice } from '../lib/rate.ts';
 import { decodeRefusal } from '../lib/refusal.ts';
 import { RefusalDetail } from './RefusalCard.tsx';
 import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
+import { ExternalLink } from 'lucide-react';
+import { txUrl } from '../lib/chain.ts';
 
 const COLUMNS = ['Time', 'Side', 'Size', 'Price', 'vs ref', 'vs floor'];
 
@@ -158,7 +160,22 @@ function FillRows({ entry, pair }: { entry: Fill; pair: Pair }) {
                 {entry.bpsAboveFloor === undefined ? <span className="text-faint">—</span> : `+${entry.bpsAboveFloor} bps`}
               </dd>
               <dt className="text-faint">tx</dt>
-              <dd className="m-0 font-medium">{entry.tx}…</dd>
+              <dd className="m-0 font-medium">
+                {/* Openable, because a number nobody can check is a number nobody has to believe. */}
+                {entry.hash ? (
+                  <a
+                    href={txUrl(entry.hash)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-floor"
+                  >
+                    {entry.tx}…
+                    <ExternalLink size={10} strokeWidth={1.7} className="text-faint" />
+                  </a>
+                ) : (
+                  `${entry.tx}…`
+                )}
+              </dd>
             </dl>
             <p className="mt-2 text-[11px] text-faint">
               markout is where the reference sat 30 seconds later — the honest read on whether the fill was
