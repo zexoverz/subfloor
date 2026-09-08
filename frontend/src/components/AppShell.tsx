@@ -82,7 +82,7 @@ export function AppShell({
        * open this stacking context is gone, but the stat row below has one of its own, and without
        * a context here the open account menu paints underneath it.
        */}
-      <div className="on-art relative z-30 mb-1">
+      <div className="on-art relative z-30">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
         {/* A tab bar with one tab is not navigation. The brand is the way back out. */}
         <button
@@ -146,7 +146,7 @@ export function AppShell({
         </div>
       </div>
 
-      <div className="pt-3">{children}</div>
+      <div className="pt-1">{children}</div>
       </div>
     </>
   );
