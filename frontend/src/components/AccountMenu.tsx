@@ -76,7 +76,7 @@ export function AccountMenu({ wallet }: { wallet: Wallet }) {
     <div ref={box} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex cursor-pointer items-center gap-2 rounded-xl border border-rule bg-surface py-1.5 pr-2 pl-1.5 text-[12px] transition-colors hover:border-floor"
+        className="pushable push-quiet mb-1.5 flex cursor-pointer items-center gap-2 rounded-xl py-1.5 pr-2 pl-1.5 text-[12px]"
       >
         <img src={avatar ?? identicon(address)} alt="" className="size-5 rounded-xl object-cover" />
         <span className="font-medium">{name ?? short}</span>

@@ -123,7 +123,6 @@ export default function App() {
        * it is the one being docked.
        */
       onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
-      state={state}
       source={source}
       // Simulated says so on its own badge; only a real read has a wait worth showing.
       loading={feedSource !== 'simulated' && index.status === 'loading'}

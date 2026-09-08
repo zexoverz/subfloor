@@ -47,7 +47,7 @@ export function ScopeSwitch({
         disabled={busy}
         onClick={() => onScope(mine ? 'public' : 'mine')}
         aria-pressed={!mine}
-        className="flex items-center gap-2 rounded-lg border border-rule bg-sunken px-2.5 py-1 text-[11px] tracking-normal normal-case transition-colors hover:border-floor hover:text-ink disabled:cursor-wait disabled:opacity-55"
+        className="pushable push-quiet push-sm mb-1 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[11px] tracking-normal normal-case disabled:cursor-wait"
       >
         <Icon size={13} strokeWidth={2} className="text-floor" />
         <span className="font-semibold text-ink">{mine ? copy.desk.scopeMine : copy.desk.scopePublic}</span>

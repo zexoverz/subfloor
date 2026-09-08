@@ -383,14 +383,18 @@ export function FloorChart({
             </span>
           </span>
           {offered.length > 0 && (
-            <span className="flex items-center gap-0.5 rounded-xl border border-rule bg-sunken p-0.5">
+            <span className="flex items-center gap-1.5">
               {[...offered, { id: 'all', label: 'All', seconds: 0 }].map((w) => (
                 <button
                   key={w.id}
                   type="button"
                   onClick={() => setWindow(w.id)}
-                  className={`rounded px-2 py-0.5 text-[11px] transition-colors ${
-                    window_ === w.id ? 'bg-raise font-semibold text-ink' : 'text-faint hover:text-muted'
+                  // The chosen window is the key that is down; the rest stand off the page. The
+                  // state needs no second colour once it has a position.
+                  data-pressed={window_ === w.id}
+                  aria-pressed={window_ === w.id}
+                  className={`pushable push-quiet push-sm mb-1 cursor-pointer rounded-md px-2.5 py-1 text-[11px] ${
+                    window_ === w.id ? 'font-semibold' : ''
                   }`}
                 >
                   {w.label}

@@ -7,14 +7,13 @@ import { AccountMenu } from './AccountMenu.tsx';
 import { Seabed } from './Seabed.tsx';
 import type { Wallet } from '../lib/wallet.ts';
 import { mocked } from '../lib/mock.ts';
-import type { DataSource, Screen, VaultState } from '../types.ts';
+import type { DataSource, Screen } from '../types.ts';
 
 /** What the owner actually navigates between. Everything else is a state reached by flow. */
 export function AppShell({
   screen,
   onNavigate,
   onPanic,
-  state,
   source,
   loading,
   wallet,
@@ -25,7 +24,6 @@ export function AppShell({
   screen: Screen;
   onNavigate: (s: Screen) => void;
   onPanic: () => void;
-  state: VaultState;
   source: DataSource;
   /** True until the first read answers, so the badge does not guess in the meantime. */
   loading: boolean;
@@ -128,10 +126,6 @@ export function AppShell({
           ) : (
             <Chip>{mocked ? copy.live.mock : source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
           )}
-          <span>
-            {state.pair.base} / {state.pair.quote}
-          </span>
-          <span>Base · {state.addresses.chainId}</span>
         </div>
 
         <div className="ml-auto flex items-center gap-3.5">

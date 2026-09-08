@@ -60,7 +60,7 @@ export function RefreshBadge({
         onClick={onRefresh}
         disabled={fetching}
         aria-label={copy.desk.refresh}
-        className="grid size-[26px] shrink-0 place-items-center rounded-lg border border-rule bg-sunken text-faint transition-colors hover:border-floor hover:text-floor disabled:cursor-wait disabled:opacity-55"
+        className="pushable push-quiet push-sm mb-1 grid size-[26px] shrink-0 place-items-center rounded-lg disabled:cursor-wait"
       >
         <RotateCw size={12} strokeWidth={2} className={fetching ? 'animate-spin' : ''} />
       </button>

@@ -267,10 +267,13 @@ body {
   --push-press: #0a2850;
   --push-side: #061e3f;
   --push-ink: var(--c-ink);
+  /* How far it stands off the page. One variable so a small control can be shallower without
+     becoming a different mechanic. */
+  --push-lift: 6px;
 
   background: var(--push-face);
   color: var(--push-ink);
-  box-shadow: 0 6px 0 var(--push-side);
+  box-shadow: 0 var(--push-lift) 0 var(--push-side);
   transition:
     transform 110ms cubic-bezier(0.2, 0.7, 0.3, 1),
     box-shadow 110ms cubic-bezier(0.2, 0.7, 0.3, 1),
@@ -280,7 +283,7 @@ body {
 .pushable:hover:not([aria-disabled='true']):not(:disabled) {
   background: var(--push-hover);
   transform: translateY(-1px);
-  box-shadow: 0 7px 0 var(--push-side);
+  box-shadow: 0 calc(var(--push-lift) + 1px) 0 var(--push-side);
 }
 
 .pushable:focus-visible {
@@ -288,9 +291,15 @@ body {
   outline-offset: 3px;
 }
 
-.pushable:active:not([aria-disabled='true']):not(:disabled) {
+.pushable:active:not([aria-disabled='true']):not(:disabled),
+/*
+ * A toggle that is on is a key that is down. `data-pressed` holds the pressed state instead of it
+ * lasting only as long as a finger — which is what a segmented control's selected option is, and
+ * saying it this way means the selection needs no second colour to be legible.
+ */
+.pushable[data-pressed='true'] {
   background: var(--push-press);
-  transform: translateY(6px);
+  transform: translateY(var(--push-lift));
   box-shadow: 0 0 0 var(--push-side);
 }
 
@@ -299,6 +308,11 @@ body {
 .pushable[aria-disabled='true'] {
   box-shadow: 0 2px 0 var(--push-side);
   opacity: 0.5;
+}
+
+/* Shallower, for the controls that sit inside a panel header rather than under a sentence. */
+.push-sm {
+  --push-lift: 3px;
 }
 
 .push-panic {
