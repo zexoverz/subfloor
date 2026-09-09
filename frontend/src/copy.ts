@@ -185,14 +185,17 @@ export const copy = {
     notOwnerHint: 'Everything the vault trades is public — the tape, the floor distance on every fill, and the refusals.',
     /** #132 made this real: the factory deploys a vault owned by whoever asks. */
     createVault: 'Deploy your own vault',
-    createVaultHint: 'One transaction, and it comes out configured: your floor registered in both directions, your device and your agent already set. Empty of funds, because that part is yours to send.',
-    /** The three things the factory can only set while it still owns the vault. */
-    deployFloor: 'your worst price',
-    deployFloorHint: 'bps under the reference, both directions',
+    /*
+     * One line, not three. This card is a form now: the fields say what they are and the control
+     * shows the price it is setting, so a paragraph explaining all of it again is the reader's time
+     * spent twice. What survives is the only thing the fields cannot say — that it is one
+     * transaction, and that funding is not part of it.
+     */
+    createVaultHint: 'One transaction, and it comes out configured. Funding it is the separate part.',
     deployAgentLabel: 'the agent’s address',
-    deployAgentHint: 'the key that may compose and ship, and nothing else. Leave it empty and no agent can trade yet.',
+    deployAgentHint: 'the key that may compose and ship, and nothing else. Empty means no agent can trade yet.',
     deployDeviceLabel: 'your device address',
-    deployDeviceHint: 'set on the vault and on the registry in the same call. Leave it empty and lowering the floor has nobody to authorise it.',
+    deployDeviceHint: 'set on the vault and the registry at once. Empty means lowering the floor has nobody to authorise it.',
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',

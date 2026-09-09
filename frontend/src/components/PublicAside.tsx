@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
-import { Act, Stepper } from './Button.tsx';
+import { Act } from './Button.tsx';
+import { FloorControl } from './FloorControl.tsx';
 import { AddressField } from './StepForms.tsx';
 import type { InitialSetup } from '../lib/vault.ts';
 import { Card, CardHead } from './Card.tsx';
@@ -156,9 +157,7 @@ export function PublicAside({
              * which then bounced anyone whose vault was already set up.
              */
             <>
-              <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">
-                {copy.wallet.notOwner} {copy.wallet.notOwnerHint}
-              </p>
+              <p className="serif m-0 text-[13.5px] leading-relaxed text-muted">{copy.wallet.notOwner}</p>
               {canCreateVault && (
                 <>
                   <p className="serif mt-3 mb-3 text-[13.5px] leading-relaxed text-muted">
@@ -170,22 +169,22 @@ export function PublicAside({
                    * button rather than beside the paragraphs — this card is mostly prose, and a
                    * drawing next to that would take the width the sentences need.
                    */}
-                  <div className="mb-4 flex flex-col gap-3">
-                    <label className="flex items-center justify-between gap-3 text-[12px] text-muted">
-                      <span>
-                        {copy.wallet.deployFloor}
-                        <span className="block text-[11px] text-faint">{copy.wallet.deployFloorHint}</span>
-                      </span>
-                      <Stepper
-                        value={bps}
-                        onChange={setBps}
-                        step={25}
-                        min={25}
-                        max={400}
-                        format={(n) => `${n} bps`}
-                      />
-                    </label>
+                  {/*
+                    * The same control the owner uses to change a floor later, not a second way of
+                    * asking the same question. It leads with the price, which is what a non-quant
+                    * decides — "never below 2,445", never "100 bps" — and it counts the realized
+                    * fills a number this tight would have refused, which a stepper cannot do.
+                    */}
+                  <FloorControl
+                    bps={bps}
+                    referencePrice={state.reference.price}
+                    base={state.pair.base}
+                    quote={state.pair.quote}
+                    fillsBps={state.calibration.fillsBps}
+                    onChange={setBps}
+                  />
 
+                  <div className="mb-4 flex flex-col gap-3">
                     <AddressField
                       label={copy.wallet.deployDeviceLabel}
                       hint={copy.wallet.deployDeviceHint}
