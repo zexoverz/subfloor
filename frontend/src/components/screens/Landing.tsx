@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
-import { Seabed } from '../Seabed.tsx';
+import { HeroParallax } from '../HeroParallax.tsx';
 import { ProductShot } from '../ProductShot.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
@@ -29,18 +29,12 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       {/* Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column. */}
       <div className="relative">
       {/*
-        * The composed scene, until the layers can register with each other.
-        *
-        * `HeroParallax` and its assets are still in the tree and still correct about motion — what
-        * was wrong was the artwork: eight layers generated independently cannot share a coordinate
-        * system, so the jellyfish came out three times their size and the mascot landed in the sky.
-        * `docs/hero-parallax-split-prompts.md` separates them out of this same image instead, which
-        * is the only way every element starts at the position it is supposed to end at.
-        *
-        * Swapping back is this one element.
+        * The scene, separated into eight layers that still register with each other — checked by
+        * re-compositing them and diffing against the source, 1.25% RMSE. The board keeps the flat
+        * one: eight layers moving behind a table of numbers is a page that is hard to read.
         */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)]">
-        <Seabed intensity="hero" />
+        <HeroParallax />
       </div>
 
       <div className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] pb-24">

@@ -669,9 +669,12 @@ body {
    *
    * The old hero was one drawing at 90% over the page's ground and stayed inside the water's dark
    * range. The parallax stack puts a lit water layer there instead, and measured across the band
-   * the headline occupies its brightest point is rgb(46,138,243). At 0.72 the headline still
-   * cleared 5.3 but everything under it did not: the supporting line fell to 2.5, the smallest
-   * type to 2.3, and the cyan to 3.9. 0.38 is the first step where the weakest of them passes.
+   * the headline occupies its brightest point is rgb(2,123,230). At 0.72 the headline still cleared
+   * 6.2 but nothing under it did: the supporting line fell to 2.9, the smallest type to 2.6, and
+   * the cyan to 4.5. At 0.38 the weakest of them is 5.1.
+   *
+   * Re-measured against the separated water layer rather than carried over — the layer changed, so
+   * the number that was derived from it had to be checked rather than assumed.
    *
    * It stays a mask rather than a box, so it darkens the column the words are in and leaves the
    * rest of the picture lit — which is the whole reason to scrim rather than to dim the layer.
