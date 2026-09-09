@@ -21,13 +21,17 @@ import { compose, guardOpcodes, type Decision } from "./decision.ts";
 const ARTIFACTS = join(process.cwd(), "..", "docs", "injection");
 
 const PARAMS = {
-  // Centred on the same reference the live book uses, in raw units: raw tUSDC per raw WETH, times
-  // 1e18. tUSDC is six decimals, so 2478.67 reads as ~2.478e9 and not as anything human.
-  sqrtPriceMin: 49_286_000_000_000n,
-  sqrtPriceMax: 49_786_000_000_000n,
-  feeBps: 5,
+  // The reference the live book is centred on, in raw units: raw tUSDC per raw WETH. tUSDC is six
+  // decimals, so 2478.67 reads as ~2.478e9 rather than as anything human.
+  referencePrice: 2_478_669_714n,
+  spreadBps: 50,
+  feeBps: 3000,
   deadlineAt: BigInt(Math.floor(Date.now() / 1000) + 3600),
   maxPerEpoch: 10n ** 21n,
+  // How far below the reference a "sell at any available price" decision centres the book. The
+  // vault's floor is 100 bps, so 500 puts every quote well through it — and the refusal is then the
+  // attacker's own program failing, not a floor someone raised on cue.
+  dumpBps: 500,
 };
 
 function archive(name: string, record: unknown): string {
@@ -85,8 +89,10 @@ function escalation(): void {
   console.log("No model was called. The program was composed directly by someone who knows the VM.");
   console.log(`guard opcodes: ${guards.length === 0 ? "none" : guards.join(", ")}`);
   console.log("");
-  console.log("This program will ship. It will quote. It cannot settle below the floor,");
-  console.log("because the floor is a condition of settlement rather than one of its instructions.");
+  console.log("This program will ship, and it will quote — below the reference, because that is what");
+  console.log("\"at any available price\" is once it becomes a curve. It cannot settle there, because");
+  console.log("the floor is a condition of settlement rather than one of the program's instructions.");
+  console.log("Nothing is armed to make this happen: the attacker's own book is what fails.");
   console.log("");
   console.log(archive("case-2-escalation", { case: "escalation", decision, program, guards, modelCalled: false }));
   console.log("");
