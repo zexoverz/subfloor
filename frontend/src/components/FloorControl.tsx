@@ -109,19 +109,32 @@ export function FloorControl({
         * percentage — and the quote token is a dollar stablecoin, so the sign is what it is rather
         * than decoration.
         */}
-      <div className="mt-1 flex items-baseline justify-center gap-1">
-        <span className={`text-[clamp(18px,4vw,22px)] leading-none font-semibold ${tone}`} aria-hidden>
+      {/*
+        * The sign and the number are one object, so the input is as wide as its own text rather
+        * than as wide as the card. Full width with centred text puts the digits in the middle and
+        * leaves the `$` stranded at the far left edge, which reads as two things that happen to be
+        * on the same line.
+        *
+        * `tabular-nums` is what makes the `ch` width honest: in proportional digits a `ch` is the
+        * width of a zero and nothing else, so the box would breathe as the price changed.
+        */}
+      <div className="mt-1 flex items-baseline justify-center">
+        <span
+          className={`text-[clamp(18px,4vw,22px)] leading-none font-semibold tabular-nums ${tone}`}
+          aria-hidden
+        >
           $
         </span>
-      <input
-        inputMode="decimal"
-        value={formatPrice(price)}
-        onChange={(e) => {
-          const typed = Number(e.target.value.replace(/[^0-9.]/g, ''));
-          if (typed > 0) onChange(toBps(typed, referencePrice));
-        }}
-        className={`mt-1 w-full border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight outline-none ${tone}`}
-      />
+        <input
+          inputMode="decimal"
+          value={formatPrice(price)}
+          onChange={(e) => {
+            const typed = Number(e.target.value.replace(/[^0-9.]/g, ''));
+            if (typed > 0) onChange(toBps(typed, referencePrice));
+          }}
+          style={{ width: `${formatPrice(price).length}ch` }}
+          className={`border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight tabular-nums outline-none ${tone}`}
+        />
       </div>
 
       {/*
