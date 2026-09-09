@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { LightRays } from './LightRays.tsx';
 
 /**
  * The hero's depth, as one scene separated into eight layers moving at eight speeds.
@@ -149,7 +150,7 @@ export function HeroParallax() {
 
   return (
     <div ref={host} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {LAYERS.map((layer) => (
+      {LAYERS.map((layer, i) => (
         <img
           key={layer.src}
           src={layer.src}
@@ -166,10 +167,31 @@ export function HeroParallax() {
            */
           className="absolute top-1/2 left-1/2 h-[124%] w-[106%] max-w-none object-cover select-none"
           // Centred here too, so the stack is right before the first frame and stays right under
-          // prefers-reduced-motion, where no frame ever runs.
-          style={{ transform: 'translate3d(-50%, -50%, 0)', willChange: 'transform' }}
+          // prefers-reduced-motion, where no frame ever runs. The z-index is the scene's depth
+          // made explicit, so the light can be inserted between two of them.
+          style={{
+            transform: 'translate3d(-50%, -50%, 0)',
+            willChange: 'transform',
+            zIndex: i < 2 ? 0 : 2,
+          }}
         />
       ))}
+      {/*
+       * Live shafts over the painted ones, in the mark's own cyan.
+       *
+       * Between the water and the structures rather than on top of everything: light comes from
+       * the surface and is cut by what it passes, so rays drawn over the reef and the mascot would
+       * read as a filter laid on the picture instead of as light inside it.
+       *
+       * Its own shader fades toward the foot of the frame, so it is at half strength by the middle
+       * of the headline band. Measured there rather than assumed: screened over the water layer's
+       * brightest point and through the scrim, 0.55 put the smallest type at 4.38 and 0.42 is the
+       * first step that clears 4.5. 0.40 is what is set, for the margin.
+       */}
+      <div className="absolute inset-0" style={{ zIndex: 1, opacity: 0.4, mixBlendMode: 'screen' }}>
+        <LightRays colour="#7fe4f5" />
+      </div>
+
       {/*
        * The foot of the hero becomes the page. Without it the reef stops on a hard line at the
        * fold, which reads as a cropped image rather than as water continuing past the screen.
