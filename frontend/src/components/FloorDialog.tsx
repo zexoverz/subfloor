@@ -109,6 +109,7 @@ export function FloorDialog({
         <FloorControl
           bps={bps}
           referencePrice={state.reference.price}
+          feed={state.reference.feed ?? null}
           base={state.pair.base}
           quote={state.pair.quote}
                 fillsBps={state.calibration.fillsBps}

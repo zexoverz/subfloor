@@ -448,6 +448,7 @@ export function SetupDialog({
               <FloorControl
                 bps={floorBps}
                 referencePrice={reference.price}
+                feed={reference.feed ?? null}
                 base={pair.base}
                 quote={pair.quote}
                 fillsBps={state.calibration.fillsBps}

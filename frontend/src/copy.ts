@@ -455,6 +455,14 @@ export const copy = {
      */
     tooTight: 'would have refused {n} of the last {total} fills',
     clear: '{n} bps past the worst fill ever taken',
+    /*
+     * The other hazard, and the control used to be silent about it.
+     *
+     * Too tight refuses ordinary fills and says so in red. Too loose refuses nothing and used to
+     * look exactly like a good floor — cyan, while the label under it read "riskier". A control
+     * that colours one end and not the other is telling two stories.
+     */
+    tooLoose: '{n} bps past the worst fill ever taken — far enough that it protects little',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
