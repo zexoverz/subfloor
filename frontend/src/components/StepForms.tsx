@@ -17,10 +17,25 @@ export function AmountRow({
   holding,
   value,
   onChange,
+  onMarkPress,
+  markBusy = false,
+  markLabel,
 }: {
   holding: Holding;
   value: string;
   onChange: (v: string) => void;
+  /**
+   * Something the token's own mark does when pressed. Used for exactly one thing — the faucet —
+   * and the row does not know or care what it is.
+   *
+   * It is unlabelled on screen on purpose, but it is not unlabelled: an interactive element with
+   * no accessible name is a button nobody using a screen reader can identify, and "it is a secret"
+   * is not a reason to ship one. The surprise is that there is no visible button, not that the
+   * control is hidden from anyone who needs to be told it exists.
+   */
+  onMarkPress?: () => void;
+  markBusy?: boolean;
+  markLabel?: string;
 }) {
   const balance = Number.isNaN(holding.amount) ? null : holding.amount;
 
@@ -31,7 +46,21 @@ export function AmountRow({
         * about — it is the ceiling on the amount — and reading it as a footnote at the far right
         * meant looking away from the field to find it.
         */}
-      <TokenIcon symbol={holding.symbol} size={22} />
+      {onMarkPress ? (
+        <button
+          type="button"
+          onClick={onMarkPress}
+          aria-label={markLabel}
+          title={markLabel}
+          className="shrink-0 cursor-pointer rounded-full leading-none"
+        >
+          <span className={markBusy ? 'coin-flip block' : 'block'}>
+            <TokenIcon symbol={holding.symbol} size={22} />
+          </span>
+        </button>
+      ) : (
+        <TokenIcon symbol={holding.symbol} size={22} />
+      )}
       <span className="flex min-w-0 flex-col">
         <span className="text-[12.5px] font-medium">{holding.symbol}</span>
         <span className="flex items-center gap-1 text-[11.5px] text-faint">

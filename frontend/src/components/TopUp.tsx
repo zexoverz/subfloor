@@ -6,7 +6,7 @@ import { Act } from './Button.tsx';
 import { AmountRow } from './StepForms.tsx';
 import { useFund } from '../lib/fund.ts';
 import { useFaucet } from '../lib/faucet.ts';
-import { ACTIVE_TOKENS } from '../lib/tokens.ts';
+import { ACTIVE_TOKENS, USDC_SYMBOL } from '../lib/tokens.ts';
 import type { Holding } from '../types.ts';
 
 /**
@@ -77,31 +77,28 @@ export function TopUp({
         </div>
 
         <div className="px-5 py-4">
+          {/*
+            * The faucet is the token's own mark, on the one row it pays out in — asked and answered
+            * on chain, `TOKEN()` on the deployed faucet is the tUSDC address. There is no visible
+            * button because there does not need to be one: it is a favour on a testnet, not a step,
+            * and a step is what a button would make it look like.
+            */}
           {rows.map((h) => (
             <AmountRow
               key={h.symbol}
               holding={h}
               value={amounts[h.symbol] ?? ''}
               onChange={(v) => setAmounts((a) => ({ ...a, [h.symbol]: v }))}
+              {...(faucet.available && h.symbol === USDC_SYMBOL
+                ? {
+                    onMarkPress: () => void faucet.draw(),
+                    markBusy: faucet.drawing,
+                    markLabel: copy.wallet.drawTokens,
+                  }
+                : {})}
             />
           ))}
 
-          {/*
-            * Offered next to the amounts, because that is where someone finds out they have none.
-            * Absent entirely on a build with no faucet address, which is how a mainnet build reads.
-            */}
-          {faucet.available && (
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <Act onClick={() => void faucet.draw()} busy={faucet.drawing} busyLabel={copy.wallet.drawing}>
-                {copy.wallet.drawTokens}
-              </Act>
-              <span className="text-[11px] text-faint">
-                {faucet.nextAt && faucet.nextAt * 1000 > Date.now()
-                  ? copy.wallet.drawCooldown
-                  : copy.wallet.drawHint}
-              </span>
-            </div>
-          )}
 
           <div className="mt-4">
             <Act

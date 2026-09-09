@@ -226,10 +226,10 @@ export const copy = {
     /** The way out of the dead end the fund step used to be on a testnet. */
     /// On the card that says what is in the vault, because topping up is not a step of setup.
     topUp: 'Add funds',
+    /// The mark's accessible name. There is no visible button — see AmountRow's note on why that
+    /// is still not an excuse for an unnamed one.
     drawTokens: 'Draw test tokens',
     drawing: 'Drawing…',
-    drawHint: 'the faucet is on chain and anyone can call it — no need to ask us for tokens',
-    drawCooldown: 'the faucet has a cooldown; this address may draw again later',
     /** Two transactions, and saying so beforehand is cheaper than a surprise second prompt. */
     wrapNote: 'You hold ETH but no WETH, so this wraps what is missing first — two signatures, not one.',
     /** Named so it reads as our failure to look, never as a finding about their wallet. */

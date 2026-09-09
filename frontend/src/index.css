@@ -268,6 +268,37 @@ body {
 }
 
 /*
+ * A coin turning over.
+ *
+ * The faucet has no button. It is the token's own mark, and pressing it spins the coin and pays —
+ * which is the only place a flourish like this belongs: on the one control that is a favour rather
+ * than part of the flow, on a testnet, where the worst case of finding it by accident is free
+ * money that is not money.
+ *
+ * `perspective` is what makes it a coin rather than a squashing rectangle: without it the rotation
+ * is orthographic and the mark simply thins to a line and comes back.
+ */
+@keyframes coin-flip {
+  from {
+    transform: perspective(320px) rotateY(0deg);
+  }
+  to {
+    transform: perspective(320px) rotateY(360deg);
+  }
+}
+
+.coin-flip {
+  animation: coin-flip 900ms cubic-bezier(0.4, 0, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-flip {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/*
  * Water in the well.
  *
  * Two layers at two speeds, which is the same trick as the hero and works for the same reason:
@@ -809,7 +840,9 @@ body {
   background: var(--c-surface);
   color: var(--c-ink);
   padding: 0;
-  border-radius: 4px;
+  /* The same corner as the cards on the board. A 4px radius on a 440px sheet reads as a different
+     product from the panels behind it — the danger sheet already knew this and set its own. */
+  border-radius: 16px;
   box-shadow: var(--c-shadow);
   /* No width here. It lived in this rule and silently beat every w-[…] utility on the element,
      because this file loads after Tailwind's — so the setup sheet asked for 960px, got 440, and
