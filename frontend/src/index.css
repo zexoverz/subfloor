@@ -399,7 +399,16 @@ body {
   container-type: inline-size;
 }
 
-@container (max-width: 240px) {
+/*
+ * 212, not 240, and the difference is which box is being measured.
+ *
+ * `container-type: inline-size` queries the container's *content* box, and the 240px this was
+ * written against was the tile's border box — so with `px-3.5` either side, a 267px tile has a
+ * 239px content box and matched a rule meant for tiles 27px narrower than that. The drawings
+ * vanished on an ordinary desktop, which is not what "too narrow to hold one" was supposed to
+ * mean. 240 border box minus 28 of padding is 212.
+ */
+@container (max-width: 212px) {
   .stat-tile-art {
     display: none;
   }
