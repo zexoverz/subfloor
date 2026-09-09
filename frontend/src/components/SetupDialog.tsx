@@ -9,6 +9,7 @@ import { AddressField, AmountRow } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
 import { useFund } from '../lib/fund.ts';
+import { useFaucet } from '../lib/faucet.ts';
 import { useFloor } from '../lib/floor.ts';
 import { useKeys } from '../lib/keys.ts';
 import { DeviceSign } from './DeviceSign.tsx';
@@ -115,6 +116,7 @@ export function SetupDialog({
   const connected = Boolean(wallet.address);
   const holdings = wallet.holdings ?? state.inventory;
   const fund = useFund(vault, wallet.address);
+  const faucet = useFaucet(wallet.address);
   const floorWrite = useFloor(vault);
   const keys = useKeys(vault, ceremony.refresh);
   /*
@@ -396,6 +398,23 @@ export function SetupDialog({
                   />
                 ))}
                 {wrapping && <p className="mt-2 mb-2 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
+                {/*
+                  * Offered next to the amounts, because that is where someone finds out they have
+                  * none — not behind a link, and not as an instruction to message us. Absent
+                  * entirely on a build with no faucet address, which is how a mainnet build reads.
+                  */}
+                {faucet.available && (
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <Act onClick={() => void faucet.draw()} busy={faucet.drawing} busyLabel={copy.wallet.drawing}>
+                      {copy.wallet.drawTokens}
+                    </Act>
+                    <span className="text-[11px] text-faint">
+                      {faucet.nextAt && faucet.nextAt * 1000 > Date.now()
+                        ? copy.wallet.drawCooldown
+                        : copy.wallet.drawHint}
+                    </span>
+                  </div>
+                )}
                 <div className="mt-3" />
                 <Act
                   primary

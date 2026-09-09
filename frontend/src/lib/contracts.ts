@@ -13,6 +13,8 @@ export const addresses = {
   vault: (import.meta.env?.VITE_VAULT ?? '') as Address | '',
   factory: (import.meta.env?.VITE_VAULT_FACTORY ?? '') as Address | '',
   aqua: (import.meta.env?.VITE_AQUA ?? '') as Address | '',
+  /// Testnet only. Absent on a mainnet build, and the button that uses it is absent with it.
+  faucet: (import.meta.env?.VITE_FAUCET ?? '') as Address | '',
 };
 
 export const deployed = Boolean(addresses.registry && addresses.vault);
@@ -101,8 +103,54 @@ export const mandateDomain = (chainId: number, vault: Address) => ({
  * act on what it creates, which is the point — a factory that could would put a trusted party
  * back into a design whose whole argument is that there is not one.
  */
+/**
+ * Drawing test tokens, so the first step is not asking us for them.
+ *
+ * The fund step used to end at "fund the wallet first", which is a dead end on a testnet where the
+ * tokens have no market. The faucet is on chain and permissionless; the cooldown is the only thing
+ * it asks about.
+ */
+export const faucetAbi = [
+  { type: 'function', name: 'draw', stateMutability: 'nonpayable', inputs: [], outputs: [] },
+  { type: 'function', name: 'nextDrawAt', stateMutability: 'view', inputs: [{ name: 'who', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { type: 'error', name: 'TooSoon', inputs: [{ name: 'nextAllowedAt', type: 'uint256' }] },
+] as const;
+
 export const vaultFactoryAbi = [
   { type: 'function', name: 'createVault', stateMutability: 'nonpayable', inputs: [], outputs: [{ name: 'vault', type: 'address' }] },
+  /*
+   * The overload that deploys and configures in one transaction.
+   *
+   * The factory owns the vault for the length of the call and hands it over before returning, which
+   * is what lets it set the delegate, both guardians and every floor without the owner signing six
+   * times. The one it is easiest to be glad of is the registry-side guardian: skipping that one is
+   * completely silent — the vault trades and `lowerFloor` reverts forever — and this project's own
+   * first deployment shipped exactly that way.
+   *
+   * The old no-argument overload stays because vaults created through it still exist and still have
+   * to be configured step by step.
+   */
+  {
+    type: 'function',
+    name: 'createVault',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'setup',
+        type: 'tuple',
+        components: [
+          { name: 'delegate', type: 'address' },
+          { name: 'guardian', type: 'address' },
+          { name: 'registry', type: 'address' },
+          { name: 'base', type: 'address[]' },
+          { name: 'quote', type: 'address[]' },
+          { name: 'maxAdverseBps', type: 'uint16[]' },
+          { name: 'absoluteRate', type: 'uint256[]' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'vault', type: 'address' }],
+  },
   { type: 'function', name: 'vaultsOfOwner', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'address[]' }] },
   { type: 'event', name: 'VaultCreated', inputs: [{ name: 'owner', type: 'address', indexed: true }, { name: 'vault', type: 'address', indexed: true }, { name: 'index', type: 'uint256', indexed: false }] },
 ] as const;

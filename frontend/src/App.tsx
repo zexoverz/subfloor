@@ -165,6 +165,7 @@ export default function App() {
           }
           onCreateVault={own.create}
           creatingVault={own.creating}
+          creatingStep={own.step}
           // Only offer it once the factory has actually said this wallet has none.
           canCreateVault={own.known && !own.vault}
           /*

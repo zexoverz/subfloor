@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
+import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
-import { Act } from './Button.tsx';
+import { Act, Stepper } from './Button.tsx';
+import { AddressField } from './StepForms.tsx';
+import type { InitialSetup } from '../lib/vault.ts';
 import { Card, CardHead } from './Card.tsx';
 import { RollingNumber } from './RollingNumber.tsx';
 import { addresses } from '../lib/contracts.ts';
@@ -18,6 +22,7 @@ export function PublicAside({
   state,
   connected,
   connecting,
+  creatingStep,
   onConnect,
   onCreateVault,
   creatingVault,
@@ -30,8 +35,10 @@ export function PublicAside({
   connected: boolean;
   connecting: boolean;
   onConnect: () => void;
-  onCreateVault: () => void;
+  onCreateVault: (setup: InitialSetup) => void;
   creatingVault: boolean;
+  /** What the deploy is doing. One call sets six things and it is slower than it looks. */
+  creatingStep: string | null;
   /** Only true once the factory has confirmed this wallet owns none — never guessed from silence. */
   canCreateVault: boolean;
   /** Whether the factory has answered at all. Until it has, the card claims nothing either way. */
@@ -39,6 +46,19 @@ export function PublicAside({
   /** Why we could not tell. Shown, so a card that cannot answer does not look like one still trying. */
   vaultError: string | null;
 }) {
+  /*
+   * Collected before the vault exists, because that is the only moment the factory can set them.
+   * It owns the vault for the length of the call and hands it over before returning; afterwards
+   * each of these is a separate transaction the owner signs, and one of them — the registry-side
+   * guardian — fails silently when it is skipped.
+   */
+  const [bps, setBps] = useState(state.calibration.houseDefaultBps);
+  const [agent, setAgent] = useState('');
+  const [device, setDevice] = useState('');
+  // Empty is allowed and is a decision; wrong is not.
+  const usable = (v: string) => v === '' || isAddress(v);
+  const setupReady = usable(agent) && usable(device);
+
   return (
     <div className="flex flex-col gap-4.5">
       <Card>
@@ -150,12 +170,50 @@ export function PublicAside({
                    * button rather than beside the paragraphs — this card is mostly prose, and a
                    * drawing next to that would take the width the sentences need.
                    */}
+                  <div className="mb-4 flex flex-col gap-3">
+                    <label className="flex items-center justify-between gap-3 text-[12px] text-muted">
+                      <span>
+                        {copy.wallet.deployFloor}
+                        <span className="block text-[11px] text-faint">{copy.wallet.deployFloorHint}</span>
+                      </span>
+                      <Stepper
+                        value={bps}
+                        onChange={setBps}
+                        step={25}
+                        min={25}
+                        max={400}
+                        format={(n) => `${n} bps`}
+                      />
+                    </label>
+
+                    <AddressField
+                      label={copy.wallet.deployDeviceLabel}
+                      hint={copy.wallet.deployDeviceHint}
+                      value={device}
+                      onChange={setDevice}
+                    />
+                    <AddressField
+                      label={copy.wallet.deployAgentLabel}
+                      hint={copy.wallet.deployAgentHint}
+                      value={agent}
+                      onChange={setAgent}
+                      icon="wallet"
+                    />
+                  </div>
+
                   <div className="flex items-end gap-1">
                     <Act
                       primary
-                      onClick={onCreateVault}
+                      onClick={() =>
+                        onCreateVault({
+                          delegate: agent as InitialSetup['delegate'],
+                          guardian: device as InitialSetup['guardian'],
+                          maxAdverseBps: bps,
+                        })
+                      }
+                      disabled={!setupReady}
                       busy={creatingVault}
-                      busyLabel={copy.wallet.creatingVault}
+                      busyLabel={creatingStep ?? copy.wallet.creatingVault}
                     >
                       {copy.wallet.createVault}
                     </Act>

@@ -10,6 +10,7 @@ import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
 import { RefreshBadge } from '../RefreshBadge.tsx';
 import { ScopeSwitch } from '../ScopeSwitch.tsx';
+import type { InitialSetup } from '../../lib/vault.ts';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
@@ -43,6 +44,7 @@ export function LiveView({
   onWithdraw,
   onCreateVault,
   creatingVault,
+  creatingStep,
   canCreateVault,
   vaultChecked,
   vaultError,
@@ -75,8 +77,10 @@ export function LiveView({
   onConnect: () => void;
   /** Owner-only: the vault's withdraw, which is onlyOwner on chain too. */
   onWithdraw: () => void;
-  onCreateVault: () => void;
+  onCreateVault: (setup: InitialSetup) => void;
   creatingVault: boolean;
+  /** What the deploy is doing: one call sets six things and it is slower than it looks. */
+  creatingStep: string | null;
   canCreateVault: boolean;
   vaultChecked: boolean;
   vaultError: string | null;
@@ -409,6 +413,7 @@ export function LiveView({
             onConnect={onConnect}
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
+            creatingStep={creatingStep}
             canCreateVault={canCreateVault}
             checked={vaultChecked}
             vaultError={vaultError}

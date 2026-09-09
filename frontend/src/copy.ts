@@ -185,7 +185,14 @@ export const copy = {
     notOwnerHint: 'Everything the vault trades is public — the tape, the floor distance on every fill, and the refusals.',
     /** #132 made this real: the factory deploys a vault owned by whoever asks. */
     createVault: 'Deploy your own vault',
-    createVaultHint: 'One transaction. It comes out owned by this wallet, empty, and with no agent connected — you set the floor before anything can trade.',
+    createVaultHint: 'One transaction, and it comes out configured: your floor registered in both directions, your device and your agent already set. Empty of funds, because that part is yours to send.',
+    /** The three things the factory can only set while it still owns the vault. */
+    deployFloor: 'your worst price',
+    deployFloorHint: 'bps under the reference, both directions',
+    deployAgentLabel: 'the agent’s address',
+    deployAgentHint: 'the key that may compose and ship, and nothing else. Leave it empty and no agent can trade yet.',
+    deployDeviceLabel: 'your device address',
+    deployDeviceHint: 'set on the vault and on the registry in the same call. Leave it empty and lowering the floor has nobody to authorise it.',
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',
@@ -213,6 +220,11 @@ export const copy = {
     withdrawHint: 'sends the full balance of each token back to your address. Yours to call at any time, and the agent can never reach it.',
     /** A disabled button with no reason on it reads as broken rather than as waiting. */
     sendNeedsAmount: 'Enter an amount above',
+    /** The way out of the dead end the fund step used to be on a testnet. */
+    drawTokens: 'Draw test tokens',
+    drawing: 'Drawing…',
+    drawHint: 'the faucet is on chain and anyone can call it — no need to ask us for tokens',
+    drawCooldown: 'the faucet has a cooldown; this address may draw again later',
     /** Two transactions, and saying so beforehand is cheaper than a surprise second prompt. */
     wrapNote: 'You hold ETH but no WETH, so this wraps what is missing first — two signatures, not one.',
     /** Named so it reads as our failure to look, never as a finding about their wallet. */

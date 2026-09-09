@@ -4,6 +4,7 @@ import { parseEventLogs, type Address } from 'viem';
 import { chain } from './chain.ts';
 import { publicClient } from './client.ts';
 import { addresses, vaultFactoryAbi } from './contracts.ts';
+import { USDC, WETH } from './tokens.ts';
 
 /**
  * Which vault this wallet is looking at.
@@ -33,6 +34,21 @@ export function pickVault(owned: readonly Address[] | null, fallback: Address | 
   return latest ?? fallback;
 }
 
+/**
+ * Everything a vault needs to be safe, collected before it exists.
+ *
+ * The factory sets all of it inside `createVault`, which is the point: a vault that comes out of
+ * that call is already configured, so there is no window where one exists, looks finished, and has
+ * no floor. Leaving a field empty is allowed and it is a decision — a zero delegate means no agent
+ * can ship yet, a zero guardian means the registry has nobody to authorise a lowering.
+ */
+export type InitialSetup = {
+  delegate: Address | '';
+  guardian: Address | '';
+  /** Floor in bps under the reference, applied to both directions of the pair. */
+  maxAdverseBps: number;
+};
+
 export type OwnVault = {
   /** Their vault, or null while unknown, not connected, or none deployed. */
   vault: Address | null;
@@ -41,7 +57,9 @@ export type OwnVault = {
   /** Why the factory could not be read. Rendered, because a silent failure looks like loading. */
   error: string | null;
   creating: boolean;
-  create: () => Promise<void>;
+  /** What the write is doing, so a call that sets six things does not look like a stuck button. */
+  step: string | null;
+  create: (setup?: InitialSetup) => Promise<void>;
 };
 
 export function useOwnVault(owner: Address | null): OwnVault {
@@ -49,6 +67,7 @@ export function useOwnVault(owner: Address | null): OwnVault {
   const [known, setKnown] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [step, setStep] = useState<string | null>(null);
 
   useEffect(() => {
     if (!addresses.factory || !owner) {
@@ -98,46 +117,86 @@ export function useOwnVault(owner: Address | null): OwnVault {
     };
   }, [owner]);
 
-  const create = useCallback(async () => {
-    if (!addresses.factory || !owner) return;
-    setCreating(true);
-    try {
-      const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
-      const config = startAppKit().config;
-      const hash = await core.writeContract(config, {
-        address: addresses.factory as Address,
-        abi: vaultFactoryAbi,
-        functionName: 'createVault',
-        chainId: chain.id,
-      });
-      const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
-      if (receipt.status !== 'success') throw new Error('the vault was not deployed');
-      /*
-       * The address comes out of the receipt's own log, not from re-reading the factory.
-       *
-       * A write returns a hash rather than return data, so the address has to be recovered
-       * somehow — but recovering it by reading `vaultsOfOwner` again races: the receipt resolves
-       * against the wallet's RPC, while the read goes to ours, which may not have that block yet.
-       * The answer comes back empty, and an empty answer is indistinguishable from "you own
-       * nothing" — so the screen keeps offering to deploy a vault that already exists. The receipt
-       * carries the log that names the vault, and it cannot disagree with itself.
-       */
-      const [created] = parseEventLogs({ abi: vaultFactoryAbi, eventName: 'VaultCreated', logs: receipt.logs });
-      if (!created) throw new Error('the vault was deployed but the transaction did not say where');
-      setVault(created.args.vault);
-      setKnown(true);
-      toast.success('vault deployed');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.error(
-        message.includes('eth_sendTransaction')
-          ? 'this wallet cannot sign, only read'
-          : (message.split('\n')[0]?.slice(0, 140) ?? 'the vault was not deployed'),
-      );
-    } finally {
-      setCreating(false);
-    }
-  }, [owner]);
+  const create = useCallback(
+    async (setup?: InitialSetup) => {
+      if (!addresses.factory || !owner) return;
+      setCreating(true);
+      setStep(setup ? 'deploying and configuring' : 'deploying');
+      try {
+        const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
+        const config = startAppKit().config;
+        /*
+         * One transaction or six, and the difference is not convenience.
+         *
+         * Configured through the factory, the vault that exists is the vault that is protected —
+         * there is no moment in between. Configured afterwards, an owner who stops halfway owns
+         * something that looks finished and has no floor, and nothing on screen can tell them
+         * apart. The step-by-step path stays only for vaults that already exist.
+         *
+         * Both directions of the pair, always. One side covered is an agent free to sell the other
+         * way at any price, and the registry is keyed to the vault because the vault is the
+         * recipient at settlement.
+         */
+        const hash = setup
+          ? await core.writeContract(config, {
+              address: addresses.factory as Address,
+              abi: vaultFactoryAbi,
+              functionName: 'createVault',
+              args: [
+                {
+                  delegate: (setup.delegate || ZERO) as Address,
+                  guardian: (setup.guardian || ZERO) as Address,
+                  registry: (addresses.registry || ZERO) as Address,
+                  base: [WETH, USDC],
+                  quote: [USDC, WETH],
+                  maxAdverseBps: [setup.maxAdverseBps, setup.maxAdverseBps],
+                  // No absolute backstop from here: the screen sets one number, and inventing a
+                  // second bound the owner never chose would be a floor they did not set.
+                  absoluteRate: [0n, 0n],
+                },
+              ],
+              chainId: chain.id,
+            })
+          : await core.writeContract(config, {
+              address: addresses.factory as Address,
+              abi: vaultFactoryAbi,
+              functionName: 'createVault',
+              args: [],
+              chainId: chain.id,
+            });
 
-  return { vault, known, error, creating, create };
+        setStep('waiting for the transaction');
+        const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
+        if (receipt.status !== 'success') throw new Error('the vault was not deployed');
+        /*
+         * The address comes out of the receipt's own log, not from re-reading the factory.
+         *
+         * A write returns a hash rather than return data, so the address has to be recovered
+         * somehow — but recovering it by reading `vaultsOfOwner` again races: the receipt resolves
+         * against the wallet's RPC, while the read goes to ours, which may not have that block yet.
+         * The answer comes back empty, and an empty answer is indistinguishable from "you own
+         * nothing" — so the screen keeps offering to deploy a vault that already exists. The receipt
+         * carries the log that names the vault, and it cannot disagree with itself.
+         */
+        const [created] = parseEventLogs({ abi: vaultFactoryAbi, eventName: 'VaultCreated', logs: receipt.logs });
+        if (!created) throw new Error('the vault was deployed but the transaction did not say where');
+        setVault(created.args.vault);
+        setKnown(true);
+        toast.success(setup ? 'vault deployed and configured' : 'vault deployed');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        toast.error(
+          message.includes('eth_sendTransaction')
+            ? 'this wallet cannot sign, only read'
+            : (message.split('\n')[0]?.slice(0, 140) ?? 'the vault was not deployed'),
+        );
+      } finally {
+        setStep(null);
+        setCreating(false);
+      }
+    },
+    [owner],
+  );
+
+  return { vault, known, error, creating, step, create };
 }
