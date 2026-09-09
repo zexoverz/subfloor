@@ -2,7 +2,7 @@ import { assert, createMockedFunction, describe, newMockEvent, test } from "matc
 import { Address, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import { FloorRaised, FloorLowered } from "../generated/FloorRegistry/FloorRegistry";
 import { handleFloorRaised, handleFloorLowered } from "../src/registry";
-import { deviationBps, effectiveFloor, referenceRate, referenceScale } from "../src/shared";
+import { deviationBps, effectiveFloor, networkEnum, referenceRate, referenceScale } from "../src/shared";
 
 /// The registry handlers, which are the last group without a test.
 ///
@@ -154,5 +154,23 @@ describe("the floor that binds", () => {
 
   test("no reference and no backstop is zero rather than a guess", () => {
     assert.stringEquals("0", effectiveFloor(BigInt.zero(), 100, BigInt.zero()).toString());
+  });
+});
+
+/// The manifest network becomes an enum value, and an unknown one is fatal.
+///
+/// The ternary this replaced was correct on two chains and silently wrote `BASE_SEPOLIA` for every
+/// other. That is a valid enum value, so the enum gate passes and the rows are wrong — a subgraph on
+/// Sepolia would have labelled itself Base Sepolia on every entity it wrote.
+describe("the network label", () => {
+  test("each manifest network maps to its own enum value", () => {
+    assert.stringEquals("BASE", networkEnum("base"));
+    assert.stringEquals("BASE_SEPOLIA", networkEnum("base-sepolia"));
+    assert.stringEquals("SEPOLIA", networkEnum("sepolia"));
+    assert.stringEquals("MAINNET", networkEnum("mainnet"));
+  });
+
+  test("sepolia is not base-sepolia, which is the whole point", () => {
+    assert.assertTrue(networkEnum("sepolia") != networkEnum("base-sepolia"));
   });
 });

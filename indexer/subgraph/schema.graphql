@@ -36,6 +36,7 @@ enum Network {
   """
   BASE
   BASE_SEPOLIA
+  SEPOLIA # Ethereum Sepolia. Same reason as the two above: dex-agg v1.0.2 predates it.
 }
 
 enum ProtocolType {

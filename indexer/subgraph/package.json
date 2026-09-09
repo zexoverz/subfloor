@@ -11,7 +11,8 @@
     "test": "graph test",
     "gen:opcodes": "node scripts/gen-opcodes.mjs",
     "deploy:base-sepolia": "graph deploy subfloor-base-sepolia subgraph.base-sepolia.yaml --version-label $npm_config_label",
-    "check": "node scripts/check-required-fields.mjs && node scripts/check-enum-values.mjs && node scripts/check-bound-abis.mjs && node scripts/check-endpoint-agrees.mjs && graph test"
+    "check": "node scripts/check-required-fields.mjs && node scripts/check-enum-values.mjs && node scripts/check-bound-abis.mjs && node scripts/check-endpoint-agrees.mjs && graph test",
+    "deploy:sepolia": "graph deploy subfloor-sepolia subgraph.sepolia.yaml --version-label $npm_config_label"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.98.1",
