@@ -15,6 +15,7 @@ import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
 import { Act } from '../Button.tsx';
+import { TopUp } from '../TopUp.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
 import type { DataSource, Screen, VaultState } from '../../types.ts';
@@ -28,6 +29,8 @@ export function LiveView({
   state,
   source,
   vault,
+  walletAddress,
+  walletHoldings,
   scope,
   onScope,
   canScope,
@@ -59,6 +62,9 @@ export function LiveView({
   tapeStatus: 'loading' | 'live' | 'empty' | 'failed';
   /** The vault the tape is about, named on the card so a change of subject is visible. */
   vault: string | null;
+  /** Whose wallet is sending, and what it holds — the vault's own balances are a different list. */
+  walletAddress: `0x${string}` | null;
+  walletHoldings: import('../../types.ts').Holding[] | null;
   /** Which tape is on screen. Two questions, so two tapes rather than one with a hidden filter. */
   scope: 'mine' | 'public';
   onScope: (scope: 'mine' | 'public') => void;
@@ -278,6 +284,8 @@ export function LiveView({
                   <dd className="m-0 text-right font-medium">{formatPrice(reference.price)}</dd>
                 </div>
               </dl>
+              <TopUp vault={vault as `0x${string}` | null} owner={walletAddress} holdings={walletHoldings} />
+
               {/*
                 * The exit, next to the balance it applies to. Not the panic path — that docks the
                 * strategy first and lives on its own screen. This is the ordinary owner right the

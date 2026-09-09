@@ -5,11 +5,9 @@ import { Check, ChevronDown, KeyRound, Wallet as WalletIcon, X } from 'lucide-re
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { Wordmark } from './Wordmark.tsx';
-import { AddressField, AmountRow } from './StepForms.tsx';
+import { AddressField } from './StepForms.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import type { CeremonyState } from '../lib/ceremony.ts';
-import { useFund } from '../lib/fund.ts';
-import { useFaucet } from '../lib/faucet.ts';
 import { useFloor } from '../lib/floor.ts';
 import { useKeys } from '../lib/keys.ts';
 import { DeviceSign } from './DeviceSign.tsx';
@@ -17,7 +15,6 @@ import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import { buildMandate } from '../lib/mandate.ts';
 import { saveMandate } from '../lib/mandateStore.ts';
 import { Toasts } from './Toasts.tsx';
-import { ACTIVE_TOKENS } from '../lib/tokens.ts';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
 // Lazy, like every other heavy thing here: a WebGL library is not something a visitor who never
@@ -114,9 +111,6 @@ export function SetupDialog({
   const ref = useRef<HTMLDialogElement>(null);
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
-  const holdings = wallet.holdings ?? state.inventory;
-  const fund = useFund(vault, wallet.address);
-  const faucet = useFaucet(wallet.address);
   const floorWrite = useFloor(vault);
   const keys = useKeys(vault, ceremony.refresh);
   /*
@@ -126,8 +120,6 @@ export function SetupDialog({
    */
   const [signing, setSigning] = useState(false);
   const ledger = useLedger();
-
-  const [amounts, setAmounts] = useState<Record<string, string>>({});
   /*
    * An unregistered pair returns 0 bps, which is not a floor of zero distance — it is no floor.
    * Opening the slider there proposes "settle at any price", and the reader has no way to know the
@@ -160,9 +152,7 @@ export function SetupDialog({
    */
   const funded = ceremony.steps.some((step) => step.id === 'fund' && step.done);
   /** What the send button needs, which is a different question: is there an amount to send. */
-  const hasAmount = holdings.some((h) => Number(amounts[h.symbol]) > 0);
   // WETH is the one that needs a wrap, and only when the wallet is short of what was typed.
-  const wrapping = Number(amounts.WETH ?? 0) > (holdings.find((h) => h.symbol === 'WETH')?.amount ?? 0);
   /*
    * Registered on chain counts, whatever the boxes say. Reading only the inputs meant a vault with
    * both keys set still reported the section as unfinished.
@@ -382,54 +372,6 @@ export function SetupDialog({
                 * amount, plus the wrap when the wallet holds ETH rather than WETH — a number typed
                 * into copy would go stale the first time a token is added to the pair.
                 */}
-              <Section
-                title={copy.onboarding.inventory}
-                hint={copy.onboarding.inventoryHint}
-                asks={asksFor(
-                  ACTIVE_TOKENS.filter((t) => Number(amounts[t.symbol] ?? '0') > 0).length + (wrapping ? 1 : 0),
-                )}
-              >
-                {holdings.map((h) => (
-                  <AmountRow
-                    key={h.symbol}
-                    holding={h}
-                    value={amounts[h.symbol] ?? ''}
-                    onChange={(v) => setAmounts((a) => ({ ...a, [h.symbol]: v }))}
-                  />
-                ))}
-                {wrapping && <p className="mt-2 mb-2 text-[11px] text-faint">{copy.wallet.wrapNote}</p>}
-                {/*
-                  * Offered next to the amounts, because that is where someone finds out they have
-                  * none — not behind a link, and not as an instruction to message us. Absent
-                  * entirely on a build with no faucet address, which is how a mainnet build reads.
-                  */}
-                {faucet.available && (
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                    <Act onClick={() => void faucet.draw()} busy={faucet.drawing} busyLabel={copy.wallet.drawing}>
-                      {copy.wallet.drawTokens}
-                    </Act>
-                    <span className="text-[11px] text-faint">
-                      {faucet.nextAt && faucet.nextAt * 1000 > Date.now()
-                        ? copy.wallet.drawCooldown
-                        : copy.wallet.drawHint}
-                    </span>
-                  </div>
-                )}
-                <div className="mt-3" />
-                <Act
-                  primary
-                  wide
-                  onClick={() =>
-                    void fund.send(
-                      ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })),
-                    )
-                  }
-                  disabled={!hasAmount || fund.sending || !vault}
-                >
-                  {/* Say why it cannot be pressed, rather than looking broken. */}
-                  {fund.step ?? (hasAmount ? copy.wallet.sendToVault : copy.wallet.sendNeedsAmount)}
-                </Act>
-              </Section>
 
               {/*
                 * Before the registry has an entry, this figure is a proposal, and the heading says

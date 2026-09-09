@@ -224,6 +224,8 @@ export const copy = {
     /** A disabled button with no reason on it reads as broken rather than as waiting. */
     sendNeedsAmount: 'Enter an amount above',
     /** The way out of the dead end the fund step used to be on a testnet. */
+    /// On the card that says what is in the vault, because topping up is not a step of setup.
+    topUp: 'Add funds',
     drawTokens: 'Draw test tokens',
     drawing: 'Drawing…',
     drawHint: 'the faucet is on chain and anyone can call it — no need to ask us for tokens',
@@ -400,7 +402,7 @@ export const copy = {
     /** Load-bearing: it sets up clear-signing as confirmation, before the device ever lights up. */
     underAction: 'the device will show you exactly these numbers',
     /** The vault, not the wallet: they are different addresses and only one of them settles. */
-    noInventory: 'the vault holds nothing yet — send inventory in above',
+    noInventory: 'the vault holds nothing yet — add funds from the vault card on the board',
     runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
     /** Required, and named so. It used to read "the keys behind this", which sounds like an aside. */
     advanced: 'two keys, set once',

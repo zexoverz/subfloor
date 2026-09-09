@@ -144,6 +144,8 @@ export default function App() {
           /* Simulated says so on its own badge; otherwise the reader's own state, unedited. */
           tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
           vault={vault}
+          walletAddress={wallet.address}
+          walletHoldings={wallet.holdings}
           scope={shownScope}
           // No wallet, no "mine": the switch is hidden rather than offering a tape nobody owns.
           canScope={mineIsPossible}
