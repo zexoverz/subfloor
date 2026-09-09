@@ -40,10 +40,9 @@ SUBFLOOR-specific fact hangs off a parallel entity keyed to the same id.
 
 ```
 Swap (standard, untouched)
-  └── FillQuality      reference price at block, adverse deviation bps, the floor in force
+  └── FillQuality      reference at block, and the fill scored from **both** sides
   └── Floor            current floor per (recipient, base, quote)
   └── FloorChange      raised / lowered, with the guardian that signed a lowering
-  └── Refusal          a fill the floor turned away
 ```
 
 Extending the standard entities in place would make the subgraph answer the standard's queries with
@@ -64,8 +63,16 @@ transactions that produce nothing.
 The Firehose block model carries every transaction with its receipt and status, so the Substreams
 module can see reverted transactions and decode the revert reason. The subgraph provably cannot.
 
-**So: do not write a `Refusal` handler expecting an event to call it. Nothing ever will.** `Refusal`
-entities are produced by the Substreams module and enter through the SPS path or a direct write.
+**So there is no `Refusal` entity, and that is deliberate.** One was declared for a while and nothing
+ever wrote it, because nothing can. An entity that is always empty is worse than a missing one: a consumer
+querying `refusals` gets `[]` and reads it as "the floor has never had to hold", which is the exact
+opposite of what the empty list means — on the number this whole project is about.
+
+Refusals are served by **`/api/refusals`**, which walks the router's transaction history through
+HyperSync, filters on status, and recovers each revert payload by replaying the call one block
+earlier. `indexer/substreams/` decodes the same thing from transaction status. Either way the point
+holds and is the reason the composition exists: the headline number is structurally outside the
+subgraph.
 
 This also settles how the Graph filing should be argued. "Substreams feeds the subgraph" is a
 decoration claim and every entrant makes it. "The headline number on our dashboard cannot be
@@ -86,6 +93,34 @@ block of the fill. Two consequences that must not be smoothed over:
 
 `protocol.slug` follows the standard: `aqua`, `uniswap-v3`. `Floor` and `FillQuality` ids are the
 `Swap` id and `{recipient}-{base}-{quote}` respectively, both `Bytes` per the standard's convention.
+
+## FillQuality scores both sides, and the maker's is the one to render
+
+A settlement scores two parties. `checkSettlement` passes the taker recipient and the maker recipient
+separately, each against its own floor, and the index used to compute only the taker's.
+
+That made the headline execution-quality number a statement about how well the **counterparty** did.
+On the live deployment it read `+32 bps` and looked like the vault executing well; the same fills were
+the vault paying 32 bps through the reference. The sign was backwards on the number the product is
+about.
+
+| Field | Whose |
+|---|---|
+| `executionRate`, `adverseDeviationBps`, `takerFloorAtFill` | the taker's |
+| `makerExecutionRate`, `makerAdverseDeviationBps`, `makerFloorAtFill` | the maker's — the vault |
+| `maker`, `taker` | so a screen can filter to one vault |
+
+**A floor screen or a refusal card wants the `maker` fields.** `ExecutionQualityDailySnapshot` rolls
+up the maker's deviation for the same reason: the number a maker needs is how its own fills landed.
+
+One approximation, stated rather than buried: `Swapped` carries no fee breakdown, so the maker side
+inverts the taker's amounts rather than reproducing `amountIn - feeIn` and `amountOut + feeOut`. Where
+the fee is charged in `tokenIn` the maker's realised rate is a little better than this says.
+
+`makerFloorAtFill` is the floor that **binds**, not the backstop: `max(ceil(reference * (10000 - bps)
+/ 10000), absoluteRate)`, mirroring `FloorRegistry.effectiveFloor`. Storing `absoluteRate` alone made
+every row read `0`, because this deployment configures tolerance-only floors — an answer-shaped null
+that a refusal card would have rendered as fact.
 
 ## The Network enum has no Base, and that is a finding rather than a workaround
 

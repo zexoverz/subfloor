@@ -151,6 +151,7 @@ mainnet uses canonical Aqua and never forks it.
 | AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
 | tUSDC (testnet stand-in) | [`0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD`](https://sepolia.basescan.org/address/0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD) | — |
+| TestnetFaucet | [`0x044BB6a857A875e30f8933aDf652905d02EB65D2`](https://sepolia.basescan.org/address/0x044BB6a857A875e30f8933aDf652905d02EB65D2) | Sourcify |
 
 **Ethereum Sepolia** — portability, and nothing else. No vault, no funding, no taker, no live run.
 
@@ -181,6 +182,12 @@ The friction was not the real cost. A vault could trade from the moment `createV
 anyone who stopped halfway owned something that looked finished and had no floor. One call closes
 that window rather than shortening it. Proven on chain: a fresh wallet, one transaction, and the
 vault comes out owned, delegated, guarded on both sides and floored in both directions.
+
+**Anyone can draw test tokens.** `TestnetFaucet.draw()` for yourself or `drawTo(address)` to fund a
+wallet a screen just connected — 25,000 tUSDC, twelve-hour cooldown per recipient, and
+`nextDrawAt(address)` so an interface can show a countdown instead of letting a transaction revert.
+Before it the deployer was the only address that could mint, which made every flow start with asking
+us for tokens.
 
 **Why there is a stand-in for USDC here, and only here.** Circle's testnet USDC is not
 permissionlessly mintable — `isMinter` is false for us and the masterMinter is Circle's — so funding
@@ -389,7 +396,9 @@ it worth less.
 | Floors, both directions | **set on chain**, keyed to the vault |
 | A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
-| Calibration and the daily report | **live** at `/api/calibration` and `/api/report` |
+| Calibration and the daily report | **live** at `/api/calibration` and `/api/report`; calibrated from 145 fills, not a default |
+| Refusals, which no index can serve | **live** at `/api/refusals`, decoded from reverted transactions |
+| Vault setup | **one transaction** — `createVault(setup)` leaves nothing unset |
 | Fills, and the execution-quality dataset | **115 fills** on the previous router, both directions, scored against the same Chainlink answer settlement used; the taker is being repointed at the redeployed one |
 | Refusals | **on chain** — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0) reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000, and the floor was then lowered again under a guardian signature |
 | Base mainnet, with our own money | _pending_ |
