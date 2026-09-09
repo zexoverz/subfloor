@@ -435,6 +435,9 @@ export const copy = {
   floor: {
     /// Named rather than left as − and +, which say nothing about which way is which.
     safer: 'safer — closer to the reference',
+    /// The ends of the track, short because they sit either side of the number they bracket.
+    saferEnd: 'safer',
+    riskierEnd: 'riskier',
     riskier: 'riskier — further below the reference',
     title: 'your worst price',
     runQuery: 'run query',

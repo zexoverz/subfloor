@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Hoverable } from './Hoverable.tsx';
 import { PairIcons } from './PairIcons.tsx';
@@ -223,10 +224,29 @@ export function FloorControl({
         </Hoverable>
       )}
 
-      <div className="flex justify-between text-[11.5px] text-faint">
-        <span>safer · −{MIN_BPS} bps</span>
+      {/*
+        * The ends carry two signals and one each: the chevron says which way to drag, the colour
+        * says what is down there.
+        *
+        * Cyan on the left because that is the colour of the owner's protection everywhere else on
+        * this board, and a tighter floor is a better price. The operational cost of tightness — it
+        * refuses ordinary fills — is not this label's job; the line above counts it and turns red
+        * when it actually bites. Muted on the right for the same reason it is muted in the middle:
+        * a floor far past everything that has happened is not wrong, it is just barely a floor.
+        *
+        * Both stay quiet until the handle is at that end, so the control reads as one number with
+        * two directions rather than as three things competing.
+        */}
+      <div className="flex items-center justify-between text-[11.5px] text-faint">
+        <span className={`flex items-center gap-0.5 ${bps <= MIN_BPS ? 'text-floor' : ''}`}>
+          <ChevronsLeft size={13} strokeWidth={2} />
+          {copy.floor.saferEnd} · −{MIN_BPS} bps
+        </span>
         <span className={`font-medium ${tone}`}>−{bps} bps</span>
-        <span>−{MAX_BPS} bps · riskier</span>
+        <span className={`flex items-center gap-0.5 ${bps >= MAX_BPS ? 'text-muted' : ''}`}>
+          −{MAX_BPS} bps · {copy.floor.riskierEnd}
+          <ChevronsRight size={13} strokeWidth={2} />
+        </span>
       </div>
     </div>
   );
