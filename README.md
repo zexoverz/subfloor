@@ -13,6 +13,20 @@
 
 ---
 
+## How this was built
+
+`docs/SPEC.md` is the document that directed it — settled decisions, measurements with their
+provenance, and the traps that had already cost time. It is published because ETHOnline's rules ask
+for the spec, prompts and planning artifacts of a spec-driven build, and because it is the honest
+answer to how much of this was directed rather than generated.
+
+Two things in it are redacted in place: our own win estimates, and assessments of other teams read
+from their public repositories. Marked rather than deleted, so the gaps are visible.
+
+The git history is the other half. Small commits, in order, including the reversals — the router
+redeployed because it matched no commit, the execution-quality number that had the wrong sign for a
+day, the harness that could not produce the refusal it existed to demonstrate.
+
 ## The problem
 
 An AI agent can trade for you around the clock. To do that it needs access to your money, and the

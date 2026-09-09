@@ -20,7 +20,11 @@ re-derive what it records, and do not soften anything it marks unverified.
 
 **Submission: 13 Sep 2026, 16:00 UTC.**
 
-`docs/SPEC.md` is a private planning document and is not published with this repository. Everything
+`docs/SPEC.md` **is published with this repository**, because ETHOnline's rules require a project
+using a spec-driven workflow to include its spec files and planning artifacts so judges can see how
+the AI was directed. Two things are redacted in place and marked: our own win estimates, and
+assessments of other teams read from their public repositories. Keep it that way — when adding a
+number or a rival read, put it behind the same marker rather than in the open. Everything
 the code asserts is reproducible from the repo itself: `docs/gas.md`, `docs/proof.md` and
 `docs/counterexamples.md` carry the measurements and the proofs.
 
