@@ -382,6 +382,35 @@ body {
 }
 
 /*
+ * The drawings come out when the tile is too narrow to hold one.
+ *
+ * A container query rather than a viewport one, because the thing that runs out of room is the
+ * tile, not the screen. The row is `auto-fit` over a 160px floor, so the tiles get narrow at
+ * widths that have nothing to do with the viewport — a phone breakpoint would hide them on a
+ * narrow phone and keep them on a wide window that had wrapped to two columns anyway.
+ *
+ * 240px is measured, not chosen. The widest drawing is 110px at its fixed height, and the sub-line
+ * runs to 58% of the tile, so the two clear each other only above about 280px — and the desktop
+ * tile is 279px, which is why it looks right there and collapses the moment the row wraps. Below
+ * 240 there is no arrangement that works, so the drawing goes rather than the number bending
+ * around it.
+ */
+.stat-tile {
+  container-type: inline-size;
+}
+
+@container (max-width: 240px) {
+  .stat-tile-art {
+    display: none;
+  }
+
+  /* And with the drawing gone, the sub-line stops holding a column open for it. */
+  .stat-tile-sub {
+    max-width: 100%;
+  }
+}
+
+/*
  * The stat tiles' drawings, lifted off the panel they sit on.
  *
  * Measured against the panel's foot: 29% to 57% of each drawing's solid pixels sit under 1.5
