@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDownToLine, X } from 'lucide-react';
+import { ArrowDownToLine, Undo2, X } from 'lucide-react';
 import type { Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { AmountRow } from './StepForms.tsx';
+import { WithdrawDialog } from './WithdrawDialog.tsx';
 import { useFund } from '../lib/fund.ts';
 import { useFaucet } from '../lib/faucet.ts';
 import { ACTIVE_TOKENS, USDC_SYMBOL } from '../lib/tokens.ts';
@@ -26,13 +27,20 @@ export function TopUp({
   vault,
   owner,
   holdings,
+  inventory,
+  onWithdraw,
 }: {
   vault: Address | null;
   owner: Address | null;
   /** The *wallet's* balances, which is what can be sent — not the vault's, which is what it holds. */
   holdings: Holding[] | null;
+  /** The *vault's* balances: what leaving would move, and whether there is anything to leave. */
+  inventory: Holding[];
+  onWithdraw: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const ref = useRef<HTMLDialogElement>(null);
   const fund = useFund(vault, owner);
@@ -52,12 +60,50 @@ export function TopUp({
 
   return (
     <div className="mt-3 border-t border-rule pt-3">
-      <Act onClick={() => setOpen(true)}>
-        <span className="flex items-center gap-2">
-          <ArrowDownToLine size={13} strokeWidth={1.8} />
-          {copy.wallet.topUp}
-        </span>
-      </Act>
+      {/*
+       * Money in and money out on one row, because they are the two ends of one question and an
+       * owner deciding between them should not have to look in two places to find both.
+       *
+       * Only the exit is red, and only when there is something to take. A destructive colour on a
+       * button that would do nothing is a warning about nothing, and it spends the one colour that
+       * has to keep meaning something.
+       */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Act onClick={() => setOpen(true)}>
+          <span className="flex items-center gap-2">
+            <ArrowDownToLine size={13} strokeWidth={1.8} />
+            {copy.wallet.topUp}
+          </span>
+        </Act>
+
+        {inventory.some((h) => h.amount > 0) && (
+          <button
+            onClick={() => setLeaving(true)}
+            className="pushable push-panic push-sm mb-1 cursor-pointer rounded-xl px-3.5 py-2 text-xs font-semibold tracking-[0.06em]"
+          >
+            <span className="flex items-center gap-2">
+              <Undo2 size={13} strokeWidth={1.9} />
+              {copy.wallet.withdraw}
+            </span>
+          </button>
+        )}
+      </div>
+
+      <WithdrawDialog
+        open={leaving}
+        onClose={() => setLeaving(false)}
+        inventory={inventory}
+        busy={withdrawing}
+        onConfirm={() => {
+          setWithdrawing(true);
+          // Closed on the way out, so the sheet outlives the transaction it started and can report
+          // it. Resetting either flag on the click would leave the owner watching nothing.
+          void Promise.resolve(onWithdraw()).finally(() => {
+            setWithdrawing(false);
+            setLeaving(false);
+          });
+        }}
+      />
 
       <dialog
         ref={ref}
