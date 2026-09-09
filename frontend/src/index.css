@@ -251,6 +251,23 @@ body {
 }
 
 /*
+ * A well: the shadow goes in, not out.
+ *
+ * Everything else on this board stands off the page — the panels, the keys. This is the one control
+ * that should read as cut into it, because that is what it is: a number the owner drops into and
+ * the vault settles against. A raised card containing a raised button containing a slider is three
+ * things asking to be noticed; recessing the container leaves one.
+ *
+ * Two shadows again, and for the same reason as everywhere else here: the tight one is the lip the
+ * light catches, the wide one is the depth under it.
+ */
+.well {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.55),
+    inset 0 8px 20px -10px rgba(0, 0, 0, 0.8);
+}
+
+/*
  * Buttons that are physically there.
  *
  * A solid face standing 6px on a darker edge of itself, and the edge collapses when the button

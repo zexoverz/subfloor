@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 
@@ -18,6 +19,34 @@ const toBps = (price: number, reference: number) => {
   const raw = ((reference - price) / reference) * 10_000;
   return Math.min(MAX_BPS, Math.max(MIN_BPS, Math.round(raw / DETENT) * DETENT));
 };
+
+/** One detent, in the direction the label names. Named so it is not a bare glyph to a screen reader. */
+function Nudge({
+  to,
+  onChange,
+  disabled,
+  label,
+  children,
+}: {
+  to: number;
+  onChange: (bps: number) => void;
+  disabled: boolean;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(to)}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="pushable push-quiet push-sm mb-1 grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg text-[15px] leading-none"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function FloorControl({
   bps,
@@ -46,7 +75,7 @@ export function FloorControl({
   const tooTight = refused > 0;
 
   return (
-    <div className="mb-5 rounded-xl bg-sunken px-4 py-3.5 shadow-card">
+    <div className="well mb-5 rounded-xl bg-sunken px-4 py-3.5">
       <label className="block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
         {copy.onboarding.worstPrice}
       </label>
@@ -67,16 +96,39 @@ export function FloorControl({
         {quote} per {base} · reference {formatPrice(referencePrice)}
       </p>
 
-      {/* Dragged in bps, in the detents the registry stores. */}
-      <input
-        type="range"
-        min={MIN_BPS}
-        max={MAX_BPS}
-        step={DETENT}
-        value={bps}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className={`mt-3 w-full ${tooTight ? 'accent-refuse' : 'accent-floor'}`}
-      />
+      {/*
+        * Dragged in bps, in the detents the registry stores — and nudged by one detent either side,
+        * because a slider is for finding roughly the right place and a button is for landing on the
+        * exact one. The direction is the same as the slider's and the same as the labels under it:
+        * left is fewer bps and safer, right is more and riskier.
+        */}
+      <div className="mt-3 flex items-center gap-2.5">
+        <Nudge
+          to={Math.max(MIN_BPS, bps - DETENT)}
+          onChange={onChange}
+          disabled={bps <= MIN_BPS}
+          label={copy.floor.safer}
+        >
+          −
+        </Nudge>
+        <input
+          type="range"
+          min={MIN_BPS}
+          max={MAX_BPS}
+          step={DETENT}
+          value={bps}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className={`min-w-0 flex-1 ${tooTight ? 'accent-refuse' : 'accent-floor'}`}
+        />
+        <Nudge
+          to={Math.min(MAX_BPS, bps + DETENT)}
+          onChange={onChange}
+          disabled={bps >= MAX_BPS}
+          label={copy.floor.riskier}
+        >
+          +
+        </Nudge>
+      </div>
       {fillsBps && (
         <p className={`mt-2 text-center text-[11px] ${tooTight ? 'text-refuse' : 'text-muted'}`}>
           {tooTight
