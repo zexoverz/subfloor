@@ -645,21 +645,6 @@ body {
 }
 
 /*
- * The engraving was drawn for warm paper. On the dark ground its ink greys sink into the
- * background, so they are lifted — the floor's cyan included, which only gets brighter for it.
- */
-:root:not([data-theme='light']) .hero-art img,
-:root[data-theme='dark'] .hero-art img {
-  filter: brightness(1.55) contrast(1.06);
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) .hero-art img {
-    filter: none;
-  }
-}
-
-/*
  * Reading protection as depth of field rather than a painted blob: the noise stays visible behind
  * the words and simply goes out of focus, and the effect fades out with no edge to notice.
  */
@@ -703,20 +688,34 @@ body {
 @keyframes hero-strike {
   0% {
     opacity: 0;
-    transform: translate3d(-7%, -11%, 0);
+    transform: translate3d(-50%, -34%, 0);
   }
-  14%,
-  58% {
+  10% {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
-  74%,
+  /* Lands, and overshoots by a hair. The settle is the beat that says something stopped it. */
+  20% {
+    transform: translate3d(-50%, 2%, 0);
+  }
+  26% {
+    transform: translate3d(-50%, -3%, 0);
+  }
+  32%,
+  62% {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+  }
+  78%,
   100% {
     opacity: 0;
-    transform: translate3d(0, 0, 0);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
+/*
+ * The horizontal centring lives in the keyframes rather than in a `-translate-x-1/2` class: they
+ * are the same property, so the class would be gone from the first frame the animation ran.
+ */
 .hero-strike {
   animation: hero-strike 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
@@ -725,7 +724,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-strike {
     opacity: 1;
-    transform: none;
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
