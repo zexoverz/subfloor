@@ -44,6 +44,21 @@ type Layer = {
   src: string;
   /** Fraction of the page's scroll this layer appears to travel. Below 1 it lags, above 1 it leads. */
   speed: number;
+  /**
+   * How much taller than the hero this layer's own box is, as a percentage — which is how much
+   * room it has to travel before an edge would show.
+   *
+   * Per layer rather than shared, and that is the change that made the effect visible at all. A
+   * single box for all eight had to be sized for the layer that travels furthest, and since the
+   * *slowest* layer travels furthest, one box meant every speed had to sit near 1 — a parallax
+   * nobody could see. Sizing each box to its own travel lets the far layers go where they need to.
+   *
+   * The cost is that layers no longer share one scale, and it is the right cost: registration
+   * matters where features have to line up, and the layers that move most are the smooth ones. A
+   * 90% larger box on the water is invisible because the water has nothing in it to misalign. The
+   * reef is the opposite — it is the floor, it never travels, and it keeps the smallest box.
+   */
+  box: number;
   /** Horizontal sway: how many pixels, and how many seconds one cycle takes. */
   sway?: [px: number, period: number];
   /** Vertical bob, same shape. A negative amplitude starts it on the way up. */
@@ -54,20 +69,20 @@ type Layer = {
 
 /** Back to front. The order is the scene's own depth and must not be reordered. */
 const LAYERS: Layer[] = [
-  { src: '/parallax/water.webp', speed: 0.82, sway: [9, 41], tilt: 0.15 },
-  { src: '/parallax/structures.webp', speed: 0.87, sway: [6, 37], tilt: 0.3 },
+  { src: '/parallax/water.webp', speed: 0.55, box: 190, sway: [9, 41], tilt: 0.15 },
+  { src: '/parallax/structures.webp', speed: 0.74, box: 150, sway: [6, 37], tilt: 0.3 },
   // The whale glides: a long sway and a small bob. It is swimming, not floating.
-  { src: '/parallax/whale.webp', speed: 0.9, sway: [14, 53], bob: [5, 29], tilt: 0.4 },
-  { src: '/parallax/jellyfish.webp', speed: 0.94, sway: [7, 19], bob: [-11, 13], tilt: 0.55 },
-  { src: '/parallax/midrocks.webp', speed: 0.97, sway: [3, 31], tilt: 0.7 },
-  { src: '/parallax/reef.webp', speed: 1, sway: [2, 23], tilt: 0.85 },
-  { src: '/parallax/mascot.webp', speed: 1.06, sway: [3, 17], bob: [2, 11], tilt: 1 },
+  { src: '/parallax/whale.webp', speed: 0.82, box: 140, sway: [14, 53], bob: [5, 29], tilt: 0.4 },
+  { src: '/parallax/jellyfish.webp', speed: 0.88, box: 132, sway: [7, 19], bob: [-11, 13], tilt: 0.55 },
+  { src: '/parallax/midrocks.webp', speed: 0.95, box: 118, sway: [3, 31], tilt: 0.7 },
+  { src: '/parallax/reef.webp', speed: 1, box: 108, sway: [2, 23], tilt: 0.85 },
+  { src: '/parallax/mascot.webp', speed: 1.04, box: 112, sway: [3, 17], bob: [2, 11], tilt: 1 },
   // Bubbles rise, and a short period is what makes that read as rising rather than as bouncing.
-  { src: '/parallax/bubbles.webp', speed: 1.14, sway: [10, 7], bob: [-14, 9], tilt: 1.2 },
+  { src: '/parallax/bubbles.webp', speed: 1.14, box: 136, sway: [10, 7], bob: [-14, 9], tilt: 1.2 },
 ];
 
 /** How much of the hero's own height the scroll parallax plays out over. See the note above. */
-const RANGE = 0.5;
+const RANGE = 0.9;
 /** The pointer's full authority in pixels, before each layer's own tilt scales it down. */
 const TILT_PX = 10;
 
@@ -165,23 +180,28 @@ export function HeroParallax() {
            * origin. Anything applied to one and not the others would pull that layer out of the
            * registration the separation was done to get.
            */
-          className="absolute top-1/2 left-1/2 h-[124%] w-[106%] max-w-none object-cover select-none"
+          className="absolute top-1/2 left-1/2 w-[108%] max-w-none object-cover select-none"
           // Centred here too, so the stack is right before the first frame and stays right under
           // prefers-reduced-motion, where no frame ever runs. The z-index is the scene's depth
           // made explicit, so the light can be inserted between two of them.
           style={{
+            height: `${layer.box}%`,
             transform: 'translate3d(-50%, -50%, 0)',
             willChange: 'transform',
-            zIndex: i < 2 ? 0 : 2,
+            zIndex: i < 5 ? 0 : 2,
           }}
         />
       ))}
       {/*
        * Live shafts over the painted ones, in the mark's own cyan.
        *
-       * Between the water and the structures rather than on top of everything: light comes from
-       * the surface and is cut by what it passes, so rays drawn over the reef and the mascot would
-       * read as a filter laid on the picture instead of as light inside it.
+       * In front of everything distant and behind everything near. Light comes from the surface
+       * and falls *on* the far water, the ruins, the whale and the jellyfish — but it is cut by the
+       * reef, the mascot's rock and the bubbles in front of them, and rays drawn over those would
+       * read as a filter laid on the picture rather than as light inside it.
+       *
+       * It sat at index 1 first, which put it under six of the eight and left it showing only in
+       * the gaps between them — which is why it looked like it had not been added at all.
        *
        * Its own shader fades toward the foot of the frame, so it is at half strength by the middle
        * of the headline band. Measured there rather than assumed: screened over the water layer's

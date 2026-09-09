@@ -56,10 +56,11 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
         <div className="relative order-1 md:order-2">
           {/*
-            * The scrim. A soft radial wash of the page's own ground, with no edge to notice, so the
-            * type sits on quiet paper while the noise continues behind and around it.
+            * The panel the headline sits on. Inset tight to the words rather than bleeding well
+            * past them, because it has an edge now and an edge that lands nowhere in particular
+            * reads as a mistake.
             */}
-          <div className="hero-scrim pointer-events-none absolute -inset-x-16 -inset-y-12" />
+          <div className="hero-scrim pointer-events-none absolute -inset-x-7 -inset-y-6" />
 
           <div className="relative">
           <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">

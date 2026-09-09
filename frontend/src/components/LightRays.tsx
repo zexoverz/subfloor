@@ -43,6 +43,16 @@ const rgb = (hex: string): [number, number, number] => {
   return m ? [parseInt(m[1]!, 16) / 255, parseInt(m[2]!, 16) / 255, parseInt(m[3]!, 16) / 255] : [1, 1, 1];
 };
 
+/*
+ * Hoisted out of the parameter list, and it is not a style preference.
+ *
+ * A default written as `origin = [0.5, -0.2]` builds a new array on every render, and this one sits
+ * in the effect's dependencies — so the effect tore down and rebuilt the WebGL context every time
+ * the component re-rendered for any reason at all. A shader that spends its life being constructed
+ * never gets to draw.
+ */
+const TOP_CENTRE: [number, number] = [0.5, -0.2];
+
 const VERT = `
 attribute vec2 position;
 void main() { gl_Position = vec4(position, 0.0, 1.0); }
@@ -97,7 +107,7 @@ void main() {
 `;
 
 export function LightRays({
-  origin = [0.5, -0.2],
+  origin = TOP_CENTRE,
   colour,
   speed = 0.7,
   spread = 0.7,
