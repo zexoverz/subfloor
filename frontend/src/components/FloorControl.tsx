@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
+import { Hoverable } from './Hoverable.tsx';
 import { PairIcons } from './PairIcons.tsx';
 import { ChainlinkMark } from './TokenIcon.tsx';
 import { addressUrl } from '../lib/chain.ts';
@@ -96,6 +97,10 @@ export function FloorControl({
   const tooLoose = !tooTight && worst > 0 && bps > worst * 2;
   /** The one colour that means "this is a good floor", spent only where that is true. */
   const tone = tooTight ? 'text-refuse' : tooLoose ? 'text-muted' : 'text-floor';
+  const fill = (t: string) =>
+    t.replace('{n}', String(tooTight ? refused : bps - worst)).replace('{total}', String(fillsBps?.length ?? 0));
+  const verdict = fill(tooTight ? copy.floor.tooTight : tooLoose ? copy.floor.tooLoose : copy.floor.clear);
+  const why = fill(tooTight ? copy.floor.tooTightWhy : tooLoose ? copy.floor.tooLooseWhy : copy.floor.clearWhy);
   const accent = tooTight ? 'accent-refuse' : tooLoose ? 'accent-muted' : 'accent-floor';
 
   return (
@@ -117,10 +122,14 @@ export function FloorControl({
         *
         * `tabular-nums` is what makes the `ch` width honest: in proportional digits a `ch` is the
         * width of a zero and nothing else, so the box would breathe as the price changed.
+        *
+        * The sign is the same size as the number and centres with it. At two different sizes a
+        * shared baseline is exactly what makes the smaller one look dropped — the glyphs sit on one
+        * line and their centres do not, which reads as a mistake rather than as a hierarchy.
         */}
-      <div className="mt-1 flex items-baseline justify-center">
+      <div className="mt-1 flex items-center justify-center gap-1">
         <span
-          className={`text-[clamp(18px,4vw,22px)] leading-none font-semibold tabular-nums ${tone}`}
+          className={`text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight ${tone}`}
           aria-hidden
         >
           $
@@ -196,11 +205,22 @@ export function FloorControl({
         </Nudge>
       </div>
       {fillsBps && (
-        <p className={`mt-2 text-center text-[11px] ${tooTight ? 'text-refuse' : 'text-muted'}`}>
-          {tooTight
-            ? copy.floor.tooTight.replace('{n}', String(refused)).replace('{total}', String(fillsBps.length))
-            : (tooLoose ? copy.floor.tooLoose : copy.floor.clear).replace('{n}', String(bps - worst))}
-        </p>
+        /*
+         * A verdict on the line and the reasoning on hover. These ran to two lines in a card this
+         * narrow, and a line that wraps while the slider is being dragged moves the layout under
+         * the thing being dragged.
+         */
+        <Hoverable
+          content={<p className="m-0 max-w-[38ch] text-[12px] leading-relaxed text-muted">{why}</p>}
+        >
+          <p
+            className={`mt-2 cursor-help text-center text-[11px] underline decoration-dotted underline-offset-2 ${
+              tooTight ? 'text-refuse' : 'text-muted'
+            }`}
+          >
+            {verdict}
+          </p>
+        </Hoverable>
       )}
 
       <div className="flex justify-between text-[11.5px] text-faint">

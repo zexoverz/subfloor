@@ -453,16 +453,22 @@ export const copy = {
      * the worst realized fill precisely so it never interferes — a hijacked agent hits it, honest
      * fills never do. Warning about that state was backwards.
      */
-    tooTight: 'would have refused {n} of the last {total} fills',
-    clear: '{n} bps past the worst fill ever taken',
     /*
-     * The other hazard, and the control used to be silent about it.
+     * Short enough not to wrap, with the reasoning behind the card.
      *
-     * Too tight refuses ordinary fills and says so in red. Too loose refuses nothing and used to
-     * look exactly like a good floor — cyan, while the label under it read "riskier". A control
-     * that colours one end and not the other is telling two stories.
+     * The card is narrow and these ran to two lines, which on a control that changes as you drag
+     * means the layout moves under the thing being dragged. So each line is a verdict and the
+     * sentence explaining it is one hover away — the same card the tape uses, not a browser title.
      */
-    tooLoose: '{n} bps past the worst fill ever taken — far enough that it protects little',
+    tooTight: 'refuses {n} of {total} past fills',
+    tooTightWhy:
+      'A floor this tight would have refused {n} of the last {total} fills on this venue — trades that were fine. A vault that fails closed through ordinary trading is a vault nobody can use.',
+    clear: '{n} bps clear of the worst fill',
+    clearWhy:
+      'Past every fill this venue has actually taken, by {n} bps. Sitting beyond the realized distribution is the point: the guarantee is real and the vault still trades freely.',
+    tooLoose: 'far past every past fill',
+    tooLooseWhy:
+      '{n} bps beyond the worst fill ever taken here — more than twice as far out as anything that has happened. Not wrong, but far enough that it stops being much of a floor.',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
