@@ -7,9 +7,17 @@ export type Action =
   | { kind: "hold"; why: string }
   | { kind: "requote"; why: string }
   | { kind: "recenter"; why: string; referencePrice: bigint }
-  | { kind: "dock"; why: string };
+  | { kind: "dock"; why: string }
+  /// Nothing is wrong with the market; the agent has simply run out of the authority it was given.
+  /// A separate outcome from `dock` because the operator's next move is different: sign a batch,
+  /// not investigate a feed.
+  | { kind: "unauthorised"; why: string };
 
 export interface PolicyInputs {
+  /// How many signed mandates remain. Re-quoting spends one, so a loop with none can decide to
+  /// re-centre and then be unable to act on it — better to say so than to compute a decision that
+  /// cannot be carried out.
+  mandatesRemaining?: number;
   index: IndexView;
   /// Chain head, to tell a stalled index from a quiet one.
   chainHead: number;
@@ -55,6 +63,16 @@ export function decide(i: PolicyInputs): Action {
 
   if (i.venueMid === null) {
     return { kind: "dock", why: "no venue mid; quoting would be against a price we do not have" };
+  }
+
+  // Authority before market. Every branch below spends a mandate, and an agent that has run out has
+  // not encountered a problem with the venue — it has reached the end of what its owner signed for.
+  // Reporting that as a dock would send someone to look at a feed that is fine.
+  if (i.mandatesRemaining !== undefined && i.mandatesRemaining === 0) {
+    return {
+      kind: "unauthorised",
+      why: "no signed mandate left; the agent stops until a new batch is signed on the device",
+    };
   }
 
   // Only now is trading on the table.

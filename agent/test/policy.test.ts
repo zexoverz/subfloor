@@ -230,3 +230,25 @@ describe("the loop, end to end without a key", () => {
     assert.match(a.why, /reference is 99999s old/);
   });
 });
+
+describe("running out of authority is not a market problem", () => {
+  test("a loop with no mandates left stops, and says why", () => {
+    const a = decide(inputs({ mandatesRemaining: 0 }));
+    assert.equal(a.kind, "unauthorised");
+    assert.match(a.why, /signed on the device/);
+  });
+
+  test("it is checked before every trading branch, including the one that ships the first book", () => {
+    const a = decide(inputs({ mandatesRemaining: 0, index: view({ strategies: [] }) }));
+    assert.equal(a.kind, "unauthorised", "shipping the first book spends a mandate too");
+  });
+
+  test("but a stale reference still wins, because that is a reason to stop regardless", () => {
+    const a = decide(inputs({ mandatesRemaining: 0, index: view({ reference: { answer: 1n, updatedAt: NOW - 99999 } }) }));
+    assert.equal(a.kind, "dock");
+  });
+
+  test("a loop that was not told about mandates behaves as before", () => {
+    assert.equal(decide(inputs()).kind, "hold");
+  });
+});

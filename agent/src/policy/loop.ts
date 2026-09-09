@@ -102,6 +102,13 @@ export async function cycle(
   );
   log(`[policy] ${action.kind} — ${action.why}`);
 
+  if (action.kind === "unauthorised") {
+    // Said once, loudly, rather than every thirty seconds. An operator who has to sign a batch does
+    // not need it repeated at them; they need to be able to find the line.
+    log("[policy] the agent has stopped. Sign a mandate batch on the device to resume.");
+    return action;
+  }
+
   if (action.kind === "recenter") {
     const program = composeBook({
       referencePrice: action.referencePrice,
