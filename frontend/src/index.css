@@ -268,6 +268,45 @@ body {
 }
 
 /*
+ * Water in the well.
+ *
+ * Two layers at two speeds, which is the same trick as the hero and works for the same reason:
+ * depth is the difference between them, not either one. They are drawn rather than an image so
+ * they stay crisp at any width and cost nothing to load.
+ *
+ * The loop is seamless because the tile is honest — the path repeats every 300 units inside a
+ * 1200-wide box, and the animation travels exactly 600, so the frame it lands on is the frame it
+ * started from. A wave that jumps every cycle is worse than no wave.
+ *
+ * Kept to the foot of the well and kept faint: this sits under a price the owner is reading, and
+ * the one thing it must never do is compete with it.
+ */
+@keyframes well-tide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.well-tide {
+  width: 200%;
+  animation: well-tide 14s linear infinite;
+}
+
+.well-tide-slow {
+  animation-duration: 23s;
+  animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .well-tide {
+    animation: none;
+  }
+}
+
+/*
  * Buttons that are physically there.
  *
  * A solid face standing 6px on a darker edge of itself, and the edge collapses when the button

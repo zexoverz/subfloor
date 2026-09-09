@@ -105,8 +105,35 @@ export function FloorControl({
   const accent = tooTight ? 'accent-refuse' : tooLoose ? 'accent-muted' : 'accent-floor';
 
   return (
-    <div className="well mb-5 rounded-xl bg-sunken px-4 py-3.5">
-      <label className="block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
+    <div className="well relative mb-5 overflow-hidden rounded-xl bg-sunken px-4 py-3.5">
+      {/*
+        * The well holds water, which is the one ornament this control can carry without being
+        * about something else: it is a floor, in a product whose whole argument is that there is a
+        * bottom. Behind everything and out of the accessibility tree — it says nothing the numbers
+        * do not.
+        */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[58px] overflow-hidden">
+        <svg
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          className="well-tide well-tide-slow absolute bottom-0 h-full"
+          fill="var(--c-floor)"
+          opacity="0.07"
+        >
+          <path d="M0 24 Q 75 6 150 24 T 300 24 T 450 24 T 600 24 T 750 24 T 900 24 T 1050 24 T 1200 24 V60 H0 Z" />
+        </svg>
+        <svg
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          className="well-tide absolute bottom-0 h-full"
+          fill="var(--c-floor)"
+          opacity="0.05"
+        >
+          <path d="M0 34 Q 75 18 150 34 T 300 34 T 450 34 T 600 34 T 750 34 T 900 34 T 1050 34 T 1200 34 V60 H0 Z" />
+        </svg>
+      </div>
+
+      <label className="relative block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
         {copy.onboarding.worstPrice}
       </label>
 
@@ -128,7 +155,7 @@ export function FloorControl({
         * shared baseline is exactly what makes the smaller one look dropped — the glyphs sit on one
         * line and their centres do not, which reads as a mistake rather than as a hierarchy.
         */}
-      <div className="mt-1 flex items-center justify-center gap-1">
+      <div className="relative mt-1 flex items-center justify-center gap-1">
         <span
           className={`text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight ${tone}`}
           aria-hidden
@@ -156,7 +183,7 @@ export function FloorControl({
         * every relative floor here is a pure function of, so "the reference" stays a claim until
         * someone can open it.
         */}
-      <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] text-faint">
+      <div className="relative mt-1.5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] text-faint">
         <PairIcons base={base} quote={quote} size={16} ring="ring-sunken" />
         <span className="flex items-center gap-1.5">
           <ChainlinkMark />
@@ -178,7 +205,7 @@ export function FloorControl({
         * exact one. The direction is the same as the slider's and the same as the labels under it:
         * left is fewer bps and safer, right is more and riskier.
         */}
-      <div className="mt-3 flex items-center gap-2.5">
+      <div className="relative mt-3 flex items-center gap-2.5">
         <Nudge
           to={Math.max(MIN_BPS, bps - DETENT)}
           onChange={onChange}
@@ -237,7 +264,7 @@ export function FloorControl({
         * Both stay quiet until the handle is at that end, so the control reads as one number with
         * two directions rather than as three things competing.
         */}
-      <div className="flex items-center justify-between text-[11.5px] text-faint">
+      <div className="relative flex items-center justify-between text-[11.5px] text-faint">
         <span className={`flex items-center gap-0.5 ${bps <= MIN_BPS ? 'text-floor' : ''}`}>
           <ChevronsLeft size={13} strokeWidth={2} />
           {copy.floor.saferEnd} · −{MIN_BPS} bps
