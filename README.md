@@ -147,7 +147,7 @@ mainnet uses canonical Aqua and never forks it.
 |---|---|---|
 | FloorRegistry | [`0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123`](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123) | Sourcify |
 | FloorRouter | [`0x03189D102286fa8cDd0fBF3578B492e67e665A27`](https://sepolia.basescan.org/address/0x03189D102286fa8cDd0fBF3578B492e67e665A27) | Sourcify |
-| VaultFactory | [`0xD985Ad481D396D37344f7c1229433a7D342cf1F1`](https://sepolia.basescan.org/address/0xD985Ad481D396D37344f7c1229433a7D342cf1F1) | Sourcify |
+| VaultFactory | [`0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5`](https://sepolia.basescan.org/address/0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5) | Sourcify |
 | AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
 | tUSDC (testnet stand-in) | [`0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD`](https://sepolia.basescan.org/address/0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD) | — |
@@ -168,6 +168,19 @@ Arbitrum, Optimism, Polygon, BSC and Sepolia — same address, same 5,619 bytes,
 Not a second live run, deliberately. Money on two chains halves the size on each, and §14 puts the
 correlated risk in the deploy and the run: two live runs is two of everything that can fail during a
 demo, on the one axis where failure takes all three tracks down together.
+
+**Setting a vault up is one transaction.** `createVault(setup)` deploys it, names the delegate and
+the guardian, registers the guardian on the registry, and raises the floors on both directions —
+ending owned by the caller.
+
+It replaced six, and three of those were `execute` carrying ABI-encoded calldata that a wallet
+renders as "Execute" over an unreadable blob. That is the shape a drainer asks for, and a poor
+thing for a security product to teach someone in their first minute.
+
+The friction was not the real cost. A vault could trade from the moment `createVault` returned, so
+anyone who stopped halfway owned something that looked finished and had no floor. One call closes
+that window rather than shortening it. Proven on chain: a fresh wallet, one transaction, and the
+vault comes out owned, delegated, guarded on both sides and floored in both directions.
 
 **Why there is a stand-in for USDC here, and only here.** Circle's testnet USDC is not
 permissionlessly mintable — `isMinter` is false for us and the masterMinter is Circle's — so funding
