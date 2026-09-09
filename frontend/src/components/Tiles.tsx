@@ -72,7 +72,7 @@ export function Tile({
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
 
   return (
-    <div className="panel-fill relative flex flex-col gap-0.5 overflow-hidden px-3.5 py-3">
+    <div className="stat-tile panel-fill relative flex flex-col gap-0.5 overflow-hidden px-3.5 py-3">
       {art && (
         /*
          * Sized in pixels, not in percent, and that is the whole trick.
@@ -93,7 +93,7 @@ export function Tile({
           alt=""
           aria-hidden
           draggable={false}
-          className="tile-art pointer-events-none absolute right-2 bottom-0 h-[70px] w-auto max-w-[44%] object-contain object-right-bottom opacity-95 select-none"
+          className="stat-tile-art tile-art pointer-events-none absolute right-2 bottom-0 h-[70px] w-auto max-w-[44%] object-contain object-right-bottom opacity-95 select-none"
         />
       )}
       <span className="relative text-[11.5px] tracking-[0.1em] text-faint uppercase">{label}</span>
@@ -102,7 +102,7 @@ export function Tile({
           {typeof value === 'number' ? <RollingNumber value={value} format={format} /> : value}
         </span>
       </span>
-      <span className="relative max-w-[58%] text-[11px] text-faint">{sub}</span>
+      <span className="stat-tile-sub relative max-w-[58%] text-[11px] text-faint">{sub}</span>
       {onQuery && (
         <button
           onClick={onQuery}

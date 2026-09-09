@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { calibrate } from "./calibration.ts";
 import { generate, renderMarkdown } from "./report.ts";
 import { DEFAULT_ENDPOINT, SubgraphError } from "./subgraph.ts";
@@ -50,6 +51,28 @@ async function resolveStatic(pathname: string): Promise<string | null> {
   }
 }
 
+/// What to do when a handler throws, pulled out so it can be tested — which is the reason the bug
+/// that took the site down was able to ship.
+///
+/// The `headersSent` branch is the whole point. Nothing can be said once the headers are gone, and
+/// trying is what turned a failed request into a dead process: `writeHead` after `headersSent`
+/// throws, and a throw in here comes out of an async callback that no `try` encloses. The
+/// connection is closed instead — the client sees a truncated response, which is the truth, and the
+/// server is still up for the next request.
+export function respondToFailure(
+  res: { headersSent: boolean; writeHead: (code: number, headers: Record<string, string>) => unknown; end: (body: string) => unknown; destroy: () => unknown },
+  err: unknown,
+): void {
+  if (res.headersSent) {
+    console.error("handler failed after the response had started", err);
+    res.destroy();
+    return;
+  }
+  const upstream = err instanceof SubgraphError;
+  res.writeHead(upstream ? 503 : 500, { "content-type": "application/json" });
+  res.end(JSON.stringify({ error: (err as Error).message, source: upstream ? "index" : "server" }));
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   const windowDays = Number(url.searchParams.get("days") ?? 7);
@@ -86,8 +109,14 @@ const server = createServer(async (req, res) => {
     // this one reads transaction status from HyperSync and stays up when the index is down.
     if (url.pathname === "/api/refusals") {
       const limit = Math.min(Number(url.searchParams.get("limit") ?? 25), 200);
+      /// The await comes first, like every other endpoint here, and this one used to be the
+      /// exception: it wrote a 200 and *then* went to HyperSync. When that call failed the catch
+      /// below tried to write a 503 onto a response whose headers were already gone, which throws
+      /// inside an async handler with nobody left to catch it — so one bad upstream response took
+      /// the whole site down rather than returning one bad reply.
+      const body = await refusals(limit);
       res.writeHead(200, { "content-type": "application/json", "cache-control": "public, max-age=30" });
-      res.end(JSON.stringify(await refusals(limit), null, 2));
+      res.end(JSON.stringify(body, null, 2));
       return;
     }
 
@@ -115,10 +144,12 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
     res.end(body);
   } catch (err) {
-    const upstream = err instanceof SubgraphError;
-    res.writeHead(upstream ? 503 : 500, { "content-type": "application/json" });
-    res.end(JSON.stringify({ error: (err as Error).message, source: upstream ? "index" : "server" }));
+    respondToFailure(res, err);
   }
 });
 
-server.listen(PORT, () => console.log(`subfloor on :${PORT}, index ${DEFAULT_ENDPOINT}, static ${STATIC_ROOT}`));
+/// Only when this file is the thing being run. Importing it — which is how the failure path above
+/// is tested — must not bind a port, or the test run holds the event loop open and never exits.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  server.listen(PORT, () => console.log(`subfloor on :${PORT}, index ${DEFAULT_ENDPOINT}, static ${STATIC_ROOT}`));
+}

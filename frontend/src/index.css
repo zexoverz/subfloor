@@ -382,6 +382,44 @@ body {
 }
 
 /*
+ * The drawings come out when the tile is too narrow to hold one.
+ *
+ * A container query rather than a viewport one, because the thing that runs out of room is the
+ * tile, not the screen. The row is `auto-fit` over a 160px floor, so the tiles get narrow at
+ * widths that have nothing to do with the viewport — a phone breakpoint would hide them on a
+ * narrow phone and keep them on a wide window that had wrapped to two columns anyway.
+ *
+ * 240px is measured, not chosen. The widest drawing is 110px at its fixed height, and the sub-line
+ * runs to 58% of the tile, so the two clear each other only above about 280px — and the desktop
+ * tile is 279px, which is why it looks right there and collapses the moment the row wraps. Below
+ * 240 there is no arrangement that works, so the drawing goes rather than the number bending
+ * around it.
+ */
+.stat-tile {
+  container-type: inline-size;
+}
+
+/*
+ * 212, not 240, and the difference is which box is being measured.
+ *
+ * `container-type: inline-size` queries the container's *content* box, and the 240px this was
+ * written against was the tile's border box — so with `px-3.5` either side, a 267px tile has a
+ * 239px content box and matched a rule meant for tiles 27px narrower than that. The drawings
+ * vanished on an ordinary desktop, which is not what "too narrow to hold one" was supposed to
+ * mean. 240 border box minus 28 of padding is 212.
+ */
+@container (max-width: 212px) {
+  .stat-tile-art {
+    display: none;
+  }
+
+  /* And with the drawing gone, the sub-line stops holding a column open for it. */
+  .stat-tile-sub {
+    max-width: 100%;
+  }
+}
+
+/*
  * The stat tiles' drawings, lifted off the panel they sit on.
  *
  * Measured against the panel's foot: 29% to 57% of each drawing's solid pixels sit under 1.5
@@ -616,37 +654,40 @@ body {
 }
 
 /*
- * The engraving was drawn for warm paper. On the dark ground its ink greys sink into the
- * background, so they are lifted — the floor's cyan included, which only gets brighter for it.
- */
-:root:not([data-theme='light']) .hero-art img,
-:root[data-theme='dark'] .hero-art img {
-  filter: brightness(1.55) contrast(1.06);
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) .hero-art img {
-    filter: none;
-  }
-}
-
-/*
- * Reading protection as depth of field rather than a painted blob: the noise stays visible behind
- * the words and simply goes out of focus, and the effect fades out with no edge to notice.
+ * The reading protection, as a panel rather than as a wash.
+ *
+ * It was a radial mask — a soft blur with no edge to notice, which was the point: the noise stayed
+ * visible behind the words and simply went out of focus. That worked against a quiet texture. It
+ * does not work against a moving picture, where a shape with no edge reads as a smudge that
+ * follows the text around, and it belonged to no other surface on the site.
+ *
+ * A rounded panel instead, in the same family as every card on the board — the same corner, the
+ * same blur, the same idea that the words sit on something. The hero is the one place the reader
+ * has to get past before anything else, so it should look like the product rather than like an
+ * effect the product happens to have.
  */
 .hero-scrim {
-  backdrop-filter: blur(7px) brightness(0.72);
-  -webkit-backdrop-filter: blur(7px) brightness(0.72);
-  mask-image: radial-gradient(ellipse 78% 70% at 45% 50%, #000 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 78% 70% at 45% 50%, #000 40%, transparent 100%);
+  border-radius: 22px;
+  /*
+   * 90/94 rather than 82/88, and the number is measured against the worst ground the panel can
+   * land on: the water layer's brightest point with the rays screened over it, rgb(27,147,235). At
+   * 82 the smallest type came to 4.43 and the refusal red to 4.29. 88 is the first step that clears
+   * 4.5 and 90 is what is set, for the margin.
+   *
+   * It is a fill rather than a brightness filter now, so it is measured as a composite — the old
+   * scrim darkened whatever was behind it, this one covers it, and those are different sums.
+   */
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--c-surface-top) 90%, transparent),
+    color-mix(in srgb, var(--c-surface-foot) 94%, transparent)
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--c-shadow);
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) .hero-scrim {
-    backdrop-filter: blur(7px) brightness(1.12);
-    -webkit-backdrop-filter: blur(7px) brightness(1.12);
-  }
-}
+
 
 /*
  * The strike, on a loop: the fill descends, stops dead on the rail, holds, fades, and tries again.
@@ -659,20 +700,34 @@ body {
 @keyframes hero-strike {
   0% {
     opacity: 0;
-    transform: translate3d(-7%, -11%, 0);
+    transform: translate3d(-50%, -34%, 0);
   }
-  14%,
-  58% {
+  10% {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
-  74%,
+  /* Lands, and overshoots by a hair. The settle is the beat that says something stopped it. */
+  20% {
+    transform: translate3d(-50%, 2%, 0);
+  }
+  26% {
+    transform: translate3d(-50%, -3%, 0);
+  }
+  32%,
+  62% {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+  }
+  78%,
   100% {
     opacity: 0;
-    transform: translate3d(0, 0, 0);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
+/*
+ * The horizontal centring lives in the keyframes rather than in a `-translate-x-1/2` class: they
+ * are the same property, so the class would be gone from the first frame the animation ran.
+ */
 .hero-strike {
   animation: hero-strike 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
@@ -681,7 +736,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-strike {
     opacity: 1;
-    transform: none;
+    transform: translate3d(-50%, 0, 0);
   }
 }
 

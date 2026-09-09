@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
-import { Seabed } from '../Seabed.tsx';
+import { HeroParallax } from '../HeroParallax.tsx';
 import { ProductShot } from '../ProductShot.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
@@ -28,8 +28,13 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
       {/* Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column. */}
       <div className="relative">
+      {/*
+        * The scene, separated into eight layers that still register with each other — checked by
+        * re-compositing them and diffing against the source, 1.25% RMSE. The board keeps the flat
+        * one: eight layers moving behind a table of numbers is a page that is hard to read.
+        */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)]">
-        <Seabed intensity="hero" />
+        <HeroParallax />
       </div>
 
       <div className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] pb-24">
@@ -51,10 +56,11 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
         <div className="relative order-1 md:order-2">
           {/*
-            * The scrim. A soft radial wash of the page's own ground, with no edge to notice, so the
-            * type sits on quiet paper while the noise continues behind and around it.
+            * The panel the headline sits on. Inset tight to the words rather than bleeding well
+            * past them, because it has an edge now and an edge that lands nowhere in particular
+            * reads as a mistake.
             */}
-          <div className="hero-scrim pointer-events-none absolute -inset-x-16 -inset-y-12" />
+          <div className="hero-scrim pointer-events-none absolute -inset-x-7 -inset-y-6" />
 
           <div className="relative">
           <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">
