@@ -9,6 +9,33 @@ RUN npm ci
 COPY frontend/ ./
 # The dashboard reads the fuzz counter from the repo rather than carrying its own number.
 COPY docs/fuzz-counter.json /app/docs/fuzz-counter.json
+
+# Vite reads its configuration at build time and bakes it into the bundle, so anything not present
+# *here* is absent from the shipped app — not missing at runtime, where it could be noticed, but
+# compiled out. Without these the image built and served perfectly while the wallet could not
+# connect and every contract address was the empty string: the deployed bundle carried only the
+# hardcoded constants and none of the deployment's own addresses.
+#
+# None of these are secrets. Every one of them ends up in a file the browser downloads — contract
+# addresses, a subgraph URL, and a Reown project id that is public by design. The secrets in this
+# image are the ones the server reads at runtime, and they stay out of the build.
+ARG VITE_REOWN_PROJECT_ID
+ARG VITE_CHAIN
+ARG VITE_FLOOR_REGISTRY
+ARG VITE_FLOOR_ROUTER
+ARG VITE_VAULT
+ARG VITE_VAULT_FACTORY
+ARG VITE_AQUA
+ARG VITE_SUBGRAPH_URL
+ENV VITE_REOWN_PROJECT_ID=$VITE_REOWN_PROJECT_ID \
+    VITE_CHAIN=$VITE_CHAIN \
+    VITE_FLOOR_REGISTRY=$VITE_FLOOR_REGISTRY \
+    VITE_FLOOR_ROUTER=$VITE_FLOOR_ROUTER \
+    VITE_VAULT=$VITE_VAULT \
+    VITE_VAULT_FACTORY=$VITE_VAULT_FACTORY \
+    VITE_AQUA=$VITE_AQUA \
+    VITE_SUBGRAPH_URL=$VITE_SUBGRAPH_URL
+
 RUN npm run build
 
 FROM node:22-slim

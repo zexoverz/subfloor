@@ -108,8 +108,10 @@ export function useWallet(): Wallet {
       // The heavy import happens here, or in the restore above, and nowhere else.
       const { modal } = await subscribe();
       await modal.open({ view: 'Connect' });
-    } catch {
-      setError('could not open the wallet modal');
+    } catch (cause) {
+      // The reason, when there is one. A build with no project id says so rather than leaving the
+      // owner to guess whether it is their wallet, their network, or us.
+      setError(cause instanceof Error ? cause.message.slice(0, 140) : 'could not open the wallet modal');
     } finally {
       setConnecting(false);
     }
