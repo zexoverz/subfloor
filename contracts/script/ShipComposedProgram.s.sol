@@ -9,6 +9,8 @@ import { console2 } from "forge-std/console2.sol";
 
 import { ISwapVM } from "../src/interfaces/ISwapVM.sol";
 import { MakerTraitsLib } from "../src/libs/MakerTraits.sol";
+import { TakerTraitsLib } from "../src/libs/TakerTraits.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AquaGuardVault } from "../src/subfloor/AquaGuardVault.sol";
 import { FloorRegistry } from "../src/subfloor/FloorRegistry.sol";
 import { ConcentratedBook } from "../src/subfloor/strategies/ConcentratedBook.sol";
@@ -127,23 +129,12 @@ contract ShipComposedProgram is Script {
         console2.log("digest", vm.toString(d));
     }
 
-    /// @notice Pass two: raise the floors, then ship.
-    function run() external {
-        AquaGuardVault vault = _vault();
-        FloorRegistry registry = FloorRegistry(vm.envAddress("SUBFLOOR_REGISTRY"));
-        registry; // read below, after the ship, so the log shows the floor the fill will meet
-        address usdc = vm.envAddress("SUBFLOOR_TUSDC");
-        bytes memory signature = vm.envBytes("SUBFLOOR_MANDATE_SIG");
-
-        address[] memory tokens = _tokens();
-
-        // Built through MakerTraitsLib, not by hand. The traits word carries `tokenA`, `tokenB` and
-        // `useAquaInsteadOfSignature`, and the program goes in through `build` rather than straight
-        // into `data`. A hand-made order with `traits = 0` ships and hashes fine, and then never
-        // fills: the router takes the signature path, computes a different order hash, and finds no
-        // Aqua balance under it. Caught by a quote returning zero rather than by a bad fill.
-        ISwapVM.Order memory order = MakerTraitsLib.build(MakerTraitsLib.Args({
-            maker: address(vault),
+    /// The order the composed program ships inside. Factored out so the fill attempt and the ship
+    /// build the same one — two constructions that could drift is how a taker ends up quoting a book
+    /// nobody shipped.
+    function _composedOrder(address[] memory tokens) internal view returns (ISwapVM.Order memory) {
+        return MakerTraitsLib.build(MakerTraitsLib.Args({
+            maker: address(_vault()),
             tokenA: tokens[0],
             tokenB: tokens[1],
             shouldUnwrapWeth: false,
@@ -164,6 +155,69 @@ contract ShipComposedProgram is Script {
             postTransferOutData: "",
             program: _program()
         }));
+    }
+
+    /// @notice The swap calldata for a fill against the composed book, and the taker data with it.
+    ///
+    /// Printed rather than broadcast because `forge script` simulates first and aborts when the
+    /// simulation reverts — and this one is supposed to revert. `--skip-simulation` does not change
+    /// that. Send it with `cast send --gas-limit <n>`, which skips estimation and lets the
+    /// transaction land and fail on chain, which is the artifact.
+    ///
+    ///     cast send $SUBFLOOR_ROUTER <swap calldata> --gas-limit 900000 \
+    ///       --rpc-url $RPC --account subfloor-dev
+    function refusalCalldata() external view {
+        uint256 amountIn = vm.envOr("SUBFLOOR_AMOUNT_IN", uint256(1e6));
+        address[] memory tokens = _tokens();
+
+        ISwapVM.Order memory order = _composedOrder(tokens);
+
+        console2.log("approve", vm.toString(abi.encodeCall(IERC20.approve, (vm.envAddress("SUBFLOOR_ROUTER"), amountIn))));
+        console2.log("swap", vm.toString(abi.encodeCall(ISwapVM.swap, (order, amountIn, _takerData(false)))));
+    }
+
+    function _takerData(bool isAToB) internal pure returns (bytes memory) {
+        return TakerTraitsLib.build(TakerTraitsLib.Args({
+            taker: address(0),
+            isExactIn: true,
+            shouldUnwrapWeth: false,
+            isStrictThresholdAmount: false,
+            isFirstTransferFromTaker: false,
+            useTransferFromAndAquaPush: true,
+            isAToB: isAToB,
+            allowPartialFill: false,
+            threshold: "",
+            to: address(0),
+            deadline: 0,
+            hasPreTransferInCallback: false,
+            hasPreTransferOutCallback: false,
+            preTransferInHookData: "",
+            postTransferInHookData: "",
+            preTransferOutHookData: "",
+            postTransferOutHookData: "",
+            preTransferInCallbackData: "",
+            preTransferOutCallbackData: "",
+            instructionsArgs: "",
+            signature: ""
+        }));
+    }
+
+    /// @notice Pass two: raise the floors, then ship.
+    function run() external {
+        AquaGuardVault vault = _vault();
+        FloorRegistry registry = FloorRegistry(vm.envAddress("SUBFLOOR_REGISTRY"));
+        registry; // read below, after the ship, so the log shows the floor the fill will meet
+        address usdc = vm.envAddress("SUBFLOOR_TUSDC");
+        bytes memory signature = vm.envBytes("SUBFLOOR_MANDATE_SIG");
+
+        address[] memory tokens = _tokens();
+
+        // Built through MakerTraitsLib, not by hand. The traits word carries `tokenA`, `tokenB` and
+        // `useAquaInsteadOfSignature`, and the program goes in through `build` rather than straight
+        // into `data`. A hand-made order with `traits = 0` ships and hashes fine, and then never
+        // fills: the router takes the signature path, computes a different order hash, and finds no
+        // Aqua balance under it. Caught by a quote returning zero rather than by a bad fill.
+        ISwapVM.Order memory order = _composedOrder(tokens);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = tokens[0] == WETH ? WETH_SHIPPED : USDC_SHIPPED;
