@@ -33,7 +33,7 @@ export function getProtocol(block: ethereum.Block): DexAggProtocol {
   p.methodologyVersion = "1.0.0";
   // Read from the deployment rather than hardcoded, so the mainnet and Sepolia manifests cannot
   // disagree with the row they write. `dataSource.network()` returns the manifest's own value.
-  p.network = dataSource.network() == "base" ? "BASE" : "BASE_SEPOLIA";
+  p.network = networkEnum(dataSource.network());
   p.type = "GENERIC";
   p.feeType = "FIXED_TRADING_FEE";
   p.cumulativeNetVolumeUSD = ZERO_BD;
@@ -173,6 +173,22 @@ export function effectiveFloor(referenceRate: BigInt, maxAdverseBps: i32, absolu
     if (!numerator.mod(bps).isZero()) relative = relative.plus(BigInt.fromI32(1));
   }
   return relative.gt(absoluteRate) ? relative : absoluteRate;
+}
+
+/// The manifest's network name, as the schema's `Network` enum spells it.
+///
+/// Written as a lookup that throws rather than a ternary with a default. The ternary this replaced
+/// read `network() == "base" ? "BASE" : "BASE_SEPOLIA"`, which is correct on exactly two chains and
+/// silently mislabels every other one — and `BASE_SEPOLIA` is a valid enum value, so the enum gate
+/// passes while the rows are wrong. A subgraph on Sepolia would have claimed to be Base Sepolia.
+export function networkEnum(name: string): string {
+  if (name == "base") return "BASE";
+  if (name == "base-sepolia") return "BASE_SEPOLIA";
+  if (name == "sepolia") return "SEPOLIA";
+  if (name == "mainnet") return "MAINNET";
+  // Deliberately fatal. A wrong network on every row is worse than a halted subgraph, because the
+  // halt is visible and the mislabelling is not.
+  throw new Error("no Network enum value for manifest network: " + name);
 }
 
 /// Days since the Unix epoch. The id every daily snapshot is keyed on.
