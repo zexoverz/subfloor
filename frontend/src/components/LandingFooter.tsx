@@ -106,6 +106,11 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
         />
 
         <div className="relative">
+          {/* The name over the closing line, so the page signs off with what it is called. */}
+          <div className="mb-6 flex justify-center">
+            <Wordmark height={30} />
+          </div>
+
           <h2 className="m-0 text-[clamp(26px,4.6vw,42px)] leading-[1.1] font-semibold tracking-tight text-balance">
             <ScrambleText text={copy.landing.closeTitle} onVisible speed={20} />
           </h2>

@@ -5,6 +5,7 @@ import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
 import { HeroParallax } from '../HeroParallax.tsx';
 import { PublicTape } from '../PublicTape.tsx';
+import { Wordmark } from '../Wordmark.tsx';
 import { SeaTrail } from '../SeaTrail.tsx';
 import { SideReef } from '../SideReef.tsx';
 import { SeaTexture } from '../SeaTexture.tsx';
@@ -94,8 +95,17 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <div className="relative order-1 md:order-2">
 
           <div className="relative">
+          {/*
+            * The mark, above the claim rather than only in a bar that is not there yet.
+            *
+            * The header starts below the hero now, so the first screen had the product's argument
+            * and not its name — which is the one screen where a visitor arriving from a link needs
+            * to be told what they are looking at.
+            */}
+          <Wordmark height={26} />
+
           {/* Muted, not faint: it is the smallest type on the page and it sits on artwork. */}
-          <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-muted uppercase">
+          <p className="mt-5 mb-0 text-[11px] font-semibold tracking-[0.17em] text-muted uppercase">
             {copy.landing.eyebrow}
           </p>
           <h1 className="mt-3 mb-0 text-[clamp(30px,5.2vw,44px)] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">
