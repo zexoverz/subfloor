@@ -169,19 +169,3 @@ export function AddressField({
     </div>
   );
 }
-
-export function MandateSummary({ rows }: { rows: [string, string][] }) {
-  return (
-    <div className="rounded-xl bg-sunken px-3 py-2.5 text-left shadow-card">
-      <p className="mb-2 text-[11px] tracking-[0.12em] text-faint uppercase">{copy.wallet.mandateSummary}</p>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11.5px]">
-        {rows.map(([k, v]) => (
-          <div key={k} className="contents">
-            <dt className="text-faint">{k}</dt>
-            <dd className="m-0 truncate text-right font-medium">{v}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}

@@ -9,10 +9,10 @@ import { Toasts } from './components/Toasts.tsx';
 import { addresses } from './lib/contracts.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
-import { SetupDialog } from './components/SetupDialog.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { MandateStrip } from './components/MandateStrip.tsx';
+import { GuardianStrip } from './components/GuardianStrip.tsx';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
@@ -36,17 +36,6 @@ export default function App() {
    * yet; lowering is unwired, like the guardian and delegate steps.
    */
   const purpose = 'lower' as const;
-  // Opens itself once for an owner whose vault is not configured, and closes for good if they
-  // would rather look around first.
-  /*
-   * Two different reasons the sheet is on screen, and they must not share one flag. It opens
-   * itself for a vault that is not configured; the owner also opens it deliberately to change
-   * something already set. Collapsing those meant an owner who had dismissed it once could never
-   * get back in, which is how the delegate became unchangeable from the interface while being
-   * freely changeable on chain.
-   */
-  const [dismissed, setDismissed] = useState(false);
-  const [opened, setOpened] = useState(false);
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
   const { state: fed, source: feedSource } = useSimulatedFeed(fixtures);
@@ -159,9 +148,6 @@ export default function App() {
     );
 
 
-  const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
-  const sheetOpen = (needsSetup && !dismissed) || opened;
-
   return (
     <AppShell
       screen={screen}
@@ -217,9 +203,6 @@ export default function App() {
           vaultError={own.error ?? ceremony.error}
           connected={Boolean(wallet.address)}
           connecting={wallet.connecting}
-          onSetup={needsSetup ? () => { setDismissed(false); setOpened(true); } : null}
-          // The agent can be replaced whenever the owner likes; the chain has never stopped them.
-          onEditAgent={ceremony.isOwner === true ? () => setOpened(true) : null}
           onSetAgent={async (next) => {
             await keys.setDelegate(next);
             reread();
@@ -232,6 +215,17 @@ export default function App() {
            */
           onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
           ledger={ledger}
+          guardianStrip={
+            <GuardianStrip
+              guardian={state.guardian ?? null}
+              registered={ceremony.registryGuardianSet}
+              owner={ceremony.isOwner === true}
+              ledger={ledger}
+              onSet={(next) => keys.setGuardian(next)}
+              saving={keys.sending}
+              savingStep={keys.step}
+            />
+          }
           mandate={
             ceremony.isOwner === true ? (
               <MandateStrip
@@ -251,22 +245,6 @@ export default function App() {
            * comes from effectiveFloor rather than from the number that was typed.
            */
           onRaise={(bps) => void floorWrite.raise(bps).then(() => ceremony.refresh())}
-        />
-      )}
-      {ceremony.isOwner === true && (
-        <SetupDialog
-          state={state}
-          wallet={wallet}
-          vault={vault}
-          // Opened by hand means they came to change something, not to be told it is done.
-          focusKeys={opened}
-          ceremony={ceremony}
-          open={sheetOpen}
-          onClose={() => {
-            setOpened(false);
-            setDismissed(true);
-          }}
-          onNavigate={setScreen}
         />
       )}
 

@@ -505,6 +505,11 @@ export const copy = {
     /// A missing backstop said as a state. Printed as a price it read "never below 0.00".
     /// Said on the inert button, because a control that does nothing should say why.
     alreadyThere: 'this is the floor already registered — move the handle to change it',
+    guardianLabel: 'the key that may lower it',
+    guardianNone: 'none registered — this floor cannot be lowered at all',
+    guardianFixed: 'fixed',
+    guardianSet: 'register it, on the vault and the registry',
+    guardianSaving: 'writing…',
     noBackstop: 'no absolute backstop — the floor is the reference less your bps',
     coldStart: 'venue history too short to calibrate — house default shown',
     notConfigured: 'no floor set for this pair yet — the first one is free and takes no device',

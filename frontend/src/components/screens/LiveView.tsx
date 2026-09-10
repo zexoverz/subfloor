@@ -55,13 +55,12 @@ export function LiveView({
   canCreateVault,
   vaultChecked,
   vaultError,
-  onSetup,
-  onEditAgent,
   onSetAgent,
   settingAgent,
   agentStep,
   onPanic,
   mandate,
+  guardianStrip,
   ledger,
   connected,
   connecting,
@@ -108,10 +107,8 @@ export function LiveView({
   /** So the connect button can turn instead of growing a sentence. */
   connecting: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
-  onSetup: (() => void) | null;
   /** Replacing the agent is an ordinary owner action, so it needs a way in after setup. */
   /** Non-null only for the owner: it is what tells the agent card who may edit and stop. */
-  onEditAgent: (() => void) | null;
   /** Point the vault at a different agent. `onlyOwner`, no signature, no device. */
   onSetAgent: (next: `0x${string}`) => Promise<void>;
   settingAgent: boolean;
@@ -120,6 +117,8 @@ export function LiveView({
   onPanic: () => void;
   /** The mandate strip, built where the nonce and the device are. */
   mandate?: import('react').ReactNode;
+  /** The key that may lower this floor, built where the writes are. */
+  guardianStrip?: import('react').ReactNode;
   /** One session for the whole board — see PublicAside. */
   ledger: import('../../lib/ledger.ts').Ledger;
 }) {
@@ -256,35 +255,6 @@ export function LiveView({
 
         {owner ? (
         <div className="flex flex-col gap-4.5">
-          {onSetup && (
-            <Card>
-              <CardHead icon={ArrowDownToLine} left={copy.onboarding.finishSetup} />
-              <CardBody>
-                {/*
-                 * The one card on the board with something still to do, so it is the one that gets
-                 * a face. Beside the text rather than behind it: this card is short and the drawing
-                 * fits next to it, where the stat tiles had to bleed theirs off a corner.
-                 */}
-                <div className="flex items-center gap-1">
-                  <div className="min-w-0 flex-1">
-                    <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
-                      {copy.onboarding.finishSetupNote}
-                    </p>
-                    <Act primary onClick={onSetup}>
-                      {copy.onboarding.finishSetup}
-                    </Act>
-                  </div>
-                  <img
-                    src="/mascot-setup.webp"
-                    alt=""
-                    aria-hidden
-                    draggable={false}
-                    className="tile-art pointer-events-none -my-2 -mr-2 w-[104px] shrink-0 select-none max-[420px]:hidden"
-                  />
-                </div>
-              </CardBody>
-            </Card>
-          )}
           <Card>
             <CardHead
               icon={Wallet}
@@ -446,13 +416,15 @@ export function LiveView({
                   ? `${copy.desk.backstopNote}: ${formatPrice(sellFloor)}`
                   : copy.floor.noBackstop}
               </p>
+
+              {guardianStrip}
             </CardBody>
           </Card>
 
           <AgentCard
             delegate={state.delegate}
             behaviour={agent}
-            owner={Boolean(onEditAgent)}
+            owner={owner}
             onSetAgent={onSetAgent}
             saving={settingAgent}
             savingStep={agentStep}
