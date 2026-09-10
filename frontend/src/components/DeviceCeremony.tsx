@@ -169,6 +169,15 @@ export function DeviceCeremony({
              * the one the registry says holds the guardian, and this is only here because that
              * answer can be wrong in either direction.
              */}
+            {/*
+             * Why the choice is being offered at all. Without it, a link to a key the vault will
+             * not check reads as a bug rather than as the only honest state of a vault that has
+             * registered nothing.
+             */}
+            {!expect && stage === 'pre' && (
+              <p className="mt-3 text-[11.5px] leading-relaxed text-faint">{copy.ceremony.noKeyYet}</p>
+            )}
+
             {other && stage === 'pre' && (
               <button
                 onClick={() => setVia(other)}
@@ -177,7 +186,6 @@ export function DeviceCeremony({
                 {other === 'wallet' ? copy.ceremony.useWallet : copy.ceremony.useDevice}
               </button>
             )}
-
 
             {/*
              * Named, not just refused. "Wrong device" leaves the owner guessing which of theirs it

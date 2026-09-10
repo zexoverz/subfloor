@@ -171,7 +171,6 @@ export function DeviceSign({
                 />
               </div>
 
-
               {mismatch && (
                 <p className="mb-3 text-[11.5px] leading-relaxed text-refuse">
                   {copy.ceremony.wrongDevice}
@@ -255,6 +254,15 @@ export function DeviceSign({
                * that answer can be wrong in either direction — a device that is not to hand, or a
                * wallet connected under a different account than the one on file.
                */}
+              {/*
+               * Why the choice is being offered at all. Without it, a link to a key the vault will
+               * not check reads as a bug rather than as the only honest state of a vault that has
+               * registered nothing.
+               */}
+              {!expect && stage === 'pre' && (
+                <p className="mt-3 text-[11.5px] leading-relaxed text-faint">{copy.ceremony.noKeyYet}</p>
+              )}
+
               {other && stage === 'pre' && (
                 <button
                   onClick={() => setVia(other)}

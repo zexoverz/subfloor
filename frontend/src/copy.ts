@@ -576,6 +576,8 @@ export const copy = {
     paired: 'device found',
     walletAbsent: 'no wallet connected',
     useWallet: 'sign with the connected wallet instead',
+    /// Why the choice is being offered at all. Without it a link to the wrong key looks like a bug.
+    noKeyYet: 'No key is registered for this vault yet, so either can sign — and neither signature will be honoured until one is.',
     useDevice: 'sign with the device instead',
     signing: 'waiting for your device',
     signed: 'Signed on your device.',
