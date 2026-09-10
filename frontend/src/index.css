@@ -832,8 +832,10 @@ body {
  * Flattened deliberately: 44 wide against 30 tall, so they sweep the sides and skim above and below
  * the creature. A label crossing its face is a label nobody can read on a drawing nobody can see.
  *
- * The period is set on the element. Two minutes read as movement rather than as the picture being
- * alive; four was slow enough to look stopped. It sits between them now.
+ * The period is set on the element, and it took three passes to land: four minutes looked stopped,
+ * two and a half still looked stopped, and the reason is the lane rather than the clock — a label
+ * on this ellipse only covers about 3% of the frame a second at 150s, which is under what reads as
+ * travel at all.
  */
 @keyframes hero-orbit {
   /*
@@ -948,7 +950,7 @@ body {
   animation:
     hero-bubble-in 600ms ease-out both,
     hero-bubble-breathe 12s ease-in-out infinite alternate,
-    hero-orbit 150s linear infinite;
+    hero-orbit 70s linear infinite;
 }
 
 /*

@@ -33,12 +33,12 @@ const MARKS = [
 /**
  * A full turn, shared by all six, each starting a sixth of it further along.
  *
- * Two and a half minutes. Two read as movement — something the eye tracks rather than something it
- * accepts as the picture being alive — and four was slow enough that nothing appeared to happen at
- * all. A label that travels while you are reading the sentence beside it has taken the thing it was
- * meant to decorate; one that never moves is furniture.
+ * Seventy seconds, arrived at by moving twice in the wrong direction first — four minutes, then two
+ * and a half, both of which looked stopped. The thing to keep an eye on is the far end: a label
+ * quick enough to follow while you are reading the sentence beside it has taken the attention that
+ * sentence needed. This is the slowest that still reads as travel rather than as furniture.
  */
-const TURN = 150;
+const TURN = 70;
 
 const TONES = {
   refuse: 'border-refuse/40 bg-refuse-wash text-refuse',
