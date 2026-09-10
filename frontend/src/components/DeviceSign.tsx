@@ -107,8 +107,17 @@ export function DeviceSign({
     via === 'wallet' ||
     (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
   const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
-  /** The other one, when the owner has one worth offering. */
-  const other = wallet && (isWallet ? 'device' : 'wallet');
+  /**
+   * The other key, offered only while the chain has not already decided.
+   *
+   * With a guardian on file the choice is not a preference — it is a fact, and the one that is not
+   * it cannot produce a signature the contract will accept. Offering it anyway is offering a
+   * ceremony whose only possible outcome is a signature the vault refuses, which is worse than not
+   * offering it at all because it looks like a way forward.
+   *
+   * With nothing registered either could turn out to be right, so both are on the table.
+   */
+  const other = wallet && !expect ? (isWallet ? 'device' : 'wallet') : null;
   /** Approved and applied, or approved and waiting out the registry's delay — both are a yes. */
   const answered = stage === 'signed' || stage === 'scheduled';
   useSignerError(signer.error);
