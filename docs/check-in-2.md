@@ -50,7 +50,7 @@ guardian signature check.
 - Contracts live and Sourcify-verified on **Base Sepolia** (FloorRegistry, FloorRouter,
   VaultFactory, AquaGuardVault, TestnetFaucet) and on **Ethereum Sepolia** (FloorRegistry,
   FloorRouter, exact match) — the second chain is portability evidence, not a second live run.
-- **962 contract tests pass**, including fuzz, invariant and a red-then-green counterexample suite.
+- **962 contract tests pass**, including property fuzzing and a red-then-green counterexample suite.
   `docs/counterexamples.md` archives three, each reproducible: two programs that take money at a
   price the recipient did not agree to against routers missing the check, and one that does it with
   the check present and working — a scaling bug we found and fixed in 1inch's own instruction, which
@@ -62,11 +62,12 @@ guardian signature check.
 - **Refusals are on chain.**
   [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0)
   reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000.
-- **980,000 hostile programs fuzzed so far, zero settled below a floor.**
+- **980,000 generated programs fuzzed so far, zero settled below a floor.** Half of each current
+  campaign is hostile, handing control to an attacker-chosen contract mid-trade.
   [`docs/fuzz-counter.json`](https://github.com/zexoverz/subfloor/blob/main/docs/fuzz-counter.json)
   is written only by CI and every increment maps to a run anyone can open. It cannot be backfilled,
   because it scales with wall-clock time rather than with a number we chose.
-- **The index is live**, `hasIndexingErrors: false`, **261 scored fills and 2 refusals**,
+- **The index is live**, `hasIndexingErrors: false`, **261 scored fills and 4 refusals**,
   implementing the Messari DEX Aggregator standardized schema, and it is load-bearing: the floor-setting screen's default is calibrated from
   realized adverse deviation, and below a hundred scored fills it refuses to return a percentile at
   all rather than quote a rumour.
@@ -102,5 +103,7 @@ accepted, unblocks the last items on that track.
 
 **Also outstanding, and ours rather than anyone's to unblock**
 
-Base mainnet deployment with our own money, and the Substreams package published to substreams.dev.
-Both are scheduled before submission and neither is waiting on a sponsor.
+Base mainnet deployment with our own money, scheduled before submission and not waiting on a sponsor.
+The Substreams package is already public as
+[`subfloor-refusals`](https://substreams.dev/packages/subfloor-refusals/v0.1.0), declared on Base
+Sepolia where the refusals are.

@@ -1180,6 +1180,15 @@ work, not that the final proof is instant (§13).
   it must genuinely read in the millions. Start the cron the day the invariant first passes —
   the counter's value scales with wall-clock time and cannot be backfilled.
 
+**What the counter counts — read 10 Sep, and it narrows the copy.** `scripts/fuzz-campaign.sh`
+counts four suites. The two in `FloorInvariants.t.sol` sample ordinary program shapes; only the two
+in `HostileFuzz.t.sol` hand control to an attacker-chosen `Extruction` target. So "hostile" is true of
+half the number at most: say **"generated programs"**, or quote the hostile half on its own (about
+1.1M by submission at 26,000 runs per suite, against ~2.2M in total). The title card "Millions of
+hostile programs" is only true in that second form. And the property is a stateless fuzz test,
+`testFuzz_noProgramSettlesAnyRecipientBelowItsFloor` — **no forge `invariant_noSettlementBelowFloor`
+exists**, so the §12 fuzz beat films the `testFuzz_` PASS line, not the one written there.
+
 ---
 
 ## 7 — The agent and the injection harness
