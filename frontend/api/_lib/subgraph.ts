@@ -52,6 +52,21 @@ export const DAY_FILLS_QUERY = `query DayFills($since: BigInt!, $first: Int!, $s
   }
 }`;
 
+/// The maker's side of every scored fill in the window. What the floor screen calibrates from: the
+/// number a vault owner signs is how the vault's own fills landed against the reference, and a
+/// daily snapshot cannot give the worst tail of a week, only the tail of each day.
+export const MAKER_FILLS_QUERY = `query MakerFills($since: BigInt!, $first: Int!, $skip: Int!) {
+  fillQualities(
+    where: { timestamp_gte: $since, referenceAgeSeconds_gte: 0 }
+    orderBy: timestamp
+    orderDirection: asc
+    first: $first
+    skip: $skip
+  ) {
+    makerAdverseDeviationBps
+  }
+}`;
+
 export const REFERENCE_QUERY = `query Reference {
   referenceAnswer(id: "0x4554482f555344") {
     aggregator
