@@ -15,6 +15,29 @@ import type { Holding } from '../types.ts';
  * with a blank in it; it is nothing to sign, and asking the device to render nothing is how an
  * owner learns to approve screens they have not read.
  */
+/**
+ * The struct itself, which is the half that has to survive the ceremony.
+ *
+ * `_consumeMandate` recomputes the hash from every field, so a stored signature without these is
+ * unspendable — and `expiry` in particular cannot be recovered afterwards, because it is derived
+ * from the instant this ran. See [[mandateStore]].
+ */
+export interface MandateMessage {
+  delegate: Address;
+  app: Address;
+  tokens: readonly Address[];
+  maxAmounts: string[];
+  nonce: string;
+  expiry: string;
+}
+
+export interface MandateTypedData {
+  domain: ReturnType<typeof mandateDomain>;
+  types: typeof mandateTypes;
+  primaryType: 'Mandate';
+  message: MandateMessage;
+}
+
 export function buildMandate({
   vault,
   delegate,
@@ -27,7 +50,7 @@ export function buildMandate({
   inventory: Holding[];
   nonce: bigint;
   expiresInDays: number;
-}): object | null {
+}): MandateTypedData | null {
   if (!vault || !isAddress(delegate) || !addresses.router) return null;
 
   /*

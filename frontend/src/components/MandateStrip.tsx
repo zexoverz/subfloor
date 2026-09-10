@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, OctagonX, ShieldCheck, X } from 'lucide-react';
 import type { Address } from 'viem';
 import { copy } from '../copy.ts';
@@ -63,6 +63,25 @@ export function MandateStrip({
     if (open && !el.open) el.showModal();
     if (!open && el.open) el.close();
   }, [open]);
+
+  /*
+   * Built once, here, rather than inline in the sheet: the same object is what the device is asked
+   * to sign and what gets stored beside the signature, and `expiry` is derived from the moment it
+   * is built. Two calls would produce two different structs and the stored one would not be the
+   * one that was signed.
+   */
+  const typed = useMemo(
+    () =>
+      buildMandate({
+        vault,
+        delegate: state.delegate ?? '',
+        inventory,
+        nonce: nonce ?? 0n,
+        expiresInDays: mandate.expiresInDays,
+      }),
+    // Rebuilt when the sheet opens, so an expiry is never older than the ceremony it belongs to.
+    [vault, state.delegate, inventory, nonce, mandate.expiresInDays, open],
+  );
 
   const held = loadMandate(vault);
   /*
@@ -152,22 +171,23 @@ export function MandateStrip({
               ['Tokens', inventory.map((h) => h.symbol).join(' / ')],
               ['Expires', `${mandate.expiresInDays} days`],
             ]}
-            typedData={buildMandate({
-              vault,
-              delegate: state.delegate ?? '',
-              inventory,
-              nonce: nonce ?? 0n,
-              expiresInDays: mandate.expiresInDays,
-            })}
+            typedData={typed}
             standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
             onSigned={(signature) => {
-              if (!vault || !state.delegate) return;
+              if (!vault || !state.delegate || !typed) return;
+              /*
+               * The struct goes with the signature. `_consumeMandate` rebuilds the hash from every
+               * field, and `expiry` is derived from the instant `typed` was built — so keeping only
+               * the signature leaves the agent holding something it cannot spend, and nothing on
+               * screen says so. See #218.
+               */
               saveMandate({
                 vault,
                 delegate: state.delegate,
                 nonce: String(nonce ?? 0n),
                 signature,
                 at: Date.now(),
+                message: typed.message,
               });
               onSigned();
             }}
