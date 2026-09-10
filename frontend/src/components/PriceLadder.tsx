@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
+import { Tide } from './Tide.tsx';
 import { formatPrice } from '../lib/rate.ts';
 
 /**
@@ -39,8 +40,19 @@ export function PriceLadder() {
   }, []);
 
   return (
-    <div className="grid gap-0 border border-rule bg-surface shadow-card md:grid-cols-[minmax(280px,1fr)_minmax(260px,1fr)]">
-      <div className="border-b border-rule p-6 md:border-r md:border-b-0">
+    <div className="relative grid gap-0 overflow-hidden rounded-xl border border-rule bg-surface shadow-card md:grid-cols-[minmax(280px,1fr)_minmax(260px,1fr)]">
+      {/*
+        * Rounded and watered like the cards above it, because it is one of them: the only panel on
+        * this page that was square-cornered and dry, which read as a diagram dropped in rather than
+        * as part of the set.
+        *
+        * Half depth, and the reason is the ground: this panel is `--c-surface`, where the full four
+        * bands reach #04425b and `text-faint` falls to 3.54. The axis labels down the left are
+        * faint. See Tide.
+        */}
+      <Tide height={72} depth={0.5} />
+
+      <div className="relative border-b border-rule p-6 md:border-r md:border-b-0">
         <div
           ref={rail}
           role="slider"
@@ -107,7 +119,7 @@ export function PriceLadder() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 p-6">
+      <div className="relative flex flex-col gap-4 p-6">
         <span
           className={`inline-flex w-fit items-center gap-2 rounded-xl border px-2.5 py-1.5 text-[12px] font-semibold tracking-[0.12em] uppercase ${
             refused
