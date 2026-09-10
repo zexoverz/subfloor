@@ -1,11 +1,10 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Activity, Bot, Cog, OctagonX, Pencil, X } from 'lucide-react';
+import { Activity, Bot, Cog, Pencil, X } from 'lucide-react';
 import { isAddress, type Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead } from './Card.tsx';
 import { AddressField } from './StepForms.tsx';
-import { PanicDialog } from './PanicDialog.tsx';
 import { AddressChip } from './AddressChip.tsx';
 
 /**
@@ -16,13 +15,10 @@ import { AddressChip } from './AddressChip.tsx';
  * no device, so changing it is an ordinary edit and belongs beside the thing it changes rather than
  * behind a re-opened ceremony.
  *
- * Stopping the agent moved here for the opposite reason. It was in the header, reachable from
- * anywhere — which is a real property to give up, and it is given up on purpose: a red button
- * pinned above every screen is a red button that stops being read. Here it sits under the address
- * it revokes and the behaviour it ends, where pressing it is a decision about something on screen.
- *
- * No device on this path, and that has not changed. Docking can only stop trading, never worsen a
- * price, and a stop that needs hardware fails exactly when the device is in a drawer somewhere else.
+ * Stopping the agent came here for the opposite reason. It was in the header, reachable from
+ * anywhere — a real property to give up, and given up on purpose: a red button pinned above every
+ * screen is a red button that stops being read. It sits in the mandate block at the foot of this
+ * card, beside the button that grants the licence it takes back.
  */
 export function AgentCard({
   delegate,
@@ -31,7 +27,6 @@ export function AgentCard({
   onSetAgent,
   saving,
   savingStep,
-  onPanic,
   mandate,
 }: {
   delegate: Address | null;
@@ -42,7 +37,6 @@ export function AgentCard({
   onSetAgent: (next: Address) => Promise<void>;
   saving: boolean;
   savingStep: string | null;
-  onPanic: () => void;
   /**
    * The mandate, which lives here because changing the agent above invalidates it.
    *
@@ -53,7 +47,6 @@ export function AgentCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [next, setNext] = useState('');
-  const [asking, setAsking] = useState(false);
 
   // Every opening starts from what is there now, so the field is a correction rather than a blank.
   useEffect(() => {
@@ -206,28 +199,6 @@ export function AgentCard({
 
           {mandate}
 
-          {owner && (
-            <>
-              <button
-                onClick={() => setAsking(true)}
-                title={copy.panic.hint}
-                className="pushable push-panic mt-4 mb-1.5 w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-semibold tracking-[0.08em] uppercase select-none"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <OctagonX size={13} strokeWidth={1.9} />
-                  {copy.panic.label}
-                </span>
-              </button>
-              <PanicDialog
-                open={asking}
-                onClose={() => setAsking(false)}
-                onFire={() => {
-                  setAsking(false);
-                  onPanic();
-                }}
-              />
-            </>
-          )}
         </CardBody>
       </div>
     </Card>

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ShieldCheck, X } from 'lucide-react';
+import { Check, OctagonX, ShieldCheck, X } from 'lucide-react';
 import type { Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { DeviceSign } from './DeviceSign.tsx';
+import { PanicDialog } from './PanicDialog.tsx';
 import { buildMandate } from '../lib/mandate.ts';
 import { loadMandate, saveMandate } from '../lib/mandateStore.ts';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
@@ -33,6 +34,7 @@ export function MandateStrip({
   wallet,
   ledger,
   onSigned,
+  onPanic,
 }: {
   state: VaultState;
   vault: Address | null;
@@ -41,8 +43,17 @@ export function MandateStrip({
   wallet: Wallet;
   ledger: Ledger;
   onSigned: () => void;
+  /**
+   * Dock the vault and revoke the mandate.
+   *
+   * It sits in this block rather than under it because the two buttons are the two ends of one
+   * authorisation: this strip is what grants the agent its licence, and stopping is what takes it
+   * back. Side by side they read as a pair; stacked they read as two unrelated red and blue slabs.
+   */
+  onPanic: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [asking, setAsking] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
   const { mandate, inventory, reference, floor } = state;
 
@@ -78,11 +89,32 @@ export function MandateStrip({
         {current && <Check size={14} strokeWidth={2.4} className="shrink-0 text-settle" />}
       </div>
 
-      <div className="mt-2.5">
+      {/* Halves rather than content-width: they are the two ends of one decision and neither is
+          the default, so sizing them by their labels would make the longer one the bigger target. */}
+      <div className="mt-2.5 grid grid-cols-2 gap-2.5">
         <Act wide primary={!current} onClick={() => setOpen(true)} disabled={!vault}>
           {current ? copy.live.mandateAgain : copy.live.mandateSign}
         </Act>
+        <button
+          onClick={() => setAsking(true)}
+          title={copy.panic.hint}
+          className="pushable push-panic mb-1.5 w-full cursor-pointer rounded-xl px-3 py-2.5 text-xs font-semibold tracking-[0.06em] uppercase select-none"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <OctagonX size={13} strokeWidth={1.9} />
+            {copy.panic.label}
+          </span>
+        </button>
       </div>
+
+      <PanicDialog
+        open={asking}
+        onClose={() => setAsking(false)}
+        onFire={() => {
+          setAsking(false);
+          onPanic();
+        }}
+      />
 
       <dialog
         ref={ref}

@@ -213,7 +213,6 @@ export default function App() {
            * The same call the header used to make. Docking stops trading and revoking the mandate
            * ends the authorisation; neither needs the device, which is the point of it.
            */
-          onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
           ledger={ledger}
           guardianStrip={
             <GuardianStrip
@@ -235,6 +234,7 @@ export default function App() {
                 wallet={wallet}
                 ledger={ledger}
                 onSigned={() => ceremony.refresh()}
+                onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
               />
             ) : null
           }

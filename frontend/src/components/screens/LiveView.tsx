@@ -58,7 +58,6 @@ export function LiveView({
   onSetAgent,
   settingAgent,
   agentStep,
-  onPanic,
   mandate,
   guardianStrip,
   ledger,
@@ -113,8 +112,6 @@ export function LiveView({
   onSetAgent: (next: `0x${string}`) => Promise<void>;
   settingAgent: boolean;
   agentStep: string | null;
-  /** Dock the vault and revoke the mandate. Moved off the header and onto the agent's own card. */
-  onPanic: () => void;
   /** The mandate strip, built where the nonce and the device are. */
   mandate?: import('react').ReactNode;
   /** The key that may lower this floor, built where the writes are. */
@@ -428,7 +425,6 @@ export function LiveView({
             onSetAgent={onSetAgent}
             saving={settingAgent}
             savingStep={agentStep}
-            onPanic={onPanic}
             mandate={mandate}
           />
         </div>
