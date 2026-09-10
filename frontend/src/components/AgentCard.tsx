@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Activity, Bot, OctagonX, Pencil, X } from 'lucide-react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { Activity, Bot, Cog, OctagonX, Pencil, X } from 'lucide-react';
 import { isAddress, type Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
@@ -149,12 +149,27 @@ export function AgentCard({
           )}
 
           <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
-            {behaviour.map((line) => (
-              <li key={line} className="text-muted">
-                <span className="mr-2 text-floor">›</span>
-                <span className="text-ink">{line}</span>
-              </li>
-            ))}
+            {behaviour.map((line, i) => {
+              /*
+               * ponytail: reads the word out of the line, because the line is all there is. These
+               * strings are prose and nothing beside them carries a running/stopped flag. A cog
+               * turning next to "auction rebalance idle" would be the card claiming motion the
+               * sentence denies, which is worse than a cog that sometimes does not turn.
+               */
+              const idle = /\bidle\b/i.test(line);
+              return (
+                <li key={line} className="flex items-start gap-2 text-muted">
+                  <Cog
+                    size={12}
+                    strokeWidth={1.9}
+                    aria-hidden
+                    className={`mt-[3.5px] shrink-0 text-floor ${idle ? 'opacity-40' : 'gear'}`}
+                    style={idle ? undefined : ({ '--gear-period': `${7 + i * 2.5}s` } as CSSProperties)}
+                  />
+                  <span className="text-ink">{line}</span>
+                </li>
+              );
+            })}
           </ul>
 
           {owner && (

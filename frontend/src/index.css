@@ -289,6 +289,31 @@ body {
 }
 
 /*
+ * A cog turning at the speed of something working, not something loading.
+ *
+ * A spinner says "wait"; this says "running", and the difference is entirely the period. Tailwind's
+ * `animate-spin` is one second, which reads as a page fetching. Nine is slow enough to be noticed
+ * only when looked at, which is what an ambient indicator should be — and each line sets its own,
+ * because three cogs turning in lockstep read as one animation applied three times rather than as
+ * three things happening.
+ */
+.gear {
+  animation: gear-turn var(--gear-period, 9s) linear infinite;
+}
+
+@keyframes gear-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear {
+    animation: none;
+  }
+}
+
+/*
  * A rule drawn the way a pixel display draws one: on for two pixels, off for two.
  *
  * A solid hairline is a thing a screen with 64 rows cannot render — at that resolution a divider is
