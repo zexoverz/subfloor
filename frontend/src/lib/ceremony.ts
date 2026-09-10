@@ -105,6 +105,14 @@ export type CeremonyState = {
   refresh: () => void;
 };
 
+/**
+ * How far to look for an unspent mandate nonce before giving up.
+ *
+ * Sixty-four re-quotes is a long day for one vault and a short loop for a page load. Beyond it the
+ * answer is not a bigger number.
+ */
+const MANDATE_NONCE_SCAN = 64n;
+
 export function useCeremony(address: Address | null, vault: Address | null): CeremonyState {
   /** Mock mode advances one step per press, so the whole flow is walkable with nothing deployed. */
   const [mockDone, setMockDone] = useState(0);
@@ -195,7 +203,38 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
           })),
         );
 
-        setNonce((zeroSpent as boolean) ? null : 0n);
+        /*
+         * The first nonce nobody has spent.
+         *
+         * `_consumeMandate` marks `mandateUsed[nonce]`, so one mandate is one ship and a re-quoting
+         * agent burns one per re-centre. This used to be `zeroSpent ? null : 0n`, which offered
+         * nonce 0 and then nothing — an interface that could authorise an agent once and never keep
+         * it running. The comment above the read already promised this loop; it had not been
+         * written.
+         *
+         * Nonces need not be contiguous, so the scan is a convenience rather than a rule, and it is
+         * bounded: past the window the honest answer is that this vault needs its nonces managed
+         * somewhere other than a scan, not that the read should walk forever.
+         */
+        if (!(zeroSpent as boolean)) {
+          setNonce(0n);
+        } else {
+          let next: bigint | null = null;
+          for (let n = 1n; n <= MANDATE_NONCE_SCAN; n++) {
+            const spent = await publicClient.readContract({
+              address: vault,
+              abi: vaultAbi,
+              functionName: 'mandateUsed',
+              args: [n],
+            });
+            if (!(spent as boolean)) {
+              next = n;
+              break;
+            }
+          }
+          if (!live) return;
+          setNonce(next);
+        }
 
         const [feedAddress] = reference as [Address, boolean, number, number, bigint];
         setFeed(feedAddress === '0x0000000000000000000000000000000000000000' ? null : feedAddress);
