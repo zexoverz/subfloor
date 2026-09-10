@@ -4,6 +4,7 @@ import { isAddress, type Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead } from './Card.tsx';
+import { Tide } from './Tide.tsx';
 import { AddressField } from './StepForms.tsx';
 import { AddressChip } from './AddressChip.tsx';
 
@@ -56,7 +57,19 @@ export function AgentCard({
   const ready = isAddress(next) && next.toLowerCase() !== delegate?.toLowerCase();
 
   return (
-    <Card>
+    <Card className="relative">
+      {/*
+        * Water at its foot, the same as the cards on the landing page and the well on this one.
+        *
+        * 0.7 rather than half: this panel's foot is `--c-surface-foot`, darker than the surface the
+        * landing cards sit on, so it can carry more before anything on top of it suffers. Measured
+        * there — the ground comes to #03324a, where the mandate's label reads 5.59 and its line
+        * 11.83, and the shield beside them 4.39 against the 3 an icon needs. See Tide.
+        *
+        * `relative` on the card, because the reef banner and this both position against it.
+        */}
+      <Tide height={92} depth={0.7} />
+
       <CardHead
         icon={Bot}
         left={copy.live.agentNow}
