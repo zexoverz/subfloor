@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Activity, Bot, ExternalLink, OctagonX, Pencil, X } from 'lucide-react';
+import { Activity, Bot, OctagonX, Pencil, X } from 'lucide-react';
 import { isAddress, type Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead } from './Card.tsx';
 import { AddressField } from './StepForms.tsx';
 import { PanicDialog } from './PanicDialog.tsx';
-import { addressUrl } from '../lib/chain.ts';
+import { AddressChip } from './AddressChip.tsx';
 
 /**
  * Everything about the agent, in the card that describes it.
@@ -56,29 +56,6 @@ export function AgentCard({
 
   return (
     <Card>
-      {/*
-        * The banner, and the only decoration on this card.
-        *
-        * It sits above the head rather than behind it: the head is a sunken strip and a bright
-        * illustration behind uppercase grey type is a label nobody can read. The gradient at its
-        * foot is what stops the join being a hard line between a lit picture and a dark rule.
-        *
-        * `aria-hidden`, because it says nothing the address and the three lines below do not.
-        */}
-      <div className="relative">
-        <img
-          src="/agent-banner.webp"
-          alt=""
-          aria-hidden
-          draggable={false}
-          className="block h-[92px] w-full origin-center scale-[1.02] object-cover object-center select-none"
-        />
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-10"
-          style={{ background: 'linear-gradient(to bottom, transparent, var(--c-sunken))' }}
-        />
-      </div>
-
       <CardHead
         icon={Bot}
         left={copy.live.agentNow}
@@ -95,83 +72,115 @@ export function AgentCard({
           )
         }
       />
-      <CardBody>
-        {editing ? (
-          <div className="mb-3 border-b border-rule pb-3">
-            <AddressField
-              label={copy.wallet.agentAddress}
-              hint={copy.wallet.agentAddressHint}
-              value={next}
-              onChange={setNext}
-              icon="wallet"
-            />
-            <div className="mt-2.5">
-              <Act
-                wide
-                primary
-                disabled={!ready}
-                busy={saving}
-                busyLabel={savingStep ?? copy.wallet.savingAgent}
-                onClick={() =>
-                  void onSetAgent(next as Address).then(() => setEditing(false))
-                }
-              >
-                {copy.wallet.saveAgent}
-              </Act>
-            </div>
-          </div>
-        ) : (
-          /* #111: the address, not a nickname — the published key has to be checkable. */
-          delegate && (
+      {/*
+       * The reef, behind the top half of the card rather than as a strip above it.
+       *
+       * Under the title, because the title is a sunken rule and uppercase grey type over a lit
+       * illustration is a label nobody can read.
+       *
+       * Faded with a mask rather than covered with a colour: the panel it sits in is itself a
+       * gradient, so painting anything over the picture to hide it would leave a rectangle of the
+       * wrong shade halfway down the card. A mask removes the image and lets the panel be the
+       * panel. The dimming is what buys the text back — the artwork is bright cyan and the labels
+       * on top of it are the faintest grey this palette has.
+       *
+       * 0.12, and the label under it lifted one step. Measured against the worst pixel in the band
+       * the text sits in — the anglerfish's lantern, which composites to #223d5d at this opacity:
+       * ink 9.74, muted 4.60, and `text-faint` 3.62, which is why the one label over the artwork is
+       * the one label on this card that is not faint. Dimming far enough to save it would have
+       * needed 0.05 and left no picture to dim.
+       */}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 overflow-hidden" aria-hidden>
+          <img
+            src="/agent-banner.webp"
+            alt=""
+            draggable={false}
+            className="h-full w-full origin-top scale-[1.02] object-cover object-center opacity-[0.12] select-none"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
+            }}
+          />
+        </div>
+
+        <CardBody className="relative">
+          {editing ? (
             <div className="mb-3 border-b border-rule pb-3">
-              <span className="text-[11.5px] tracking-[0.08em] text-faint uppercase">
-                {copy.wallet.agentAddress}
-              </span>
-              <a
-                href={addressUrl(delegate)}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium break-all hover:text-floor"
-              >
-                {delegate}
-                <ExternalLink size={11} strokeWidth={1.7} className="shrink-0 text-faint" />
-              </a>
+              <AddressField
+                label={copy.wallet.agentAddress}
+                hint={copy.wallet.agentAddressHint}
+                value={next}
+                onChange={setNext}
+                icon="wallet"
+              />
+              <div className="mt-2.5">
+                <Act
+                  wide
+                  primary
+                  disabled={!ready}
+                  busy={saving}
+                  busyLabel={savingStep ?? copy.wallet.savingAgent}
+                  onClick={() => void onSetAgent(next as Address).then(() => setEditing(false))}
+                >
+                  {copy.wallet.saveAgent}
+                </Act>
+              </div>
             </div>
-          )
-        )}
+          ) : (
+            /* #111: the address, not a nickname — the published key has to be checkable. */
+            delegate && (
+              <div className="mb-3 border-b border-rule pb-3">
+                {/* Muted, not faint: it is the only label on this card with a picture behind it. */}
+                <span className="text-[11.5px] tracking-[0.08em] text-muted uppercase">
+                  {copy.wallet.agentAddress}
+                </span>
+                {/*
+                 * Truncated, with the identicon carrying the identity — the same chip as every
+                 * other address on this board. Forty hex characters wrapped over three lines and
+                 * made the card about its own middle; nobody reads an address, they recognise one,
+                 * and the full string is still on the hover and one click away on the explorer.
+                 */}
+                <div className="mt-1">
+                  <AddressChip address={delegate} size={18} />
+                </div>
+              </div>
+            )
+          )}
 
-        <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
-          {behaviour.map((line) => (
-            <li key={line} className="text-muted">
-              <span className="mr-2 text-floor">›</span>
-              <span className="text-ink">{line}</span>
-            </li>
-          ))}
-        </ul>
+          <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
+            {behaviour.map((line) => (
+              <li key={line} className="text-muted">
+                <span className="mr-2 text-floor">›</span>
+                <span className="text-ink">{line}</span>
+              </li>
+            ))}
+          </ul>
 
-        {owner && (
-          <>
-            <button
-              onClick={() => setAsking(true)}
-              title={copy.panic.hint}
-              className="pushable push-panic mt-4 mb-1.5 w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-semibold tracking-[0.08em] uppercase select-none"
-            >
-              <span className="flex items-center justify-center gap-2">
-                <OctagonX size={13} strokeWidth={1.9} />
-                {copy.panic.label}
-              </span>
-            </button>
-            <PanicDialog
-              open={asking}
-              onClose={() => setAsking(false)}
-              onFire={() => {
-                setAsking(false);
-                onPanic();
-              }}
-            />
-          </>
-        )}
-      </CardBody>
+          {owner && (
+            <>
+              <button
+                onClick={() => setAsking(true)}
+                title={copy.panic.hint}
+                className="pushable push-panic mt-4 mb-1.5 w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-semibold tracking-[0.08em] uppercase select-none"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <OctagonX size={13} strokeWidth={1.9} />
+                  {copy.panic.label}
+                </span>
+              </button>
+              <PanicDialog
+                open={asking}
+                onClose={() => setAsking(false)}
+                onFire={() => {
+                  setAsking(false);
+                  onPanic();
+                }}
+              />
+            </>
+          )}
+        </CardBody>
+      </div>
     </Card>
   );
 }
