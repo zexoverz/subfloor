@@ -394,8 +394,12 @@ export function LiveView({
                     title={unchanged ? copy.floor.alreadyThere : undefined}
                     onClick={() => {
                       if (unchanged) return;
-                      if (tightening) onRaise(draft);
-                      else setAdjusting(true);
+                      // Both directions go through the sheet. Raising fired straight from the card,
+                      // which made the two halves of one decision behave differently for a reason
+                      // the reader cannot see — and the cheap half was the one with no confirmation
+                      // at all. The sheet is where the number is shown against the fills it will be
+                      // judged by, and that is worth a click in either direction.
+                      setAdjusting(true);
                     }}
                   >
                     {!floor.enforced ? copy.floor.set : tightening ? copy.floor.raise : copy.floor.lower}

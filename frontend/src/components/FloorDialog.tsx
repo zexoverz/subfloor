@@ -162,8 +162,8 @@ export function FloorDialog({
           </>
         ) : (
           <>
-            <Locked onClick={() => setOnDevice(true)}>
-              {copy.floor.lower} · {formatPrice(price)}
+            <Locked wide weakening onClick={() => setOnDevice(true)}>
+              {copy.floor.lower} · ${formatPrice(price)}
             </Locked>
             <p className="mt-2 text-[11.5px] text-faint">{copy.floor.lowerHint}</p>
           </>

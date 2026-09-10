@@ -72,17 +72,28 @@ export function Act({
 }
 
 /**
- * The action the address alone cannot take. The hexagon is the device: it appears only on moves
- * that weaken protection, which is the whole asymmetry rendered as one glyph.
+ * The action the address alone cannot take. The key is the device: it appears only on moves that
+ * weaken protection, which is the whole asymmetry rendered as one glyph.
+ *
+ * `weakening` turns it red. Lowering a floor is the one press on this board that leaves the owner
+ * with less protection than before, and it should not look like every other quiet control.
  */
-export function Locked({ children, onClick }: Props) {
+export function Locked({ children, onClick, wide = false, weakening = false }: Props & { wide?: boolean; weakening?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className="pushable push-quiet mb-1.5 cursor-pointer rounded-xl px-3.5 py-2.5 text-xs tracking-[0.06em]"
+      className={`pushable mb-1.5 cursor-pointer rounded-xl px-3.5 py-2.5 text-xs tracking-[0.06em] ${
+        weakening ? 'push-panic font-semibold' : 'push-quiet'
+      } ${wide ? 'w-full' : ''}`}
     >
-      <span className="flex items-center gap-2">
-        <KeyRound size={13} strokeWidth={1.7} className="text-floor" />
+      <span className={`flex items-center gap-2 ${wide ? 'justify-center' : ''}`}>
+        {/*
+          * The glyph is the device, and its colour is what the press does. Cyan where the device is
+          * simply required; red where the press weakens the guarantee, which is the only action on
+          * this board that does — and a red key is a truer warning than a red word, because it is
+          * the key itself that authorises the weakening.
+          */}
+        <KeyRound size={13} strokeWidth={1.7} className={weakening ? '' : 'text-floor'} />
         {children}
       </span>
     </button>
