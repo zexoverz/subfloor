@@ -27,6 +27,15 @@ const BALANCE_OF = [
 /** Public by design: it identifies the app to Reown's relay, it authorises nothing. */
 const projectId = import.meta.env?.VITE_REOWN_PROJECT_ID ?? '';
 
+/**
+ * One address the browser can sign with, and which connection it came through.
+ *
+ * Both halves are needed. wagmi signs through a connector's client, so an address without the
+ * connector that holds it cannot be asked for anything — passing one from a second wallet to the
+ * first wallet's client fails, and it fails at the moment the owner presses sign.
+ */
+export type WalletAccount = { address: Address; uid: string; name: string };
+
 export type Wallet = {
   address: Address | null;
   available: boolean;
@@ -39,6 +48,22 @@ export type Wallet = {
   /** Re-read balances. Sending tokens out changes them, and nothing else would say so. */
   refresh: () => void;
   /**
+   * Every address available right now, across every wallet connected to this page.
+   *
+   * More than one, because the account that trades and the account registered as guardian do not
+   * have to be the same one — and for the split this design argues for, they should not be.
+   */
+  accounts: WalletAccount[];
+  /**
+   * Connect a second wallet without giving up the first.
+   *
+   * wagmi holds a map of connections and one `current`; connecting makes the newcomer current,
+   * which would silently re-identify the whole page as the guardian account — every balance, the
+   * ownership check, the address in the header. So the previous connection is put back the moment
+   * the new one lands, and the newcomer stays in the map as something that can be asked to sign.
+   */
+  connectAnother: () => void;
+  /**
    * Sign an EIP-712 payload with the connected account.
    *
    * The alternative to the Ledger, for a vault whose registered guardian is a soft wallet. It signs
@@ -46,7 +71,7 @@ export type Wallet = {
    * signature the vault will honour when the connected address *is* the guardian on file. The
    * ceremony checks that before it asks, rather than after the vault refuses.
    */
-  signTypedData: (typedData: unknown) => Promise<string | null>;
+  signTypedData: (typedData: unknown, as?: WalletAccount) => Promise<string | null>;
 };
 
 export function useWallet(): Wallet {
@@ -55,7 +80,17 @@ export function useWallet(): Wallet {
   const [error, setError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
   const [balanceTick, setBalanceTick] = useState(0);
+  const [accounts, setAccounts] = useState<WalletAccount[]>([]);
   const unwatch = useRef<(() => void) | null>(null);
+  const unwatchAll = useRef<(() => void) | null>(null);
+  /**
+   * The connection this page is *about*, remembered across the moment a second one is added.
+   *
+   * Recorded when the owner asks for another wallet rather than tracked continuously: the only
+   * thing that must survive is which connection to put back, and reading it at that instant is
+   * both simpler and correct if they had already switched accounts by hand.
+   */
+  const restoreTo = useRef<string | null>(null);
 
   /** Attach the account watcher and take the current answer. Shared by connect and by restore. */
   const subscribe = useCallback(async () => {
@@ -66,6 +101,33 @@ export function useWallet(): Wallet {
     unwatch.current = core.watchAccount(config, {
       onChange: (account) => setAddress((account.address as Address | undefined) ?? null),
     });
+
+    unwatchAll.current?.();
+    unwatchAll.current = core.watchConnections(config, {
+      onChange: (list) => {
+        setAccounts(
+          list.flatMap((c) =>
+            c.accounts.map((a) => ({ address: a as Address, uid: c.connector.uid, name: c.connector.name })),
+          ),
+        );
+        /*
+         * A second wallet has just landed and made itself current. Put the page back on the
+         * connection it was about — the newcomer is here to sign, not to become the owner.
+         */
+        const back = restoreTo.current;
+        if (!back || config.state.current === back) return;
+        restoreTo.current = null;
+        const connector = config.state.connections.get(back)?.connector;
+        if (connector) void core.switchConnection(config, { connector }).catch(() => {});
+      },
+    });
+    setAccounts(
+      core
+        .getConnections(config)
+        .flatMap((c) =>
+          c.accounts.map((a) => ({ address: a as Address, uid: c.connector.uid, name: c.connector.name })),
+        ),
+    );
 
     return { modal, config, core };
   }, []);
@@ -126,7 +188,26 @@ export function useWallet(): Wallet {
     }
   }, [subscribe]);
 
-  const signTypedData = useCallback(async (typedData: unknown) => {
+  /**
+   * Another wallet, alongside the one already here.
+   *
+   * The modal resolves when it opens, not when a wallet answers, so the restore cannot be awaited
+   * here — it is armed by the ref and fired by the connection watcher above.
+   */
+  const connectAnother = useCallback(async () => {
+    if (mocked || !projectId) return;
+    setError(null);
+    try {
+      const { modal, config } = await subscribe();
+      restoreTo.current = config.state.current;
+      await modal.open({ view: 'Connect' });
+    } catch (cause) {
+      restoreTo.current = null;
+      setError(cause instanceof Error ? cause.message.slice(0, 140) : 'could not open the wallet modal');
+    }
+  }, [subscribe]);
+
+  const signTypedData = useCallback(async (typedData: unknown, as?: WalletAccount) => {
     if (!typedData) {
       // Not a refusal. Nothing was asked, and reporting it as one teaches the owner that their
       // wallet turned down something it was never shown.
@@ -135,7 +216,14 @@ export function useWallet(): Wallet {
     }
     try {
       const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
-      return await core.signTypedData(startAppKit().config, typedData as never);
+      const config = startAppKit().config;
+      /*
+       * Both, or neither. wagmi signs through a connector's client — naming an address without the
+       * connector that holds it asks the wrong wallet, and the failure arrives at the press.
+       */
+      const through = as && config.state.connections.get(as.uid)?.connector;
+      const target = as && through ? { account: as.address, connector: through } : {};
+      return await core.signTypedData(config, { ...(typedData as object), ...target } as never);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message.slice(0, 140) : 'the wallet declined');
       return null;
@@ -149,7 +237,13 @@ export function useWallet(): Wallet {
     await core.disconnect(startAppKit().config).catch(() => {});
   }, []);
 
-  useEffect(() => () => unwatch.current?.(), []);
+  useEffect(
+    () => () => {
+      unwatch.current?.();
+      unwatchAll.current?.();
+    },
+    [],
+  );
 
   // Balances are read on chain rather than assumed, so "from wallet" is a fact on the screen.
   useEffect(() => {
@@ -190,6 +284,8 @@ export function useWallet(): Wallet {
     connect: () => void connect(),
     disconnect: () => void disconnect(),
     refresh: () => setBalanceTick((t) => t + 1),
+    accounts,
+    connectAnother: () => void connectAnother(),
     signTypedData,
   };
 }

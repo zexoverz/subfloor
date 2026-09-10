@@ -1,6 +1,6 @@
 import type { Address } from 'viem';
 import type { Ledger } from './ledger.ts';
-import type { Wallet } from './wallet.ts';
+import type { Wallet, WalletAccount } from './wallet.ts';
 
 /**
  * Whatever holds the guardian key, behind one shape.
@@ -40,11 +40,16 @@ export function deviceSigner(ledger: Ledger): Signer {
   };
 }
 
-export function walletSigner(wallet: Wallet): Signer {
+/**
+ * @param as Which of the browser's addresses signs. Defaults to the one the page is about, which is
+ * right only when the owner registered their trading account as the guardian — everyone else picks.
+ */
+export function walletSigner(wallet: Wallet, as?: WalletAccount | null): Signer {
+  const account = as ?? wallet.accounts.find((a) => a.address === wallet.address) ?? null;
   return {
     kind: 'wallet',
-    address: wallet.address,
-    ready: Boolean(wallet.address),
+    address: account?.address ?? wallet.address,
+    ready: Boolean(account ?? wallet.address),
     connecting: wallet.connecting,
     error: wallet.error,
     /*
@@ -54,10 +59,12 @@ export function walletSigner(wallet: Wallet): Signer {
      * against null.
      */
     connect: async () => {
+      if (account) return account.address;
       if (wallet.address) return wallet.address;
       wallet.connect();
       return null;
     },
-    signTypedData: wallet.signTypedData,
+    /* The step callback belongs to the device kit; a browser wallet reports no progress. */
+    signTypedData: (typedData) => wallet.signTypedData(typedData, account ?? undefined),
   };
 }

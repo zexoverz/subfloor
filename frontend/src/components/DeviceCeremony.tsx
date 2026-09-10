@@ -4,8 +4,9 @@ import { Act } from './Button.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import { useLedger } from '../lib/ledger.ts';
-import type { Wallet } from '../lib/wallet.ts';
+import type { Wallet, WalletAccount } from '../lib/wallet.ts';
 import { deviceSigner, walletSigner } from '../lib/signer.ts';
+import { SigningKeys } from './SigningKeys.tsx';
 
 /**
  * The two hardware moments, as a body that can sit in a screen or in a sheet.
@@ -70,10 +71,13 @@ export function DeviceCeremony({
    * will honour, and leading with one would send the owner to fetch hardware for nothing.
    */
   const [via, setVia] = useState<'device' | 'wallet' | null>(null);
-  const isWallet =
-    via === 'wallet' ||
-    (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
-  const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
+  /** Which address signs, once picked by hand. Null means "whatever the registry points at". */
+  const [chosen, setChosen] = useState<WalletAccount | null>(null);
+  /** The guardian on file, found among everything the browser has connected — not only the active one. */
+  const guardianKey =
+    (expect && wallet?.accounts.find((a) => a.address.toLowerCase() === expect.toLowerCase())) || null;
+  const isWallet = via === 'wallet' || (via === null && Boolean(guardianKey));
+  const signer = isWallet && wallet ? walletSigner(wallet, chosen ?? guardianKey) : deviceSigner(ledger);
   /** The other one, when the owner has one worth offering. */
   const other = wallet && (isWallet ? 'device' : 'wallet');
 
@@ -105,15 +109,23 @@ export function DeviceCeremony({
                 answer={stage === 'signed' ? 'approved' : stage === 'declined' ? 'rejected' : null}
                 chrome={isWallet ? 'wallet' : 'ledger'}
                 device={{
-                  paired: isWallet ? Boolean(wallet?.address) : ledger.presence === 'paired',
+                  paired: isWallet ? Boolean(signer.address) : ledger.presence === 'paired',
                   hint: isWallet
-                    ? (wallet?.address ?? copy.ceremony.walletAbsent)
+                    ? (signer.address ?? copy.ceremony.walletAbsent)
                     : ledger.presence === 'paired'
                       ? copy.ceremony.paired
                       : copy.ceremony.unknownDevice,
                 }}
               />
             </div>
+
+            {/*
+             * Only where there is a choice to make. One account and a guardian that matches it is
+             * not a decision, and a picker over a list of one is a question with one answer.
+             */}
+            {isWallet && wallet && (wallet.accounts.length > 1 || !guardianKey) && stage === 'pre' && (
+              <SigningKeys wallet={wallet} expect={expect} chosen={chosen ?? guardianKey} onChoose={setChosen} />
+            )}
 
             {stage === 'signed' ? (
               <Act wide primary onClick={onDone}>

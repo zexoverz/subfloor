@@ -6,8 +6,9 @@ import { Card, CardBody, CardHead } from './Card.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import type { Ledger } from '../lib/ledger.ts';
-import type { Wallet } from '../lib/wallet.ts';
+import type { Wallet, WalletAccount } from '../lib/wallet.ts';
 import { deviceSigner, walletSigner } from '../lib/signer.ts';
+import { SigningKeys } from './SigningKeys.tsx';
 
 export type SignPurpose = 'mandate' | 'lower';
 
@@ -100,11 +101,14 @@ export function DeviceSign({
    * Everywhere else the device leads, which is what this is built to demonstrate.
    */
   const [via, setVia] = useState<'device' | 'wallet' | null>(null);
-  const isWallet =
-    via === 'wallet' ||
-    (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
-  const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
-  /** The other one, when there is one worth offering. */
+  /** Which address signs, once picked by hand. Null means "whatever the registry points at". */
+  const [chosen, setChosen] = useState<WalletAccount | null>(null);
+  /** The guardian on file, found among everything the browser has connected — not only the active one. */
+  const guardianKey =
+    (expect && wallet?.accounts.find((a) => a.address.toLowerCase() === expect.toLowerCase())) || null;
+  const isWallet = via === 'wallet' || (via === null && Boolean(guardianKey));
+  const signer = isWallet && wallet ? walletSigner(wallet, chosen ?? guardianKey) : deviceSigner(ledger);
+  /** The other one, when the owner has one worth offering. */
   const other = wallet && (isWallet ? 'device' : 'wallet');
   /** Approved and applied, or approved and waiting out the registry's delay — both are a yes. */
   const answered = stage === 'signed' || stage === 'scheduled';
@@ -155,9 +159,9 @@ export function DeviceSign({
                     answer={stage === 'declined' ? 'rejected' : answered ? 'approved' : null}
                     chrome={isWallet ? 'wallet' : 'ledger'}
                     device={{
-                      paired: isWallet ? Boolean(wallet?.address) : ledger.presence === 'paired',
+                      paired: isWallet ? Boolean(signer.address) : ledger.presence === 'paired',
                       hint: isWallet
-                        ? (wallet?.address ?? copy.ceremony.walletAbsent)
+                        ? (signer.address ?? copy.ceremony.walletAbsent)
                         : ledger.presence === 'paired'
                           ? copy.ceremony.paired
                           : copy.ceremony.unknownDevice,
@@ -191,6 +195,14 @@ export function DeviceSign({
                     <b className="font-mono font-semibold text-ink tabular-nums">{standing}</b> is what settlement
                     uses.
                   </p>
+                )}
+
+                {/*
+                 * Only where there is a choice to make. One account and a guardian that matches it is
+                 * not a decision, and a picker over a list of one is a question with one answer.
+                 */}
+                {isWallet && wallet && (wallet.accounts.length > 1 || !guardianKey) && stage === 'pre' && (
+                  <SigningKeys wallet={wallet} expect={expect} chosen={chosen ?? guardianKey} onChoose={setChosen} />
                 )}
 
                 {answered ? (
