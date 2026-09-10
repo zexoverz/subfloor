@@ -108,6 +108,39 @@ export function SeaTrail({
         * `vector-effect` so stretching it does not stretch the stroke with it. Dashes rather than
         * dots for the same reason: a round dot pulled across 1000 units is an oval.
         */}
+      {/*
+        * The water under the current, in layers.
+        *
+        * One dotted line across a page is a line; a line with sea stacked beneath it is a surface.
+        * Each band is the same curve pushed further down and thinned, so they read as one body of
+        * water seen edge-on rather than as four separate shapes.
+        *
+        * Translucent, never opaque. An opaque band is a rectangle over a textured page whatever
+        * outline it is drawn in — that was the visible block under the reefs, and it is the reason
+        * these are `--c-surface-top` at a few percent instead of the page's own ground.
+        */}
+      <svg
+        viewBox="0 0 1000 220"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+        /* The bands fill past the foot of the box and are clipped flat there, which is a straight
+           line across the page — the exact thing every other edge here was fixed to avoid. */
+        style={{
+          maskImage: 'linear-gradient(to bottom, black 0%, black 52%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 52%, transparent 100%)',
+        }}
+      >
+        {[0, 26, 52, 78].map((drop, i) => (
+          <path
+            key={drop}
+            d={`${path} L1000 260 L0 260 Z`}
+            transform={`translate(0 ${drop})`}
+            fill="var(--c-surface-top)"
+            opacity={0.5 - i * 0.11}
+          />
+        ))}
+      </svg>
+
       <svg
         viewBox="0 0 1000 220"
         preserveAspectRatio="none"
