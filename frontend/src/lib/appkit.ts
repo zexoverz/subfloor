@@ -54,6 +54,54 @@ export function startAppKit() {
     features: { analytics: false, email: false, socials: false },
   });
 
+  /*
+   * Raise the modal into the top layer whenever it opens.
+   *
+   * AppKit renders <w3m-modal> into the body and positions it with a high z-index, which is enough
+   * against ordinary content and nothing at all against a native <dialog>. A dialog opened with
+   * showModal() is promoted to the *top layer*, and nothing in the normal document paints over it
+   * — so the wallet modal opened underneath the very sheet that asked for it. The toasts and the
+   * hover card hit this already; this is the same fix, and the same reason it works: the top layer
+   * stacks in promotion order, and the modal is promoted after the sheet was.
+   */
+  modal.subscribeState((state) => (state.open ? raise() : lower()));
+
   started = { modal, config: adapter.wagmiConfig };
   return started;
+}
+
+/** The element is created lazily, so the first open may be a frame or two ahead of it existing. */
+function findModal(): HTMLElement | null {
+  return document.querySelector('w3m-modal');
+}
+
+function raise(tries = 12) {
+  const el = findModal();
+  if (!el) {
+    // Out of frames rather than out of luck: the modal still opens, it just opens underneath.
+    if (tries > 0) requestAnimationFrame(() => raise(tries - 1));
+    return;
+  }
+  if (typeof el.showPopover !== 'function') return;
+  try {
+    el.setAttribute('popover', 'manual');
+    if (!el.matches(':popover-open')) el.showPopover();
+  } catch {
+    // Racing a hide against a show throws rather than returning false; the next open re-tries.
+  }
+}
+
+/*
+ * Attribute off, not just hidden. A closed popover is `display: none` by UA rule, and leaving the
+ * attribute on would take the element out of layout while AppKit is still animating it away.
+ */
+function lower() {
+  const el = findModal();
+  if (!el?.hasAttribute('popover')) return;
+  try {
+    if (el.matches(':popover-open')) el.hidePopover();
+  } catch {
+    // Already gone.
+  }
+  el.removeAttribute('popover');
 }
