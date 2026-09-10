@@ -500,6 +500,8 @@ export const copy = {
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
+    /// A missing backstop said as a state. Printed as a price it read "never below 0.00".
+    noBackstop: 'no absolute backstop — the floor is the reference less your bps',
     coldStart: 'venue history too short to calibrate — house default shown',
     notConfigured: 'no floor set for this pair yet — the first one is free and takes no device',
   },

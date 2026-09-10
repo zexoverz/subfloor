@@ -1,5 +1,5 @@
 import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Pencil, Receipt, Wallet } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead } from '../Card.tsx';
 import { Ghost } from '../Button.tsx';
@@ -13,6 +13,7 @@ import { ScopeSwitch } from '../ScopeSwitch.tsx';
 import type { InitialSetup } from '../../lib/vault.ts';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
+import { FloorControl } from '../FloorControl.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
 import { Act } from '../Button.tsx';
 import { TopUp } from '../TopUp.tsx';
@@ -99,14 +100,19 @@ export function LiveView({
   onEditAgent: (() => void) | null;
 }) {
   const [adjusting, setAdjusting] = useState(false);
+  /*
+   * What the handle is on, which starts where the registry is. Keyed on the registered number so a
+   * floor that changes on chain — by this owner elsewhere, or by a guardian-signed lowering — moves
+   * the handle with it rather than leaving a stale draft sitting on the card.
+   */
+  const [draft, setDraft] = useState(state.floor.maxAdverseBps);
+  useEffect(() => setDraft(state.floor.maxAdverseBps), [state.floor.maxAdverseBps]);
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
   // line under the tape can never again claim different things about the same rows.
   const live = source === 'chain';
   const { pair, stats, tape, agent, inventory, floor, floorBuy, reference } = state;
   // An unregistered floor is not a floor of zero, and rendering 0.00 would read as one.
-  const price = (value: number) => (floor.enforced ? formatPrice(value) : copy.floor.notSet);
   const sellFloor = rateToPrice(floor.absoluteRate, pair.baseDecimals, pair.quoteDecimals);
-  const buyCeiling = 1 / rateToPrice(floorBuy.absoluteRate, pair.quoteDecimals, pair.baseDecimals);
   const feedFresh = reference.ageSeconds < reference.stalenessBoundSeconds;
 
   return (
@@ -324,41 +330,73 @@ export function LiveView({
               // freshness reading and the fills the number is being judged against.
               right={
                 /*
-                 * While setup is unfinished there is one task, not two entry points into it. A
-                 * floor registered on a vault with no funds, no guardian and no delegate protects
-                 * nothing, and half-configured is the state nobody wants to explain later.
+                 * Nothing. The card carries the control now, so the pencil opened a second way to
+                 * do what is already on screen — and while setup is unfinished the sheet is reached
+                 * from the setup card, which is one task with one entry rather than two.
                  */
-                /*
-                 * The glyph alone. "SET SUBFLOOR" wrapped to two lines in this header and spent
-                 * more of the card's top edge than the card's own title — and the pencil says
-                 * "change this" without any of it. The words move to the label, so nothing is lost
-                 * to a screen reader or to a hover.
-                 */
-                <Ghost
-                  onClick={() => (onSetup ? onSetup() : setAdjusting(true))}
-                  label={floor.enforced ? copy.onboarding.adjust : copy.floor.set}
-                >
-                  <Pencil size={13} strokeWidth={1.8} />
-                </Ghost>
+                null
               }
             />
-            <CardBody className="py-1">
-              {[
-                [`${copy.desk.selling} ${pair.base}`, `${copy.desk.neverBelow} ${price(sellFloor)}`, floor.enforced ? `−${floor.maxAdverseBps} bps from the reference` : copy.floor.setHint],
-                [`${copy.desk.buying} ${pair.base}`, `${copy.desk.neverAbove} ${price(buyCeiling)}`, floor.enforced ? `−${floorBuy.maxAdverseBps} bps from the reference` : copy.floor.setHint],
-                [copy.desk.feedDies, `${copy.desk.neverBelow} ${price(sellFloor)}`, copy.desk.backstopNote],
-              ].map(([label, value, note]) => (
-                <div key={label} className="flex flex-col gap-0.5 border-b border-rule py-2.5 last:border-b-0">
-                  <span className="text-[11.5px] tracking-[0.09em] text-faint uppercase">{label}</span>
-                  <span className="serif text-[15px] text-muted">
-                    {value?.split(' ').slice(0, -1).join(' ')}{' '}
-                    <b className="font-mono text-base font-semibold text-floor tabular-nums">
-                      {value?.split(' ').at(-1)}
-                    </b>
-                  </span>
-                  <span className="text-[11px] text-faint">{note}</span>
-                </div>
-              ))}
+            <CardBody>
+              {/*
+                * The control itself, seeded with what the registry holds.
+                *
+                * It was three static rows, and two of them printed the wrong number: they rendered
+                * `floor.absoluteRate` — the backstop, which is deliberately zero here — under a
+                * caption naming the relative floor in bps. So a vault with a −50 bps floor read
+                * "never below 0.00". The same mistake the indexer made and fixed: the floor on a
+                * fill was the backstop, which is zero on every row here.
+                *
+                * Showing the live control rather than a picture of the number also removes the
+                * reason the pencil existed. The value starts where the registry is, so nothing is
+                * proposed until the owner moves it — which is the line §10 draws, and it is drawn
+                * by the handle's position rather than by a second screen.
+                */}
+              <FloorControl
+                bps={draft}
+                referencePrice={reference.price}
+                base={pair.base}
+                quote={pair.quote}
+                fillsBps={state.calibration.fillsBps}
+                feed={reference.feed ?? null}
+                onChange={setDraft}
+              />
+
+              {/*
+                * Only once it differs from what is registered. A button offering to set the number
+                * already set is a button that does nothing, and pressing it costs a transaction to
+                * find that out.
+                */}
+              {floor.enforced && draft !== floor.maxAdverseBps && (
+                <Act
+                  wide
+                  primary
+                  ceremony={draft < floor.maxAdverseBps}
+                  onClick={() => (draft < floor.maxAdverseBps ? onRaise(draft) : onLower(draft))}
+                >
+                  {draft < floor.maxAdverseBps ? copy.floor.raise : copy.floor.lower}
+                </Act>
+              )}
+              {!floor.enforced && (
+                <Act wide primary ceremony onClick={() => onRaise(draft)}>
+                  {copy.floor.set}
+                </Act>
+              )}
+
+              <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                {/*
+                  * The two things the control cannot show, said rather than drawn. The buying
+                  * direction only when it differs, because equal is the normal case and repeating
+                  * it is noise; and the backstop as a state rather than as a price, because "never
+                  * below 0.00" is what a missing backstop looked like.
+                  */}
+                {floor.enforced && floorBuy.maxAdverseBps !== floor.maxAdverseBps
+                  ? `${copy.desk.buying} ${pair.base}: −${floorBuy.maxAdverseBps} bps · `
+                  : ''}
+                {floor.absoluteRate > 0n
+                  ? `${copy.desk.backstopNote}: ${formatPrice(sellFloor)}`
+                  : copy.floor.noBackstop}
+              </p>
             </CardBody>
           </Card>
 
