@@ -9,7 +9,7 @@ on:
     inputs:
       runs:
         description: "Fuzz runs per suite"
-        default: "20000"
+        default: "26000"
 
 permissions:
   contents: write
@@ -47,7 +47,12 @@ jobs:
       - name: Run the campaign
         id: campaign
         env:
-          FUZZ_RUNS: ${{ github.event.inputs.runs || '20000' }}
+          # 26,000 per suite is 104,000 programs a campaign. Measured campaign time at 20,000 was
+          # 2h21m, so this lands near 3h03m against a 300-minute timeout and a cadence whose
+          # shortest observed gap was 4h17m. Raised from 20,000 on 10 Sep: at the old size the
+          # counter reached ~1.94M by submission and the showcase copy says millions, which would
+          # have been false by a hair. See #145.
+          FUZZ_RUNS: ${{ github.event.inputs.runs || '26000' }}
         run: |
           set -o pipefail
           RESULT=$(./scripts/fuzz-campaign.sh)
