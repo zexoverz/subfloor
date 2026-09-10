@@ -3,7 +3,7 @@ import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { Wordmark } from './Wordmark.tsx';
 import { Seabed } from './Seabed.tsx';
-import { CUT, WAVE } from './SeaTexture.tsx';
+import { WAVE } from './SeaTexture.tsx';
 import { ScrambleText } from './ScrambleText.tsx';
 import type { Screen } from '../types.ts';
 
@@ -45,22 +45,26 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
        * be the water closing over. It is pulled up past the trail now and cut along the same curve
        * the trail draws, so the dotted line is its surface.
        *
-       * `CREST` is where that curve sits above the footer: the trail's own 40px margin plus the
-       * distance from its box's top down to the crest.
+       * The cut is a straight fade, not the curve.
+       *
+       * Three attempts at curving it and each fix added a mask layer to work around the last one:
+       * a wave-shaped SVG, a blurred one, an overlapping second layer to hide the blur's own end.
+       * Every version left a dark lens in the middle where the layers disagreed, and the count of
+       * layers was the answer — a boundary needing four masks to look like one edge is a boundary
+       * being asked to do something the page can get for free by drawing it above instead.
+       *
+       * So the artwork simply fades in over its top third and the dotted line lies across it. The
+       * line is the shape; the picture underneath does not need to be cut to the same one.
+       *
+       * `CREST` is where that line sits above the footer: the trail's own 40px margin plus its box.
        */}
       <div
         className="pointer-events-none absolute inset-x-0"
         style={{
           top: `-${CREST}px`,
           height: `${420 + CREST}px`,
-          maskImage: `${CUT.down}, linear-gradient(black, black)`,
-          WebkitMaskImage: `${CUT.down}, linear-gradient(black, black)`,
-          maskSize: `100% ${WAVE}px, 100% calc(100% - ${WAVE - 70}px)`,
-          WebkitMaskSize: `100% ${WAVE}px, 100% calc(100% - ${WAVE - 70}px)`,
-          maskPosition: 'top, bottom',
-          WebkitMaskPosition: 'top, bottom',
-          maskRepeat: 'no-repeat',
-          WebkitMaskRepeat: 'no-repeat',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 34%, black 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 34%, black 100%)',
         }}
       >
         {/*
