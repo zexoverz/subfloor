@@ -202,13 +202,14 @@ export const copy = {
     deployAgentHint: 'the key that may compose and ship, and nothing else. Empty means no agent can trade yet.',
     deployDeviceLabel: 'your device address',
     deviceAsk: 'Do you have a hardware wallet?',
-    deviceYes: 'Yes — I will read it from the device',
-    deviceNo: 'No — use this wallet',
+    deviceYes: 'I have one',
+    deviceNo: 'Use this wallet',
     /// Said before the choice is made, not after. The registry takes the guardian write-once.
     deviceWhy:
       'The key that may lower your floor. It should not be the key that trades, and it is registered once.',
+    deviceSameKeyShort: 'one key for both — a compromise reaches both',
     deviceSameKey:
-      'This wallet will be both the key that trades and the key that may lower your floor. One compromise reaches both. The registry takes this once and only a signature from it can move it later.',
+      'This wallet will be the key that trades and the key that may lower your floor. Whoever takes one has taken the other, and the whole point of the split is that they are different keys. The registry takes this once: only a signature from it can move it afterwards.',
     deployDeviceHint: 'set on the vault and the registry at once. Empty means lowering the floor has nobody to authorise it.',
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',

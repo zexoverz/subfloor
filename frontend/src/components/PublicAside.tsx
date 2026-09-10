@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Info, Loader2, Usb, Wallet as WalletIcon } from 'lucide-react';
 import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { AddressField } from './StepForms.tsx';
+import { Tooltip } from './Tooltip.tsx';
 import type { InitialSetup } from '../lib/vault.ts';
 import { Card, CardHead } from './Card.tsx';
 import { RollingNumber } from './RollingNumber.tsx';
@@ -218,19 +219,26 @@ export function PublicAside({
                      * rather than discovered afterwards.
                      */}
                     <div>
-                      <span className="text-[11.5px] tracking-[0.09em] text-muted uppercase">
+                      {/* The why is one hover away, as it is on every other field on this card. */}
+                      <label className="flex items-center gap-1.5 text-[11.5px] tracking-[0.09em] text-muted uppercase">
                         {copy.wallet.deviceAsk}
-                      </span>
-                      <p className="serif m-0 mt-1 mb-2 text-[12.5px] leading-relaxed text-faint">
-                        {copy.wallet.deviceWhy}
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
+                        <Tooltip text={copy.wallet.deviceWhy}>
+                          <Info size={11} strokeWidth={1.8} />
+                        </Tooltip>
+                      </label>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {/*
+                          * Two answers, coloured by what they cost rather than by which is the
+                          * default. The device keeps the split and wears the floor's own brass; the
+                          * wallet collapses it and wears the colour this board uses for a refusal,
+                          * which is the only honest place to spend it here.
+                          */}
                         {(
                           [
-                            [true, copy.wallet.deviceYes],
-                            [false, copy.wallet.deviceNo],
+                            [true, copy.wallet.deviceYes, Usb, 'floor'],
+                            [false, copy.wallet.deviceNo, WalletIcon, 'refuse'],
                           ] as const
-                        ).map(([answer, label]) => (
+                        ).map(([answer, label, Mark, tone]) => (
                           <button
                             key={label}
                             onClick={() => {
@@ -239,12 +247,19 @@ export function PublicAside({
                               // than leaving a box the owner has to paste their own address into.
                               setDevice(answer ? '' : (walletAddress ?? ''));
                             }}
-                            className={`cursor-pointer rounded-xl border px-3 py-2 text-left text-[12px] leading-snug transition-colors ${
+                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] transition-colors ${
                               hasDevice === answer
-                                ? 'border-floor/60 bg-floor-wash text-ink'
+                                ? tone === 'floor'
+                                  ? 'border-floor/60 bg-floor-wash text-ink'
+                                  : 'border-refuse/55 bg-refuse-wash text-ink'
                                 : 'border-rule bg-sunken text-muted hover:text-ink'
                             }`}
                           >
+                            <Mark
+                              size={14}
+                              strokeWidth={1.8}
+                              className={`shrink-0 ${tone === 'floor' ? 'text-floor' : 'text-refuse'}`}
+                            />
                             {label}
                           </button>
                         ))}
@@ -290,8 +305,11 @@ export function PublicAside({
                         />
                         {/* The cost of the answer, next to the answer. */}
                         {!hasDevice && (
-                          <p className="serif m-0 mt-1.5 text-[12px] leading-relaxed text-refuse">
-                            {copy.wallet.deviceSameKey}
+                          <p className="m-0 mt-1.5 flex items-center gap-1.5 text-[11.5px] text-refuse">
+                            {copy.wallet.deviceSameKeyShort}
+                            <Tooltip text={copy.wallet.deviceSameKey}>
+                              <Info size={11} strokeWidth={1.8} />
+                            </Tooltip>
                           </p>
                         )}
                       </div>
