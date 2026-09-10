@@ -4,6 +4,7 @@ import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead, Note } from './Card.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
+import { DeviceScreen } from './DeviceScreen.tsx';
 import type { Ledger } from '../lib/ledger.ts';
 
 export type SignPurpose = 'mandate' | 'lower';
@@ -94,11 +95,7 @@ export function DeviceSign({
                   * matches", and there is nothing to match against if the strings are not here.
                   */}
                 <div className="my-3 text-[11.5px] leading-[1.9] text-muted">
-                  {rows.map(([k, v]) => (
-                    <div key={k}>
-                      <b className="font-medium text-ink">›</b> {k}: <span className="text-ink">{v}</span>
-                    </div>
-                  ))}
+                  <DeviceScreen rows={rows} waiting={false} />
                 </div>
                 <Note className="mb-3">{copy.ceremony.onlyIfMatches}</Note>
                 <p className="mb-3 text-[11.5px] text-faint">

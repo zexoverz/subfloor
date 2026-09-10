@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
+import { DeviceScreen } from './DeviceScreen.tsx';
 import { useLedger } from '../lib/ledger.ts';
 
 /**
@@ -51,11 +52,7 @@ export function DeviceCeremony({
               * the strings matching rather than about the picture.
               */}
             <div className="mb-3 text-[11.5px] leading-[1.9] text-muted">
-              {rows.map(([k, v]) => (
-                <div key={k}>
-                  <b className="font-medium text-ink">›</b> {k}: <span className="text-ink">{v}</span>
-                </div>
-              ))}
+              <DeviceScreen rows={rows} waiting={false} />
             </div>
             <p className="mb-3 text-[11.5px] text-faint">
               {ledger.presence === 'paired' ? (
@@ -89,11 +86,7 @@ export function DeviceCeremony({
             <div className="text-[11.5px] leading-[1.9] text-muted">
               {/* The same rows again while it waits, so the device and the screen can be compared
                   without the reader having to remember what was there a moment ago. */}
-              {rows.map(([k, v]) => (
-                <div key={k}>
-                  <b className="font-medium text-ink">›</b> {k}: <span className="text-ink">{v}</span>
-                </div>
-              ))}
+              <DeviceScreen rows={rows} waiting={stage === 'waiting'} />
               <div>
                 <b className="font-medium text-ink">›</b> {payloadLine}
               </div>
