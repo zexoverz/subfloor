@@ -22,6 +22,11 @@ program can decline to run.
 
 https://github.com/zexoverz/subfloor
 
+**Live**
+
+https://web-production-37798.up.railway.app — the site and the two consumers ship from one image, so
+every number on screen is served from the same origin as the query behind it.
+
 **Idea**
 
 Every "agent wallet" today defends the key. That is the wrong perimeter: the agent is supposed to
@@ -46,16 +51,23 @@ guardian signature check.
   VaultFactory, AquaGuardVault, TestnetFaucet) and on **Ethereum Sepolia** (FloorRegistry,
   FloorRouter, exact match) — the second chain is portability evidence, not a second live run.
 - **962 contract tests pass**, including fuzz, invariant and a red-then-green counterexample suite.
-  `docs/counterexamples.md` archives three programs that take money at a price the recipient did not
-  agree to, against routers missing the check.
+  `docs/counterexamples.md` archives three, each reproducible: two programs that take money at a
+  price the recipient did not agree to against routers missing the check, and one that does it with
+  the check present and working — a scaling bug we found and fixed in 1inch's own instruction, which
+  is there to say plainly that a floor bounds how bad a fill can be and does not make a wrong price
+  right.
 - **Vault setup is one transaction.** `createVault(setup)` returns a vault already delegated,
   guarded on both sides and floored in both directions. It replaced six, three of which were
   `execute` carrying opaque calldata.
 - **Refusals are on chain.**
   [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0)
   reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000.
-- **The index is live**, `hasIndexingErrors: false`, implementing the Messari DEX Aggregator
-  standardized schema, and it is load-bearing: the floor-setting screen's default is calibrated from
+- **980,000 hostile programs fuzzed so far, zero settled below a floor.**
+  [`docs/fuzz-counter.json`](https://github.com/zexoverz/subfloor/blob/main/docs/fuzz-counter.json)
+  is written only by CI and every increment maps to a run anyone can open. It cannot be backfilled,
+  because it scales with wall-clock time rather than with a number we chose.
+- **The index is live**, `hasIndexingErrors: false`, **261 scored fills and 2 refusals**,
+  implementing the Messari DEX Aggregator standardized schema, and it is load-bearing: the floor-setting screen's default is calibrated from
   realized adverse deviation, and below a hundred scored fills it refuses to return a percentile at
   all rather than quote a rumour.
 
