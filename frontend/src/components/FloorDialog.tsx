@@ -21,6 +21,7 @@ import type { VaultState } from '../types.ts';
  */
 export function FloorDialog({
   state,
+  wallet,
   open,
   onClose,
   onLower,
@@ -28,6 +29,8 @@ export function FloorDialog({
   startAt,
 }: {
   state: VaultState;
+  /** Offered as the alternative key when the registered guardian is a soft wallet. */
+  wallet: import('../lib/wallet.ts').Wallet;
   open: boolean;
   onClose: () => void;
   onLower: (bps: number) => void;
@@ -97,6 +100,7 @@ export function FloorDialog({
         {onDevice ? (
           <DeviceCeremony
             expect={state.guardian ?? null}
+            wallet={wallet}
             rows={[
               ['Action', 'Lower price floor'],
               ['Pair', `${state.pair.base} / ${state.pair.quote}`],

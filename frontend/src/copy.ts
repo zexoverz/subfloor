@@ -551,6 +551,9 @@ export const copy = {
     /** Honest about the one thing WebHID cannot tell us without a gesture. */
     unknownDevice: 'Your device will be asked for when you continue.',
     paired: 'device found',
+    walletAbsent: 'no wallet connected',
+    useWallet: 'sign with the connected wallet instead',
+    useDevice: 'sign with the device instead',
     signing: 'waiting for your device',
     signed: 'Signed on your device.',
     scheduled: 'Signed. It takes effect at',

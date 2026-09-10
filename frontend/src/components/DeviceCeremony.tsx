@@ -4,6 +4,8 @@ import { Act } from './Button.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import { useLedger } from '../lib/ledger.ts';
+import type { Wallet } from '../lib/wallet.ts';
+import { deviceSigner, walletSigner } from '../lib/signer.ts';
 
 /**
  * The two hardware moments, as a body that can sit in a screen or in a sheet.
@@ -26,6 +28,7 @@ type Stage = 'pre' | 'waiting' | 'declined' | 'signed' | 'absent';
 export function DeviceCeremony({
   rows,
   expect,
+  wallet,
   onDone,
 }: {
   /** Exactly what the device will render, in its order. */
@@ -39,10 +42,18 @@ export function DeviceCeremony({
    * A signature is cheap to produce and expensive to discover was worthless.
    */
   expect?: `0x${string}` | null;
+  /**
+   * The connected account, offered when the registry's guardian is a soft wallet rather than a
+   * device. The mechanism recovers an address from the struct and compares it to the guardian on
+   * file; it does not care what plastic the key lives in, and an owner who registered a wallet
+   * cannot be served by a ceremony that can only ask a Ledger.
+   */
+  wallet?: Wallet;
   onDone: () => void;
 }) {
   const ledger = useLedger();
-  const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
+  // 'absent' is about the device, and it is only a dead end when there is no other key either.
+  const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' && !wallet?.address ? 'absent' : 'pre');
   /**
    * Which device is actually attached, once it has been asked.
    *
@@ -52,6 +63,19 @@ export function DeviceCeremony({
    */
   const [attached, setAttached] = useState<`0x${string}` | null>(null);
   const mismatch = expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
+  /**
+   * Which thing is asked, decided from the registry rather than from a preference.
+   *
+   * If the guardian on file is the connected account, a device cannot produce a signature the vault
+   * will honour, and leading with one would send the owner to fetch hardware for nothing.
+   */
+  const [via, setVia] = useState<'device' | 'wallet' | null>(null);
+  const isWallet =
+    via === 'wallet' ||
+    (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
+  const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
+  /** The other one, when the owner has one worth offering. */
+  const other = wallet && (isWallet ? 'device' : 'wallet');
 
   return (
     <div className="grid items-start gap-5 md:grid-cols-[minmax(0,300px)_1fr]">
@@ -63,8 +87,9 @@ export function DeviceCeremony({
         ) : (
           <>
             <p className="serif mt-0 text-[14px] leading-relaxed text-muted">
-              The device spells the action out in words instead of raw calldata. Whoever presses Approve can read it
-              on the device screen itself.
+              {isWallet
+                ? 'Your wallet spells the action out in words instead of raw calldata. Whoever signs can read it in the wallet\u2019s own dialog.'
+                : 'The device spells the action out in words instead of raw calldata. Whoever presses Approve can read it on the device screen itself.'}
             </p>
 
             {/*
@@ -78,9 +103,14 @@ export function DeviceCeremony({
                 rows={rows}
                 waiting={stage === 'waiting'}
                 answer={stage === 'signed' ? 'approved' : stage === 'declined' ? 'rejected' : null}
+                chrome={isWallet ? 'wallet' : 'ledger'}
                 device={{
-                  paired: ledger.presence === 'paired',
-                  hint: ledger.presence === 'paired' ? copy.ceremony.paired : copy.ceremony.unknownDevice,
+                  paired: isWallet ? Boolean(wallet?.address) : ledger.presence === 'paired',
+                  hint: isWallet
+                    ? (wallet?.address ?? copy.ceremony.walletAbsent)
+                    : ledger.presence === 'paired'
+                      ? copy.ceremony.paired
+                      : copy.ceremony.unknownDevice,
                 }}
               />
             </div>
@@ -99,8 +129,8 @@ export function DeviceCeremony({
                 wide
                 primary
                 busy={stage === 'waiting'}
-                busyLabel="awaiting approval on device"
-                disabled={ledger.presence === 'unsupported'}
+                busyLabel={isWallet ? 'waiting for your wallet' : 'awaiting approval on device'}
+                disabled={!signer.ready}
                 onClick={async () => {
                   // Also the way back from a decline: this is what sends the answer on the screen
                   // shrinking into the button it grew out of.
@@ -110,18 +140,32 @@ export function DeviceCeremony({
                    * it read rather than only storing it, because the state from this render is a
                    * render behind — reading `ledger.address` here would check the previous device.
                    */
-                  const at = ledger.address ?? (await ledger.connect());
+                  const at = signer.address ?? (await signer.connect());
                   setAttached(at);
                   if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
                     setStage('pre');
                     return;
                   }
-                  const signature = await ledger.signTypedData({ rows });
+                  const signature = await signer.signTypedData({ rows });
                   setStage(signature ? 'signed' : 'declined');
                 }}
               >
                 {copy.ceremony.continue}
               </Act>
+            )}
+
+            {/*
+             * The other key, when the owner has one. Not a preference toggle: whichever leads is
+             * the one the registry says holds the guardian, and this is only here because that
+             * answer can be wrong in either direction.
+             */}
+            {other && stage === 'pre' && (
+              <button
+                onClick={() => setVia(other)}
+                className="mt-3 block cursor-pointer text-[11.5px] text-faint underline underline-offset-2 transition-colors hover:text-ink"
+              >
+                {other === 'wallet' ? copy.ceremony.useWallet : copy.ceremony.useDevice}
+              </button>
             )}
 
             {/*

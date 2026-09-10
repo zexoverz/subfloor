@@ -173,6 +173,7 @@ export default function App() {
           /* Simulated says so on its own badge; otherwise the reader's own state, unedited. */
           tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
           vault={vault}
+          wallet={wallet}
           walletAddress={wallet.address}
           walletHoldings={wallet.holdings}
           scope={shownScope}
@@ -240,6 +241,7 @@ export default function App() {
       {screen === 'ceremony' && (
         <Ceremony
           state={state}
+          wallet={wallet}
           draftBps={draftBps}
           purpose={purpose}
           onDone={() => setScreen('live')}

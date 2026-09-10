@@ -30,6 +30,7 @@ export function LiveView({
   state,
   source,
   vault,
+  wallet,
   walletAddress,
   walletHoldings,
   scope,
@@ -63,6 +64,8 @@ export function LiveView({
   tapeStatus: 'loading' | 'live' | 'empty' | 'failed';
   /** The vault the tape is about, named on the card so a change of subject is visible. */
   vault: string | null;
+  /** The whole connection, for the lowering ceremony — a guardian may be a soft wallet. */
+  wallet: import('../../lib/wallet.ts').Wallet;
   /** Whose wallet is sending, and what it holds — the vault's own balances are a different list. */
   walletAddress: `0x${string}` | null;
   walletHoldings: import('../../types.ts').Holding[] | null;
@@ -488,6 +491,7 @@ export function LiveView({
       {owner && (
         <FloorDialog
           state={state}
+          wallet={wallet}
           open={adjusting}
           // Opened from the card's handle, so it starts where that handle was left rather than
           // making the owner find the same number a second time.

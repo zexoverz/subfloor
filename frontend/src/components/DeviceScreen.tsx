@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Check, Usb, X } from 'lucide-react';
+import { Check, Usb, Wallet, X } from 'lucide-react';
 import { Hoverable } from './Hoverable.tsx';
 
 /**
@@ -63,9 +63,19 @@ export function DeviceScreen({
   waiting = true,
   answer = null,
   device,
+  chrome = 'ledger',
 }: {
   rows: [string, string][];
   waiting?: boolean;
+  /**
+   * Whose dialog this is a picture of.
+   *
+   * The rows are the same either way — they are the payload — but the frame around them is a claim
+   * about a specific thing the owner is about to look at, and drawing a Ledger's bezel around what
+   * a browser extension will show is the one kind of lie this panel exists to prevent. A wallet
+   * says Cancel and Sign, so that is what it says.
+   */
+  chrome?: 'ledger' | 'wallet';
   /**
    * Whether a device has answered an enumeration yet, shown as the screen's own status corner.
    *
@@ -154,7 +164,7 @@ export function DeviceScreen({
       className="device-screen relative w-full overflow-hidden rounded-xl bg-[#0A0C10] px-4 py-3.5 font-mono text-[11px] leading-[1.75] tracking-[0.02em] text-[#F2F4F7] tabular-nums"
     >
       <div className="mb-2.5 flex items-center gap-2 text-[10px] tracking-[0.16em] text-[#7C8794] uppercase">
-        <LedgerMark />
+        {chrome === 'ledger' ? <LedgerMark /> : <Wallet size={11} strokeWidth={2.2} className="shrink-0" />}
         Review transaction
         {device && (
           <Hoverable content={device.hint}>
@@ -163,7 +173,7 @@ export function DeviceScreen({
               style={{ color: device.paired ? '#57AC8C' : '#5A6472' }}
               aria-label={device.hint}
             >
-              <Usb size={12} strokeWidth={2} />
+              {chrome === 'ledger' ? <Usb size={12} strokeWidth={2} /> : <Wallet size={12} strokeWidth={2} />}
             </span>
           </Hoverable>
         )}
@@ -180,13 +190,13 @@ export function DeviceScreen({
           ref={reject}
           className="flex-1 rounded-md bg-[#2A1614] py-1.5 text-center tracking-[0.08em] text-[#E2705F] uppercase"
         >
-          Reject
+          {chrome === 'ledger' ? 'Reject' : 'Cancel'}
         </b>
         <b
           ref={approve}
           className={`flex-1 rounded-md bg-[#14261F] py-1.5 text-center tracking-[0.08em] text-[#57AC8C] uppercase ${waiting ? 'animate-pulse' : ''}`}
         >
-          Approve
+          {chrome === 'ledger' ? 'Approve' : 'Sign'}
         </b>
       </div>
 

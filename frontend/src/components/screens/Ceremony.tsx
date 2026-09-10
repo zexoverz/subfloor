@@ -1,5 +1,6 @@
 import { DeviceSign } from '../DeviceSign.tsx';
 import { useLedger } from '../../lib/ledger.ts';
+import type { Wallet } from '../../lib/wallet.ts';
 import { Todo } from '../Card.tsx';
 import { floorPriceFromBps, formatPrice } from '../../lib/rate.ts';
 import type { VaultState } from '../../types.ts';
@@ -13,12 +14,15 @@ import type { VaultState } from '../../types.ts';
  */
 export function Ceremony({
   state,
+  wallet,
   draftBps,
   purpose,
   onDone,
   onBack,
 }: {
   state: VaultState;
+  /** Offered as the alternative key, for a vault whose guardian is a soft wallet. */
+  wallet: Wallet;
   draftBps: number;
   /** Which of the two hardware moments this is. They sign different things and must say so. */
   purpose: 'mandate' | 'lower';
@@ -61,6 +65,7 @@ export function Ceremony({
         rows={rows}
         purpose={purpose}
         ledger={ledger}
+        wallet={wallet}
         // The lowering payload is not built yet; the panel refuses to sign rather than send noise.
         typedData={null}
         standing={standing}
