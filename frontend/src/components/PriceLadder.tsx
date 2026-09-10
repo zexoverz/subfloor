@@ -130,25 +130,24 @@ export function PriceLadder() {
 
       <div className="relative flex flex-col gap-4 overflow-hidden p-6">
         {/*
-          * The reef, on this half only, and the same treatment as the agent card's: behind the top
-          * of it, masked out rather than dimmed with a colour over it — painting over the image to
-          * hide it leaves a rectangle of the wrong shade halfway down the panel.
+          * The reef, on this half only, and the full height of it.
+          *
+          * It ran to three fifths with a fade under it, which left the column's foot as plain
+          * ground and put a horizontal boundary across the one half that has no lines of its own.
+          * `object-cover` on the whole box has no edge to explain: the panel's own rounded clip is
+          * where it ends.
           *
           * 0.09 rather than that card's 0.12, and the difference is the ground. Its foot is darker;
           * this sits on `--c-surface`, where the artwork's brightest pixel — the anglerfish's
           * lantern — composites to #182d48 at this opacity. `text-faint` reads 4.54 there, and the
           * three labels in this column are faint. At 0.12 they fell to 4.13.
           */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-3/5 overflow-hidden" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           <img
             src="/agent-banner.webp"
             alt=""
             draggable={false}
-            className="h-full w-full origin-top scale-[1.02] object-cover object-center opacity-[0.09] select-none"
-            style={{
-              maskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
-            }}
+            className="h-full w-full scale-[1.02] object-cover object-center opacity-[0.09] select-none"
           />
         </div>
 
