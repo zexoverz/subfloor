@@ -12,10 +12,22 @@ import type { Address } from 'viem';
  * `mandateUsed` is what turns that into "used". Losing local storage loses the signature, which is
  * correct — the owner would have to sign again, and that is honest rather than a claim that
  * survives its own evidence.
+ *
+ * **A batch, not one.** `_consumeMandate` marks `mandateUsed[nonce]`, so one signature authorises
+ * exactly one ship. An agent that re-quotes every few minutes and holds a single mandate stops after
+ * its first one — which looks like the agent breaking rather than the agent running out of what it
+ * was given. The owner signs a run of nonces in one sitting and the agent spends them in order.
+ *
+ * Nothing is weakened by the batch. Each mandate still names the tokens, still caps the amount per
+ * token, and still expires. What the owner chooses is how many re-quotes to authorise and until
+ * when, which is a thing they can reason about: "fifty of these, until Friday" is a sentence.
  */
 const KEY = 'subfloor.mandate';
 
 export type StoredMandate = { vault: Address; delegate: Address; nonce: string; signature: string; at: number };
+
+/** A signed run of them, kept together because they were approved together. */
+export type StoredBatch = { vault: Address; delegate: Address; expiry: string; at: number; signed: { nonce: string; signature: string }[] };
 
 export function loadMandate(vault: Address | null): StoredMandate | null {
   if (!vault) return null;
@@ -36,4 +48,57 @@ export function saveMandate(entry: StoredMandate): void {
   } catch {
     // Private browsing, quota, a disabled store — the signature still exists on screen.
   }
+}
+
+const BATCH_KEY = 'subfloor.mandates';
+
+export function loadBatch(vault: Address | null): StoredBatch | null {
+  if (!vault) return null;
+  try {
+    const raw = globalThis.localStorage?.getItem(BATCH_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredBatch;
+    return parsed.vault?.toLowerCase() === vault.toLowerCase() ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveBatch(entry: StoredBatch): void {
+  try {
+    globalThis.localStorage?.setItem(BATCH_KEY, JSON.stringify(entry));
+  } catch {
+    // Same as above: the signatures still exist on screen, and losing them means signing again.
+  }
+}
+
+/**
+ * The next mandate to spend, given what the chain says is already used.
+ *
+ * `isUsed` is asked rather than remembered. A local counter drifts the moment a ship lands and this
+ * tab is closed, and the failure is a revert on a nonce that was already burned — which reads as a
+ * broken agent rather than a stale browser.
+ *
+ * Returns null when the batch is spent or expired. That is not an error state to hide: the agent has
+ * reached the end of what its owner authorised, and the screen's job is to say so and offer to sign
+ * another run.
+ */
+export function nextUnused(
+  batch: StoredBatch | null,
+  isUsed: (nonce: bigint) => boolean,
+  nowSeconds: bigint,
+): { nonce: string; signature: string } | null {
+  if (!batch) return null;
+  if (BigInt(batch.expiry) <= nowSeconds) return null;
+  return batch.signed.find((m) => !isUsed(BigInt(m.nonce))) ?? null;
+}
+
+/** How many are left, for the line on screen that says whether the agent can keep going. */
+export function remainingInBatch(
+  batch: StoredBatch | null,
+  isUsed: (nonce: bigint) => boolean,
+  nowSeconds: bigint,
+): number {
+  if (!batch || BigInt(batch.expiry) <= nowSeconds) return 0;
+  return batch.signed.filter((m) => !isUsed(BigInt(m.nonce))).length;
 }
