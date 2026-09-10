@@ -3,7 +3,7 @@ import { Usb } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead, Note } from './Card.tsx';
-import { DeviceScreen } from './DeviceScreen.tsx';
+import { DeviceReview } from './DeviceReview.tsx';
 import type { Ledger } from '../lib/ledger.ts';
 
 export type SignPurpose = 'mandate' | 'lower';
@@ -78,8 +78,8 @@ export function DeviceSign({
         right={stage === 'waiting' ? 'waiting for device' : stage}
       />
       <CardBody>
-        <div className="grid grid-cols-[auto_1fr] items-start gap-5.5 max-[620px]:grid-cols-1">
-          <DeviceScreen rows={rows} waiting={stage === 'waiting'} />
+        <div className="grid grid-cols-[minmax(0,290px)_1fr] items-start gap-5.5 max-[620px]:grid-cols-1">
+          <DeviceReview rows={rows} waiting={stage === 'waiting'} />
 
           <div>
             {stage === 'pre' && (

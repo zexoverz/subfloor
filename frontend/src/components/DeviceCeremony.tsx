@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
-import { DeviceScreen } from './DeviceScreen.tsx';
+import { DeviceReview } from './DeviceReview.tsx';
 import { useLedger } from '../lib/ledger.ts';
 
 /**
@@ -35,8 +35,8 @@ export function DeviceCeremony({
   const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
 
   return (
-    <div className="grid gap-5 md:grid-cols-[auto_1fr]">
-      <DeviceScreen rows={rows} waiting={stage === 'waiting'} />
+    <div className="grid items-start gap-5 md:grid-cols-[minmax(0,300px)_1fr]">
+      <DeviceReview rows={rows} waiting={stage === 'waiting'} />
 
       <div>
         {stage === 'pre' && (
