@@ -1,4 +1,5 @@
 import type { Address } from 'viem';
+import type { MandateMessage } from './mandate.ts';
 
 /**
  * Where a signed mandate is kept, and what keeping it does and does not prove.
@@ -24,7 +25,23 @@ import type { Address } from 'viem';
  */
 const KEY = 'subfloor.mandate';
 
-export type StoredMandate = { vault: Address; delegate: Address; nonce: string; signature: string; at: number };
+/**
+ * The signature travels with the struct it signed, because it is worthless without it.
+ *
+ * `_consumeMandate` recomputes the EIP-712 hash from every field of the mandate, so storing the
+ * signature alone leaves something nobody can spend — not the agent, not us. `expiry` is the field
+ * that makes this unrecoverable rather than merely inconvenient: `buildMandate` derives it from
+ * `Date.now()` when the sheet rendered, which is a different instant from the `at` recorded when
+ * the signature came back, so it cannot be reconstructed after the fact — only guessed at.
+ */
+export type StoredMandate = {
+  vault: Address;
+  delegate: Address;
+  nonce: string;
+  signature: string;
+  at: number;
+  message: MandateMessage;
+};
 
 /** A signed run of them, kept together because they were approved together. */
 export type StoredBatch = { vault: Address; delegate: Address; expiry: string; at: number; signed: { nonce: string; signature: string }[] };
@@ -36,7 +53,13 @@ export function loadMandate(vault: Address | null): StoredMandate | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredMandate;
     // A mandate for a different vault is not this vault's mandate.
-    return parsed.vault?.toLowerCase() === vault.toLowerCase() ? parsed : null;
+    if (parsed.vault?.toLowerCase() !== vault.toLowerCase()) return null;
+    /*
+     * An entry written before the struct was kept is a signature nobody can spend, so it is not a
+     * mandate. Reading it as one leaves the step saying "signed, not yet used" about something that
+     * can never be used.
+     */
+    return parsed.message?.expiry ? parsed : null;
   } catch {
     return null;
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Usb, Wallet as WalletIcon } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act, Back } from './Button.tsx';
@@ -35,6 +35,7 @@ export function DeviceSign({
   wallet,
   onSigned,
   onDone,
+  handover,
   onBack,
   framed = true,
 }: {
@@ -82,6 +83,8 @@ export function DeviceSign({
   /** Receives the signature, because producing one and dropping it is how the step never finished. */
   onSigned?: (signature: string) => void;
   onDone: () => void;
+  /** Rendered once the answer is in. The mandate ceremony ends in a handover, not a tick — see #219. */
+  handover?: ReactNode;
   onBack: () => void;
   /** False where a sheet already draws the header and the way out. See the note by `body`. */
   framed?: boolean;
@@ -199,9 +202,12 @@ export function DeviceSign({
               )}
 
               {answered ? (
-                <Act wide primary onClick={onDone}>
-                  continue
-                </Act>
+                <>
+                  {handover}
+                  <Act wide primary onClick={onDone}>
+                    continue
+                  </Act>
+                </>
               ) : (
                 /*
                  * Full width. It is the only thing to press on this panel and it sat at the width

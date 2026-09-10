@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, OctagonX, ShieldCheck, X } from 'lucide-react';
 import type { Address } from 'viem';
 import { copy } from '../copy.ts';
@@ -6,7 +6,8 @@ import { Act } from './Button.tsx';
 import { DeviceSign } from './DeviceSign.tsx';
 import { PanicDialog } from './PanicDialog.tsx';
 import { buildMandate } from '../lib/mandate.ts';
-import { loadMandate, saveMandate } from '../lib/mandateStore.ts';
+import { AgentHandover } from './AgentHandover.tsx';
+import { loadMandate, saveMandate, type StoredMandate } from '../lib/mandateStore.ts';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import type { Ledger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
@@ -54,6 +55,11 @@ export function MandateStrip({
 }) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
+  /*
+   * The mandate as it was just signed, held so the handover can show it without waiting on a
+   * re-read of local storage — `held` below is computed before `onSigned` writes.
+   */
+  const [fresh, setFresh] = useState<StoredMandate | null>(null);
   const ref = useRef<HTMLDialogElement>(null);
   const { mandate, inventory, reference, floor } = state;
 
@@ -63,6 +69,25 @@ export function MandateStrip({
     if (open && !el.open) el.showModal();
     if (!open && el.open) el.close();
   }, [open]);
+
+  /*
+   * Built once, here, rather than inline in the sheet: the same object is what the device is asked
+   * to sign and what gets stored beside the signature, and `expiry` is derived from the moment it
+   * is built. Two calls would produce two different structs and the stored one would not be the
+   * one that was signed.
+   */
+  const typed = useMemo(
+    () =>
+      buildMandate({
+        vault,
+        delegate: state.delegate ?? '',
+        inventory,
+        nonce: nonce ?? 0n,
+        expiresInDays: mandate.expiresInDays,
+      }),
+    // Rebuilt when the sheet opens, so an expiry is never older than the ceremony it belongs to.
+    [vault, state.delegate, inventory, nonce, mandate.expiresInDays, open],
+  );
 
   const held = loadMandate(vault);
   /*
@@ -152,23 +177,27 @@ export function MandateStrip({
               ['Tokens', inventory.map((h) => h.symbol).join(' / ')],
               ['Expires', `${mandate.expiresInDays} days`],
             ]}
-            typedData={buildMandate({
-              vault,
-              delegate: state.delegate ?? '',
-              inventory,
-              nonce: nonce ?? 0n,
-              expiresInDays: mandate.expiresInDays,
-            })}
+            typedData={typed}
+            handover={<AgentHandover vault={vault} mandate={fresh} />}
             standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
             onSigned={(signature) => {
-              if (!vault || !state.delegate) return;
-              saveMandate({
+              if (!vault || !state.delegate || !typed) return;
+              /*
+               * The struct goes with the signature. `_consumeMandate` rebuilds the hash from every
+               * field, and `expiry` is derived from the instant `typed` was built — so keeping only
+               * the signature leaves the agent holding something it cannot spend, and nothing on
+               * screen says so. See #218.
+               */
+              const entry: StoredMandate = {
                 vault,
-                delegate: state.delegate,
+                delegate: state.delegate as Address,
                 nonce: String(nonce ?? 0n),
                 signature,
                 at: Date.now(),
-              });
+                message: typed.message,
+              };
+              saveMandate(entry);
+              setFresh(entry);
               onSigned();
             }}
             onDone={() => {

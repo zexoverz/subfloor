@@ -15,6 +15,29 @@ import type { Holding } from '../types.ts';
  * with a blank in it; it is nothing to sign, and asking the device to render nothing is how an
  * owner learns to approve screens they have not read.
  */
+/**
+ * The struct itself, which is the half that has to survive the ceremony.
+ *
+ * `_consumeMandate` recomputes the hash from every field, so a stored signature without these is
+ * unspendable — and `expiry` in particular cannot be recovered afterwards, because it is derived
+ * from the instant this ran. See [[mandateStore]].
+ */
+export interface MandateMessage {
+  delegate: Address;
+  app: Address;
+  tokens: readonly Address[];
+  maxAmounts: string[];
+  nonce: string;
+  expiry: string;
+}
+
+export interface MandateTypedData {
+  domain: ReturnType<typeof mandateDomain>;
+  types: typeof mandateTypes;
+  primaryType: 'Mandate';
+  message: MandateMessage;
+}
+
 export function buildMandate({
   vault,
   delegate,
@@ -27,8 +50,8 @@ export function buildMandate({
   inventory: Holding[];
   nonce: bigint;
   expiresInDays: number;
-}): object | null {
-  if (!vault || !isAddress(delegate) || !addresses.aqua) return null;
+}): MandateTypedData | null {
+  if (!vault || !isAddress(delegate) || !addresses.router) return null;
 
   /*
    * The ceiling is what the vault holds. A mandate for more than the inventory authorises the
@@ -55,7 +78,22 @@ export function buildMandate({
     primaryType: 'Mandate' as const,
     message: {
       delegate: delegate as Address,
-      app: addresses.aqua as Address,
+      /*
+       * The router, not Aqua.
+       *
+       * `AquaGuardVault.ship` passes its own `app` argument to `_consumeMandate` and then straight
+       * on to `AQUA.ship(app, ...)`, so the app in the struct is the contract the position is
+       * shipped *to* — the router. This read `addresses.aqua`, which is the registry the router
+       * ships through, and the two are different addresses: the signature verified, the struct was
+       * well-formed, and the vault only compares them at ship time. So the ceremony completed, the
+       * device approved, and the failure surfaced days later on another machine as
+       * `MandateWrongApp`.
+       *
+       * §5.4 is why this is not a label: `Aqua.pull` keys off `msg.sender` as the app, so the
+       * address named here is the only contract that can ever pull the shipped balance. The
+       * guardian is approving it as much as the numbers.
+       */
+      app: addresses.router as Address,
       tokens: ACTIVE_TOKENS.map((t) => t.address),
       maxAmounts: held.map((amount) => amount.toString()),
       nonce: nonce.toString(),
