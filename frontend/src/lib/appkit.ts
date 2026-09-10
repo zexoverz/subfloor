@@ -47,7 +47,7 @@ export function startAppKit() {
     metadata: {
       name: 'SUBFLOOR',
       description: 'An agent trades your whole portfolio. The worst price is the one you set.',
-      url: globalThis.location?.origin ?? 'https://subfloor.vercel.app',
+      url: globalThis.location?.origin ?? 'https://web-production-37798.up.railway.app',
       icons: [],
     },
     // No analytics, no email or social sign-in: the owner of this vault arrives with a wallet.
