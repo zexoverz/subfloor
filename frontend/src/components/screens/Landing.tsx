@@ -6,6 +6,7 @@ import { PriceLadder } from '../PriceLadder.tsx';
 import { HeroParallax } from '../HeroParallax.tsx';
 import { PublicTape } from '../PublicTape.tsx';
 import { SeaTrail } from '../SeaTrail.tsx';
+import { SideReef } from '../SideReef.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
 import { LandingFooter } from '../LandingFooter.tsx';
@@ -123,6 +124,12 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <div ref={foot} aria-hidden />
 
       <section className="relative mt-24">
+        {/*
+          * The scene either side of the column. Alternating, so the eye is not walked down one
+          * wall — and each section takes a different pair, so no silhouette repeats.
+          */}
+        <SideReef art="kelp-left" side="left" />
+        <SideReef art="rocks-right" side="right" />
         <SectionHead
           eyebrow={copy.landing.shotEyebrow}
           title={copy.landing.shotTitle}
@@ -138,6 +145,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <SeaTrail creature="crab" />
 
       <section className="relative mt-6">
+        <SideReef art="coral-right" side="right" />
         <SectionHead
           eyebrow={copy.landing.featuresEyebrow}
           title={copy.landing.featuresTitle}
@@ -149,6 +157,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <SeaTrail creature="shark" down={false} />
 
       <section className="relative mt-6" aria-label="interactive fill">
+        <SideReef art="anemone-left" side="left" />
         <SectionHead
           eyebrow="Try it"
           title="Drag the fill below the floor."
@@ -160,6 +169,8 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <SeaTrail creature="octopus" />
 
       <section className="relative mt-6">
+        <SideReef art="wreck-right" side="right" />
+        <SideReef art="rocks-left" side="left" />
         <SectionHead
           eyebrow={copy.landing.faqEyebrow}
           title={copy.landing.faqTitle}
