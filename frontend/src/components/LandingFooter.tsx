@@ -68,11 +68,13 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
          *
          * A gradient in the gap was the wrong answer twice over: it never quite met the artwork,
          * which left a dark lens between them, and it was standing in for a picture that could
-         * simply be there. `object-bottom` is what makes the taller frame work — the reef stays
-         * where it is and the extra height is spent on the water above it, which is the part of
-         * the drawing a taller frame ought to be showing.
+         * simply be there.
+         *
+         * `top`, not `bottom`. Sampled in bands the drawing runs 105 at its top to 17 at its foot —
+         * it is water lit from the surface — so anchoring the crop to the foot threw away the
+         * brightest sixth and opened the frame on the dark. That was the void under the line.
          */}
-        <Seabed intensity="hero" anchor="bottom" />
+        <Seabed intensity="hero" anchor="top" />
       </div>
 
       <section className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] py-24 text-center">

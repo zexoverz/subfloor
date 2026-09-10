@@ -19,14 +19,18 @@ export function Seabed({
    * Which end of the drawing survives the crop.
    *
    * `object-cover` keeps the box full and throws away whatever does not fit, and which end it
-   * throws away is the whole question in a tall box: centred, a taller frame eats the reef from the
-   * bottom and the water from the top at once. Anchored to the bottom the reef stays put and the
-   * extra height is spent on the water above it, which is what a taller frame should be showing.
+   * throws away is the whole question in a tall box.
+   *
+   * Measured off the file rather than guessed: sampled in twenty bands, this drawing runs 105 at
+   * the top down to 17 at the foot. The light is at the *top* — it is water lit from the surface —
+   * so `bottom` throws away the brightest sixth and leaves the frame opening on the dark, which is
+   * exactly the void it was meant to fill. `top` keeps the light and spends the crop on the
+   * darkest bands, which the hero variant is already fading to ground anyway.
    */
   anchor = 'center',
 }: {
   intensity?: 'board' | 'hero';
-  anchor?: 'center' | 'bottom';
+  anchor?: 'center' | 'top' | 'bottom';
 }) {
   const hero = intensity === 'hero';
   return (
@@ -35,7 +39,9 @@ export function Seabed({
         src="/seabed.webp"
         alt=""
         draggable={false}
-        className={`h-full w-full object-cover select-none ${anchor === 'bottom' ? 'object-bottom' : 'object-center'}`}
+        className={`h-full w-full object-cover select-none ${
+          anchor === 'bottom' ? 'object-bottom' : anchor === 'top' ? 'object-top' : 'object-center'
+        }`}
       />
       {hero && (
         <div
