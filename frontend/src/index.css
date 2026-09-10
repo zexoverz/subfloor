@@ -251,6 +251,25 @@ body {
 }
 
 /*
+ * A rule drawn the way a pixel display draws one: on for two pixels, off for two.
+ *
+ * A solid hairline is a thing a screen with 64 rows cannot render — at that resolution a divider is
+ * a dotted run, and drawing it as one costs nothing and finishes the impression the scanlines
+ * start. `background` rather than `border-style: dashed`, because the browser decides a dashed
+ * border's dash length itself and it lands differently at every width.
+ */
+.pixel-rule {
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #2A313C 0px,
+    #2A313C 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+/*
  * The device's screen, as a screen: sunk into its own bezel, and lit from behind.
  *
  * Everything else on this board stands off the page. A display does the opposite — it is a window
