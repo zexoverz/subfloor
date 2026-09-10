@@ -16,6 +16,7 @@ import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
 import { useCeremony } from './lib/ceremony.ts';
+import { useCalibration } from './lib/calibration.ts';
 
 /**
  * Skeleton wiring. `fixtures` stands in for every reader — contract reads, the subgraph, and the
@@ -74,6 +75,7 @@ export default function App() {
   const floorWrite = useFloor(vault);
 
   const ceremony = useCeremony(wallet.address, vault);
+  const calibration = useCalibration(index.tape);
   /*
    * The tape is the index's, or it is nothing.
    *
@@ -96,9 +98,33 @@ export default function App() {
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
   const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
-  const state = ceremony.feed
+  const withFeed = ceremony.feed
     ? { ...withFloor, reference: { ...withFloor.reference, feed: ceremony.feed } }
     : withFloor;
+  /*
+   * §4's non-negotiable, and until now it was not met: the floor screen's percentiles and its strip
+   * of past fills both came from `fixtures.ts`. A wallet with no fills of its own was told a floor
+   * would have refused seven of fifty — fifty fills that never happened, on the screen whose whole
+   * argument is that the human is not signing a guess.
+   *
+   * The index's answer wins where there is one, and where there is not, nothing pretends there was.
+   */
+  const state = {
+    ...withFeed,
+    calibration: calibration.data ?? {
+      /*
+       * No answer is not the same as an answer of zero, and it must not become the fixture's.
+       * The house default stays, because the handle has to start somewhere and that number is
+       * labelled as a house number rather than as this venue's history — but the strip is empty and
+       * the sample count is nought, so nothing on screen counts fills that were never read.
+       */
+      ...withFeed.calibration,
+      sampleCount: 0,
+      p50Bps: 0,
+      p99Bps: 0,
+      fillsBps: [],
+    },
+  };
 
   // Lowering is answered in the sheet on the board now; this only records what was signed.
   const lower = (bps: number) => setDraftBps(bps);

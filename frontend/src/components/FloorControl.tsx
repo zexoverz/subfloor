@@ -92,6 +92,11 @@ export function FloorControl({
    * so the colour goes quiet rather than red. Red is reserved for the hazard that has a count
    * behind it.
    */
+  /*
+   * Nought fills is not nought bps of history — it is no history. Everything below counts against
+   * this, and with an empty strip the verdict line is not rendered at all rather than reporting a
+   * floor "0 bps clear of the worst fill" that nothing was measured against.
+   */
   const worst = fillsBps?.length ? Math.max(...fillsBps.map(Math.abs)) : 0;
   const refused = fillsBps?.filter((fill) => Math.abs(fill) >= bps).length ?? 0;
   const tooTight = refused > 0;
@@ -232,7 +237,7 @@ export function FloorControl({
           +
         </Nudge>
       </div>
-      {fillsBps && (
+      {fillsBps && fillsBps.length > 0 && (
         /*
          * A verdict on the line and the reasoning on hover. These ran to two lines in a card this
          * narrow, and a line that wraps while the slider is being dragged moves the layout under
