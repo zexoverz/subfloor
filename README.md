@@ -234,6 +234,22 @@ itself produces from this repo's sources, so `exact_match` is not just a pass, i
 that the chain and this repository hold the same contract. Tracked in
 [#167](https://github.com/zexoverz/subfloor/issues/167).
 
+**And since 10 Sep the deployed router no longer matches `main`, which is said here rather than left
+to be discovered.** Fixing [#175](https://github.com/zexoverz/subfloor/issues/175) changed
+`OraclePriceAdjuster`'s encoding, and that instruction compiles into the router. Measured with
+`cast code` against the local artifact: **24,323 bytes on chain, 23,988 at `main`.**
+
+The behavioural difference on chain is nothing, and that is checkable rather than reassuring. The
+changed opcode is `0xb2`, the live book ships with `oracle` unset — the reason is written into
+`contracts/script/ShipTestnetBook.s.sol` — so no program on this router has ever reached that
+instruction. Every fill and every refusal above went through code the two versions share.
+
+It is not redeployed because the address is load-bearing three days from submission: the subgraph's
+data source, the taker, the frontend and every explorer link in this table point at it, and trading
+all of that for an oracle improvement the position never had is a bad exchange. Sourcify still holds
+an `exact_match` for the deployed bytes against the commit they were built from; what is no longer
+true is that a fresh `forge build` of `main` reproduces them.
+
 **Base mainnet** — _pending, see below._
 
 ## The index
