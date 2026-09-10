@@ -172,6 +172,14 @@ export async function cycle(
 const MAX_BACKOFF_MS = 600_000;
 
 export async function run(): Promise<void> {
+  // With a delegate key this service is the house agent and trades; without one it watches and
+  // reports, as it always has. One secret is the whole difference, so the Railway service does not
+  // need a second start command to become the agent a first-run user is offered.
+  if (process.env.SUBFLOOR_DELEGATE_KEY) {
+    const { runHouse } = await import("../house/run.ts");
+    return runHouse();
+  }
+
   const cfg = configFromEnv();
   const client = createPublicClient({ chain: baseSepolia, transport: http(cfg.rpc) });
 
