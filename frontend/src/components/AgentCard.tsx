@@ -32,6 +32,7 @@ export function AgentCard({
   saving,
   savingStep,
   onPanic,
+  mandate,
 }: {
   delegate: Address | null;
   /** What it is doing right now, as the index reports it. */
@@ -42,6 +43,13 @@ export function AgentCard({
   saving: boolean;
   savingStep: string | null;
   onPanic: () => void;
+  /**
+   * The mandate, which lives here because changing the agent above invalidates it.
+   *
+   * Passed in rather than built here: it needs the vault's nonce, the connection and the device,
+   * and threading four more props through the board to reach one strip is worse than a slot.
+   */
+  mandate?: import('react').ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [next, setNext] = useState('');
@@ -195,6 +203,8 @@ export function AgentCard({
               );
             })}
           </ul>
+
+          {mandate}
 
           {owner && (
             <>

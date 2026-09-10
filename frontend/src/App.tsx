@@ -12,11 +12,13 @@ import { Landing } from './components/screens/Landing.tsx';
 import { SetupDialog } from './components/SetupDialog.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
+import { MandateStrip } from './components/MandateStrip.tsx';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
 import { useCeremony } from './lib/ceremony.ts';
 import { useKeys } from './lib/keys.ts';
+import { useLedger } from './lib/ledger.ts';
 import { useCalibration } from './lib/calibration.ts';
 
 /**
@@ -84,6 +86,7 @@ export default function App() {
    */
   // Writes the vault's own two keys. The setup sheet has its own instance; these are plain wagmi
   // writes with no shared session, so a second one costs nothing.
+  const ledger = useLedger();
   const keys = useKeys(vault, () => reread(), ceremony.registryGuardianSet);
 
   const reread = useCallback(() => {
@@ -228,6 +231,19 @@ export default function App() {
            * ends the authorisation; neither needs the device, which is the point of it.
            */
           onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
+          ledger={ledger}
+          mandate={
+            ceremony.isOwner === true ? (
+              <MandateStrip
+                state={state}
+                vault={vault as `0x${string}` | null}
+                nonce={ceremony.nonce}
+                wallet={wallet}
+                ledger={ledger}
+                onSigned={() => ceremony.refresh()}
+              />
+            ) : null
+          }
           onLower={lower}
           /*
            * The registry decides what the floor is after this, not the button. It writes both

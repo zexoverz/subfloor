@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
-import { useLedger } from '../lib/ledger.ts';
 import { Act } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { AddressField } from './StepForms.tsx';
@@ -31,6 +30,7 @@ export function PublicAside({
   canCreateVault,
   checked,
   vaultError,
+  ledger,
 }: {
   state: VaultState;
   /** A connected wallet that is not the owner is a different message, not the same button again. */
@@ -47,10 +47,13 @@ export function PublicAside({
   checked: boolean;
   /** Why we could not tell. Shown, so a card that cannot answer does not look like one still trying. */
   vaultError: string | null;
+  /**
+   * Passed in, never created here. `useLedger` keeps its paired session in a ref, so a second
+   * instance is a second session — and it is always the empty one, which is how a device paired on
+   * one panel came back unpaired on another.
+   */
+  ledger: import('../lib/ledger.ts').Ledger;
 }) {
-  // Its own session, and safe: this card and the setup sheet are never on screen together — one is
-  // for a wallet that owns no vault, the other for a wallet that does.
-  const ledger = useLedger();
   /*
    * Collected before the vault exists, because that is the only moment the factory can set them.
    * It owns the vault for the length of the call and hands it over before returning; afterwards

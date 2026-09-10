@@ -61,6 +61,8 @@ export function LiveView({
   settingAgent,
   agentStep,
   onPanic,
+  mandate,
+  ledger,
   connected,
   connecting,
 }: {
@@ -116,6 +118,10 @@ export function LiveView({
   agentStep: string | null;
   /** Dock the vault and revoke the mandate. Moved off the header and onto the agent's own card. */
   onPanic: () => void;
+  /** The mandate strip, built where the nonce and the device are. */
+  mandate?: import('react').ReactNode;
+  /** One session for the whole board — see PublicAside. */
+  ledger: import('../../lib/ledger.ts').Ledger;
 }) {
   const [adjusting, setAdjusting] = useState(false);
   /*
@@ -451,6 +457,7 @@ export function LiveView({
             saving={settingAgent}
             savingStep={agentStep}
             onPanic={onPanic}
+            mandate={mandate}
           />
         </div>
         ) : (
@@ -465,6 +472,7 @@ export function LiveView({
             canCreateVault={canCreateVault}
             checked={vaultChecked}
             vaultError={vaultError}
+            ledger={ledger}
           />
         )}
       </div>
