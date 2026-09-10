@@ -454,10 +454,12 @@ product's promise checkable by a stranger.
 **[web-production-37798.up.railway.app](https://web-production-37798.up.railway.app)**
 
 One origin, one image: the built site and the two consumers ship together from `Dockerfile`, which
-is why a number on screen and the query behind it cannot drift apart. There is an older
-`subfloor.vercel.app` deployment and it is **not** the app — the frontend calls `/api/*` on its own
-origin, and those functions do not run there, so its dashboard shows errors where the numbers should
-be. Use the link above.
+is why a number on screen and the query behind it cannot drift apart, and why the server falls
+unknown paths back to the shell so a deep link survives a hard load.
+
+An older `subfloor.vercel.app` deployment is being retired and was never the app. The frontend calls
+`/api/*` on its own origin and those functions did not run there, so it served a dashboard with
+errors where the numbers should be. If you have that link, it is the wrong one.
 
 Written plainly, because a repo that overstates its own state is the one thing that makes the rest of
 it worth less.

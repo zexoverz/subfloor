@@ -9,8 +9,9 @@ import type { Screen } from '../types.ts';
  * landing page, a link to the board could not be sent to anyone, and the back button left the app
  * entirely.
  *
- * Vercel rewrites every path to index.html (vercel.json), so deep links resolve on a hard load
- * rather than 404ing.
+ * The server falls every unknown path back to index.html, so deep links resolve on a hard load
+ * rather than 404ing. Checked against the deployment rather than assumed: `/app`, `/app/device` and
+ * a path that matches no screen all return the shell with a 200.
  */
 const PATHS: Record<Screen, string> = {
   landing: '/',

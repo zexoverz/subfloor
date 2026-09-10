@@ -35,8 +35,9 @@ jobs:
 
       - run: npm ci
 
-      # The rate-convention tests and the banned-word copy gate. Vercel's build catches a broken
-      # build; neither of these, and the copy gate is the one protecting the submission's language.
+      # The rate-convention tests and the banned-word copy gate. A broken build is caught by the
+      # image build below; neither of these is, and the copy gate is the one protecting the
+      # submission's language.
       - run: npm run check
 
       - run: npm run build
