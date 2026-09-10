@@ -451,7 +451,13 @@ product's promise checkable by a stranger.
 
 ## Where this actually is, right now
 
-**[subfloor.vercel.app](https://subfloor.vercel.app)**
+**[web-production-37798.up.railway.app](https://web-production-37798.up.railway.app)**
+
+One origin, one image: the built site and the two consumers ship together from `Dockerfile`, which
+is why a number on screen and the query behind it cannot drift apart. There is an older
+`subfloor.vercel.app` deployment and it is **not** the app — the frontend calls `/api/*` on its own
+origin, and those functions do not run there, so its dashboard shows errors where the numbers should
+be. Use the link above.
 
 Written plainly, because a repo that overstates its own state is the one thing that makes the rest of
 it worth less.
@@ -462,25 +468,13 @@ it worth less.
 | Floors, both directions | **set on chain**, keyed to the vault |
 | A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
-| Calibration and the daily report | at `/api/calibration` and `/api/report`; calibrated from **261 fills**, not a default. Both endpoints return the numbers above when run against the deployment, and are **down in hosting** as of 10 Sep — see below |
+| Calibration and the daily report | **live** at `/api/calibration` and `/api/report`; calibrated from **261 fills**, not a default |
 | Refusals, which no index can serve | **2 refusals** at `/api/refusals`, decoded from reverted transactions |
 | Vault setup | **one transaction** — `createVault(setup)` leaves nothing unset |
 | Fills, and the execution-quality dataset | **261 fills**, both directions, scored against the same Chainlink answer settlement used |
 | Refusals | **on chain** — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0) reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000, and the floor was then lowered again under a guardian signature |
 | Base mainnet, with our own money | _pending_ |
 | A rogue agent, refused, on chain | _pending_ |
-
-**The four API endpoints are down in hosting as of 10 Sep, and the numbers above are still real.**
-`/api/calibration`, `/api/refusals`, `/api/fills` and `/api/report` all return
-`FUNCTION_INVOCATION_FAILED` on the deployed site, which is an initialisation failure: the handler
-body never runs, so it is not the missing-configuration path, which returns JSON saying what is
-missing. Run against the same deployment from a checkout, all four answer `200` with the figures in
-the table. The static site itself is serving.
-
-The likely cause is that the hosting account hit its build rate limit during a burst of pushes on
-10 Sep, so the running production build is not the current one. Being chased. It is recorded here
-because a status table that says **live** next to an endpoint returning 500 is the one thing that
-would make the rest of this table worth less.
 
 Nothing published here is invented. The fuzz counter is
 [a file in this repo](docs/fuzz-counter.json) written only by CI, and every increment maps to a run
