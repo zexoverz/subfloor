@@ -64,3 +64,20 @@ export function buildMandate({
     },
   };
 }
+
+/**
+ * A run of mandates to sign in one sitting, identical but for the nonce.
+ *
+ * Nonces need not be contiguous — the vault only requires that one has not been used — but a
+ * contiguous run is what makes a batch legible to the person approving it. Fifty separate screens
+ * that differ in one number are a ritual; "these caps, fifty times, until Friday" is a decision.
+ */
+export function buildMandateBatch(
+  args: Parameters<typeof buildMandate>[0],
+  count: number,
+): object[] {
+  if (count <= 0) return [];
+  return Array.from({ length: count }, (_, i) =>
+    buildMandate({ ...args, nonce: args.nonce + BigInt(i) }),
+  ).filter((m): m is object => m !== null);
+}
