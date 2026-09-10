@@ -818,22 +818,111 @@ body {
  * simply sit there and the picture still reads.
  */
 /*
- * The annotations breathe rather than blink.
+ * The annotations circle the drawing.
  *
- * They used to fade out entirely on the drawing's seven-second loop — labels appearing and
- * vanishing beside a headline is a thing the eye has to keep checking, and the headline is what it
- * should be reading. Now they arrive once and stay, and the only motion is a slow swell, like
- * something suspended in water.
+ * They used to fade in and out on the picture's own loop — labels appearing and vanishing beside a
+ * headline is a thing the eye has to keep checking, and the headline is what it should be reading.
+ * Now they arrive once and travel, which is motion the eye can ignore.
  *
- * The scale is small on purpose. At 1.06 it reads as a thing floating; much past that and six of
- * them pulsing is a page that will not sit still. Each sets its own period in the component, so
- * they never come into step.
+ * `left`/`top` rather than a rotating ring. A ring gives a circle; this box is 3:2 and a circle
+ * inside it either leaves the sides empty or throws the labels off them. Percentages on `left` are
+ * of the container, so one path fits whatever width the column gets — and the six share it, spaced
+ * by negative delays rather than by six sets of keyframes.
+ *
+ * Flattened deliberately: 38 wide against 24 tall, so they sweep the sides and skim above and below
+ * the creature. A label crossing its face is a label nobody can read on a drawing nobody can see.
+ *
+ * Four minutes for a full turn, set on the element. At two it still read as movement rather than as
+ * the picture being alive, which is the whole difference between decoration and a distraction.
  */
-/*
- * Opacity only, and the breath below writes only `transform`. Two animations on one element that
- * both touch the same property do not blend — the later one in the list simply wins — so an
- * entrance that scaled would have been overridden from its first frame.
- */
+@keyframes hero-orbit {
+  /*
+   * The z-index is half the illusion. Without it the labels slide across the picture; with it they
+   * go round it. The two swaps land at 0% and 50%, which are the far left and far right of the
+   * ellipse — the sides, which is exactly where a thing travelling round something crosses it.
+   *
+   * Held rather than interpolated: `z-index` is an integer and it does interpolate, so a single
+   * pair of stops would walk it through every value between and the pass would happen somewhere in
+   * the middle of a sweep rather than at the edge.
+   */
+  0%,
+  49.99% {
+    z-index: 9;
+  }
+
+  50%,
+  100% {
+    z-index: 1;
+  }
+
+  0% {
+    left: 88.0%;
+    top: 50.0%;
+  }
+
+  8.333% {
+    left: 82.9%;
+    top: 62.0%;
+  }
+
+  16.67% {
+    left: 69.0%;
+    top: 70.8%;
+  }
+
+  25% {
+    left: 50.0%;
+    top: 74.0%;
+  }
+
+  33.33% {
+    left: 31.0%;
+    top: 70.8%;
+  }
+
+  41.67% {
+    left: 17.1%;
+    top: 62.0%;
+  }
+
+  50% {
+    left: 12.0%;
+    top: 50.0%;
+  }
+
+  58.33% {
+    left: 17.1%;
+    top: 38.0%;
+  }
+
+  66.67% {
+    left: 31.0%;
+    top: 29.2%;
+  }
+
+  75% {
+    left: 50.0%;
+    top: 26.0%;
+  }
+
+  83.33% {
+    left: 69.0%;
+    top: 29.2%;
+  }
+
+  91.67% {
+    left: 82.9%;
+    top: 38.0%;
+  }
+
+  100% {
+    left: 88.0%;
+    top: 50.0%;
+  }
+}
+
+/* Opacity only. Two animations on one element that both write `transform` do not blend — the later
+   simply wins — and the transform here is doing the centring. */
 @keyframes hero-bubble-in {
   from {
     opacity: 0;
@@ -843,20 +932,23 @@ body {
   }
 }
 
+/* The swell, folded into the centring transform so the two do not fight over the property. */
 @keyframes hero-bubble-breathe {
   from {
-    transform: scale(0.97);
+    transform: translate(-50%, -50%) scale(0.97);
   }
   to {
-    transform: scale(1.06);
+    transform: translate(-50%, -50%) scale(1.06);
   }
 }
 
 .hero-bubble {
+  transform: translate(-50%, -50%);
   transform-origin: center;
   animation:
     hero-bubble-in 600ms ease-out both,
-    hero-bubble-breathe 6s ease-in-out infinite alternate;
+    hero-bubble-breathe 12s ease-in-out infinite alternate,
+    hero-orbit 240s linear infinite;
 }
 
 /*
