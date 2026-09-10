@@ -447,6 +447,15 @@ body {
   animation-direction: reverse;
 }
 
+/* The lower two, slower again, so the four never come into step and the water keeps its depth. */
+.well-tide-deep {
+  animation-duration: 31s;
+}
+
+.well-tide-slow.well-tide-deep {
+  animation-duration: 38s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .well-tide {
     animation: none;

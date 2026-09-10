@@ -16,6 +16,7 @@ function Feature({
   label,
   title,
   art,
+  artPlace = 'corner',
   children,
 }: {
   label: string;
@@ -30,14 +31,23 @@ function Feature({
    * sticker, and this page cannot afford anything that only looks like it means something.
    */
   art?: string;
+  /**
+   * Where it sits, and the two cases are really "is there a hole in this card".
+   *
+   * Four of the six put their content at the foot and leave the middle empty, so the drawing goes
+   * into the hole — that is the space it was brought in to answer. The other two are full to the
+   * edges with a panel, and there the only place left is the corner it bleeds off, where it reads
+   * as something standing behind the panel.
+   */
+  artPlace?: 'corner' | 'middle';
   children?: ReactNode;
 }) {
   return (
     <div className="relative flex flex-col gap-3 overflow-hidden rounded-xl border border-rule bg-surface p-5 shadow-card">
       {/*
-        * Bottom right, behind everything, and sized like the tiles' so the two rows of cards on
-        * this page read as one family. `overflow-hidden` on the card is what lets it bleed off the
-        * corner instead of sitting in a box of its own.
+        * Behind everything either way, and sized like the tiles' so the two rows of cards on this
+        * page read as one family. `overflow-hidden` on the card is what lets the cornered ones
+        * bleed off it instead of sitting in a box of their own.
         */}
       {art && (
         <img
@@ -45,7 +55,11 @@ function Feature({
           alt=""
           aria-hidden
           draggable={false}
-          className="tile-art pointer-events-none absolute right-1 -bottom-1 h-[76px] w-auto max-w-[40%] object-contain object-right-bottom opacity-90 select-none"
+          className={`tile-art pointer-events-none absolute w-auto object-contain opacity-90 select-none ${
+            artPlace === 'middle'
+              ? 'top-1/2 right-3 h-[96px] max-w-[46%] -translate-y-1/2 object-right'
+              : 'right-1 -bottom-1 h-[76px] max-w-[40%] object-right-bottom'
+          }`}
         />
       )}
       <span className="relative text-[11.5px] font-semibold tracking-[0.13em] text-floor uppercase">{label}</span>
@@ -61,7 +75,7 @@ export function FeatureGrid() {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Feature label={copy.landing.f1Label} title={copy.landing.f1Title} art="/tiles/worst.webp">
+      <Feature label={copy.landing.f1Label} title={copy.landing.f1Title} artPlace="middle" art="/tiles/worst.webp">
         <div className="flex flex-wrap gap-2">
           <Act primary>{copy.floor.raise}</Act>
           <Locked>{copy.floor.lower}</Locked>
@@ -72,7 +86,7 @@ export function FeatureGrid() {
         {refusal && decoded && <RefusalDetail entry={refusal} decoded={decoded} />}
       </Feature>
 
-      <Feature label={copy.landing.f3Label} title={copy.landing.f3Title} art="/mascot-setup.webp">
+      <Feature label={copy.landing.f3Label} title={copy.landing.f3Title} artPlace="middle" art="/mascot-setup.webp">
         <p className="mb-1.5 text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.landing.f3Surface}</p>
         <div className="flex flex-wrap gap-1.5 text-[11.5px]">
           {['compose', 'ship', 'dock', 'update-quote'].map((call) => (
@@ -83,7 +97,7 @@ export function FeatureGrid() {
         </div>
       </Feature>
 
-      <Feature label={copy.landing.f4Label} title={copy.landing.f4Title} art="/tiles/fills.webp">
+      <Feature label={copy.landing.f4Label} title={copy.landing.f4Title} artPlace="middle" art="/tiles/fills.webp">
         <div className="text-[30px] leading-none font-semibold tracking-tight">
           <RollingNumber value={fixtures.fuzz.programs} />
         </div>
@@ -96,7 +110,7 @@ export function FeatureGrid() {
         </pre>
       </Feature>
 
-      <Feature label={copy.landing.f6Label} title={copy.landing.f6Title} art="/mascot-alert.webp">
+      <Feature label={copy.landing.f6Label} title={copy.landing.f6Title} artPlace="middle" art="/mascot-alert.webp">
         <PanicButton onFire={() => {}} />
         <p className="mt-2 text-[11px] text-faint">{copy.landing.f6Sub}</p>
       </Feature>

@@ -116,16 +116,20 @@ export function FloorControl({
         * about something else: it is a floor, in a product whose whole argument is that there is a
         * bottom. Behind everything and out of the accessibility tree — it says nothing the numbers
         * do not.
+        *
+        * Four bands rather than two, and each one deeper and travelling at its own speed, which is
+        * the same water the landing page's currents are made of. Two at 5% read as a smudge; four
+        * read as depth, and depth is the thing this control is about.
         */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[58px] overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[76px] overflow-hidden">
         <svg
           viewBox="0 0 1200 60"
           preserveAspectRatio="none"
           className="well-tide well-tide-slow absolute bottom-0 h-full"
           fill="var(--c-floor)"
-          opacity="0.07"
+          opacity="0.06"
         >
-          <path d="M0 24 Q 75 6 150 24 T 300 24 T 450 24 T 600 24 T 750 24 T 900 24 T 1050 24 T 1200 24 V60 H0 Z" />
+          <path d="M0 18 Q 75 0 150 18 T 300 18 T 450 18 T 600 18 T 750 18 T 900 18 T 1050 18 T 1200 18 V60 H0 Z" />
         </svg>
         <svg
           viewBox="0 0 1200 60"
@@ -134,7 +138,25 @@ export function FloorControl({
           fill="var(--c-floor)"
           opacity="0.05"
         >
-          <path d="M0 34 Q 75 18 150 34 T 300 34 T 450 34 T 600 34 T 750 34 T 900 34 T 1050 34 T 1200 34 V60 H0 Z" />
+          <path d="M0 27 Q 75 9 150 27 T 300 27 T 450 27 T 600 27 T 750 27 T 900 27 T 1050 27 T 1200 27 V60 H0 Z" />
+        </svg>
+        <svg
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          className="well-tide well-tide-slow well-tide-deep absolute bottom-0 h-full"
+          fill="var(--c-floor)"
+          opacity="0.045"
+        >
+          <path d="M0 36 Q 75 18 150 36 T 300 36 T 450 36 T 600 36 T 750 36 T 900 36 T 1050 36 T 1200 36 V60 H0 Z" />
+        </svg>
+        <svg
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          className="well-tide well-tide-deep absolute bottom-0 h-full"
+          fill="var(--c-floor)"
+          opacity="0.06"
+        >
+          <path d="M0 45 Q 75 27 150 45 T 300 45 T 450 45 T 600 45 T 750 45 T 900 45 T 1050 45 T 1200 45 V60 H0 Z" />
         </svg>
       </div>
 
@@ -269,7 +291,13 @@ export function FloorControl({
         * Both stay quiet until the handle is at that end, so the control reads as one number with
         * two directions rather than as three things competing.
         */}
-      <div className="relative flex items-center justify-between text-[11.5px] text-faint">
+      {/*
+        * Muted, not faint, and the four bands of water below are why. Where all of them overlap the
+        * ground composites to #03394b, where `text-faint` measures 4.05 — under the 4.5 an 11.5px
+        * line needs. Muted reads 5.15 on the same pixel. The opacities came down for the same
+        * sum: at the depth they were first drawn the ground reached #055464 and faint fell to 2.78.
+        */}
+      <div className="relative flex items-center justify-between text-[11.5px] text-muted">
         <span className={`flex items-center gap-0.5 ${bps <= MIN_BPS ? 'text-floor' : ''}`}>
           <ChevronsLeft size={13} strokeWidth={2} />
           {copy.floor.saferEnd} · −{MIN_BPS} bps
