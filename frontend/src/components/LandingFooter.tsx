@@ -64,34 +64,36 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
         }}
       >
         {/*
-          * Water in the space the drawing does not reach, and the drawing left where it was.
+          * The drawing fills the whole of it, anchored at the foot.
           *
-          * Stretching the seabed itself into the gap was the first attempt and it does the opposite
-          * of filling it: the picture is `object-cover`, so a taller box re-crops it — more dark
-          * upper water at the top and the reef pushed down out of the way. The artwork keeps its
-          * own 420px at the foot, and everything above it is lit water fading into it.
+          * A gradient in the gap was the wrong answer twice over: it never quite met the artwork,
+          * which left a dark lens between them, and it was standing in for a picture that could
+          * simply be there. `object-bottom` is what makes the taller frame work — the reef stays
+          * where it is and the extra height is spent on the water above it, which is the part of
+          * the drawing a taller frame ought to be showing.
+          */}
+        <Seabed intensity="hero" anchor="bottom" />
+
+        {/*
+          * The reading ground for the close, and it is a veil rather than a panel — full width, no
+          * edge, densest across the band the words sit in.
+          *
+          * Filling the frame with the drawing put a light shaft directly behind the headline: the
+          * brightest pixel under it measured #eaffff, where white reads 1.04. That is not a
+          * legibility quibble, it is a headline nobody can read on the last thing they see.
+          *
+          * 86%, and the figure is the standfirst's rather than the headline's: at 78 the heading
+          * was already fine at 10.3 and the muted line under it sat at 4.27, which is under the 4.5
+          * a 16px line needs. Measured beside the words rather than through them — sampling a strip
+          * that contains the text reads the text back to you and says everything passes.
           */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(to bottom, var(--c-surface-top) 0%, color-mix(in srgb, var(--c-surface-top) 62%, transparent) 30%, color-mix(in srgb, var(--c-surface-top) 30%, transparent) 46%, transparent 62%)',
+              'linear-gradient(to bottom, transparent 6%, color-mix(in srgb, var(--c-ground) 86%, transparent) 34%, color-mix(in srgb, var(--c-ground) 86%, transparent) 74%, transparent 96%)',
           }}
         />
-        {/*
-          * The drawing surfaces out of that water rather than starting on top of it. Its own top is
-          * a hard horizontal edge — it is a photograph of a scene, cropped — and no amount of water
-          * above hides an edge; only fading the edge does.
-          */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-[420px]"
-          style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 26%, black 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 26%, black 100%)',
-          }}
-        >
-          <Seabed intensity="hero" />
-        </div>
       </div>
 
       <section className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] py-24 text-center">

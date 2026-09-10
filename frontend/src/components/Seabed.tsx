@@ -13,7 +13,21 @@
  * The one gradient left is a fade at the foot of the hero, so the picture ends by becoming the
  * page rather than stopping at a line.
  */
-export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }) {
+export function Seabed({
+  intensity = 'board',
+  /**
+   * Which end of the drawing survives the crop.
+   *
+   * `object-cover` keeps the box full and throws away whatever does not fit, and which end it
+   * throws away is the whole question in a tall box: centred, a taller frame eats the reef from the
+   * bottom and the water from the top at once. Anchored to the bottom the reef stays put and the
+   * extra height is spent on the water above it, which is what a taller frame should be showing.
+   */
+  anchor = 'center',
+}: {
+  intensity?: 'board' | 'hero';
+  anchor?: 'center' | 'bottom';
+}) {
   const hero = intensity === 'hero';
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -21,7 +35,7 @@ export function Seabed({ intensity = 'board' }: { intensity?: 'board' | 'hero' }
         src="/seabed.webp"
         alt=""
         draggable={false}
-        className="h-full w-full object-cover object-center select-none"
+        className={`h-full w-full object-cover select-none ${anchor === 'bottom' ? 'object-bottom' : 'object-center'}`}
       />
       {hero && (
         <div
