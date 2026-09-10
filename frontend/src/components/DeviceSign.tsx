@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Usb, Wallet as WalletIcon } from 'lucide-react';
 import { copy } from '../copy.ts';
-import { Act, Back, Ghost } from './Button.tsx';
+import { Act, Back } from './Button.tsx';
 import { Card, CardBody, CardHead } from './Card.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
@@ -197,46 +197,53 @@ export function DeviceSign({
               )}
 
               {answered ? (
-                <Ghost onClick={onDone}>continue</Ghost>
+                <Act wide primary onClick={onDone}>
+                  continue
+                </Act>
               ) : (
-                /* Declining re-arms the same button rather than growing a "try again" beside it. */
-                <div className="flex items-center gap-2">
-                  <Act
-                    primary
-                    busy={stage === 'waiting'}
-                    busyLabel={
-                      step
-                        ? step.replace('signer.eth.steps.', '')
-                        : isWallet
-                          ? 'waiting for your wallet'
-                          : 'awaiting approval on device'
+                /*
+                 * Full width. It is the only thing to press on this panel and it sat at the width
+                 * of its own label, which made the affirmative action the smallest target on a
+                 * screen whose whole job is that one press.
+                 *
+                 * Declining re-arms this same button rather than growing a "try again" beside it.
+                 */
+                <Act
+                  wide
+                  primary
+                  busy={stage === 'waiting'}
+                  busyLabel={
+                    step
+                      ? step.replace('signer.eth.steps.', '')
+                      : isWallet
+                        ? 'waiting for your wallet'
+                        : 'awaiting approval on device'
+                  }
+                  disabled={!signer.ready}
+                  onClick={async () => {
+                    setStage('waiting');
+                    // The real thing: the device renders the payload and answers. A decline and
+                    // an unreachable device are both ordinary outcomes, not errors.
+                    /*
+                     * Read the device before asking it for anything. `connect()` returns what it
+                     * read rather than only storing it — `ledger.address` here is a render behind,
+                     * so checking it would check the previous device.
+                     */
+                    const at = signer.address ?? (await signer.connect());
+                    setAttached(at);
+                    if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
+                      setStage('pre');
+                      return;
                     }
-                    disabled={!signer.ready}
-                    onClick={async () => {
-                      setStage('waiting');
-                      // The real thing: the device renders the payload and answers. A decline and
-                      // an unreachable device are both ordinary outcomes, not errors.
-                      /*
-                       * Read the device before asking it for anything. `connect()` returns what it
-                       * read rather than only storing it — `ledger.address` here is a render behind,
-                       * so checking it would check the previous device.
-                       */
-                      const at = signer.address ?? (await signer.connect());
-                      setAttached(at);
-                      if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
-                        setStage('pre');
-                        return;
-                      }
-                      // `rows` is what the screen renders; this is what the device verifies. They
-                      // must describe the same thing, and only one of them can be signed.
-                      const signature = await signer.signTypedData(typedData, setStep);
-                      if (signature) onSigned?.(signature);
-                      setStage(signature ? (scheduledAt ? 'scheduled' : 'signed') : 'declined');
-                    }}
-                  >
-                    {isWallet ? copy.ceremony.continueInWallet : copy.ceremony.continue}
-                  </Act>
-                </div>
+                    // `rows` is what the screen renders; this is what the device verifies. They
+                    // must describe the same thing, and only one of them can be signed.
+                    const signature = await signer.signTypedData(typedData, setStep);
+                    if (signature) onSigned?.(signature);
+                    setStage(signature ? (scheduledAt ? 'scheduled' : 'signed') : 'declined');
+                  }}
+                >
+                  {isWallet ? copy.ceremony.continueInWallet : copy.ceremony.continue}
+                </Act>
               )}
 
               {/*
