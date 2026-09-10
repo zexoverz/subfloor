@@ -78,6 +78,29 @@ This also settles how the Graph filing should be argued. "Substreams feeds the s
 decoration claim and every entrant makes it. "The headline number on our dashboard cannot be
 produced by a subgraph at all, and here is why" is a reason.
 
+### Publishing the package
+
+The `.spkg` is a build artifact and is gitignored, so it is rebuilt rather than committed. Publishing
+needs a substreams.dev account and `substreams registry login` opens a TTY prompt, so it cannot be
+scripted from an agent session.
+
+```bash
+cd indexer/substreams
+substreams pack                       # writes subfloor-refusals-v0.1.0.spkg
+substreams registry verify subfloor-refusals-v0.1.0.spkg   # must print no warnings
+substreams registry login             # paste the token from https://substreams.dev/me
+substreams registry publish
+```
+
+`logo.png` is committed on purpose and the root `.gitignore` carries an explicit negation for it.
+Without it `package.image` resolves to nothing, `substreams pack` fails on a fresh clone, and the
+registry listing goes up with a blank tile. `package.doc` is deprecated: the registry description is
+taken from `indexer/substreams/README.md`, which is why that file is written for a stranger reading
+the listing rather than for us.
+
+Link the published package from the README once it is up. A package on disk is worth nothing to a
+judge.
+
 ## Decision 4 — the reference join is Chainlink at the fill's block
 
 `FillQuality.referencePrice` is read from the same Chainlink feed the registry scores against, at the
