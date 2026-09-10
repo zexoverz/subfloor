@@ -88,7 +88,7 @@ export function TopUp({
           >
             <span className="flex items-center justify-center gap-2">
               <Undo2 size={13} strokeWidth={1.9} />
-              {copy.wallet.withdraw}
+              {copy.wallet.withdrawShort}
             </span>
           </button>
         )}

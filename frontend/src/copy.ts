@@ -218,6 +218,14 @@ export const copy = {
     floorAlreadySet: 'Registered. Raising it again is one press; weakening it is not.',
     /** Said only when a delegate exists. With none, nothing is under any mandate. */
     noMandate: 'no agent yet',
+    /*
+     * Two lengths, and the difference is which button fires.
+     *
+     * On the card it opens a dialog, so "Withdraw" is the whole of what pressing it does — and at
+     * half the row's width the longer name wrapped to two lines. In the dialog it is the button
+     * that actually moves the tokens, and there the word "everything" is the point.
+     */
+    withdrawShort: 'Withdraw',
     withdraw: 'Withdraw everything',
     /** The owner's standing exit, not the panic path. Both exist; only that one is irreversible. */
     withdrawTitle: 'Empty the vault',
