@@ -5,17 +5,6 @@ import { ACTIVE_TOKENS } from './tokens.ts';
 import type { Holding } from '../types.ts';
 
 /**
- * The mandate, as the device is asked to sign it.
- *
- * Matches `AquaGuardVault.Mandate` field for field — delegate, app, tokens, maxAmounts, nonce,
- * expiry — because the vault recovers the signer from this exact struct and a mismatch is a
- * signature over something nobody agreed to.
- *
- * Returns null rather than a half-filled object. A mandate missing its delegate is not a mandate
- * with a blank in it; it is nothing to sign, and asking the device to render nothing is how an
- * owner learns to approve screens they have not read.
- */
-/**
  * The struct itself, which is the half that has to survive the ceremony.
  *
  * `_consumeMandate` recomputes the hash from every field, so a stored signature without these is
@@ -38,6 +27,17 @@ export interface MandateTypedData {
   message: MandateMessage;
 }
 
+/**
+ * The mandate, as the device is asked to sign it.
+ *
+ * Matches `AquaGuardVault.Mandate` field for field — delegate, app, tokens, maxAmounts, nonce,
+ * expiry — because the vault recovers the signer from this exact struct and a mismatch is a
+ * signature over something nobody agreed to.
+ *
+ * Returns null rather than a half-filled object. A mandate missing its delegate is not a mandate
+ * with a blank in it; it is nothing to sign, and asking the device to render nothing is how an
+ * owner learns to approve screens they have not read.
+ */
 export function buildMandate({
   vault,
   delegate,
@@ -113,9 +113,9 @@ export function buildMandate({
 export function buildMandateBatch(
   args: Parameters<typeof buildMandate>[0],
   count: number,
-): object[] {
+): MandateTypedData[] {
   if (count <= 0) return [];
   return Array.from({ length: count }, (_, i) =>
     buildMandate({ ...args, nonce: args.nonce + BigInt(i) }),
-  ).filter((m): m is object => m !== null);
+  ).filter((m): m is MandateTypedData => m !== null);
 }

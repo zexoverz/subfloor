@@ -112,18 +112,33 @@ export async function run(): Promise<void> {
     console.log(`[index] reference ${index.reference.answer} -> raw ${referencePrice}`);
   }
 
-  const program = composeBook({
+  /*
+   * An explicit program, when the point is to ship something the composer would never produce —
+   * the injection harness's guard-free book, for instance. It is not a shortcut around composing:
+   * the harness composes and records, and this is the ship path both go out through, because two
+   * ship paths that can disagree is worse than one that works.
+   */
+  const supplied = process.env.SUBFLOOR_PROGRAM as Hex | undefined;
+  const program = supplied ?? composeBook({
     referencePrice,
     spreadBps: Number(process.env.POLICY_SPREAD_BPS ?? 50),
     feeBps: Number(process.env.POLICY_FEE_BPS ?? 3000),
     decayPeriodSeconds: Number(process.env.POLICY_DECAY_SECONDS ?? 600),
     salt: BigInt(process.env.SUBFLOOR_SALT ?? Math.floor(Date.now() / 1000)),
   });
-  console.log(`[compose] ${program}`);
+  console.log(supplied ? `[program] SUPPLIED ${program}` : `[compose] ${program}`);
 
-  // Ship inside the caps rather than at them: the mandate authorises the inventory, and shipping
-  // every last unit leaves nothing for the approval accounting to round against.
-  const amounts = mandate.tokens.map((_, i) => (mandate.maxAmounts[i] * 8n) / 10n);
+  /*
+   * Ship inside the mandate rather than at it.
+   *
+   * The vault's approval to Aqua tracks the *sum* of live commitments per token, so a second
+   * strategy on the same inventory has to fit beside the first — two ships at the mandate's ceiling
+   * would commit twice what the vault holds, and the shortfall surfaces as a failed pull at fill
+   * time rather than here. `SUBFLOOR_SHIP_PERCENT` is what the operator gives this one.
+   */
+  const percent = BigInt(process.env.SUBFLOOR_SHIP_PERCENT ?? 80);
+  const amounts = mandate.tokens.map((_, i) => (mandate.maxAmounts[i] * percent) / 100n);
+  console.log(`[ship] ${percent}% of the mandate: ${amounts.join(", ")}`);
 
   const calldata = shipCalldata({
     app: mandate.app,
