@@ -8,6 +8,16 @@ import { DEFAULT_ENDPOINT, SubgraphError } from "./subgraph.ts";
 import { refusals } from "./refusals.ts";
 import { recentFills } from "../../../frontend/api/_lib/chain.ts";
 import { cachedPost } from "../../../frontend/api/_lib/indexCache.ts";
+import { chainReader, fileStore, forVault, postMandates } from "../../../frontend/api/_lib/mandates.ts";
+import { CHAIN } from "../../../frontend/api/_lib/chain.ts";
+
+/// Where signed mandates are kept for the house agent. Point it at a volume; on the container's own
+/// disk they last as long as the deploy does, and an owner would have to sign again after every one.
+const MANDATES = fileStore(process.env.SUBFLOOR_MANDATES_PATH ?? "data/mandates.json");
+const MAX_MANDATE_BYTES = 65_536;
+/// Base Sepolia. The mandate's EIP-712 domain carries the chain, so a signature from anywhere else
+/// does not recover here.
+const CHAIN_ID = 84532;
 
 /// One service: the built frontend and the two consumers it calls, on one origin.
 ///
@@ -160,6 +170,29 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // Signed mandates, from the interface to the house agent. Public to read, because a mandate is
+    // spendable only by the delegate it names; checked on the way in, because one the agent could
+    // never spend should be refused here with its reason rather than found later as a revert.
+    if (url.pathname === "/api/mandates") {
+      if (req.method === "POST") {
+        const raw = await readBody(req, MAX_MANDATE_BYTES);
+        const outcome = await postMandates(raw, {
+          houseAgent: process.env.SUBFLOOR_HOUSE_AGENT ?? "",
+          router: CHAIN.router,
+          chainId: CHAIN_ID,
+          reader: chainReader(CHAIN.rpc),
+          store: MANDATES,
+        });
+        res.writeHead(outcome.status, { "content-type": "application/json" });
+        res.end(JSON.stringify(outcome.body));
+        return;
+      }
+      const list = forVault(await MANDATES.load(), url.searchParams.get("vault"));
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify({ houseAgent: process.env.SUBFLOOR_HOUSE_AGENT ?? null, mandates: list }));
+      return;
+    }
+
     if (url.pathname === "/api/health") {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: true, index: DEFAULT_ENDPOINT }));
@@ -168,7 +201,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname.startsWith("/api/")) {
       res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "not found", routes: ["/api/calibration", "/api/report", "/api/fills", "/api/refusals", "/api/subgraph", "/api/health"] }));
+      res.end(JSON.stringify({ error: "not found", routes: ["/api/calibration", "/api/report", "/api/fills", "/api/refusals", "/api/subgraph", "/api/mandates", "/api/health"] }));
       return;
     }
 
