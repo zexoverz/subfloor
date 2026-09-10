@@ -18,6 +18,12 @@ builder who has to catch it.
 is settled, the verified addresses, the measured facts and the traps that already cost time. Do not
 re-derive what it records, and do not soften anything it marks unverified.
 
+**Then read `docs/handoff.md`.** The spec records intent and design; the handoff records *state* —
+what is deployed, what the numbers are and how to re-check them, what is unfinished, and which trap
+was last walked into. It is short enough to read in full and it is the fastest way to stop being
+wrong about the present. When it disagrees with the spec about a fact on chain, verify rather than
+pick; when it disagrees about intent, the spec wins.
+
 **Submission: 13 Sep 2026, 16:00 UTC.**
 
 `docs/SPEC.md` **is published with this repository**, because ETHOnline's rules require a project
