@@ -144,7 +144,21 @@ at it. `subfloor.vercel.app` now returns `DEPLOYMENT_NOT_FOUND`. If you find tha
 wrong.
 
 Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, `/api/fills`,
-`/api/report`. All returned 200 on 10 Sep.
+`/api/report`, `/api/subgraph` and `/api/mandates`. All returned 200 on 10 Sep.
+
+**`/api/subgraph` is the only way anything of ours reads Studio now** (`#234`). Studio's development
+endpoint rate-limits, and every open tab plus the policy loop used to poll it on their own, so the
+loop spent hours docking on 429s while the index was healthy. The browser bundle
+(`VITE_SUBGRAPH_URL=/api/subgraph`), the consumers and the agent (`SUBFLOOR_SUBGRAPH=<web>/api/subgraph`)
+now share one 30s cache here. A 429 is passed through and never cached.
+
+**`/api/mandates` holds the signed batches the house agent spends** (`#235`), on the `web-mandates`
+volume at `/data` (`SUBFLOOR_MANDATES_PATH=/data/mandates.json`). It refuses anything the house agent
+could not spend, with the reason. `SUBFLOOR_HOUSE_AGENT` names the agent it serves; unset, it answers
+503 rather than holding signatures for nobody.
+
+**The `agent` service builds from `main`** and runs `policy/loop.ts`. Without `SUBFLOOR_DELEGATE_KEY`
+it only watches and logs. With it, it is the house agent (`#236`): one book per vault that names it.
 
 ---
 
@@ -155,7 +169,7 @@ Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, 
 | Contract tests | **962 pass, 0 fail** | `cd contracts && forge test` |
 | Programs fuzzed | **980,000** over 13 campaigns; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
 | Scored fills | **261** | `curl .../api/fills` |
-| Refusals on chain | **4** (read 10 Sep, 15:50 UTC) | `curl .../api/refusals` |
+| Refusals on chain | **6** (read 10 Sep, 16:05 UTC; it moves when anyone walks the e2e) | `curl .../api/refusals` |
 | Index health | `hasIndexingErrors: false` | `{ _meta { hasIndexingErrors block { number } } }` |
 | Upstream suite | 797 → **803** | `1inch/swap-vm#197` |
 
@@ -305,7 +319,18 @@ cd indexer/substreams
 SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams registry publish ./subfloor-refusals-v0.1.0.spkg
 ```
 
-**4. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
+**4. Switch the house agent on, which also unsticks the live book (`#233`).** The code is merged and
+deployed. Three things are left, and none of them can be done from an agent session:
+
+- set `SUBFLOOR_DELEGATE_KEY` on the Railway `agent` service to the key for `0x28Fb6255…`
+- sign a mandate batch for vault `0xaf6b…` as its guardian `0x9ebdC8AC…`, naming that delegate, and
+  POST it to `/api/mandates`, from the interface once `#232` lands or from the keystore
+- decide the backstop: the vault's WETH→tUSDC absolute is 2,460.46, above the market on 10 Sep, so
+  even a recentred book cannot sell WETH until it is lowered with a guardian signature
+
+After that the agent retires the vault's two older books and recentres the newest one.
+
+**5. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
 
 **Not mine, and parked by the builder:** `#31` and `#41`, the second-chain subgraph and its README
 demo. Everything labelled `frontend` is Zikri's.
