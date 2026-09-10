@@ -13,6 +13,25 @@ export interface OpenStrategy {
   /// False when the maker shipped raw bytecode rather than an Order. Ours is always true; a false
   /// here means we are looking at somebody else's strategy and should not reason about it.
   programWrappedInOrder: boolean;
+  /// The address that shipped it. Lowercase hex, as the index keys it.
+  maker: string;
+  strategyHash: string;
+  app: string;
+  shippedBlock: number;
+  /// Where the book's curve is centred, raw units 1e18, read off its `XYCConcentrateSwap` bounds.
+  /// Null for a program without one. This is what lets an agent that restarts know where its book
+  /// sits without spending a mandate to find out.
+  centre: bigint | null;
+}
+
+/// `sqrtPriceMin * sqrtPriceMax / 1e18` from the instruction's two 32-byte arguments. The bounds are
+/// `sqrt(ref * (1 ± s) * 1e18)`, so their product over 1e18 is `ref * sqrt(1 - s²)`: within 0.0013%
+/// of the reference at a 50 bps spread, which is far inside any re-centring band.
+export function centreFromXycArgs(args: string | null): bigint | null {
+  if (!args || args.length !== 2 + 128) return null;
+  const lo = BigInt(`0x${args.slice(2, 66)}`);
+  const hi = BigInt(`0x${args.slice(66, 130)}`);
+  return (lo * hi) / 10n ** 18n;
 }
 
 export interface RecentQuality {
@@ -37,7 +56,11 @@ export interface IndexView {
 
 const QUERY = `query PolicyState {
   _meta { block { number } hasIndexingErrors }
-  strategies(first: 50) { id classification stepCount programWrappedInOrder }
+  strategies(first: 100, where: { active: true }, orderBy: shippedBlock, orderDirection: desc) {
+    id classification stepCount programWrappedInOrder strategyHash app shippedBlock
+    maker { id }
+    steps(where: { opcode: 81 }) { args }
+  }
   executionQualityDailySnapshots(first: 1, orderBy: day, orderDirection: desc) {
     fills adverseDeviationP50Bps adverseDeviationP99Bps medianReferenceAgeSeconds
   }
@@ -95,6 +118,11 @@ export async function readIndex(endpoint: string, fetchImpl: typeof fetch = fetc
       classification: s.classification,
       stepCount: Number(s.stepCount),
       programWrappedInOrder: s.programWrappedInOrder === true,
+      maker: String(s.maker?.id ?? "").toLowerCase(),
+      strategyHash: String(s.strategyHash ?? ""),
+      app: String(s.app ?? "").toLowerCase(),
+      shippedBlock: Number(s.shippedBlock ?? 0),
+      centre: centreFromXycArgs(s.steps?.[0]?.args ?? null),
     })),
     quality: snap
       ? {

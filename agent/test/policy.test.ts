@@ -10,7 +10,9 @@ function view(over: Partial<IndexView> = {}): IndexView {
   return {
     indexedBlock: 1000,
     hasIndexingErrors: false,
-    strategies: [{ id: "0xabc", classification: "CONCENTRATED", stepCount: 4, programWrappedInOrder: true }],
+    strategies: [
+      { id: "0xabc", classification: "CONCENTRATED", stepCount: 4, programWrappedInOrder: true, maker: "0xv", strategyHash: "0xabc", app: "0xr", shippedBlock: 1, centre: null },
+    ],
     quality: { fills: 10, p50Bps: -3, p99Bps: 20, medianReferenceAgeSeconds: 40 },
     reference: { answer: 250_000_000_000n, updatedAt: NOW - 60 },
     ...over,
@@ -78,7 +80,9 @@ describe("the policy loop trades when it can see", () => {
 
   test("a book somebody else shipped raw does not count as ours", () => {
     const a = decide(inputs({
-      index: view({ strategies: [{ id: "0x1", classification: "UNKNOWN", stepCount: 2, programWrappedInOrder: false }] }),
+      index: view({
+        strategies: [{ id: "0x1", classification: "UNKNOWN", stepCount: 2, programWrappedInOrder: false, maker: "0xv", strategyHash: "0x1", app: "0xr", shippedBlock: 1, centre: null }],
+      }),
     }));
     assert.equal(a.kind, "requote");
   });
