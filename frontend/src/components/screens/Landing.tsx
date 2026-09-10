@@ -5,6 +5,7 @@ import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
 import { HeroParallax } from '../HeroParallax.tsx';
 import { PublicTape } from '../PublicTape.tsx';
+import { SeaTrail } from '../SeaTrail.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
 import { LandingFooter } from '../LandingFooter.tsx';
@@ -130,7 +131,13 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <PublicTape />
       </section>
 
-      <section className="relative mt-24">
+      {/*
+        * The way down. Three routes between four sections, each bending the other way and each
+        * carrying something different — two of the same shape in a row is a border, not a journey.
+        */}
+      <SeaTrail creature="crab" />
+
+      <section className="relative mt-6">
         <SectionHead
           eyebrow={copy.landing.featuresEyebrow}
           title={copy.landing.featuresTitle}
@@ -139,7 +146,9 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <FeatureGrid />
       </section>
 
-      <section className="relative mt-24" aria-label="interactive fill">
+      <SeaTrail creature="shark" down={false} />
+
+      <section className="relative mt-6" aria-label="interactive fill">
         <SectionHead
           eyebrow="Try it"
           title="Drag the fill below the floor."
@@ -148,7 +157,9 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <PriceLadder />
       </section>
 
-      <section className="relative mt-24">
+      <SeaTrail creature="octopus" />
+
+      <section className="relative mt-6">
         <SectionHead
           eyebrow={copy.landing.faqEyebrow}
           title={copy.landing.faqTitle}
@@ -156,6 +167,8 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         />
         <Faq />
       </section>
+
+      <SeaTrail creature="fish" down={false} />
 
       </div>
 
