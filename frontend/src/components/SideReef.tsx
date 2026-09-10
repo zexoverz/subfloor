@@ -13,6 +13,10 @@
  * They sit outside the 1100px column, behind everything, `aria-hidden`, and clipped by the
  * landing's own `overflow-x: clip` — art that reaches past the edge is the point, and a horizontal
  * scrollbar is not.
+ *
+ * `hidden lg:block` is a weight decision as much as a layout one. Below that width the column runs
+ * close enough to the edge that they would sit under the text, and a background image inside a
+ * `display: none` element is never fetched — so a phone downloads none of the six.
  */
 export function SideReef({
   art,
@@ -43,6 +47,13 @@ export function SideReef({
         height,
         width,
         opacity,
+        /*
+         * Faded top and bottom, for the same reason the hero is. Each piece ends in a flat line
+         * where the artwork's frame was, and a straight cut across a reef reads as a crop rather
+         * than as the reef carrying on past the section.
+         */
+        maskImage: 'linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)',
       }}
     />
   );
