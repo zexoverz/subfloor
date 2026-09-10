@@ -869,31 +869,36 @@ body {
  * has to get past before anything else, so it should look like the product rather than like an
  * effect the product happens to have.
  */
-.hero-scrim {
-  /*
-   * A wash with no edge, which is not the same as no wash.
-   *
-   * The panel had to go — a rounded rectangle with a border and a drop shadow in the middle of an
-   * illustration reads as a dialog that wandered onto the page. What could not go is the ground
-   * under the words: over the water layer's brightest point, rgb(27,147,235), the headline measures
-   * 2.87 and the standfirst 1.36. There is no typographic trick that recovers that.
-   *
-   * So the fill stays and the edge goes. Radial, densest under the first line and gone before it
-   * reaches anything, so there is no boundary anywhere for the eye to read as a frame — and no
-   * blur, because a backdrop filter ends exactly where its box ends and that boundary is the
-   * container all over again.
-   *
-   * 94% at the centre: it puts the smallest type on #052b54, where muted reads 5.89 and ink 12.46.
-   * The eyebrow moved from faint to muted for this — faint lands at 4.63 and that is too close to
-   * the line to spend on the first thing anyone reads.
-   */
-  background: radial-gradient(
-    115% 95% at 32% 42%,
-    color-mix(in srgb, var(--c-surface-top) 94%, transparent) 0%,
-    color-mix(in srgb, var(--c-surface-top) 88%, transparent) 42%,
-    color-mix(in srgb, var(--c-surface-foot) 55%, transparent) 72%,
-    transparent 100%
+/*
+ * Not a panel. The light going out toward the deep, which is where the words are.
+ *
+ * There was a panel here twice: a rounded card with a border, then an "edgeless" radial that was
+ * nothing of the sort — a radial with an explicit size clips at the element's box, so it hit the
+ * boundary still 55% opaque and drew a harder rectangle than the card it replaced.
+ *
+ * The mistake in both was the element. A veil the width of the *viewport* has no edge inside the
+ * frame to read as a container, so this lives on the full-bleed parallax wrapper and ramps
+ * horizontally: clear over the drawing on the left, full over the column on the right, and it
+ * reaches full before the text starts rather than under its first characters — that alone was worth
+ * ~1 point of contrast, because the leftmost words were sitting on the thin part of the ramp.
+ *
+ * Masked top and bottom so the band does not end in a line either.
+ *
+ * Measured on the composited scene, at the brightest pixel the copy crosses: the ground comes to
+ * #113357, where muted reads 5.33, ink 11.28, and the headline's second line 4.19 — which is large
+ * text and needs 3.
+ */
+.hero-veil {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 22%,
+    color-mix(in srgb, var(--c-surface-top) 50%, transparent) 38%,
+    color-mix(in srgb, var(--c-surface-top) 92%, transparent) 52%,
+    color-mix(in srgb, var(--c-surface-top) 94%, transparent) 100%
   );
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 84%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 84%, transparent 100%);
 }
 
 

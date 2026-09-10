@@ -35,6 +35,12 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)]">
         <HeroParallax />
+        {/*
+          * The ground under the copy, and it belongs out here rather than behind the words: at the
+          * width of the viewport it has no edge inside the frame, which is the only way to darken
+          * anything on this page without drawing a box.
+          */}
+        <div className="hero-veil absolute inset-0" />
       </div>
 
       <div className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] pb-24">
@@ -55,15 +61,6 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         </div>
 
         <div className="relative order-1 md:order-2">
-          {/*
-            * The ground under the headline, spread well past it now rather than inset tight.
-            *
-            * The old rule was the opposite — hold it close, because an edge that lands nowhere in
-            * particular reads as a mistake. That was right while it had an edge. Without one the
-            * reasoning inverts: the fade has to finish somewhere the eye is not, so it needs room
-            * to be over before it reaches anything.
-            */}
-          <div className="hero-scrim pointer-events-none absolute -inset-x-[22%] -inset-y-[42%]" />
 
           <div className="relative">
           {/* Muted, not faint: it is the smallest type on the page and it sits on artwork. */}
