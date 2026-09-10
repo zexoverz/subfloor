@@ -23,7 +23,17 @@ export function PublicTape() {
 
   return (
     <div className="relative">
-      <div className="overflow-hidden rounded-xl border border-rule bg-surface shadow-card">
+      {/*
+        * A height, and a flex column to hand it to the tape.
+        *
+        * The tape sizes itself with `flex-1` against a `min-h` floor, so in a box with no height of
+        * its own it collapsed to that floor and showed three rows. Given one it fills it, and the
+        * rows scroll inside rather than growing the section.
+        *
+        * Clamped rather than fixed: enough rows to read as a tape on a laptop, and never taller
+        * than half the window on anything else.
+        */}
+      <div className="flex h-[clamp(360px,54vh,580px)] flex-col overflow-hidden rounded-xl border border-rule bg-surface shadow-card">
         <Tape
           entries={index.tape ?? fixtures.tape}
           pair={fixtures.pair}

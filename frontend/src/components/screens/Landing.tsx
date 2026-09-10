@@ -169,10 +169,14 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
  * Asymmetric on purpose: the claim on the left, the qualification on the right, sharing a baseline.
  * Centred headings stack every section into the same silhouette and the page stops having a
  * rhythm — and a left edge is what the eye returns to when it drops from one section to the next.
+ *
+ * No rule under it. A heading that already changes size, weight and colour does not also need a
+ * line drawn beneath it to say it is a heading, and four of them down a page is four lines the
+ * reader has to cross to get to what the heading was announcing. The space does the same work.
  */
 function SectionHead({ eyebrow, title, standfirst }: { eyebrow: string; title: string; standfirst: string }) {
   return (
-    <div className="mb-9 grid items-end gap-x-10 gap-y-4 border-b border-rule pb-6 md:grid-cols-[1.1fr_1fr]">
+    <div className="mb-10 grid items-end gap-x-10 gap-y-4 md:grid-cols-[1.1fr_1fr]">
       <div>
         <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">{eyebrow}</p>
         <h2 className="mt-2.5 mb-0 max-w-[18ch] text-[clamp(22px,3.4vw,34px)] leading-[1.1] font-semibold tracking-tight text-balance">
