@@ -214,6 +214,14 @@ uses real USDC and this contract does not exist there.
 The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
 two-sided book is shipped and live under a mandate signed EIP-712 by the guardian.
 
+**The three keys are three.** Owner `0x9ebdC8AC…`, delegate `0x28Fb6255…`, guardian `0x9ebdC8AC…`.
+Strategy `0x2bb7b6de…` was shipped by the delegate under a mandate the guardian signed — a different
+key, off-chain, before the fact — which is the separation working rather than described. The
+guardian still being the owner's key is the remaining gap, and it is named here rather than hidden:
+until a device holds it, the key that can lower the floor is a key on a machine.
+
+`docs/bring-your-own-agent.md` is what it takes to be the delegate yourself.
+
 **The router was redeployed on 8 Sep, and the reason is worth stating.** The first one could not be
 built from any commit: its runtime was 23,983 bytes where every build of the source produced ~24,3xx,
 because `forge script` and `forge build` compile this contract differently and the deployment went
