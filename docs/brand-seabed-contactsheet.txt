@@ -1,0 +1,33 @@
+ONE IMAGE, TEN CELLS. Do not use any yellow, gold, amber or brass anywhere.
+Do not use flat vector style. Everything is rendered with depth.
+
+Produce a single 2-row contact sheet on a near-black background (#05070D).
+Row 1 = five logomarks labelled L1..L5. Row 2 = five mascots labelled M1..M5.
+
+WORLD (all ten cells share it): the deep-sea floor. Crushing depth, total dark,
+one source of light only — bioluminescence in abyssal cyan #18C8C8. Deep water
+blues #0B1B2E to #132F4C for falloff. Bone white #E6EDF7 for structure.
+Volumetric lighting, atmospheric depth, soft fine grain, real material weight.
+Calm and enormous, never cute, never diagrammatic.
+
+L1 a deep trench: two dark canyon walls falling to a perfectly flat seabed that
+   glows cyan — a horizon of bioluminescence, the only light in frame
+L2 a dark steel deep-sea pressure dial, needle pinned hard at the bottom of its
+   arc against a glowing cyan stop-pin, unable to travel further
+L3 extreme close-up of one bioluminescent lure: a glowing cyan orb on a curved
+   dark filament, casting real light into black water, nothing else visible
+L4 a plumb line dropped through dark water, its weight at rest on a seabed that
+   glows faint cyan where it touches, rope slack curling
+L5 the letter S carved from dark stone, half buried in seabed sediment, cyan
+   bioluminescent algae tracing where stone meets floor
+
+M1 a deep-sea anglerfish resting on the seabed, its lure the only light source,
+   expression flat and faintly bored
+M2 a giant abyssal isopod, armoured segmented plates, sitting squarely on the
+   glowing cyan floor, lit from beneath so plate edges catch light
+M3 a long-legged sea spider braced over the seabed, one limb extended as if
+   measuring the floor's level, dark translucent body
+M4 a tripod fish standing on three stiff fins above the floor, facing the
+   current, calm and dignified
+M5 a stocky deep-sea diver in a dark steel helmet standing flat-footed on the
+   glowing seabed, small round port glowing faintly cyan from within

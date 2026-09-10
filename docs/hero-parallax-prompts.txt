@@ -1,0 +1,82 @@
+SUBFLOOR — deep-sea parallax hero. Eight assets, generated one at a time.
+
+READ FIRST — these apply to every single asset:
+
+PALETTE (sampled from our logo and mascot, do not substitute):
+  #041224 deepest navy   #061c34 dark navy   #113860 mid navy
+  #18406e lighter navy   #0ee6ea cyan (the only light)   #e9f1fb bone white
+  NO yellow, NO gold, NO amber, NO orange, NO purple, NO red anywhere.
+
+STYLE: clean cel-shaded cartoon illustration matching a cute mascot sticker set.
+  Flat tones with hard-edged shading, bold simple shapes, no photorealism, no
+  texture, no grain, no film look, no lens flare, no depth-of-field blur.
+
+BACKGROUND: fully transparent PNG with alpha. No background fill, no frame, no
+  border, no vignette, no watermark, no text, no labels.
+
+DEPTH RULE — the single most important instruction, and it differs per layer:
+  Layers meant to sit FAR AWAY must be LOW CONTRAST and close in value to the
+  water: pale, washed, almost silhouettes. Layers meant to sit NEAR must be DARK
+  and high contrast with crisp edges. This value difference is what creates the
+  depth; without it the parallax reads as flat cut-outs sliding around.
+
+---
+
+ASSET 1 — light shafts (farthest, moves least)
+Wide panoramic image 2400x900, transparent PNG. Soft godrays angling down from
+upper left to lower right, rendered as straight-edged translucent cyan #0ee6ea
+wedges at very low opacity, like flat cel-shaded light beams. Six to nine beams
+of varying width, widely spaced, fading out completely before the bottom edge.
+Extremely subtle and pale. No glow bloom, no rays crossing, nothing else in frame.
+
+ASSET 2 — marine snow, SEAMLESSLY TILEABLE
+Square 1200x1200, transparent PNG, and it MUST tile seamlessly — the left edge
+continues into the right edge and the top into the bottom, with no seam and no
+element clipped at any border. Scattered tiny specks and short soft flecks of
+pale bone white #e9f1fb and cyan #0ee6ea at low opacity, evenly distributed with
+irregular natural spacing, like drifting particles suspended in water. Simple flat
+dots and dashes, no sparkle shapes, no stars, no bokeh circles.
+
+ASSET 3 — far trench walls (background silhouette)
+Wide panoramic 2400x1000, transparent PNG. The silhouettes of two distant rocky
+canyon walls, one entering from the left edge and one from the right, leaving a
+wide empty gap of transparency between them. Flat single-tone shapes in pale mid
+navy #113860 at reduced opacity — nearly a flat silhouette, almost no internal
+detail, only two or three simple value steps. Soft rounded rock forms, cartoon
+geology, not realistic stone. Bottom of the image is empty transparency.
+
+ASSET 4 — mid-ground rock outcrops
+Wide panoramic 2400x800, transparent PNG. A row of chunky rounded boulders and
+low rock shelves along the bottom third, in dark navy #061c34 with simple cel
+shading in #113860 on their upper surfaces. Thin cyan #0ee6ea bioluminescent
+moss traces the top edge of a few rocks only, not all of them. Irregular heights,
+generous gaps between groups, transparent above. Cartoon shapes, bold and simple.
+
+ASSET 5 — the seabed floor, SEAMLESSLY TILEABLE HORIZONTALLY
+Wide strip 2400x400, transparent PNG. The left and right edges MUST match exactly
+so the strip can repeat horizontally without a visible seam. A gently undulating
+sandy seabed occupying the lower half, in deepest navy #041224, with the very top
+edge of the sand lit by a continuous soft cyan #0ee6ea bioluminescent glow line.
+Sparse tufts of simple cyan-tipped seagrass. Everything above the sand is
+transparent. Flat cel shading, no texture detail.
+
+ASSET 6 — foreground kelp, LEFT edge
+Portrait 900x1400, transparent PNG. A cluster of tall cartoon kelp fronds rising
+from the bottom left corner, leaning right, drawn as near-black navy #041224
+silhouettes with a thin cyan #0ee6ea rim on the left side of each frond only.
+High contrast, crisp bold edges, very dark — this sits closest to the viewer.
+Right two-thirds of the canvas fully transparent. Simple ribbon shapes, no detail.
+
+ASSET 7 — foreground kelp, RIGHT edge
+Portrait 900x1400, transparent PNG. Mirror companion to asset 6: a cluster of
+tall cartoon kelp fronds rising from the bottom right corner, leaning left, in
+near-black navy #041224 silhouette with a thin cyan #0ee6ea rim on the right side
+of each frond only. Same weight and darkness as its pair. Left two-thirds fully
+transparent.
+
+ASSET 8 — drifting bubbles, SEAMLESSLY TILEABLE
+Square 1000x1000, transparent PNG, tiling seamlessly on all four edges with
+nothing clipped at the borders. Scattered simple cartoon bubbles of assorted
+small sizes: thin cyan #0ee6ea outlined circles with one small bone white #e9f1fb
+highlight dot each, hollow centres, low opacity. Irregular spacing, no clusters,
+no rainbow sheen, no gradients.

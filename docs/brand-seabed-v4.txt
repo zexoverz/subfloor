@@ -1,0 +1,35 @@
+TEN SEPARATE ASSETS ON A FULLY TRANSPARENT BACKGROUND (PNG with alpha).
+Row 1 = five icons L1..L5.  Row 2 = five mascots M1..M5.
+
+BACKGROUND — the most important instruction:
+Transparent. Alpha channel. NO background at all. NO scenery, NO water, NO ocean,
+NO seabed, NO ground, NO floor, NO rocks, NO godrays, NO light shafts, NO bubbles,
+NO fog, NO vignette, NO frame, NO panel, NO card behind the subject.
+Each subject is cut out and isolated, floating alone on nothing.
+
+STYLE:
+Clean cartoon sticker illustration. Cel shading only — two or three flat tones per
+colour with hard-edged shadow shapes, plus one small highlight. Bold even outline
+around every subject. Simple chunky geometry, no fine detail, no texture, no grain,
+no photorealism, no rendered 3D, no cinematic lighting, no depth of field.
+Looks like a modern app mascot sticker pack, not a movie frame.
+
+COLOUR — no yellow, gold, amber or brass anywhere:
+navy #132F4C and #0B1B2E for bodies, bright cyan #18C8C8 for the single glowing
+element on each subject, bone white #E6EDF7 for eyes and highlights.
+The glow is a simple flat cyan shape, not a rendered light source.
+
+L1..L5 — ICONS. One bold simple shape each, wide margins, readable at 32x32 px:
+L1 a thick rounded bar with a flat cyan glow strip on top, one simple droplet on it
+L2 a round gauge, needle pointing straight down onto a cyan stop at the bottom
+L3 a cyan orb on a short curved stalk
+L4 a plumb-bob teardrop on a short line, tip touching a cyan bar
+L5 a chunky rounded letter S, lower half cyan
+
+M1..M5 — MASCOTS. Full body, front or three-quarter, standing pose, no ground beneath
+them. Big simple eyes, friendly and deadpan, one consistent character family:
+M1 chubby anglerfish, big cyan lure bulb, tiny fins, goofy underbite
+M2 round pill-bug isopod, stacked rounded plates, stubby legs, content
+M3 long-legged sea spider, skinny bendy legs, small round body, politely confused
+M4 tripod fish balanced on three stilt fins, tiny body, very serious
+M5 stubby diver in a big round helmet with a glowing cyan visor, arms at sides

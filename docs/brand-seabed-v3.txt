@@ -1,0 +1,42 @@
+ONE IMAGE, TEN CELLS, ON NEAR-BLACK #05070D.
+Row 1 = five LOGOMARKS labelled L1..L5.  Row 2 = five CARTOON MASCOTS labelled M1..M5.
+
+STYLE — read this before anything else:
+Modern cartoon / stylised 3D character illustration. Think a polished mobile-game or
+app mascot: chunky simplified shapes, big friendly readable silhouettes, smooth soft
+shading with real volume and a clear light source. Rounded forms, generous proportions,
+oversized head or oversized eye, confident thick contours.
+NOT photorealistic. NOT a nature documentary. NOT horror, NOT scary, NOT gritty,
+NOT a rendered movie still. NO texture detail, NO barnacles, NO wet skin realism.
+NOT flat vector either — everything has soft dimensional shading.
+
+COLOUR — no yellow, gold, amber or brass anywhere in any cell:
+deep navy #0B1B2E and #132F4C for form, near-black #05070D ground,
+bright glowing cyan #18C8C8 as the single accent and the only light emitted,
+bone white #E6EDF7 for highlights and eyes.
+
+ROW 1 — LOGOMARKS. Each is a SINGLE BOLD SIMPLE SHAPE centred with wide margins,
+readable as a silhouette at 32x32 pixels. A compact icon, never a scene, never a landscape.
+L1 a thick rounded horizontal bar with a soft cyan glow along its top edge, and one
+   simplified droplet shape resting on it — an icon, not a picture
+L2 a simplified round gauge icon, needle pointing straight down, resting on a glowing
+   cyan stop at the bottom of its arc
+L3 a single glowing cyan orb on a short curved stalk — the anglerfish lure reduced to
+   one clean icon shape
+L4 a simple plumb-bob teardrop hanging from a short line, its tip touching a glowing
+   cyan horizontal bar
+L5 a bold chunky rounded letter S, its lower half glowing cyan as if sitting in light
+
+ROW 2 — CARTOON MASCOTS. Full body, front or three-quarter, standing on a glowing cyan
+floor line. Friendly, deadpan, characterful. Big simple eyes. Same character family —
+they look like they came from one animated show.
+M1 a chubby cartoon anglerfish with a big glowing cyan lure bulb, tiny fins, huge round
+   eyes, goofy underbite, standing upright
+M2 a round cartoon pill-bug / isopod with stacked rounded armour plates and stubby legs,
+   sitting squat and content
+M3 a cartoon long-legged sea spider with skinny bendy legs and a small round body,
+   looking politely confused
+M4 a cartoon tripod fish balanced on three long stick fins like stilts, tiny body,
+   very serious expression
+M5 a stubby cartoon deep-sea diver in a big round helmet, tiny body, glowing cyan
+   visor, arms at sides, unbothered
