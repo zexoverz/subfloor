@@ -36,7 +36,7 @@ export function DeviceCeremony({
 
   return (
     <div className="grid items-start gap-5 md:grid-cols-[minmax(0,300px)_1fr]">
-      <DeviceReview rows={rows} waiting={stage === 'waiting'} />
+      <DeviceReview />
 
       <div>
         {stage === 'pre' && (
@@ -45,6 +45,18 @@ export function DeviceCeremony({
               The device spells the action out in words instead of raw calldata. Whoever presses Approve can read it
               on the device screen itself.
             </p>
+            {/*
+              * What the device will display, verbatim and in order, before it lights up. It used to
+              * be a drawn screen; it is the same strings either way, and the rule §10 sets is about
+              * the strings matching rather than about the picture.
+              */}
+            <div className="mb-3 text-[11.5px] leading-[1.9] text-muted">
+              {rows.map(([k, v]) => (
+                <div key={k}>
+                  <b className="font-medium text-ink">›</b> {k}: <span className="text-ink">{v}</span>
+                </div>
+              ))}
+            </div>
             <p className="mb-3 text-[11.5px] text-faint">
               {ledger.presence === 'paired' ? (
                 <span className="text-settle">
@@ -75,6 +87,13 @@ export function DeviceCeremony({
         {stage === 'waiting' && (
           <>
             <div className="text-[11.5px] leading-[1.9] text-muted">
+              {/* The same rows again while it waits, so the device and the screen can be compared
+                  without the reader having to remember what was there a moment ago. */}
+              {rows.map(([k, v]) => (
+                <div key={k}>
+                  <b className="font-medium text-ink">›</b> {k}: <span className="text-ink">{v}</span>
+                </div>
+              ))}
               <div>
                 <b className="font-medium text-ink">›</b> {payloadLine}
               </div>

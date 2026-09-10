@@ -79,7 +79,7 @@ export function DeviceSign({
       />
       <CardBody>
         <div className="grid grid-cols-[minmax(0,290px)_1fr] items-start gap-5.5 max-[620px]:grid-cols-1">
-          <DeviceReview rows={rows} waiting={stage === 'waiting'} />
+          <DeviceReview />
 
           <div>
             {stage === 'pre' && (
@@ -88,6 +88,18 @@ export function DeviceSign({
                   The device spells the action out in words instead of raw calldata. Whoever presses Approve can read
                   the pair, the new floor and the price it binds at, on the device screen itself.
                 </p>
+                {/*
+                  * What the device will display, verbatim and in order, before it lights up. §10
+                  * makes this the point of the screen — the habit it teaches is "confirm only if it
+                  * matches", and there is nothing to match against if the strings are not here.
+                  */}
+                <div className="my-3 text-[11.5px] leading-[1.9] text-muted">
+                  {rows.map(([k, v]) => (
+                    <div key={k}>
+                      <b className="font-medium text-ink">›</b> {k}: <span className="text-ink">{v}</span>
+                    </div>
+                  ))}
+                </div>
                 <Note className="mb-3">{copy.ceremony.onlyIfMatches}</Note>
                 <p className="mb-3 text-[11.5px] text-faint">
                   {ledger.presence === 'paired' ? (
