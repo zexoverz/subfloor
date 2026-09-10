@@ -243,7 +243,7 @@ export function DeviceSign({
                         setStage(signature ? (scheduledAt ? 'scheduled' : 'signed') : 'declined');
                       }}
                     >
-                      {copy.ceremony.continue}
+                      {isWallet ? copy.ceremony.continueInWallet : copy.ceremony.continue}
                     </Act>
                   </div>
                 )}

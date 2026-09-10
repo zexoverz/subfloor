@@ -542,6 +542,7 @@ export const copy = {
     registered: 'registered',
     onlyIfMatches: 'confirm on the device only if it matches',
     continue: 'CONTINUE ON DEVICE',
+    continueInWallet: 'CONTINUE IN WALLET',
     waiting: 'waiting for your device',
     blindSigning:
       'If the device shows nothing: this vault is in no hardware vendor\u2019s contract registry, so the app needs Blind signing turned on \u2014 Ethereum app \u203a Settings \u203a Blind signing.',

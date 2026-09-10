@@ -54,65 +54,6 @@ export function startAppKit() {
     features: { analytics: false, email: false, socials: false },
   });
 
-  /*
-   * Move the modal inside whatever sheet asked for it.
-   *
-   * AppKit renders <w3m-modal> into the body. That is fine on the board and useless inside a sheet:
-   * `showModal()` puts a <dialog> in the top layer *and* makes everything outside its subtree
-   * inert, so the wallet modal was painted underneath the sheet and — once it had been raised over
-   * it with the popover API — painted on top but unclickable, because hit-testing and focus were
-   * still going to the dialog. Measured, not assumed: promoted into the top layer the button
-   * reported `focusable: false` and `elementFromPoint` at the centre of the modal returned DIALOG.
-   *
-   * Inertness follows the tree, not the paint order, so the only fix is to be in the tree. Inside
-   * the dialog its own `z-index` puts it over the sheet's content, and `position: fixed` still
-   * resolves against the viewport because no sheet creates a containing block — no transform, no
-   * filter, no `contain`. The dialog's `overflow: hidden` does not clip it for the same reason.
-   */
-  modal.subscribeState((state) => (state.open ? adopt() : release()));
-
   started = { modal, config: adapter.wagmiConfig };
   return started;
-}
-
-/** Where the modal lives when no sheet has taken it — AppKit's own parent, whatever that is. */
-let home: HTMLElement | null = null;
-/** Set while the modal is inside a sheet, so a sheet closing under it does not take it away. */
-let letGo: (() => void) | null = null;
-
-/** Created lazily, so the first open can be a frame or two ahead of the element existing. */
-function findModal(): HTMLElement | null {
-  return document.querySelector('w3m-modal');
-}
-
-function adopt(tries = 12) {
-  const el = findModal();
-  if (!el) {
-    // Out of frames rather than out of luck: the modal still opens, it just opens in the body.
-    if (tries > 0) requestAnimationFrame(() => adopt(tries - 1));
-    return;
-  }
-  // The last open one is the innermost: a sheet can open a sheet, and the newest is on top.
-  const host = [...document.querySelectorAll('dialog[open]')].pop();
-  if (!(host instanceof HTMLElement) || host.contains(el)) return;
-
-  home ??= el.parentElement;
-  host.appendChild(el);
-
-  /*
-   * If the sheet closes while the modal is inside it, React takes the dialog out of the document
-   * and the modal goes with it — AppKit would be left holding an element that is nowhere. Sent
-   * home first, so the worst case is a modal in the body rather than a modal that has stopped
-   * existing.
-   */
-  const back = () => release();
-  host.addEventListener('close', back, { once: true });
-  letGo = () => host.removeEventListener('close', back);
-}
-
-function release() {
-  letGo?.();
-  letGo = null;
-  const el = findModal();
-  if (el && home && el.parentElement !== home) home.appendChild(el);
 }

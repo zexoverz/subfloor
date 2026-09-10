@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Check, Plus } from 'lucide-react';
 import { identicon } from '../lib/identicon.ts';
 import type { Wallet, WalletAccount } from '../lib/wallet.ts';
@@ -26,6 +27,7 @@ export function SigningKeys({
   chosen: WalletAccount | null;
   onChoose: (account: WalletAccount) => void;
 }) {
+  const [adding, setAdding] = useState(false);
   const active = chosen?.address ?? wallet.address;
 
   return (
@@ -60,13 +62,41 @@ export function SigningKeys({
           );
         })}
 
-        <button
-          onClick={wallet.connectAnother}
-          className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-rule px-2.5 py-2 text-[11.5px] text-faint transition-colors hover:text-ink"
-        >
-          <Plus size={13} strokeWidth={2} />
-          connect another wallet
-        </button>
+        {/*
+         * Our own list, not AppKit's modal, and that is not a style preference. `showModal()`
+         * makes everything outside the dialog's subtree inert, and AppKit renders its modal into
+         * the body — so a wallet modal opened from inside a sheet is unclickable however high it
+         * paints. These rows are inside the sheet, so they are simply not inert.
+         */}
+        {!adding ? (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-rule px-2.5 py-2 text-[11.5px] text-faint transition-colors hover:text-ink"
+          >
+            <Plus size={13} strokeWidth={2} />
+            connect another wallet
+          </button>
+        ) : (
+          wallet.options.map((option) => (
+            <button
+              key={option.uid}
+              onClick={() => {
+                setAdding(false);
+                wallet.connectWith(option.uid);
+              }}
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-rule px-2.5 py-2 text-left transition-colors hover:bg-sunken"
+            >
+              {option.icon ? (
+                <img src={option.icon} alt="" width={18} height={18} className="shrink-0 rounded-[5px]" />
+              ) : (
+                <span className="size-[18px] shrink-0 rounded-[5px] bg-sunken" />
+              )}
+              <span className="min-w-0 flex-1 truncate text-[11.5px] text-ink">{option.name}</span>
+              {/* Already here, and asking again would only re-open the same one. */}
+              {option.connected && <span className="text-[10px] tracking-[0.1em] text-faint uppercase">here</span>}
+            </button>
+          ))
+        )}
       </div>
     </div>
   );

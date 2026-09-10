@@ -36,6 +36,9 @@ const projectId = import.meta.env?.VITE_REOWN_PROJECT_ID ?? '';
  */
 export type WalletAccount = { address: Address; uid: string; name: string };
 
+/** A wallet the browser is offering, connected or not. */
+export type WalletOption = { uid: string; name: string; icon?: string; connected: boolean };
+
 export type Wallet = {
   address: Address | null;
   available: boolean;
@@ -54,15 +57,25 @@ export type Wallet = {
    * have to be the same one — and for the split this design argues for, they should not be.
    */
   accounts: WalletAccount[];
+  /** Every wallet this browser has announced, so a second one can be chosen without AppKit's modal. */
+  options: WalletOption[];
   /**
    * Connect a second wallet without giving up the first.
    *
    * wagmi holds a map of connections and one `current`; connecting makes the newcomer current,
    * which would silently re-identify the whole page as the guardian account — every balance, the
-   * ownership check, the address in the header. So the previous connection is put back the moment
+   * ownership check, the address in the header. So the previous connection is put back as soon as
    * the new one lands, and the newcomer stays in the map as something that can be asked to sign.
+   *
+   * Straight to the connector, not through AppKit's modal, and that is not a style preference.
+   * `showModal()` makes everything outside the dialog's subtree inert, and AppKit renders its modal
+   * into the body — so a wallet modal opened from inside a sheet is unclickable no matter how high
+   * it paints. Measured: promoted into the top layer above the sheet, its button reported
+   * `focusable: false` and `elementFromPoint` at the middle of the modal returned DIALOG. Moving
+   * the element into the dialog fixes that and breaks something worse — AppKit unsubscribes its
+   * controllers in `disconnectedCallback` and never sets them up again.
    */
-  connectAnother: () => void;
+  connectWith: (uid: string) => void;
   /**
    * Sign an EIP-712 payload with the connected account.
    *
@@ -81,16 +94,10 @@ export function useWallet(): Wallet {
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
   const [balanceTick, setBalanceTick] = useState(0);
   const [accounts, setAccounts] = useState<WalletAccount[]>([]);
+  const [options, setOptions] = useState<WalletOption[]>([]);
   const unwatch = useRef<(() => void) | null>(null);
   const unwatchAll = useRef<(() => void) | null>(null);
-  /**
-   * The connection this page is *about*, remembered across the moment a second one is added.
-   *
-   * Recorded when the owner asks for another wallet rather than tracked continuously: the only
-   * thing that must survive is which connection to put back, and reading it at that instant is
-   * both simpler and correct if they had already switched accounts by hand.
-   */
-  const restoreTo = useRef<string | null>(null);
+  const unwatchOffers = useRef<(() => void) | null>(null);
 
   /** Attach the account watcher and take the current answer. Shared by connect and by restore. */
   const subscribe = useCallback(async () => {
@@ -114,13 +121,27 @@ export function useWallet(): Wallet {
          * A second wallet has just landed and made itself current. Put the page back on the
          * connection it was about — the newcomer is here to sign, not to become the owner.
          */
-        const back = restoreTo.current;
-        if (!back || config.state.current === back) return;
-        restoreTo.current = null;
-        const connector = config.state.connections.get(back)?.connector;
-        if (connector) void core.switchConnection(config, { connector }).catch(() => {});
+        setOptions((was) => {
+          const live = new Set(list.map((c) => c.connector.uid));
+          return was.map((o) => ({ ...o, connected: live.has(o.uid) }));
+        });
       },
     });
+    const readOptions = () => {
+      const live = new Set(core.getConnections(config).map((c) => c.connector.uid));
+      setOptions(
+        core.getConnectors(config).map((c) => ({
+          uid: c.uid,
+          name: c.name,
+          icon: c.icon,
+          connected: live.has(c.uid),
+        })),
+      );
+    };
+    unwatchOffers.current?.();
+    unwatchOffers.current = core.watchConnectors(config, { onChange: readOptions });
+    readOptions();
+
     setAccounts(
       core
         .getConnections(config)
@@ -191,21 +212,31 @@ export function useWallet(): Wallet {
   /**
    * Another wallet, alongside the one already here.
    *
-   * The modal resolves when it opens, not when a wallet answers, so the restore cannot be awaited
-   * here — it is armed by the ref and fired by the connection watcher above.
+   * Awaited rather than armed-and-hoped: `connect` resolves when the wallet has answered, so the
+   * page can be put back on its own connection right there instead of waiting for a watcher to
+   * notice. That is the whole reason for going to the connector directly.
    */
-  const connectAnother = useCallback(async () => {
-    if (mocked || !projectId) return;
-    setError(null);
-    try {
-      const { modal, config } = await subscribe();
-      restoreTo.current = config.state.current;
-      await modal.open({ view: 'Connect' });
-    } catch (cause) {
-      restoreTo.current = null;
-      setError(cause instanceof Error ? cause.message.slice(0, 140) : 'could not open the wallet modal');
-    }
-  }, [subscribe]);
+  const connectWith = useCallback(
+    async (uid: string) => {
+      if (mocked || !projectId) return;
+      setError(null);
+      try {
+        const { config, core } = await subscribe();
+        const connector = core.getConnectors(config).find((c) => c.uid === uid);
+        if (!connector) return;
+        const before = config.state.current;
+        await core.connect(config, { connector });
+        // The newcomer is here to sign, not to become the owner of this page.
+        if (before && config.state.current !== before) {
+          const back = config.state.connections.get(before)?.connector;
+          if (back) await core.switchConnection(config, { connector: back });
+        }
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message.slice(0, 140) : 'that wallet did not connect');
+      }
+    },
+    [subscribe],
+  );
 
   const signTypedData = useCallback(async (typedData: unknown, as?: WalletAccount) => {
     if (!typedData) {
@@ -241,6 +272,7 @@ export function useWallet(): Wallet {
     () => () => {
       unwatch.current?.();
       unwatchAll.current?.();
+      unwatchOffers.current?.();
     },
     [],
   );
@@ -285,7 +317,8 @@ export function useWallet(): Wallet {
     disconnect: () => void disconnect(),
     refresh: () => setBalanceTick((t) => t + 1),
     accounts,
-    connectAnother: () => void connectAnother(),
+    options,
+    connectWith: (uid: string) => void connectWith(uid),
     signTypedData,
   };
 }
