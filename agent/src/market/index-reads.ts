@@ -46,6 +46,18 @@ const QUERY = `query PolicyState {
 
 export class IndexUnavailable extends Error {}
 
+/// A 429 is the index saying "not now", which is a different fact from "the index is down". It is a
+/// subclass so anything that only knows `IndexUnavailable` still fails closed on it; the loop, which
+/// knows the difference, can wait out a rate limit instead of docking a healthy book over it.
+export class IndexRateLimited extends IndexUnavailable {
+  readonly retryAfterSeconds: number | null;
+
+  constructor(retryAfterSeconds: number | null) {
+    super(`index HTTP 429${retryAfterSeconds === null ? "" : `, retry after ${retryAfterSeconds}s`}`);
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
 /// Read the index. Throws rather than returning a default.
 ///
 /// A default here would be the whole failure this loop is meant not to have: an empty strategy list
@@ -61,6 +73,10 @@ export async function readIndex(endpoint: string, fetchImpl: typeof fetch = fetc
     });
   } catch (err) {
     throw new IndexUnavailable(`index unreachable: ${(err as Error).message}`);
+  }
+  if (res.status === 429) {
+    const retryAfter = Number(res.headers.get("retry-after"));
+    throw new IndexRateLimited(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null);
   }
   if (!res.ok) throw new IndexUnavailable(`index HTTP ${res.status}`);
 
