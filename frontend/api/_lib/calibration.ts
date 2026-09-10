@@ -54,7 +54,15 @@ export interface Calibration {
 /// interpolation between two that nobody traded at.
 function nearestRank(sorted: number[], p: number): number {
   const rank = Math.min(sorted.length - 1, Math.floor((p * sorted.length) / 100));
-  return sorted[rank];
+  return nth(sorted, rank);
+}
+
+/// Unreachable past the sample threshold, and loud if it is ever reached: a missing fill here would
+/// otherwise become `undefined` and then a floor of `NaN` on a screen someone signs from.
+function nth(sorted: number[], i: number): number {
+  const v = sorted[i];
+  if (v === undefined) throw new Error(`no fill at rank ${i} of ${sorted.length}`);
+  return v;
 }
 
 /// From the maker's signed deviations, in bps, one per scored fill.
@@ -79,7 +87,7 @@ export function calibrateFrom(makerDeviationsBps: number[], windowDays: number, 
 
   const sorted = [...makerDeviationsBps].sort((a, b) => a - b);
   const fromTop = Math.min(samples - 1, Math.floor((99 * samples) / 100));
-  const adverse = sorted[samples - 1 - fromTop];
+  const adverse = nth(sorted, samples - 1 - fromTop);
 
   return {
     // A maker that did better than the reference even at its worst still gets a floor of zero below
