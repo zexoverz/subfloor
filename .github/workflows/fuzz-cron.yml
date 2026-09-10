@@ -49,7 +49,7 @@ jobs:
         env:
           # 26,000 per suite is 104,000 programs a campaign. Measured campaign time at 20,000 was
           # 2h21m, so this lands near 3h03m against a 300-minute timeout and a cadence whose
-          # shortest observed gap was 4h18m. Raised from 20,000 on 10 Sep: at the old size the
+          # shortest observed gap was 4h17m. Raised from 20,000 on 10 Sep: at the old size the
           # counter reached ~1.94M by submission and the showcase copy says millions, which would
           # have been false by a hair. See #145.
           FUZZ_RUNS: ${{ github.event.inputs.runs || '26000' }}
