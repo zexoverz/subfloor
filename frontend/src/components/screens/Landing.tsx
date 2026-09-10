@@ -4,7 +4,7 @@ import { copy } from '../../copy.ts';
 import { Act } from '../Button.tsx';
 import { PriceLadder } from '../PriceLadder.tsx';
 import { HeroParallax } from '../HeroParallax.tsx';
-import { ProductShot } from '../ProductShot.tsx';
+import { PublicTape } from '../PublicTape.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
 import { LandingFooter } from '../LandingFooter.tsx';
@@ -127,7 +127,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
           title={copy.landing.shotTitle}
           standfirst={copy.landing.shotStandfirst}
         />
-        <ProductShot />
+        <PublicTape />
       </section>
 
       <section className="relative mt-24">
