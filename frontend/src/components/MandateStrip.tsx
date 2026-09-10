@@ -58,9 +58,7 @@ export function MandateStrip({
    * Held *for the agent the vault currently names*. A mandate signed for a delegate that has since
    * been replaced is not a weaker authorisation, it is none at all — so this must not report one.
    */
-  const current = Boolean(
-    held && state.delegate && held.delegate.toLowerCase() === state.delegate.toLowerCase(),
-  );
+  const current = Boolean(held && state.delegate && held.delegate.toLowerCase() === state.delegate.toLowerCase());
 
   return (
     <div className="mt-4 border-t border-rule pt-3.5">
@@ -109,6 +107,7 @@ export function MandateStrip({
             wallet={wallet}
             ledger={ledger}
             purpose="mandate"
+            framed={false}
             rows={[
               ['Action', 'Authorise agent'],
               ['Delegate', state.delegate ?? mandate.delegateLabel],
