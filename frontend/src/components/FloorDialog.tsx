@@ -25,12 +25,15 @@ export function FloorDialog({
   onClose,
   onLower,
   onRaise,
+  startAt,
 }: {
   state: VaultState;
   open: boolean;
   onClose: () => void;
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
+  /** Where the card's handle was when this was opened. */
+  startAt?: number;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   // Loosening finishes here too. Sending someone to another page to answer a device question loses
@@ -43,12 +46,12 @@ export function FloorDialog({
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) {
-      setBps(current);
+      setBps(startAt ?? current);
       setOnDevice(false);
       dialog.showModal();
     }
     if (!open && dialog.open) dialog.close();
-  }, [open, current]);
+  }, [open, current, startAt]);
 
   // A smaller tolerance is a stronger floor, so tightening is dragging toward the reference.
   const tightening = bps <= current;

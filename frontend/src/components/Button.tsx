@@ -24,6 +24,7 @@ export function Act({
   busy = false,
   busyLabel,
   ceremony = false,
+  ...rest
 }: Props & {
   primary?: boolean;
   wide?: boolean;
@@ -31,20 +32,31 @@ export function Act({
   busyLabel?: string;
   /** The gradient face, for the two buttons that end a step of the setup ceremony and no others. */
   ceremony?: boolean;
+  /**
+   * Inert with a reason, which is not the same as disabled.
+   *
+   * A `disabled` button takes no focus, shows no hover and answers no question, so someone who
+   * cannot press it is told nothing about why. This one keeps its title and simply does not fire —
+   * and the caller is responsible for not firing, because `aria-disabled` is a promise to the
+   * reader rather than to the browser.
+   */
+  'aria-disabled'?: boolean;
+  title?: string;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled || busy}
+      aria-disabled={rest['aria-disabled'] || undefined}
+      title={rest['aria-disabled'] ? rest.title : (busy ? busyLabel : rest.title)}
       // The words still exist for anyone who cannot see the spinner turn.
       aria-busy={busy || undefined}
-      title={busy ? busyLabel : undefined}
       aria-label={busy ? busyLabel : undefined}
       className={`cursor-pointer rounded-xl px-3.5 py-2.5 text-xs tracking-[0.06em] disabled:cursor-not-allowed ${
         wide ? 'w-full' : ''
       } ${
         primary
-          ? `pushable mb-1.5 font-semibold ${ceremony ? 'push-floor' : 'push-action'}`
+          ? `pushable mb-1.5 font-semibold ${ceremony ? 'push-floor' : 'push-action'} ${rest['aria-disabled'] ? 'opacity-55' : ''}`
           : 'pushable push-quiet mb-1.5'
       }`}
     >

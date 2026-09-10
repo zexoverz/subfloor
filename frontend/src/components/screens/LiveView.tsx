@@ -367,21 +367,41 @@ export function LiveView({
                 * already set is a button that does nothing, and pressing it costs a transaction to
                 * find that out.
                 */}
-              {floor.enforced && draft !== floor.maxAdverseBps && (
-                <Act
-                  wide
-                  primary
-                  ceremony={draft < floor.maxAdverseBps}
-                  onClick={() => (draft < floor.maxAdverseBps ? onRaise(draft) : onLower(draft))}
-                >
-                  {draft < floor.maxAdverseBps ? copy.floor.raise : copy.floor.lower}
-                </Act>
-              )}
-              {!floor.enforced && (
-                <Act wide primary ceremony onClick={() => onRaise(draft)}>
-                  {copy.floor.set}
-                </Act>
-              )}
+              {/*
+                * Always rendered, never disappearing. It sat behind `draft !== registered`, so the
+                * card grew a button the moment the handle moved and lost it again when it went
+                * back — the control jumping under the hand that is dragging it.
+                *
+                * Inert rather than absent when there is nothing to do, and it says which: a button
+                * that vanishes teaches nothing, and one that fires a transaction to set the number
+                * already set teaches it expensively.
+                *
+                * The asymmetry stays two different buttons. Tightening is one cheap transaction and
+                * happens here; loosening needs the device, and that ceremony lives in the sheet, so
+                * this opens it rather than pretending the card can finish the job. Routing it to
+                * `onLower` was exactly that pretence — the handler only records the number, so the
+                * button did nothing at all.
+                */}
+              {(() => {
+                const unchanged = floor.enforced && draft === floor.maxAdverseBps;
+                const tightening = !floor.enforced || draft < floor.maxAdverseBps;
+                return (
+                  <Act
+                    wide
+                    primary
+                    ceremony
+                    aria-disabled={unchanged}
+                    title={unchanged ? copy.floor.alreadyThere : undefined}
+                    onClick={() => {
+                      if (unchanged) return;
+                      if (tightening) onRaise(draft);
+                      else setAdjusting(true);
+                    }}
+                  >
+                    {!floor.enforced ? copy.floor.set : tightening ? copy.floor.raise : copy.floor.lower}
+                  </Act>
+                );
+              })()}
 
               <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
                 {/*
@@ -465,6 +485,9 @@ export function LiveView({
         <FloorDialog
           state={state}
           open={adjusting}
+          // Opened from the card's handle, so it starts where that handle was left rather than
+          // making the owner find the same number a second time.
+          startAt={draft}
           onClose={() => setAdjusting(false)}
           onLower={(bps) => {
             setAdjusting(false);
