@@ -1062,21 +1062,34 @@ body:has(dialog[open]) {
 .tip-layer {
   position: fixed;
   margin: 0;
-  padding: 0;
   border: 0;
-  background: transparent;
   overflow: visible;
   pointer-events: none;
 }
 
 /*
- * Stated, not inherited. The popover UA sheet sets `color: CanvasText` on its own — black, in a
- * browser whose default rendering is light — and a portalled element has nothing else to take a
- * colour from. The hover card's ground is a navy sampled out of the artwork rather than a theme
- * token, so its ink is fixed to match; the tooltip wears the palette and sets its own.
+ * The two are shaped differently and the reset has to know it.
+ *
+ * The hover card is a *wrapper* — three stacked pieces of artwork with a panel between them — so it
+ * clears the UA popover's padding and ground entirely and lets its children draw. The tooltip *is*
+ * the card, so it keeps its own, and clearing them here is what left it a rectangle of text over
+ * whatever happened to be behind: `background: transparent` in this file beats `bg-surface` from
+ * Tailwind's, because this file loads second.
  */
 .hint-layer {
+  padding: 0;
+  background: transparent;
+  /*
+   * Stated, not inherited. The popover UA sheet sets `color: CanvasText` on its own — black, in a
+   * browser whose default rendering is light — and a portalled element has nothing else to take a
+   * colour from. This card's ground is a navy sampled out of the artwork rather than a theme
+   * token, so its ink is fixed to match it.
+   */
   color: #e9f1fb;
+}
+
+.tip-layer {
+  background: var(--c-surface);
 }
 
 .hint-layer::backdrop,
