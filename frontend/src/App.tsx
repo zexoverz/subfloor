@@ -16,6 +16,7 @@ import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
 import { useCeremony } from './lib/ceremony.ts';
+import { useKeys } from './lib/keys.ts';
 import { useCalibration } from './lib/calibration.ts';
 
 /**
@@ -81,6 +82,10 @@ export default function App() {
    * so. The vault's inventory comes from the ceremony read, the wallet's from the wallet — both are
    * cached until asked, so every path that moves money has to ask.
    */
+  // Writes the vault's own two keys. The setup sheet has its own instance; these are plain wagmi
+  // writes with no shared session, so a second one costs nothing.
+  const keys = useKeys(vault, () => reread(), ceremony.registryGuardianSet);
+
   const reread = useCallback(() => {
     ceremony.refresh();
     wallet.refresh();
@@ -158,12 +163,6 @@ export default function App() {
     <AppShell
       screen={screen}
       onNavigate={setScreen}
-      /*
-       * §10 fixes the order: dock through canonical Aqua first, because it works even if the
-       * modified router is bricked, then revoke the credential. The app is the strategy holder, so
-       * it is the one being docked.
-       */
-      onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
       source={source}
       // Simulated says so on its own badge; only a real read has a wait worth showing.
       loading={feedSource !== 'simulated' && index.status === 'loading'}
@@ -218,6 +217,17 @@ export default function App() {
           onSetup={needsSetup ? () => { setDismissed(false); setOpened(true); } : null}
           // The agent can be replaced whenever the owner likes; the chain has never stopped them.
           onEditAgent={ceremony.isOwner === true ? () => setOpened(true) : null}
+          onSetAgent={async (next) => {
+            await keys.setDelegate(next);
+            reread();
+          }}
+          settingAgent={keys.sending}
+          agentStep={keys.step}
+          /*
+           * The same call the header used to make. Docking stops trading and revoking the mandate
+           * ends the authorisation; neither needs the device, which is the point of it.
+           */
+          onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
           onLower={lower}
           /*
            * The registry decides what the floor is after this, not the button. It writes both

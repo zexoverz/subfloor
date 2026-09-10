@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Wordmark } from './Wordmark.tsx';
 import { Chip } from './Card.tsx';
-import { PanicButton } from './PanicButton.tsx';
 import { AccountMenu } from './AccountMenu.tsx';
 import { Seabed } from './Seabed.tsx';
 import type { Wallet } from '../lib/wallet.ts';
@@ -13,7 +12,6 @@ import type { DataSource, Screen } from '../types.ts';
 export function AppShell({
   screen,
   onNavigate,
-  onPanic,
   source,
   loading,
   wallet,
@@ -23,7 +21,6 @@ export function AppShell({
 }: {
   screen: Screen;
   onNavigate: (s: Screen) => void;
-  onPanic: () => void;
   source: DataSource;
   /** True until the first read answers, so the badge does not guess in the meantime. */
   loading: boolean;
@@ -128,11 +125,6 @@ export function AppShell({
         <div className="ml-auto flex items-center gap-3.5">
           <AccountMenu wallet={wallet} />
 
-          {owner && (
-            <div className="flex items-center gap-3.5 border-l border-rule pl-3.5">
-              <PanicButton onFire={onPanic} />
-            </div>
-          )}
         </div>
         </div>
       </div>

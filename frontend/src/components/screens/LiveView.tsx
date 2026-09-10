@@ -1,8 +1,8 @@
-import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Pencil, Receipt, Wallet } from 'lucide-react';
+import { ArrowDownToLine, ChartLine, Receipt, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead } from '../Card.tsx';
-import { Ghost } from '../Button.tsx';
+
 import { Tile, Tiles } from '../Tiles.tsx';
 import { Tape } from '../Tape.tsx';
 import { FloorChart } from '../FloorChart.tsx';
@@ -13,6 +13,7 @@ import { ScopeSwitch } from '../ScopeSwitch.tsx';
 import type { InitialSetup } from '../../lib/vault.ts';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
+import { AgentCard } from '../AgentCard.tsx';
 import { FloorControl } from '../FloorControl.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
 import { Act } from '../Button.tsx';
@@ -56,6 +57,10 @@ export function LiveView({
   vaultError,
   onSetup,
   onEditAgent,
+  onSetAgent,
+  settingAgent,
+  agentStep,
+  onPanic,
   connected,
   connecting,
 }: {
@@ -103,7 +108,14 @@ export function LiveView({
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
   onSetup: (() => void) | null;
   /** Replacing the agent is an ordinary owner action, so it needs a way in after setup. */
+  /** Non-null only for the owner: it is what tells the agent card who may edit and stop. */
   onEditAgent: (() => void) | null;
+  /** Point the vault at a different agent. `onlyOwner`, no signature, no device. */
+  onSetAgent: (next: `0x${string}`) => Promise<void>;
+  settingAgent: boolean;
+  agentStep: string | null;
+  /** Dock the vault and revoke the mandate. Moved off the header and onto the agent's own card. */
+  onPanic: () => void;
 }) {
   const [adjusting, setAdjusting] = useState(false);
   /*
@@ -431,50 +443,15 @@ export function LiveView({
             </CardBody>
           </Card>
 
-          <Card>
-            <CardHead
-              icon={Bot}
-              left={copy.live.agentNow}
-              right={
-                onEditAgent ? (
-                  // The same control as the floor card's, because it is the same kind of thing:
-                  // the quiet way to change what the card is describing.
-                  <Ghost onClick={onEditAgent} label={copy.wallet.changeAgent}>
-                    <Pencil size={13} strokeWidth={1.8} />
-                  </Ghost>
-                ) : (
-                  <Activity size={12} strokeWidth={1.6} />
-                )
-              }
-            />
-            <CardBody>
-              {/* #111: the address, not a nickname — the published key has to be checkable. */}
-              {state.delegate && (
-                <div className="mb-3 border-b border-rule pb-3">
-                  <span className="text-[11.5px] tracking-[0.08em] text-faint uppercase">
-                    {copy.wallet.agentAddress}
-                  </span>
-                  <a
-                    href={addressUrl(state.delegate)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium break-all hover:text-floor"
-                  >
-                    {state.delegate}
-                    <ExternalLink size={11} strokeWidth={1.7} className="shrink-0 text-faint" />
-                  </a>
-                </div>
-              )}
-              <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
-                {agent.map((line) => (
-                  <li key={line} className="text-muted">
-                    <span className="mr-2 text-floor">›</span>
-                    <span className="text-ink">{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardBody>
-          </Card>
+          <AgentCard
+            delegate={state.delegate}
+            behaviour={agent}
+            owner={Boolean(onEditAgent)}
+            onSetAgent={onSetAgent}
+            saving={settingAgent}
+            savingStep={agentStep}
+            onPanic={onPanic}
+          />
         </div>
         ) : (
           <PublicAside
