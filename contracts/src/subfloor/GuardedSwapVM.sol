@@ -16,9 +16,10 @@ import { SettlementFeeLib } from "./SettlementFeeLib.sol";
 /// @notice SwapVM with the floor consulted where tokens move.
 ///
 /// The check is not an instruction. The run loop only computes amounts, and program bytecode can
-/// neither reach nor skip settlement, so there is nothing here for an attacker to omit: an empty
-/// program still settles, and still arrives at this check. That is the whole difference between
-/// this and a guard a maker opts into per order.
+/// neither reach nor skip settlement, so there is nothing here for an attacker to omit: a program
+/// carrying no guard instruction at all still arrives at this check. A program that produces nothing
+/// never gets this far, because `takerTraits.validate` rejects a zero `amountOut` first, so it never
+/// settles either. That is the whole difference between this and a guard a maker opts into per order.
 ///
 /// Both sides are scored, each against its own entry, and `quote()` runs the identical check so a
 /// quote can never report a rate settlement would reject.

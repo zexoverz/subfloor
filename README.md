@@ -4,7 +4,7 @@
 
 ### Let an AI agent trade your portfolio. Set one number. Your money can never go below it.
 
-[![Base Sepolia](https://img.shields.io/badge/Live%20on-Base%20Sepolia-0052FF?style=for-the-badge)](https://sepolia.basescan.org/address/0x2329BdFb8Ea2672D5F461fc5C64Ec26064e25FC6)
+[![Base Sepolia](https://img.shields.io/badge/Live%20on-Base%20Sepolia-0052FF?style=for-the-badge)](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123)
 [![1inch](https://img.shields.io/badge/1inch-Aqua-1B314F?style=for-the-badge)](https://github.com/1inch/swap-vm)
 [![Ledger](https://img.shields.io/badge/Ledger-Key%20Ring-000000?style=for-the-badge)](https://developers.ledger.com)
 [![ERC-8377](https://img.shields.io/badge/ERC--8377-6E56CF?style=for-the-badge)](https://github.com/ethereum/ERCs/pull/1935)
@@ -457,7 +457,7 @@ One origin, one image: the built site and the two consumers ship together from `
 is why a number on screen and the query behind it cannot drift apart, and why the server falls
 unknown paths back to the shell so a deep link survives a hard load.
 
-An older `subfloor.vercel.app` deployment is being retired and was never the app. The frontend calls
+An older `subfloor.vercel.app` deployment was deleted on 10 Sep and was never the app. The frontend calls
 `/api/*` on its own origin and those functions did not run there, so it served a dashboard with
 errors where the numbers should be. If you have that link, it is the wrong one.
 
@@ -466,12 +466,12 @@ it worth less.
 
 | | |
 |---|---|
-| Contracts, Base Sepolia | **live**, [addresses above](#deployed); all four verified on Sourcify |
+| Contracts, Base Sepolia | **live**, [addresses above](#deployed); every one marked Sourcify above is verified |
 | Floors, both directions | **set on chain**, keyed to the vault |
 | A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
 | Calibration and the daily report | **live** at `/api/calibration` and `/api/report`; calibrated from **261 fills**, not a default |
-| Refusals, which no index can serve | **2 refusals** at `/api/refusals`, decoded from reverted transactions |
+| Refusals, which no index can serve | **4 refusals** at `/api/refusals`, decoded from reverted transactions |
 | Vault setup | **one transaction** — `createVault(setup)` leaves nothing unset |
 | Fills, and the execution-quality dataset | **261 fills**, both directions, scored against the same Chainlink answer settlement used |
 | Refusals | **on chain** — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0) reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000, and the floor was then lowered again under a guardian signature |
@@ -489,4 +489,9 @@ Implements [ERC-8377 (Reference-Relative Slippage Bounds)](https://github.com/et
 a draft standard written by this project's author. The specification is public prior art. Every line
 of implementation here was written during the event.
 
-MIT.
+## License
+
+The contracts are a fork of 1inch SwapVM and carry its license, `LicenseRef-Degensoft-SwapVM-1.1`,
+which is source-available rather than open source. The texts are in
+[`contracts/LICENSES/`](contracts/LICENSES/), headers are intact in every file, and the 1inch prize
+terms permit modified redeployments, which is what this is. Everything outside `contracts/` is MIT.

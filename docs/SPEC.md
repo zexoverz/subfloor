@@ -384,20 +384,28 @@ export PATH="$HOME/.foundry/bin:$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.bun/bin
 - The test suite runs clean: `forge test --match-contract MinRate` → MinRateTest 8 passed,
   MinRateInvariants 7 passed, 0 failed.
 
-### Base Sepolia deployment — live 7 Sep, for frontend integration
+### Base Sepolia deployment — the live generation, for frontend integration
 
 Not canonical Aqua: it is not deployed on Sepolia, so the script deploys ours. Nothing here
 transfers to mainnet except the confidence that the sequence works.
 
+**Updated 10 Sep.** The 7 Sep generation (registry `0xe96098eb…`, router `0xe1E445BC…`) is
+superseded: the stack was redeployed with a fundable pair (#132, #158), and the router again on 8 Sep
+from verifier-produced bytes so it could be verified (#167). These are the live addresses;
+`docs/handoff.md` §3 carries them with the re-check commands.
+
 | Contract | Address |
 |---|---|
-| FloorRegistry | `0xe96098eb96aC681682CD09E8413C87b22742C009` |
-| FloorRouter | `0xe1E445BC60B70d4C4f3c0Db242d9cF98C632b41F` |
-| AquaGuardVault | `0x32E58d01AF21483a66Ab59c598667C80224441a2` |
-| Aqua (ours) | `0xdFfeEe4f46F4dc002AB75354438C456D0bcc404F` |
+| FloorRegistry | `0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123` |
+| FloorRouter | `0x03189D102286fa8cDd0fBF3578B492e67e665A27` |
+| VaultFactory | `0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5` |
+| AquaGuardVault | `0xaf6b337440FFEa63c47f077eee2663987aEEc33f` |
+| Aqua (ours) | `0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB` |
+| tUSDC | `0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD` |
+| TestnetFaucet | `0x044BB6a857A875e30f8933aDf652905d02EB65D2` |
 
-Owner of registry and vault: `0x9ebdC8ACc879a8284Ae5B3CecfbD280ec307aFA3`, verified with `owner()`.
-7/7 transactions, block 46496799. The key that paid for gas holds nothing.
+Owner of registry and vault: `0x9ebdC8ACc879a8284Ae5B3CecfbD280ec307aFA3`, verified with `owner()`
+on 10 Sep. The subgraph indexes from block 46513825, the creation block.
 
 Subgraph live at
 `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0`, synced to the chain
