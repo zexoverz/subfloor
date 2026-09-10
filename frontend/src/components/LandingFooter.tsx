@@ -38,16 +38,16 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
   return (
     <div className="relative mt-24">
       {/*
-        * The seabed reaches up to the trail above it rather than starting at the footer's own edge.
-        *
-        * It used to begin here, under a border, with a band of dead ground between it and the last
-        * section — a straight rule and an empty gap on the one part of the page that is supposed to
-        * be the water closing over. It is pulled up past the trail now and cut along the same curve
-        * the trail draws, so the dotted line is its surface.
-        *
-        * `CREST` is where that curve sits above the footer: the trail's own 40px margin plus the
-        * distance from its box's top down to the crest.
-        */}
+       * The seabed reaches up to the trail above it rather than starting at the footer's own edge.
+       *
+       * It used to begin here, under a border, with a band of dead ground between it and the last
+       * section — a straight rule and an empty gap on the one part of the page that is supposed to
+       * be the water closing over. It is pulled up past the trail now and cut along the same curve
+       * the trail draws, so the dotted line is its surface.
+       *
+       * `CREST` is where that curve sits above the footer: the trail's own 40px margin plus the
+       * distance from its box's top down to the crest.
+       */}
       <div
         className="pointer-events-none absolute inset-x-0"
         style={{
@@ -64,56 +64,60 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
         }}
       >
         {/*
-          * The drawing fills the whole of it, anchored at the foot.
-          *
-          * A gradient in the gap was the wrong answer twice over: it never quite met the artwork,
-          * which left a dark lens between them, and it was standing in for a picture that could
-          * simply be there. `object-bottom` is what makes the taller frame work — the reef stays
-          * where it is and the extra height is spent on the water above it, which is the part of
-          * the drawing a taller frame ought to be showing.
-          */}
+         * The drawing fills the whole of it, anchored at the foot.
+         *
+         * A gradient in the gap was the wrong answer twice over: it never quite met the artwork,
+         * which left a dark lens between them, and it was standing in for a picture that could
+         * simply be there. `object-bottom` is what makes the taller frame work — the reef stays
+         * where it is and the extra height is spent on the water above it, which is the part of
+         * the drawing a taller frame ought to be showing.
+         */}
         <Seabed intensity="hero" anchor="bottom" />
-
-        {/*
-          * The reading ground for the close, and it is a veil rather than a panel — full width, no
-          * edge, densest across the band the words sit in.
-          *
-          * Filling the frame with the drawing put a light shaft directly behind the headline: the
-          * brightest pixel under it measured #eaffff, where white reads 1.04. That is not a
-          * legibility quibble, it is a headline nobody can read on the last thing they see.
-          *
-          * 86%, and the figure is the standfirst's rather than the headline's: at 78 the heading
-          * was already fine at 10.3 and the muted line under it sat at 4.27, which is under the 4.5
-          * a 16px line needs. Measured beside the words rather than through them — sampling a strip
-          * that contains the text reads the text back to you and says everything passes.
-          */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(to bottom, transparent 6%, color-mix(in srgb, var(--c-ground) 86%, transparent) 34%, color-mix(in srgb, var(--c-ground) 86%, transparent) 74%, transparent 96%)',
-          }}
-        />
       </div>
 
       <section className="relative mx-auto max-w-[1100px] px-[clamp(18px,4vw,36px)] py-24 text-center">
-        <h2 className="m-0 text-[clamp(26px,4.6vw,42px)] leading-[1.1] font-semibold tracking-tight text-balance">
-          <ScrambleText text={copy.landing.closeTitle} onVisible speed={20} />
-        </h2>
-        <p className="serif mx-auto mt-4 max-w-[46ch] text-[16px] leading-relaxed text-muted">
-          {copy.landing.closeStandfirst}
-        </p>
+        {/*
+         * The reading ground for the close — a veil rather than a panel: full width, no edge,
+         * densest across the band the words sit in.
+         *
+         * On the section rather than on the artwork's box, and that is the whole of it. A gradient
+         * whose stops are percentages of a 684px picture lands in the middle of the water; the
+         * words are further down than that box reaches, so it darkened the sea and left the
+         * sentences on the light. Here the percentages are the words' own.
+         *
+         * Filling the frame with the drawing had put a light shaft directly behind the headline:
+         * the brightest pixel under it measured #eaffff, where white reads 1.04. Not a legibility
+         * quibble — a headline nobody can read on the last thing they see.
+         */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 w-screen"
+          style={{
+            left: 'calc(50% - 50vw)',
+            background:
+              'linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--c-ground) 91%, transparent) 22%, color-mix(in srgb, var(--c-ground) 91%, transparent) 82%, transparent 100%)',
+          }}
+        />
 
-        <div className="mx-auto mt-8 w-full max-w-[220px]">
-          <Act primary onClick={() => onNavigate('live')}>
-            <span className="flex items-center justify-center gap-2">
-              {copy.landing.launchApp}
-              <ArrowRight size={14} strokeWidth={1.8} />
-            </span>
-          </Act>
+        <div className="relative">
+          <h2 className="m-0 text-[clamp(26px,4.6vw,42px)] leading-[1.1] font-semibold tracking-tight text-balance">
+            <ScrambleText text={copy.landing.closeTitle} onVisible speed={20} />
+          </h2>
+          <p className="serif mx-auto mt-4 max-w-[46ch] text-[16px] leading-relaxed text-muted">
+            {copy.landing.closeStandfirst}
+          </p>
+
+          <div className="mx-auto mt-8 w-full max-w-[220px]">
+            <Act primary onClick={() => onNavigate('live')}>
+              <span className="flex items-center justify-center gap-2">
+                {copy.landing.launchApp}
+                <ArrowRight size={14} strokeWidth={1.8} />
+              </span>
+            </Act>
+          </div>
+
+          <p className="serif mx-auto mt-8 max-w-[52ch] text-[14px] leading-relaxed text-ink">{copy.scope}.</p>
         </div>
-
-        <p className="serif mx-auto mt-8 max-w-[52ch] text-[14px] leading-relaxed text-ink">{copy.scope}.</p>
       </section>
 
       <footer className="relative border-t border-rule">
@@ -150,9 +154,7 @@ export function LandingFooter({ onNavigate }: { onNavigate: (s: Screen) => void 
 
         {/* The disclosure stays verbatim, and stays where a reader ends up rather than in a modal. */}
         <div className="mx-auto max-w-[1100px] border-t border-rule px-[clamp(18px,4vw,36px)] py-6">
-          <p className="serif m-0 max-w-[74ch] text-[12.5px] leading-relaxed text-faint">
-            {copy.landing.disclosure}
-          </p>
+          <p className="serif m-0 max-w-[74ch] text-[12.5px] leading-relaxed text-faint">{copy.landing.disclosure}</p>
         </div>
       </footer>
     </div>
