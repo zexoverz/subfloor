@@ -148,7 +148,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <section className="relative mt-6">
         {/* Behind the two sections that carry no reef of their own, so no stretch of the page is
             flat ground. */}
-        <SeaTexture />
+        <SeaTexture cut="down" />
         <SideReef art="coral-right" side="right" />
         <SectionHead
           eyebrow={copy.landing.featuresEyebrow}
@@ -173,7 +173,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <SeaTrail creature="octopus" />
 
       <section className="relative mt-6">
-        <SeaTexture />
+        <SeaTexture cut="down" />
         <SideReef art="wreck-right" side="right" />
         <SideReef art="rocks-left" side="left" />
         <SectionHead
