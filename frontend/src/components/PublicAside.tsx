@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
+import { useLedger } from '../lib/ledger.ts';
 import { Act } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { AddressField } from './StepForms.tsx';
@@ -47,6 +48,9 @@ export function PublicAside({
   /** Why we could not tell. Shown, so a card that cannot answer does not look like one still trying. */
   vaultError: string | null;
 }) {
+  // Its own session, and safe: this card and the setup sheet are never on screen together — one is
+  // for a wallet that owns no vault, the other for a wallet that does.
+  const ledger = useLedger();
   /*
    * Collected before the vault exists, because that is the only moment the factory can set them.
    * It owns the vault for the length of the call and hands it over before returning; afterwards
@@ -186,11 +190,33 @@ export function PublicAside({
                   />
 
                   <div className="mb-4 flex flex-col gap-3">
+                    {/*
+                      * Read off the device, not typed off it.
+                      *
+                      * This is the field that decides which key may ever weaken the floor, and the
+                      * registry takes it write-once — a transposed character here is a vault whose
+                      * guardian is an address nobody holds, and nothing on chain can undo that. The
+                      * setup sheet has had this button for a while; the card that deploys the vault
+                      * in the first place, which is the one moment the mistake is unrecoverable,
+                      * did not.
+                      */}
                     <AddressField
                       label={copy.wallet.deployDeviceLabel}
                       hint={copy.wallet.deployDeviceHint}
                       value={device}
                       onChange={setDevice}
+                      action={{
+                        label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
+                        onClick: () => {
+                          void (async () => {
+                            // `connect()` returns what it read: `ledger.address` here is a render
+                            // behind, so reading it would fill the field from the previous device.
+                            const found = ledger.address ?? (await ledger.connect());
+                            if (found) setDevice(found);
+                          })();
+                        },
+                        disabled: ledger.connecting || !ledger.supported,
+                      }}
                     />
                     <AddressField
                       label={copy.wallet.deployAgentLabel}
