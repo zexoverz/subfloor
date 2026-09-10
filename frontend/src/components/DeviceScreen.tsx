@@ -12,6 +12,11 @@
  * and measured off artwork that nobody would know to re-measure. This is the version that was right
  * before either.
  *
+ * Full width of whatever holds it. It was capped at 268px, which is roughly a Nano's screen if you
+ * squint — but this is not a photograph of the device, it is the same words the device will show,
+ * and pinning them to the physical width only left a column half empty beside the values they are
+ * meant to be compared against.
+ *
  * Set in the mono this project already loads rather than a pixel face fetched for one panel. A Nano
  * renders a small fixed-width font on a 128×64 monochrome screen, and what carries that is the
  * even advance and the tight tracking — the same properties that make the two lists comparable at a
@@ -20,7 +25,7 @@
  */
 export function DeviceScreen({ rows, waiting = true }: { rows: [string, string][]; waiting?: boolean }) {
   return (
-    <div className="device-screen relative w-full max-w-[268px] overflow-hidden rounded-xl bg-[#0A0C10] px-4 py-3.5 font-mono text-[11px] leading-[1.75] tracking-[0.02em] text-[#F2F4F7] tabular-nums">
+    <div className="device-screen relative w-full overflow-hidden rounded-xl bg-[#0A0C10] px-4 py-3.5 font-mono text-[11px] leading-[1.75] tracking-[0.02em] text-[#F2F4F7] tabular-nums">
       <div className="mb-2.5 text-[10px] tracking-[0.16em] text-[#7C8794] uppercase">Review transaction</div>
       {rows.map(([k, v]) => (
         <div key={k} className="flex justify-between gap-3">
