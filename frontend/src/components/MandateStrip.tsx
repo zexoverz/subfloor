@@ -6,7 +6,8 @@ import { Act } from './Button.tsx';
 import { DeviceSign } from './DeviceSign.tsx';
 import { PanicDialog } from './PanicDialog.tsx';
 import { buildMandate } from '../lib/mandate.ts';
-import { loadMandate, saveMandate } from '../lib/mandateStore.ts';
+import { AgentHandover } from './AgentHandover.tsx';
+import { loadMandate, saveMandate, type StoredMandate } from '../lib/mandateStore.ts';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import type { Ledger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
@@ -54,6 +55,11 @@ export function MandateStrip({
 }) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
+  /*
+   * The mandate as it was just signed, held so the handover can show it without waiting on a
+   * re-read of local storage — `held` below is computed before `onSigned` writes.
+   */
+  const [fresh, setFresh] = useState<StoredMandate | null>(null);
   const ref = useRef<HTMLDialogElement>(null);
   const { mandate, inventory, reference, floor } = state;
 
@@ -172,6 +178,7 @@ export function MandateStrip({
               ['Expires', `${mandate.expiresInDays} days`],
             ]}
             typedData={typed}
+            handover={<AgentHandover vault={vault} mandate={fresh} />}
             standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
             onSigned={(signature) => {
               if (!vault || !state.delegate || !typed) return;
@@ -181,14 +188,16 @@ export function MandateStrip({
                * the signature leaves the agent holding something it cannot spend, and nothing on
                * screen says so. See #218.
                */
-              saveMandate({
+              const entry: StoredMandate = {
                 vault,
-                delegate: state.delegate,
+                delegate: state.delegate as Address,
                 nonce: String(nonce ?? 0n),
                 signature,
                 at: Date.now(),
                 message: typed.message,
-              });
+              };
+              saveMandate(entry);
+              setFresh(entry);
               onSigned();
             }}
             onDone={() => {
