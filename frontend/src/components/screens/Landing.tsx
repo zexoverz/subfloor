@@ -54,7 +54,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         * re-compositing them and diffing against the source, 1.25% RMSE. The board keeps the flat
         * one: eight layers moving behind a table of numbers is a page that is hard to read.
         */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100vh-60px)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-screen">
         <HeroParallax />
         {/*
           * The ground under the copy, and it belongs out here rather than behind the words: at the
@@ -70,7 +70,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         * argument and the noise only carries atmosphere — whichever of the two the eye lands on
         * first should be the one that means something.
         */}
-      <header className="relative grid min-h-[calc(100vh-60px)] items-center gap-10 py-10 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] md:gap-[clamp(48px,7vw,104px)]">
+      <header className="relative grid min-h-screen items-center gap-10 py-10 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] md:gap-[clamp(48px,7vw,104px)]">
         {/*
           * The argument as a drawing: a fill stops dead on the floor and nothing passes beneath it.
           * It carries the claim, so it sits beside the headline rather than behind it — and if the

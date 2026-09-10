@@ -14,12 +14,18 @@ import type { Screen } from '../types.ts';
  * which point it is the only way back to the button.
  *
  * `visibility` as well as opacity, so a header nobody can see is also a header nothing can tab to.
+ *
+ * Fixed rather than sticky, and that is the difference between hidden and gone. A sticky element
+ * still occupies its place in the flow, so translating it off the top left its 60px of reserved
+ * height behind — a dark band above the artwork on a hero that is supposed to start at the top of
+ * the window. Fixed takes it out of the flow entirely; the hero begins at the top and the bar
+ * arrives over the page rather than above it.
  */
 export function LandingHeader({ onNavigate, shown }: { onNavigate: (s: Screen) => void; shown: boolean }) {
   return (
     <header
       aria-hidden={!shown}
-      className={`sticky top-0 z-30 border-b border-rule bg-ground/85 backdrop-blur transition-[opacity,transform,visibility] duration-300 ${
+      className={`fixed inset-x-0 top-0 z-30 border-b border-rule bg-ground/85 backdrop-blur transition-[opacity,transform,visibility] duration-300 ${
         shown ? 'translate-y-0 opacity-100' : 'invisible -translate-y-full opacity-0'
       }`}
     >
