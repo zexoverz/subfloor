@@ -1035,6 +1035,13 @@ body:has(dialog[open]) {
  */
 .hint-layer {
   position: fixed;
+  /*
+   * Stated, not inherited. The popover UA sheet sets `color: CanvasText` on its own — black, in a
+   * browser whose default rendering is light — and a portalled element has nothing else to take a
+   * colour from. The card's ground is a fixed dark navy sampled out of the artwork rather than a
+   * theme token, so its ink is fixed to match rather than following the palette.
+   */
+  color: #e9f1fb;
   margin: 0;
   padding: 0;
   border: 0;
