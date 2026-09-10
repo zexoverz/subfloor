@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import type { Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import { useLedger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
-import { deviceSigner, keySigner, signingKeys } from '../lib/signer.ts';
-import { useGuardian } from '../lib/guardian.ts';
-import { SigningKeys } from './SigningKeys.tsx';
+import { deviceSigner, walletSigner } from '../lib/signer.ts';
 
 /**
  * The two hardware moments, as a body that can sit in a screen or in a sheet.
@@ -73,22 +70,10 @@ export function DeviceCeremony({
    * will honour, and leading with one would send the owner to fetch hardware for nothing.
    */
   const [via, setVia] = useState<'device' | 'wallet' | null>(null);
-  const guardian = useGuardian();
-  /** Every address the browser can sign with: this connection's accounts, plus any key attached. */
-  const keys = signingKeys(wallet, guardian);
-  /** Picked by hand. Null means "whatever the registry points at". */
-  const [pick, setPick] = useState<Address | null>(null);
-  /** The guardian on file, found among everything the browser can sign with, not only the live one. */
-  const guardianKey = (expect && keys.find((k) => k.address.toLowerCase() === expect.toLowerCase())) || null;
-  const chosen = keys.find((k) => k.address === pick) ?? guardianKey ?? null;
-  const isWallet = via === 'wallet' || (via === null && Boolean(guardianKey));
-  const signer = isWallet
-    ? keySigner(
-        chosen ?? keys.find((k) => k.address === wallet?.address) ?? null,
-        guardian.connecting,
-        guardian.error,
-      )
-    : deviceSigner(ledger);
+  const isWallet =
+    via === 'wallet' ||
+    (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
+  const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
   /** The other one, when the owner has one worth offering. */
   const other = wallet && (isWallet ? 'device' : 'wallet');
 
@@ -129,22 +114,6 @@ export function DeviceCeremony({
                 }}
               />
             </div>
-
-            {/*
-             * Only where there is a choice to make. One account and a guardian that matches it is
-             * not a decision, and a picker over a list of one is a question with one answer.
-             */}
-            {isWallet && (keys.length > 1 || !guardianKey) && stage === 'pre' && (
-              <SigningKeys
-                keys={keys}
-                offers={guardian.offers}
-                expect={expect}
-                chosen={signer.address ? (keys.find((k) => k.address === signer.address) ?? null) : null}
-                onChoose={(key) => setPick(key.address)}
-                onAttach={(uuid) => void guardian.attach(uuid).then((added) => added[0] && setPick(added[0].address))}
-                busy={guardian.connecting}
-              />
-            )}
 
             {stage === 'signed' ? (
               <Act wide primary onClick={onDone}>

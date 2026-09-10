@@ -27,15 +27,6 @@ const BALANCE_OF = [
 /** Public by design: it identifies the app to Reown's relay, it authorises nothing. */
 const projectId = import.meta.env?.VITE_REOWN_PROJECT_ID ?? '';
 
-/**
- * One address the browser can sign with, and which connection it came through.
- *
- * Both halves are needed. wagmi signs through a connector's client, so an address without the
- * connector that holds it cannot be asked for anything — passing one from a second wallet to the
- * first wallet's client fails, and it fails at the moment the owner presses sign.
- */
-export type WalletAccount = { address: Address; uid: string; name: string };
-
 export type Wallet = {
   address: Address | null;
   available: boolean;
@@ -48,13 +39,6 @@ export type Wallet = {
   /** Re-read balances. Sending tokens out changes them, and nothing else would say so. */
   refresh: () => void;
   /**
-   * Every address available right now, across every wallet connected to this page.
-   *
-   * More than one, because the account that trades and the account registered as guardian do not
-   * have to be the same one — and for the split this design argues for, they should not be.
-   */
-  accounts: WalletAccount[];
-  /**
    * Sign an EIP-712 payload with the connected account.
    *
    * The alternative to the Ledger, for a vault whose registered guardian is a soft wallet. It signs
@@ -62,7 +46,7 @@ export type Wallet = {
    * signature the vault will honour when the connected address *is* the guardian on file. The
    * ceremony checks that before it asks, rather than after the vault refuses.
    */
-  signTypedData: (typedData: unknown, as?: WalletAccount) => Promise<string | null>;
+  signTypedData: (typedData: unknown) => Promise<string | null>;
 };
 
 export function useWallet(): Wallet {
@@ -71,9 +55,7 @@ export function useWallet(): Wallet {
   const [error, setError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState<Holding[] | null>(null);
   const [balanceTick, setBalanceTick] = useState(0);
-  const [accounts, setAccounts] = useState<WalletAccount[]>([]);
   const unwatch = useRef<(() => void) | null>(null);
-  const unwatchAll = useRef<(() => void) | null>(null);
 
   /** Attach the account watcher and take the current answer. Shared by connect and by restore. */
   const subscribe = useCallback(async () => {
@@ -84,28 +66,6 @@ export function useWallet(): Wallet {
     unwatch.current = core.watchAccount(config, {
       onChange: (account) => setAddress((account.address as Address | undefined) ?? null),
     });
-
-    unwatchAll.current?.();
-    unwatchAll.current = core.watchConnections(config, {
-      onChange: (list) => {
-        setAccounts(
-          list.flatMap((c) =>
-            c.accounts.map((a) => ({ address: a as Address, uid: c.connector.uid, name: c.connector.name })),
-          ),
-        );
-        /*
-         * A second wallet has just landed and made itself current. Put the page back on the
-         * connection it was about — the newcomer is here to sign, not to become the owner.
-         */
-      },
-    });
-    setAccounts(
-      core
-        .getConnections(config)
-        .flatMap((c) =>
-          c.accounts.map((a) => ({ address: a as Address, uid: c.connector.uid, name: c.connector.name })),
-        ),
-    );
 
     return { modal, config, core };
   }, []);
@@ -166,7 +126,7 @@ export function useWallet(): Wallet {
     }
   }, [subscribe]);
 
-  const signTypedData = useCallback(async (typedData: unknown, as?: WalletAccount) => {
+  const signTypedData = useCallback(async (typedData: unknown) => {
     if (!typedData) {
       // Not a refusal. Nothing was asked, and reporting it as one teaches the owner that their
       // wallet turned down something it was never shown.
@@ -175,14 +135,7 @@ export function useWallet(): Wallet {
     }
     try {
       const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
-      const config = startAppKit().config;
-      /*
-       * Both, or neither. wagmi signs through a connector's client — naming an address without the
-       * connector that holds it asks the wrong wallet, and the failure arrives at the press.
-       */
-      const through = as && config.state.connections.get(as.uid)?.connector;
-      const target = as && through ? { account: as.address, connector: through } : {};
-      return await core.signTypedData(config, { ...(typedData as object), ...target } as never);
+      return await core.signTypedData(startAppKit().config, typedData as never);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message.slice(0, 140) : 'the wallet declined');
       return null;
@@ -199,7 +152,6 @@ export function useWallet(): Wallet {
   useEffect(
     () => () => {
       unwatch.current?.();
-      unwatchAll.current?.();
     },
     [],
   );
@@ -243,7 +195,6 @@ export function useWallet(): Wallet {
     connect: () => void connect(),
     disconnect: () => void disconnect(),
     refresh: () => setBalanceTick((t) => t + 1),
-    accounts,
     signTypedData,
   };
 }

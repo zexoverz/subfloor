@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { Address } from 'viem';
 import { Usb, Wallet as WalletIcon } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { Act, Back, Ghost } from './Button.tsx';
@@ -8,9 +7,7 @@ import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import type { Ledger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
-import { deviceSigner, keySigner, signingKeys } from '../lib/signer.ts';
-import { useGuardian } from '../lib/guardian.ts';
-import { SigningKeys } from './SigningKeys.tsx';
+import { deviceSigner, walletSigner } from '../lib/signer.ts';
 
 export type SignPurpose = 'mandate' | 'lower';
 
@@ -103,22 +100,10 @@ export function DeviceSign({
    * Everywhere else the device leads, which is what this is built to demonstrate.
    */
   const [via, setVia] = useState<'device' | 'wallet' | null>(null);
-  const guardian = useGuardian();
-  /** Every address the browser can sign with: this connection's accounts, plus any key attached. */
-  const keys = signingKeys(wallet, guardian);
-  /** Picked by hand. Null means "whatever the registry points at". */
-  const [pick, setPick] = useState<Address | null>(null);
-  /** The guardian on file, found among everything the browser can sign with, not only the live one. */
-  const guardianKey = (expect && keys.find((k) => k.address.toLowerCase() === expect.toLowerCase())) || null;
-  const chosen = keys.find((k) => k.address === pick) ?? guardianKey ?? null;
-  const isWallet = via === 'wallet' || (via === null && Boolean(guardianKey));
-  const signer = isWallet
-    ? keySigner(
-        chosen ?? keys.find((k) => k.address === wallet?.address) ?? null,
-        guardian.connecting,
-        guardian.error,
-      )
-    : deviceSigner(ledger);
+  const isWallet =
+    via === 'wallet' ||
+    (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
+  const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
   /** The other one, when the owner has one worth offering. */
   const other = wallet && (isWallet ? 'device' : 'wallet');
   /** Approved and applied, or approved and waiting out the registry's delay — both are a yes. */
@@ -214,24 +199,6 @@ export function DeviceSign({
                     <b className="font-mono font-semibold text-ink tabular-nums">{standing}</b> is what settlement
                     uses.
                   </p>
-                )}
-
-                {/*
-                 * Only where there is a choice to make. One account and a guardian that matches it is
-                 * not a decision, and a picker over a list of one is a question with one answer.
-                 */}
-                {isWallet && (keys.length > 1 || !guardianKey) && stage === 'pre' && (
-                  <SigningKeys
-                    keys={keys}
-                    offers={guardian.offers}
-                    expect={expect}
-                    chosen={signer.address ? (keys.find((k) => k.address === signer.address) ?? null) : null}
-                    onChoose={(key) => setPick(key.address)}
-                    onAttach={(uuid) =>
-                      void guardian.attach(uuid).then((added) => added[0] && setPick(added[0].address))
-                    }
-                    busy={guardian.connecting}
-                  />
                 )}
 
                 {answered ? (
