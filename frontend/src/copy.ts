@@ -94,6 +94,12 @@ export const copy = {
     chartHeldMine: 'fills stayed above your floor',
     chartHeldPublic: "fills stayed above their maker's floor",
     /** Says what the numbers are, because a bps axis is not self-evident the way a price is. */
+    /*
+     * Said because the windows are measured back from the last fill rather than from now. That is
+     * the right anchor — a venue that stopped an hour ago is quiet, not broken — but it makes "24h"
+     * read as "the last 24 hours", and it is not that unless the venue traded within them.
+     */
+    lastTraded: 'last traded {ago} ago',
     chartAxis: 'basis points from the floor · bars are size',
     chartLoading: 'Reading what this venue has traded…',
     markoutNote:

@@ -257,8 +257,26 @@ export type IndexData = {
   refresh: () => void;
 };
 
-const clock = (seconds: string) =>
-  new Date(Number(seconds) * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+/**
+ * The time of a row, and the date too whenever that is not today.
+ *
+ * A bare "11:29" means today to anyone reading it. This venue's last fill was two days old and the
+ * whole tape still read as this morning's trading — every row quietly claiming a recency it did not
+ * have, on the surface the product is judged from.
+ *
+ * Today keeps the bare time, because on a tape that is actually live the date on every row is noise
+ * that pushes the numbers along.
+ */
+const clock = (seconds: string) => {
+  const at = new Date(Number(seconds) * 1000);
+  const time = at.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const today = new Date();
+  const sameDay =
+    at.getFullYear() === today.getFullYear() &&
+    at.getMonth() === today.getMonth() &&
+    at.getDate() === today.getDate();
+  return sameDay ? time : `${at.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })} ${time}`;
+};
 
 const decimalsOf = (address: string) => TOKENS[address.toLowerCase()]?.decimals ?? 18;
 

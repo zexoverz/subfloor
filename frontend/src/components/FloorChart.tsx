@@ -334,9 +334,25 @@ export function FloorChart({
    * Only windows narrower than the history, plus `all`. Offering 7d over four hours of data is a
    * control where most options do nothing, which is worse than having fewer.
    */
-  const times = state.tape.map((e) => e.ts).filter((t) => t > 0);
+  /*
+   * Which windows the *fills* can fill, not which the tape spans.
+   *
+   * Same distinction as the anchor: refusals come from recent transaction history and fills from
+   * the index, so a tape holding four hours of fills and one refusal from today spans two days —
+   * and 6h and 24h were offered as choices that could only ever show the same four hours as All.
+   */
+  const drawn = fillsInWindow(state.tape, null);
+  const times = drawn.map((f) => f.ts).filter((t) => t > 0);
   const span = times.length > 1 ? Math.max(...times) - Math.min(...times) : 0;
   const offered = WINDOWS.filter((w) => span > w.seconds);
+  /*
+   * How stale the freshest fill is. The windows are measured back from it rather than from now —
+   * which is right, because a venue that stopped an hour ago is quiet rather than broken — but it
+   * makes "24h" read as "the last 24 hours", and here that was two days ago. Saying when it last
+   * traded is what keeps the label from being a claim about now.
+   */
+  const lastFill = times.length ? Math.max(...times) : 0;
+  const staleHours = lastFill ? (Date.now() / 1000 - lastFill) / 3600 : 0;
 
   const measured = state.tape.flatMap((e) =>
     e.kind === 'fill' && e.bpsAboveFloor !== undefined ? [e.bpsAboveFloor] : [],
@@ -463,7 +479,23 @@ export function FloorChart({
             </>
           )}
         </span>
-        <span>{copy.desk.chartAxis}</span>
+        <span className="flex items-center gap-3">
+          {/* Only when it matters. On a live venue this is noise; here it is the difference between
+              a window that means "recently" and one that means "two days ago". */}
+          {staleHours >= 1 && (
+            <span className="text-faint">
+              {copy.desk.lastTraded.replace(
+                '{ago}',
+                staleHours >= 48
+                  ? `${Math.round(staleHours / 24)} days`
+                  : staleHours >= 24
+                    ? 'a day'
+                    : `${Math.round(staleHours)}h`,
+              )}
+            </span>
+          )}
+          {copy.desk.chartAxis}
+        </span>
       </div>
     </div>
   );
