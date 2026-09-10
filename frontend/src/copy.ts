@@ -323,6 +323,8 @@ export const copy = {
       'The tape shows what settled and what did not. A refusal enters it like any other row, with the two rates decoded from the transaction that failed.',
     /** The same honesty rule as every other surface: sample data says so. */
     shotNote: 'Sample rows — the vault is not live yet. The refusal is decoded from real revert data.',
+    /// Said only where the index has answered. The two must never be interchangeable.
+    shotLive: 'Live rows, read from the index — the same query the desk runs.',
 
     featuresEyebrow: 'What it does',
     featuresTitle: 'Six parts, one guarantee.',
