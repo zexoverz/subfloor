@@ -7,6 +7,7 @@ import { HeroParallax } from '../HeroParallax.tsx';
 import { PublicTape } from '../PublicTape.tsx';
 import { SeaTrail } from '../SeaTrail.tsx';
 import { SideReef } from '../SideReef.tsx';
+import { SeaTexture } from '../SeaTexture.tsx';
 import { FeatureGrid } from '../FeatureGrid.tsx';
 import { Faq } from '../Faq.tsx';
 import { LandingFooter } from '../LandingFooter.tsx';
@@ -145,6 +146,9 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <SeaTrail creature="crab" />
 
       <section className="relative mt-6">
+        {/* Behind the two sections that carry no reef of their own, so no stretch of the page is
+            flat ground. */}
+        <SeaTexture />
         <SideReef art="coral-right" side="right" />
         <SectionHead
           eyebrow={copy.landing.featuresEyebrow}
@@ -169,6 +173,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <SeaTrail creature="octopus" />
 
       <section className="relative mt-6">
+        <SeaTexture />
         <SideReef art="wreck-right" side="right" />
         <SideReef art="rocks-left" side="left" />
         <SectionHead
