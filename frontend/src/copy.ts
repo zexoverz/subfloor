@@ -300,6 +300,15 @@ export const copy = {
       'Drag the fill. Below the floor, the venue itself refuses to settle — no classifier, no verdict, just arithmetic where the tokens move.',
     /** What the poisoned agent asks for, in its own words. Act one of the drawing. */
     bubbleAgent: 'sell it all — any price',
+    /*
+     * The rest of the drawing's labels. Every one of them is a thing the mechanism does, said in
+     * the fewest words that stay true: the settlement reverts, the key is the owner's, and the
+     * check is arithmetic rather than a judgement about intent.
+     */
+    bubbleDump: 'dump the book',
+    bubbleReverted: 'reverted on chain',
+    bubbleDevice: 'your key, not ours',
+    bubbleArithmetic: 'arithmetic, not judgement',
     settled: 'Settled',
     refused: 'Refused',
     settledNote: 'Above the floor, the fill settles like any other. The check costs the same either way.',

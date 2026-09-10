@@ -818,25 +818,45 @@ body {
  * simply sit there and the picture still reads.
  */
 /*
- * The annotations stay put.
+ * The annotations breathe rather than blink.
  *
- * They used to fade in and out on the drawing's own seven-second loop. Two labels appearing and
- * disappearing beside a headline is a thing the eye has to keep checking, and the headline is what
- * it should be reading. They arrive once and then they are simply part of the picture.
+ * They used to fade out entirely on the drawing's seven-second loop — labels appearing and
+ * vanishing beside a headline is a thing the eye has to keep checking, and the headline is what it
+ * should be reading. Now they arrive once and stay, and the only motion is a slow swell, like
+ * something suspended in water.
+ *
+ * The scale is small on purpose. At 1.06 it reads as a thing floating; much past that and six of
+ * them pulsing is a page that will not sit still. Each sets its own period in the component, so
+ * they never come into step.
+ */
+/*
+ * Opacity only, and the breath below writes only `transform`. Two animations on one element that
+ * both touch the same property do not blend — the later one in the list simply wins — so an
+ * entrance that scaled would have been overridden from its first frame.
  */
 @keyframes hero-bubble-in {
   from {
     opacity: 0;
-    transform: translateY(5px);
   }
   to {
     opacity: 1;
-    transform: none;
+  }
+}
+
+@keyframes hero-bubble-breathe {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: scale(1.06);
   }
 }
 
 .hero-bubble {
-  animation: hero-bubble-in 700ms ease-out both;
+  transform-origin: center;
+  animation:
+    hero-bubble-in 600ms ease-out both,
+    hero-bubble-breathe 6s ease-in-out infinite alternate;
 }
 
 /*
