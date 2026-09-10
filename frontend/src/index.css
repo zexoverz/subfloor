@@ -817,26 +817,26 @@ body {
  * Base state is fully visible, so when prefers-reduced-motion disables the animation both labels
  * simply sit there and the picture still reads.
  */
-@keyframes hero-bubble {
-  0%,
-  6% {
+/*
+ * The annotations stay put.
+ *
+ * They used to fade in and out on the drawing's own seven-second loop. Two labels appearing and
+ * disappearing beside a headline is a thing the eye has to keep checking, and the headline is what
+ * it should be reading. They arrive once and then they are simply part of the picture.
+ */
+@keyframes hero-bubble-in {
+  from {
     opacity: 0;
     transform: translateY(5px);
   }
-  14%,
-  46% {
+  to {
     opacity: 1;
     transform: none;
-  }
-  56%,
-  100% {
-    opacity: 0;
-    transform: translateY(-3px);
   }
 }
 
 .hero-bubble {
-  animation: hero-bubble 7s ease-in-out infinite;
+  animation: hero-bubble-in 700ms ease-out both;
 }
 
 /*
@@ -911,46 +911,17 @@ body {
  * everything above it travels. The debris rides down with the arrowhead along the same axis, which
  * at this speed reads as the strike landing rather than as two things moving.
  */
-@keyframes hero-strike {
-  0% {
-    opacity: 0;
-    transform: translate3d(-50%, -34%, 0);
-  }
-  10% {
-    opacity: 1;
-  }
-  /* Lands, and overshoots by a hair. The settle is the beat that says something stopped it. */
-  20% {
-    transform: translate3d(-50%, 2%, 0);
-  }
-  26% {
-    transform: translate3d(-50%, -3%, 0);
-  }
-  32%,
-  62% {
-    opacity: 1;
-    transform: translate3d(-50%, 0, 0);
-  }
-  78%,
-  100% {
-    opacity: 0;
-    transform: translate3d(-50%, 0, 0);
-  }
-}
 
-/*
- * The horizontal centring lives in the keyframes rather than in a `-translate-x-1/2` class: they
- * are the same property, so the class would be gone from the first frame the animation ran.
- */
-.hero-strike {
-  animation: hero-strike 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
-}
-
-/* Reduced motion keeps the finished picture: the argument survives without the sequence. */
+/* Reduced motion keeps the finished picture: nothing here carries meaning that the motion adds. */
 @media (prefers-reduced-motion: reduce) {
-  .hero-strike {
+  .hero-art,
+  .hero-bubble {
+    animation: none;
+  }
+
+  .hero-bubble {
     opacity: 1;
-    transform: translate3d(-50%, 0, 0);
+    transform: none;
   }
 }
 

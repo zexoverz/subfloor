@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { copy } from '../../copy.ts';
 import { Act } from '../Button.tsx';
@@ -22,9 +23,29 @@ import type { Screen } from '../../types.ts';
  * project caught overstating the one claim it is built on loses more than the sentence bought.
  */
 export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+  /*
+   * Whether the hero is behind us. A sentinel at its foot rather than a scroll listener on the
+   * window: the browser reports the crossing itself, so there is no handler running on every frame
+   * of every scroll to decide a boolean that changes twice.
+   */
+  const [past, setPast] = useState(false);
+  const foot = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = foot.current;
+    if (!el) return;
+    const watch = new IntersectionObserver(
+      // Above the top of the viewport, not merely out of it — scrolled *past*, in either direction.
+      ([entry]) => entry && setPast(entry.boundingClientRect.top <= 0),
+      { threshold: 0 },
+    );
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
+
   return (
     <>
-      <LandingHeader onNavigate={onNavigate} />
+      <LandingHeader onNavigate={onNavigate} shown={past} />
 
       {/* Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column. */}
       <div className="relative">
@@ -89,6 +110,9 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
           </div>
         </div>
       </header>
+
+      {/* The hero's foot. What the header watches for, and nothing else. */}
+      <div ref={foot} aria-hidden />
 
       <section className="relative mt-24">
         <SectionHead
