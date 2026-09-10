@@ -829,11 +829,11 @@ body {
  * of the container, so one path fits whatever width the column gets — and the six share it, spaced
  * by negative delays rather than by six sets of keyframes.
  *
- * Flattened deliberately: 38 wide against 24 tall, so they sweep the sides and skim above and below
+ * Flattened deliberately: 44 wide against 30 tall, so they sweep the sides and skim above and below
  * the creature. A label crossing its face is a label nobody can read on a drawing nobody can see.
  *
- * Four minutes for a full turn, set on the element. At two it still read as movement rather than as
- * the picture being alive, which is the whole difference between decoration and a distraction.
+ * The period is set on the element. Two minutes read as movement rather than as the picture being
+ * alive; four was slow enough to look stopped. It sits between them now.
  */
 @keyframes hero-orbit {
   /*
@@ -856,67 +856,67 @@ body {
   }
 
   0% {
-    left: 88.0%;
+    left: 94.0%;
     top: 50.0%;
   }
 
   8.333% {
-    left: 82.9%;
-    top: 62.0%;
+    left: 88.1%;
+    top: 65.0%;
   }
 
   16.67% {
-    left: 69.0%;
-    top: 70.8%;
+    left: 72.0%;
+    top: 76.0%;
   }
 
   25% {
     left: 50.0%;
-    top: 74.0%;
+    top: 80.0%;
   }
 
   33.33% {
-    left: 31.0%;
-    top: 70.8%;
+    left: 28.0%;
+    top: 76.0%;
   }
 
   41.67% {
-    left: 17.1%;
-    top: 62.0%;
+    left: 11.9%;
+    top: 65.0%;
   }
 
   50% {
-    left: 12.0%;
+    left: 6.0%;
     top: 50.0%;
   }
 
   58.33% {
-    left: 17.1%;
-    top: 38.0%;
+    left: 11.9%;
+    top: 35.0%;
   }
 
   66.67% {
-    left: 31.0%;
-    top: 29.2%;
+    left: 28.0%;
+    top: 24.0%;
   }
 
   75% {
     left: 50.0%;
-    top: 26.0%;
+    top: 20.0%;
   }
 
   83.33% {
-    left: 69.0%;
-    top: 29.2%;
+    left: 72.0%;
+    top: 24.0%;
   }
 
   91.67% {
-    left: 82.9%;
-    top: 38.0%;
+    left: 88.1%;
+    top: 35.0%;
   }
 
   100% {
-    left: 88.0%;
+    left: 94.0%;
     top: 50.0%;
   }
 }
@@ -948,7 +948,7 @@ body {
   animation:
     hero-bubble-in 600ms ease-out both,
     hero-bubble-breathe 12s ease-in-out infinite alternate,
-    hero-orbit 240s linear infinite;
+    hero-orbit 150s linear infinite;
 }
 
 /*

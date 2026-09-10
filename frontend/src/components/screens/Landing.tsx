@@ -47,8 +47,15 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
     <>
       <LandingHeader onNavigate={onNavigate} shown={past} />
 
-      {/* Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column. */}
-      <div className="relative">
+      {/*
+        * Full-bleed wrapper: the texture belongs to the viewport, the words belong to the column.
+        *
+        * `overflow-x: clip` because the orbit's lane reaches past the drawing's box on purpose and
+        * the page must not answer that with a sideways scrollbar. `clip` rather than `hidden`: it
+        * does the clipping without becoming a scroll container, which would have caught the sticky
+        * and fixed behaviour of everything inside it.
+        */}
+      <div className="relative overflow-x-clip">
       {/*
         * The scene, separated into eight layers that still register with each other — checked by
         * re-compositing them and diffing against the source, 1.25% RMSE. The board keeps the flat

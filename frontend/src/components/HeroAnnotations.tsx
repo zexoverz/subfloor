@@ -33,11 +33,12 @@ const MARKS = [
 /**
  * A full turn, shared by all six, each starting a sixth of it further along.
  *
- * Four minutes. Two was still readable as movement — something the eye tracks rather than something
- * it accepts as the picture being alive — and a label that travels while you are reading the
- * sentence beside it has taken the thing it was meant to decorate.
+ * Two and a half minutes. Two read as movement — something the eye tracks rather than something it
+ * accepts as the picture being alive — and four was slow enough that nothing appeared to happen at
+ * all. A label that travels while you are reading the sentence beside it has taken the thing it was
+ * meant to decorate; one that never moves is furniture.
  */
-const TURN = 240;
+const TURN = 150;
 
 const TONES = {
   refuse: 'border-refuse/40 bg-refuse-wash text-refuse',

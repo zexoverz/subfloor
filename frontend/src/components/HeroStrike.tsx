@@ -28,7 +28,7 @@ export function HeroStrike() {
         alt="A creature meets the floor and returns what came down at it"
         draggable={false}
         /* Between the two halves of the orbit: the labels carry 9 in front of it and 1 behind. */
-        className="absolute top-1/2 left-1/2 z-[5] w-[86%] -translate-x-1/2 -translate-y-1/2 select-none"
+        className="absolute top-1/2 left-1/2 z-[5] w-[96%] -translate-x-1/2 -translate-y-1/2 select-none"
       />
 
       <HeroAnnotations />
