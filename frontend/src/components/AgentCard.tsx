@@ -56,6 +56,29 @@ export function AgentCard({
 
   return (
     <Card>
+      {/*
+        * The banner, and the only decoration on this card.
+        *
+        * It sits above the head rather than behind it: the head is a sunken strip and a bright
+        * illustration behind uppercase grey type is a label nobody can read. The gradient at its
+        * foot is what stops the join being a hard line between a lit picture and a dark rule.
+        *
+        * `aria-hidden`, because it says nothing the address and the three lines below do not.
+        */}
+      <div className="relative">
+        <img
+          src="/agent-banner.webp"
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="block h-[92px] w-full origin-center scale-[1.02] object-cover object-center select-none"
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-10"
+          style={{ background: 'linear-gradient(to bottom, transparent, var(--c-sunken))' }}
+        />
+      </div>
+
       <CardHead
         icon={Bot}
         left={copy.live.agentNow}
