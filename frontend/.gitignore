@@ -1,2 +1,5 @@
 .vercel
 .env*
+# The shape is committed; the values never are. CLAUDE.md: ".env.example is the only committed shape."
+!.env.example
+!*/.env.example

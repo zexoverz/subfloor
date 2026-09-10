@@ -94,6 +94,12 @@ export const copy = {
     chartHeldMine: 'fills stayed above your floor',
     chartHeldPublic: "fills stayed above their maker's floor",
     /** Says what the numbers are, because a bps axis is not self-evident the way a price is. */
+    /*
+     * Said because the windows are measured back from the last fill rather than from now. That is
+     * the right anchor — a venue that stopped an hour ago is quiet, not broken — but it makes "24h"
+     * read as "the last 24 hours", and it is not that unless the venue traded within them.
+     */
+    lastTraded: 'last traded {ago} ago',
     chartAxis: 'basis points from the floor · bars are size',
     chartLoading: 'Reading what this venue has traded…',
     markoutNote:
@@ -135,7 +141,7 @@ export const copy = {
   },
 
   panic: {
-    label: 'STOP THE AGENT',
+    label: 'STOP AGENT',
     hint: 'stops trading and revokes the agent’s credential',
     confirmTitle: 'Stop the agent',
     confirmLead: 'This cannot be undone. Two things happen, in this order.',
@@ -185,7 +191,26 @@ export const copy = {
     notOwnerHint: 'Everything the vault trades is public — the tape, the floor distance on every fill, and the refusals.',
     /** #132 made this real: the factory deploys a vault owned by whoever asks. */
     createVault: 'Deploy your own vault',
-    createVaultHint: 'One transaction. It comes out owned by this wallet, empty, and with no agent connected — you set the floor before anything can trade.',
+    /*
+     * One line, not three. This card is a form now: the fields say what they are and the control
+     * shows the price it is setting, so a paragraph explaining all of it again is the reader's time
+     * spent twice. What survives is the only thing the fields cannot say — that it is one
+     * transaction, and that funding is not part of it.
+     */
+    createVaultHint: 'One transaction, and it comes out configured. Funding it is the separate part.',
+    deployAgentLabel: 'the agent’s address',
+    deployAgentHint: 'the key that may compose and ship, and nothing else. Empty means no agent can trade yet.',
+    deployDeviceLabel: 'your device address',
+    deviceAsk: 'Do you have a hardware wallet?',
+    deviceYes: 'I have one',
+    deviceNo: 'Use this wallet',
+    /// Said before the choice is made, not after. The registry takes the guardian write-once.
+    deviceWhy:
+      'The key that may lower your floor. It should not be the key that trades, and it is registered once.',
+    deviceSameKeyShort: 'one key for both — a compromise reaches both',
+    deviceSameKey:
+      'This wallet will be the key that trades and the key that may lower your floor. Whoever takes one has taken the other, and the whole point of the split is that they are different keys. The registry takes this once: only a signature from it can move it afterwards.',
+    deployDeviceHint: 'set on the vault and the registry at once. Empty means lowering the floor has nobody to authorise it.',
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',
     sendToVault: 'Send to the vault',
@@ -201,6 +226,8 @@ export const copy = {
     deviceRegistered: 'Registered on the vault and the registry. The registry entry is set once — moving it now needs a signature from this device, which is not on this screen.',
     nameAgent: 'Name the agent',
     changeAgent: 'Change the agent',
+    saveAgent: 'point the vault at it',
+    savingAgent: 'writing…',
     nameAgentHint: 'the address allowed to compose and ship strategies. It can never move a token out, and you can change it whenever you like.',
     agentNamed: 'Named. Change it whenever you like.',
     /** Two transactions: a floor on one side only is the absence of a floor, not half of one. */
@@ -208,11 +235,28 @@ export const copy = {
     floorAlreadySet: 'Registered. Raising it again is one press; weakening it is not.',
     /** Said only when a delegate exists. With none, nothing is under any mandate. */
     noMandate: 'no agent yet',
+    /*
+     * Two lengths, and the difference is which button fires.
+     *
+     * On the card it opens a dialog, so "Withdraw" is the whole of what pressing it does — and at
+     * half the row's width the longer name wrapped to two lines. In the dialog it is the button
+     * that actually moves the tokens, and there the word "everything" is the point.
+     */
+    withdrawShort: 'Withdraw',
     withdraw: 'Withdraw everything',
-    /** The owner's standing exit, not the panic path. Both exist; only this one is one press. */
-    withdrawHint: 'sends the full balance of each token back to your address. Yours to call at any time, and the agent can never reach it.',
+    /** The owner's standing exit, not the panic path. Both exist; only that one is irreversible. */
+    withdrawTitle: 'Empty the vault',
+    withdrawLead: 'Every token goes back to your address. The vault stops trading, because an empty vault has nothing to quote against — sending funds back in starts it again.',
+    withdrawing: 'Withdrawing…',
     /** A disabled button with no reason on it reads as broken rather than as waiting. */
     sendNeedsAmount: 'Enter an amount above',
+    /** The way out of the dead end the fund step used to be on a testnet. */
+    /// On the card that says what is in the vault, because topping up is not a step of setup.
+    topUp: 'Add funds',
+    /// The mark's accessible name. There is no visible button — see AmountRow's note on why that
+    /// is still not an excuse for an unnamed one.
+    drawTokens: 'Draw test tokens',
+    drawing: 'Drawing…',
     /** Two transactions, and saying so beforehand is cheaper than a surprise second prompt. */
     wrapNote: 'You hold ETH but no WETH, so this wraps what is missing first — two signatures, not one.',
     /** Named so it reads as our failure to look, never as a finding about their wallet. */
@@ -225,6 +269,13 @@ export const copy = {
     max: 'max',
     inWallet: 'in wallet',
     guardianLabel: 'your device address',
+    /*
+     * Said plainly, because the alternative is a revert whose own name says the opposite: the
+     * registry's require reads `guardian[msg.sender] == address(0)` and fails with
+     * `NoGuardianRegistered`, which fires precisely when one *is* registered.
+     */
+    guardianLocked:
+      'this vault already has a device on the registry, and that entry can only be set once — replacing it needs a signature from the device being replaced',
     guardianHint: 'the key that may weaken the floor — hardware, never this browser.',
     useDevice: 'read it from my device',
     readingDevice: 'asking the device…',
@@ -385,7 +436,7 @@ export const copy = {
     /** Load-bearing: it sets up clear-signing as confirmation, before the device ever lights up. */
     underAction: 'the device will show you exactly these numbers',
     /** The vault, not the wallet: they are different addresses and only one of them settles. */
-    noInventory: 'the vault holds nothing yet — send inventory in above',
+    noInventory: 'the vault holds nothing yet — add funds from the vault card on the board',
     runsFor: 'runs for {days} days · the agent trades inside this, nothing else',
     /** Required, and named so. It used to read "the keys behind this", which sounds like an aside. */
     advanced: 'two keys, set once',
@@ -418,6 +469,12 @@ export const copy = {
   },
 
   floor: {
+    /// Named rather than left as − and +, which say nothing about which way is which.
+    safer: 'safer — closer to the reference',
+    /// The ends of the track, short because they sit either side of the number they bracket.
+    saferEnd: 'safer',
+    riskierEnd: 'riskier',
+    riskier: 'riskier — further below the reference',
     title: 'your worst price',
     runQuery: 'run query',
     reference: 'reference',
@@ -435,11 +492,34 @@ export const copy = {
      * the worst realized fill precisely so it never interferes — a hijacked agent hits it, honest
      * fills never do. Warning about that state was backwards.
      */
-    tooTight: 'would have refused {n} of the last {total} fills',
-    clear: '{n} bps past the worst fill ever taken',
+    /*
+     * Short enough not to wrap, with the reasoning behind the card.
+     *
+     * The card is narrow and these ran to two lines, which on a control that changes as you drag
+     * means the layout moves under the thing being dragged. So each line is a verdict and the
+     * sentence explaining it is one hover away — the same card the tape uses, not a browser title.
+     */
+    tooTight: 'refuses {n} of {total} past fills',
+    tooTightWhy:
+      'A floor this tight would have refused {n} of the last {total} fills on this venue — trades that were fine. A vault that fails closed through ordinary trading is a vault nobody can use.',
+    clear: '{n} bps clear of the worst fill',
+    clearWhy:
+      'Past every fill this venue has actually taken, by {n} bps. Sitting beyond the realized distribution is the point: the guarantee is real and the vault still trades freely.',
+    tooLoose: 'far past every past fill',
+    tooLooseWhy:
+      '{n} bps beyond the worst fill ever taken here — more than twice as far out as anything that has happened. Not wrong, but far enough that it stops being much of a floor.',
     raiseHint: 'free · immediate · no device',
     lower: 'LOWER ON DEVICE',
     lowerHint: 'lowering your floor needs your device',
+    /// A missing backstop said as a state. Printed as a price it read "never below 0.00".
+    /// Said on the inert button, because a control that does nothing should say why.
+    alreadyThere: 'this is the floor already registered — move the handle to change it',
+    guardianLabel: 'the key that may lower it',
+    guardianNone: 'none registered — this floor cannot be lowered at all',
+    guardianFixed: 'fixed',
+    guardianSet: 'register it, on the vault and the registry',
+    guardianSaving: 'writing…',
+    noBackstop: 'no absolute backstop — the floor is the reference less your bps',
     coldStart: 'venue history too short to calibrate — house default shown',
     notConfigured: 'no floor set for this pair yet — the first one is free and takes no device',
   },
@@ -448,6 +528,12 @@ export const copy = {
     tape: 'the tape',
     axisKey: 'floor ┊ reference',
     agentNow: 'the agent now',
+    mandateLabel: 'the mandate',
+    mandateHeld: 'signed, and held in this browser until the agent ships with it',
+    mandateStale: 'signed for a different agent — it authorises nobody now',
+    mandateNone: 'not signed. The agent cannot ship without it',
+    mandateSign: 'SIGN MANDATE',
+    mandateAgain: 'SIGN AGAIN',
     inventory: 'inventory',
     floor: 'floor',
     live: 'live',
@@ -473,8 +559,12 @@ export const copy = {
 
   ceremony: {
     willDisplay: 'your device will display',
+    wrongDevice: 'this is not the device registered for this vault — a signature from it would be refused on chain',
+    attached: 'attached',
+    registered: 'registered',
     onlyIfMatches: 'confirm on the device only if it matches',
     continue: 'CONTINUE ON DEVICE',
+    continueInWallet: 'CONTINUE IN WALLET',
     waiting: 'waiting for your device',
     blindSigning:
       'If the device shows nothing: this vault is in no hardware vendor\u2019s contract registry, so the app needs Blind signing turned on \u2014 Ethereum app \u203a Settings \u203a Blind signing.',
@@ -484,6 +574,11 @@ export const copy = {
     /** Honest about the one thing WebHID cannot tell us without a gesture. */
     unknownDevice: 'Your device will be asked for when you continue.',
     paired: 'device found',
+    walletAbsent: 'no wallet connected',
+    useWallet: 'sign with the connected wallet instead',
+    /// Why the choice is being offered at all. Without it a link to the wrong key looks like a bug.
+    noKeyYet: 'No key is registered for this vault yet, so either can sign — and neither signature will be honoured until one is.',
+    useDevice: 'sign with the device instead',
     signing: 'waiting for your device',
     signed: 'Signed on your device.',
     scheduled: 'Signed. It takes effect at',

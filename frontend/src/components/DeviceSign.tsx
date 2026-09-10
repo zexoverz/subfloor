@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Usb } from 'lucide-react';
+import { Usb, Wallet as WalletIcon } from 'lucide-react';
 import { copy } from '../copy.ts';
-import { Act, Ghost } from './Button.tsx';
-import { Card, CardBody, CardHead, Note } from './Card.tsx';
+import { Act, Back } from './Button.tsx';
+import { Card, CardBody, CardHead } from './Card.tsx';
+import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import type { Ledger } from '../lib/ledger.ts';
+import type { Wallet } from '../lib/wallet.ts';
+import { deviceSigner, useSignerError, walletSigner } from '../lib/signer.ts';
 
 export type SignPurpose = 'mandate' | 'lower';
 
@@ -23,20 +26,28 @@ type Stage = 'pre' | 'waiting' | 'signed' | 'declined' | 'absent' | 'scheduled';
  */
 export function DeviceSign({
   rows,
+  expect,
   purpose,
-  payloadLine,
   standing,
   scheduledAt,
   typedData,
   ledger,
+  wallet,
   onSigned,
   onDone,
   onBack,
+  framed = true,
 }: {
   rows: [string, string][];
+  /**
+   * The device the registry has on file, when there is one.
+   *
+   * A mandate signed by the wrong Ledger is not refused here — it is a signature the vault will not
+   * honour, discovered the first time the agent tries to ship. The moment to catch that is while
+   * the device is still in the owner's hand.
+   */
+  expect?: `0x${string}` | null;
   purpose: SignPurpose;
-  /** The call being built, spelled out while the device is thinking. */
-  payloadLine: string;
   /**
    * The EIP-712 object the device is actually asked to sign.
    *
@@ -59,135 +70,235 @@ export function DeviceSign({
    * reaching the device: nothing appeared on the Ledger and the screen called it a decline.
    */
   ledger: Ledger;
+  /**
+   * The connected account, for a vault whose guardian is a soft wallet rather than a device.
+   *
+   * Offered, not defaulted. The design's whole claim is that the key which sets the worst price
+   * lives somewhere the trading machine cannot reach, and a browser extension on the same machine
+   * is a weaker arrangement — but it is the arrangement some owners actually registered, and a
+   * ceremony that can only ask a Ledger cannot serve them at all.
+   */
+  wallet?: Wallet;
   /** Receives the signature, because producing one and dropping it is how the step never finished. */
   onSigned?: (signature: string) => void;
   onDone: () => void;
   onBack: () => void;
+  /** False where a sheet already draws the header and the way out. See the note by `body`. */
+  framed?: boolean;
 }) {
   // Starts at 'pre' unless the browser cannot speak to a device at all, which is worth saying to
   // someone who has already completed a form.
-  const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
+  // 'absent' is about the device, and it is only a dead end when there is no other key either.
+  const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' && !wallet?.address ? 'absent' : 'pre');
+  /** Which device is attached, once asked. Null is "not asked", never "the wrong one". */
+  const [attached, setAttached] = useState<`0x${string}` | null>(null);
+  const mismatch = expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
   /** The kit's own step name, so a wait says what it is waiting on. */
   const [step, setStep] = useState<string | null>(null);
+  /**
+   * Which thing is asked, decided from the registry rather than from a preference.
+   *
+   * If the guardian on file is the connected account, the device cannot produce a signature the
+   * vault will honour and offering it first would send the owner to fetch hardware for nothing.
+   * Everywhere else the device leads, which is what this is built to demonstrate.
+   */
+  const [via, setVia] = useState<'device' | 'wallet' | null>(null);
+  const isWallet =
+    via === 'wallet' ||
+    (via === null && Boolean(expect && wallet?.address && expect.toLowerCase() === wallet.address.toLowerCase()));
+  const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
+  /**
+   * The other key, offered only while the chain has not already decided.
+   *
+   * With a guardian on file the choice is not a preference — it is a fact, and the one that is not
+   * it cannot produce a signature the contract will accept. Offering it anyway is offering a
+   * ceremony whose only possible outcome is a signature the vault refuses, which is worse than not
+   * offering it at all because it looks like a way forward.
+   *
+   * With nothing registered either could turn out to be right, so both are on the table.
+   */
+  const other = wallet && !expect ? (isWallet ? 'device' : 'wallet') : null;
+  /** Approved and applied, or approved and waiting out the registry's delay — both are a yes. */
+  const answered = stage === 'signed' || stage === 'scheduled';
+  useSignerError(signer.error);
 
-  return (
-    <Card>
-      <CardHead
-        icon={Usb}
-        left={`Ledger · ${purpose === 'lower' ? 'lower the floor' : 'authorise the agent'}`}
-        right={stage === 'waiting' ? 'waiting for device' : stage}
-      />
-      <CardBody>
-        <div className="grid grid-cols-[auto_1fr] items-start gap-5.5 max-[620px]:grid-cols-1">
-          <DeviceScreen rows={rows} waiting={stage === 'waiting'} />
+  /*
+   * The frame is the host's to draw, not ours.
+   *
+   * This began as a page and kept its card when it moved into a sheet, so a dialog that already had
+   * a header and a close drew a second header and a second border inside itself — two frames around
+   * one thing, the outer carrying the title and the inner carrying the way back.
+   *
+   * Unframed, the sheet's header is the header and its close is the way out, which is what a
+   * sheet's close already means.
+   */
+  const body = (
+    <>
+      <div className="grid grid-cols-[minmax(0,290px)_1fr] items-start gap-5.5 max-[620px]:grid-cols-1">
+        <DeviceReview />
 
-          <div>
-            {stage === 'pre' && (
-              <>
-                <p className="serif mt-0 text-[14.5px] leading-relaxed text-muted">
-                  The device spells the action out in words instead of raw calldata. Whoever presses Approve can read
-                  the pair, the new floor and the price it binds at, on the device screen itself.
+        <div>
+          {stage === 'absent' ? (
+            <p className="serif mt-0 text-[14.5px] text-muted">{copy.ceremony.absent}</p>
+          ) : (
+            <>
+              <p className="serif mt-0 text-[14.5px] leading-relaxed text-muted">
+                {isWallet
+                  ? 'Your wallet spells the action out in words instead of raw calldata. The pair, the new floor and the price it binds at are readable in its own dialog before anything is signed.'
+                  : 'The device spells the action out in words instead of raw calldata. Whoever presses Approve can read the pair, the new floor and the price it binds at, on the device screen itself.'}
+              </p>
+
+              {/*
+               * What the device will display, verbatim and in order, before it lights up — and
+               * then the answer it gave, in the same place. §10 makes this the point of the
+               * screen: the habit it teaches is "confirm only if it matches", and there is
+               * nothing to match against if the strings are not here.
+               */}
+              <div className="my-3">
+                <DeviceScreen
+                  rows={rows}
+                  waiting={stage === 'waiting'}
+                  answer={stage === 'declined' ? 'rejected' : answered ? 'approved' : null}
+                  chrome={isWallet ? 'wallet' : 'ledger'}
+                  device={{
+                    paired: isWallet ? Boolean(signer.address) : ledger.presence === 'paired',
+                    hint: isWallet
+                      ? (signer.address ?? copy.ceremony.walletAbsent)
+                      : ledger.presence === 'paired'
+                        ? copy.ceremony.paired
+                        : copy.ceremony.unknownDevice,
+                  }}
+                />
+              </div>
+
+              {mismatch && (
+                <p className="mb-3 text-[11.5px] leading-relaxed text-refuse">
+                  {copy.ceremony.wrongDevice}
+                  <span className="t-num mt-1 block text-faint">
+                    {copy.ceremony.attached} {attached}
+                    <br />
+                    {copy.ceremony.registered} {expect}
+                  </span>
                 </p>
-                <Note className="mb-3">{copy.ceremony.onlyIfMatches}</Note>
-                <p className="mb-3 text-[11.5px] text-faint">
-                  {ledger.presence === 'paired' ? (
-                    <span className="text-settle">
-                      <span className="mr-1 inline-block size-[6px] rounded-full bg-current align-[1px]" />
-                      {copy.ceremony.paired}
-                    </span>
-                  ) : (
-                    copy.ceremony.unknownDevice
-                  )}
+              )}
+
+              {/*
+               * The one thing the screen cannot say. Approved and rejected are already drawn on it;
+               * a delayed lowering has a time attached, and that is new information rather than the
+               * same answer repeated in a second place.
+               */}
+              {stage === 'scheduled' && (
+                <p className="serif mb-3 text-[14px] leading-relaxed text-muted">
+                  {copy.ceremony.scheduled}{' '}
+                  <b className="font-mono font-semibold text-floor tabular-nums">
+                    {new Date((scheduledAt ?? 0) * 1000).toLocaleTimeString('en-US')}
+                  </b>
+                  . Until then the standing floor of{' '}
+                  <b className="font-mono font-semibold text-ink tabular-nums">{standing}</b> is what settlement uses.
                 </p>
+              )}
+
+              {answered ? (
+                <Act wide primary onClick={onDone}>
+                  continue
+                </Act>
+              ) : (
+                /*
+                 * Full width. It is the only thing to press on this panel and it sat at the width
+                 * of its own label, which made the affirmative action the smallest target on a
+                 * screen whose whole job is that one press.
+                 *
+                 * Declining re-arms this same button rather than growing a "try again" beside it.
+                 */
                 <Act
+                  wide
                   primary
-                  disabled={ledger.presence === 'unsupported'}
+                  busy={stage === 'waiting'}
+                  busyLabel={
+                    step
+                      ? step.replace('signer.eth.steps.', '')
+                      : isWallet
+                        ? 'waiting for your wallet'
+                        : 'awaiting approval on device'
+                  }
+                  disabled={!signer.ready}
                   onClick={async () => {
                     setStage('waiting');
                     // The real thing: the device renders the payload and answers. A decline and
                     // an unreachable device are both ordinary outcomes, not errors.
-                    if (!ledger.address) await ledger.connect();
+                    /*
+                     * Read the device before asking it for anything. `connect()` returns what it
+                     * read rather than only storing it — `ledger.address` here is a render behind,
+                     * so checking it would check the previous device.
+                     */
+                    const at = signer.address ?? (await signer.connect());
+                    setAttached(at);
+                    if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
+                      setStage('pre');
+                      return;
+                    }
                     // `rows` is what the screen renders; this is what the device verifies. They
                     // must describe the same thing, and only one of them can be signed.
-                    const signature = await ledger.signTypedData(typedData, setStep);
+                    const signature = await signer.signTypedData(typedData, setStep);
                     if (signature) onSigned?.(signature);
-                    setStage(signature ? 'signed' : 'declined');
+                    setStage(signature ? (scheduledAt ? 'scheduled' : 'signed') : 'declined');
                   }}
                 >
-                  {copy.ceremony.continue}
+                  {isWallet ? copy.ceremony.continueInWallet : copy.ceremony.continue}
                 </Act>
-              </>
-            )}
+              )}
 
-            {stage === 'waiting' && (
-              <>
-                <div className="text-[11.5px] leading-[1.9] text-muted">
-                  <div>
-                    <b className="font-medium text-ink">›</b> building EIP-712 payload…
-                  </div>
-                  <div>
-                    <b className="font-medium text-ink">›</b>{' '}
-                    {payloadLine}
-                  </div>
-                  <div>
-                    <b className="font-medium text-ink">›</b>{' '}
-                    {step ? step.replace('signer.eth.steps.', '') : 'awaiting approval on device'}{' '}
-                    <span className="animate-pulse">▍</span>
-                  </div>
-                </div>
-                <p className="serif mt-3 text-[14.5px] text-muted">{copy.ceremony.takeYourTime}</p>
-                {/*
-                  * No spinner, no countdown, and nothing here cancels the ceremony. The device is
-                  * allowed to be slow, and someone comparing eight lines of text on a small
-                  * screen is not to be hurried. In development only, stand-ins for the two
-                  * answers a device gives, so the states can be built without hardware.
-                  */}
-                {import.meta.env?.DEV && (
-                  <div className="mt-3 flex gap-2">
-                    <Ghost onClick={() => (scheduledAt ? setStage('scheduled') : setStage('signed'))}>
-                      approved
-                    </Ghost>
-                    <Ghost onClick={() => setStage('declined')}>rejected</Ghost>
-                    <Ghost onClick={() => setStage('absent')}>no device</Ghost>
-                  </div>
-                )}
-              </>
-            )}
+              {/*
+               * The other key, when the owner has one. Not a preference toggle: whichever leads
+               * is the one the registry says holds the guardian, and this is only here because
+               * that answer can be wrong in either direction — a device that is not to hand, or a
+               * wallet connected under a different account than the one on file.
+               */}
+              {/*
+               * Why the choice is being offered at all. Without it, a link to a key the vault will
+               * not check reads as a bug rather than as the only honest state of a vault that has
+               * registered nothing.
+               */}
+              {!expect && stage === 'pre' && (
+                <p className="mt-3 text-[11.5px] leading-relaxed text-faint">{copy.ceremony.noKeyYet}</p>
+              )}
 
-            {stage === 'declined' && (
-              <>
-                <p className="serif mt-0 text-[14.5px] text-muted">
-                  {copy.ceremony.declined} Your floor is still{' '}
-                  <b className="font-mono font-semibold text-floor tabular-nums">{standing}</b>.
-                </p>
-                <Ghost onClick={onBack}>back</Ghost>
-              </>
-            )}
-
-            {stage === 'absent' && <p className="serif mt-0 text-[14.5px] text-muted">{copy.ceremony.absent}</p>}
-
-            {stage === 'signed' && (
-              <>
-                <p className="serif mt-0 text-[14.5px] text-muted">{copy.ceremony.signed}</p>
-                <div className="mt-3">
-                  <Ghost onClick={onDone}>continue</Ghost>
-                </div>
-              </>
-            )}
-
-            {stage === 'scheduled' && (
-              <p className="serif mt-0 text-[14.5px] text-muted">
-                {copy.ceremony.scheduled}{' '}
-                <b className="font-mono font-semibold text-floor tabular-nums">
-                  {new Date((scheduledAt ?? 0) * 1000).toLocaleTimeString('en-US')}
-                </b>
-                . Until then the standing floor of{' '}
-                <b className="font-mono font-semibold text-ink tabular-nums">{standing}</b> is what settlement uses.
-              </p>
-            )}
-          </div>
+              {other && stage === 'pre' && (
+                <button
+                  onClick={() => setVia(other)}
+                  className="mt-3 block cursor-pointer text-[11.5px] text-faint underline underline-offset-2 transition-colors hover:text-ink"
+                >
+                  {other === 'wallet' ? copy.ceremony.useWallet : copy.ceremony.useDevice}
+                </button>
+              )}
+            </>
+          )}
         </div>
-      </CardBody>
+      </div>
+    </>
+  );
+
+  if (!framed) return body;
+
+  return (
+    <Card>
+      <CardHead
+        left={
+          <>
+            {/* Ahead of the card's own landmark icon, because it is navigation and the icon is a
+                label — CardHead draws `icon` first, so the chevron has to come in through `left`. */}
+            <Back onClick={onBack} />
+            {isWallet ? (
+              <WalletIcon size={13} strokeWidth={1.6} className="text-floor" />
+            ) : (
+              <Usb size={13} strokeWidth={1.6} className="text-floor" />
+            )}
+            {`${isWallet ? 'Wallet' : 'Ledger'} · ${purpose === 'lower' ? 'lower the floor' : 'authorise the agent'}`}
+          </>
+        }
+        right={stage === 'waiting' ? 'waiting for device' : stage}
+      />
+      <CardBody>{body}</CardBody>
     </Card>
   );
 }

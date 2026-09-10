@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
 import { useOwnVault } from './lib/vault.ts';
@@ -9,13 +9,17 @@ import { Toasts } from './components/Toasts.tsx';
 import { addresses } from './lib/contracts.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
-import { SetupDialog } from './components/SetupDialog.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
+import { MandateStrip } from './components/MandateStrip.tsx';
+import { GuardianStrip } from './components/GuardianStrip.tsx';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
 import { useCeremony } from './lib/ceremony.ts';
+import { useKeys } from './lib/keys.ts';
+import { useLedger } from './lib/ledger.ts';
+import { useCalibration } from './lib/calibration.ts';
 
 /**
  * Skeleton wiring. `fixtures` stands in for every reader — contract reads, the subgraph, and the
@@ -32,17 +36,6 @@ export default function App() {
    * yet; lowering is unwired, like the guardian and delegate steps.
    */
   const purpose = 'lower' as const;
-  // Opens itself once for an owner whose vault is not configured, and closes for good if they
-  // would rather look around first.
-  /*
-   * Two different reasons the sheet is on screen, and they must not share one flag. It opens
-   * itself for a vault that is not configured; the owner also opens it deliberately to change
-   * something already set. Collapsing those meant an owner who had dismissed it once could never
-   * get back in, which is how the delegate became unchangeable from the interface while being
-   * freely changeable on chain.
-   */
-  const [dismissed, setDismissed] = useState(false);
-  const [opened, setOpened] = useState(false);
   // Until the router is deployed nothing produces fills, so a dev-only feed drives the tape and
   // the number strip says so. See src/lib/feed.ts.
   const { state: fed, source: feedSource } = useSimulatedFeed(fixtures);
@@ -74,6 +67,22 @@ export default function App() {
   const floorWrite = useFloor(vault);
 
   const ceremony = useCeremony(wallet.address, vault);
+
+  /*
+   * Read the two balances again, because a transfer that lands changes them and nothing else says
+   * so. The vault's inventory comes from the ceremony read, the wallet's from the wallet — both are
+   * cached until asked, so every path that moves money has to ask.
+   */
+  // Writes the vault's own two keys. The setup sheet has its own instance; these are plain wagmi
+  // writes with no shared session, so a second one costs nothing.
+  const ledger = useLedger();
+  const keys = useKeys(vault, () => reread(), ceremony.registryGuardianSet);
+
+  const reread = useCallback(() => {
+    ceremony.refresh();
+    wallet.refresh();
+  }, [ceremony.refresh, wallet.refresh]);
+  const calibration = useCalibration(index.tape);
   /*
    * The tape is the index's, or it is nothing.
    *
@@ -95,10 +104,42 @@ export default function App() {
   const withHoldings = ceremony.inventory ? { ...indexed, inventory: ceremony.inventory } : indexed;
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
-  const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
-  const state = ceremony.feed
+  // The registered device, so a ceremony can compare it with the one actually attached rather
+  // than producing a signature the chain will refuse.
+  const withGuardian = {
+    ...withDelegate,
+    ...(ceremony.guardian ? { guardian: ceremony.guardian } : {}),
+    vaultGuardian: ceremony.vaultGuardian,
+    registryGuardian: ceremony.registryGuardian,
+  };
+  const withFloor = ceremony.floor ? { ...withGuardian, floor: ceremony.floor } : withGuardian;
+  const withFeed = ceremony.feed
     ? { ...withFloor, reference: { ...withFloor.reference, feed: ceremony.feed } }
     : withFloor;
+  /*
+   * §4's non-negotiable, and until now it was not met: the floor screen's percentiles and its strip
+   * of past fills both came from `fixtures.ts`. A wallet with no fills of its own was told a floor
+   * would have refused seven of fifty — fifty fills that never happened, on the screen whose whole
+   * argument is that the human is not signing a guess.
+   *
+   * The index's answer wins where there is one, and where there is not, nothing pretends there was.
+   */
+  const state = {
+    ...withFeed,
+    calibration: calibration.data ?? {
+      /*
+       * No answer is not the same as an answer of zero, and it must not become the fixture's.
+       * The house default stays, because the handle has to start somewhere and that number is
+       * labelled as a house number rather than as this venue's history — but the strip is empty and
+       * the sample count is nought, so nothing on screen counts fills that were never read.
+       */
+      ...withFeed.calibration,
+      sampleCount: 0,
+      p50Bps: 0,
+      p99Bps: 0,
+      fillsBps: [],
+    },
+  };
 
   // Lowering is answered in the sheet on the board now; this only records what was signed.
   const lower = (bps: number) => setDraftBps(bps);
@@ -112,19 +153,10 @@ export default function App() {
     );
 
 
-  const needsSetup = ceremony.isOwner === true && ceremony.steps.some((step) => !step.done);
-  const sheetOpen = (needsSetup && !dismissed) || opened;
-
   return (
     <AppShell
       screen={screen}
       onNavigate={setScreen}
-      /*
-       * §10 fixes the order: dock through canonical Aqua first, because it works even if the
-       * modified router is bricked, then revoke the credential. The app is the strategy holder, so
-       * it is the one being docked.
-       */
-      onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
       source={source}
       // Simulated says so on its own badge; only a real read has a wait worth showing.
       loading={feedSource !== 'simulated' && index.status === 'loading'}
@@ -134,7 +166,7 @@ export default function App() {
       wide={screen === 'live'}
     >
       {panic.stage === 'stopped' ? (
-        <StoppedState state={state} onWithdraw={() => void panic.withdraw()} />
+        <StoppedState state={state} onWithdraw={() => void panic.withdraw().then(reread)} />
       ) : (
         <>
       {screen === 'live' && (
@@ -144,6 +176,9 @@ export default function App() {
           /* Simulated says so on its own badge; otherwise the reader's own state, unedited. */
           tapeStatus={feedSource === 'simulated' ? 'live' : index.status}
           vault={vault}
+          wallet={wallet}
+          walletAddress={wallet.address}
+          walletHoldings={wallet.holdings}
           scope={shownScope}
           // No wallet, no "mine": the switch is hidden rather than offering a tape nobody owns.
           canScope={mineIsPossible}
@@ -157,14 +192,11 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
-          onWithdraw={() =>
-            void panic.withdraw().then(() => {
-              ceremony.refresh();
-              wallet.refresh();
-            })
-          }
+          onWithdraw={() => void panic.withdraw().then(reread)}
+          onMoved={reread}
           onCreateVault={own.create}
           creatingVault={own.creating}
+          creatingStep={own.step}
           // Only offer it once the factory has actually said this wallet has none.
           canCreateVault={own.known && !own.vault}
           /*
@@ -176,9 +208,42 @@ export default function App() {
           vaultError={own.error ?? ceremony.error}
           connected={Boolean(wallet.address)}
           connecting={wallet.connecting}
-          onSetup={needsSetup ? () => { setDismissed(false); setOpened(true); } : null}
-          // The agent can be replaced whenever the owner likes; the chain has never stopped them.
-          onEditAgent={ceremony.isOwner === true ? () => setOpened(true) : null}
+          onSetAgent={async (next) => {
+            await keys.setDelegate(next);
+            reread();
+          }}
+          settingAgent={keys.sending}
+          agentStep={keys.step}
+          /*
+           * The same call the header used to make. Docking stops trading and revoking the mandate
+           * ends the authorisation; neither needs the device, which is the point of it.
+           */
+          ledger={ledger}
+          guardianStrip={
+            <GuardianStrip
+              // The write-once one, which is the key a lowering is checked against.
+              guardian={ceremony.registryGuardian}
+              registered={ceremony.registryGuardianSet}
+              owner={ceremony.isOwner === true}
+              ledger={ledger}
+              onSet={(next) => keys.setGuardian(next)}
+              saving={keys.sending}
+              savingStep={keys.step}
+            />
+          }
+          mandate={
+            ceremony.isOwner === true ? (
+              <MandateStrip
+                state={state}
+                vault={vault as `0x${string}` | null}
+                nonce={ceremony.nonce}
+                wallet={wallet}
+                ledger={ledger}
+                onSigned={() => ceremony.refresh()}
+                onPanic={() => void panic.stop(addresses.aqua as `0x${string}`, `0x${'0'.repeat(64)}`)}
+              />
+            ) : null
+          }
           onLower={lower}
           /*
            * The registry decides what the floor is after this, not the button. It writes both
@@ -188,26 +253,11 @@ export default function App() {
           onRaise={(bps) => void floorWrite.raise(bps).then(() => ceremony.refresh())}
         />
       )}
-      {ceremony.isOwner === true && (
-        <SetupDialog
-          state={state}
-          wallet={wallet}
-          vault={vault}
-          // Opened by hand means they came to change something, not to be told it is done.
-          focusKeys={opened}
-          ceremony={ceremony}
-          open={sheetOpen}
-          onClose={() => {
-            setOpened(false);
-            setDismissed(true);
-          }}
-          onNavigate={setScreen}
-        />
-      )}
 
       {screen === 'ceremony' && (
         <Ceremony
           state={state}
+          wallet={wallet}
           draftBps={draftBps}
           purpose={purpose}
           onDone={() => setScreen('live')}
@@ -216,8 +266,9 @@ export default function App() {
       )}
         </>
       )}
-      {/* The sheet carries its own while it is open; see SetupDialog. */}
-      {!sheetOpen && <Toasts />}
+      {/* One container, in the top layer — see Toasts. It no longer has to be hidden for a
+          sheet to be able to raise one. */}
+      <Toasts />
     </AppShell>
   );
 }

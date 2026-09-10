@@ -1,4 +1,10 @@
+import type { ReactNode } from 'react';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { copy } from '../copy.ts';
+import { Hoverable } from './Hoverable.tsx';
+import { PairIcons } from './PairIcons.tsx';
+import { ChainlinkMark } from './TokenIcon.tsx';
+import { addressUrl } from '../lib/chain.ts';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 
 /**
@@ -19,12 +25,41 @@ const toBps = (price: number, reference: number) => {
   return Math.min(MAX_BPS, Math.max(MIN_BPS, Math.round(raw / DETENT) * DETENT));
 };
 
+/** One detent, in the direction the label names. Named so it is not a bare glyph to a screen reader. */
+function Nudge({
+  to,
+  onChange,
+  disabled,
+  label,
+  children,
+}: {
+  to: number;
+  onChange: (bps: number) => void;
+  disabled: boolean;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(to)}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="pushable push-quiet push-sm mb-1 grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg text-[15px] leading-none"
+    >
+      {children}
+    </button>
+  );
+}
+
 export function FloorControl({
   bps,
   referencePrice,
   quote,
   base,
   fillsBps,
+  feed,
   onChange,
 }: {
   bps: number;
@@ -33,62 +68,217 @@ export function FloorControl({
   base: string;
   /** Every realized fill in bps, so the warning can count rather than assert. */
   fillsBps?: number[];
+  /** The oracle the relative floor is a function of. Linked, because "the reference" is a claim
+   *  until someone can open it. */
+  feed?: `0x${string}` | null;
   onChange: (bps: number) => void;
 }) {
   const price = floorPriceFromBps(referencePrice, bps);
   /*
-   * The hazard is tightness, not looseness. A floor inside the realized distribution would have
-   * refused fills that were fine, and a vault that fails closed through ordinary trading is
-   * unusable; sitting past the worst fill is the point, not the risk. So the warning counts what
-   * this number would have cost against fills that actually happened.
+   * Two hazards, not one, and the control used to colour only the first.
+   *
+   * **Too tight** is measured: a floor inside the realized distribution would have refused fills
+   * that were fine, and a vault that fails closed through ordinary trading is unusable. This counts
+   * what the number would have cost against fills that actually happened.
+   *
+   * **Too loose** is the opposite end and it was silent — cyan, the colour that means the owner's
+   * number is doing its job, while the label directly under it read "riskier". A control that
+   * colours one end and not the other is telling two stories, and the one it told at −400 bps was
+   * the wrong one.
+   *
+   * The threshold for loose is a choice, not a measurement, and it is written as one: more than
+   * twice as far out as anything that has ever happened here. There is no measured number for
+   * "protects too little" — a floor is not wrong for being generous, it just stops being a floor —
+   * so the colour goes quiet rather than red. Red is reserved for the hazard that has a count
+   * behind it.
    */
+  /*
+   * Nought fills is not nought bps of history — it is no history. Everything below counts against
+   * this, and with an empty strip the verdict line is not rendered at all rather than reporting a
+   * floor "0 bps clear of the worst fill" that nothing was measured against.
+   */
+  const worst = fillsBps?.length ? Math.max(...fillsBps.map(Math.abs)) : 0;
   const refused = fillsBps?.filter((fill) => Math.abs(fill) >= bps).length ?? 0;
   const tooTight = refused > 0;
+  const tooLoose = !tooTight && worst > 0 && bps > worst * 2;
+  /** The one colour that means "this is a good floor", spent only where that is true. */
+  const tone = tooTight ? 'text-refuse' : tooLoose ? 'text-muted' : 'text-floor';
+  const fill = (t: string) =>
+    t.replace('{n}', String(tooTight ? refused : bps - worst)).replace('{total}', String(fillsBps?.length ?? 0));
+  const verdict = fill(tooTight ? copy.floor.tooTight : tooLoose ? copy.floor.tooLoose : copy.floor.clear);
+  const why = fill(tooTight ? copy.floor.tooTightWhy : tooLoose ? copy.floor.tooLooseWhy : copy.floor.clearWhy);
+  const accent = tooTight ? 'accent-refuse' : tooLoose ? 'accent-muted' : 'accent-floor';
 
   return (
-    <div className="mb-5 rounded-xl bg-sunken px-4 py-3.5 shadow-card">
-      <label className="block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
+    <div className="well relative mb-5 overflow-hidden rounded-xl bg-sunken px-4 py-3.5">
+      {/*
+        * The well holds water, which is the one ornament this control can carry without being
+        * about something else: it is a floor, in a product whose whole argument is that there is a
+        * bottom. Behind everything and out of the accessibility tree — it says nothing the numbers
+        * do not.
+        */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[58px] overflow-hidden">
+        <svg
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          className="well-tide well-tide-slow absolute bottom-0 h-full"
+          fill="var(--c-floor)"
+          opacity="0.07"
+        >
+          <path d="M0 24 Q 75 6 150 24 T 300 24 T 450 24 T 600 24 T 750 24 T 900 24 T 1050 24 T 1200 24 V60 H0 Z" />
+        </svg>
+        <svg
+          viewBox="0 0 1200 60"
+          preserveAspectRatio="none"
+          className="well-tide absolute bottom-0 h-full"
+          fill="var(--c-floor)"
+          opacity="0.05"
+        >
+          <path d="M0 34 Q 75 18 150 34 T 300 34 T 450 34 T 600 34 T 750 34 T 900 34 T 1050 34 T 1200 34 V60 H0 Z" />
+        </svg>
+      </div>
+
+      <label className="relative block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
         {copy.onboarding.worstPrice}
       </label>
 
-      {/* Typed as a price. The number the owner reasons about is never a percentage. */}
-      <input
-        inputMode="decimal"
-        value={formatPrice(price)}
-        onChange={(e) => {
-          const typed = Number(e.target.value.replace(/[^0-9.]/g, ''));
-          if (typed > 0) onChange(toBps(typed, referencePrice));
-        }}
-        className={`mt-1 w-full border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight outline-none ${
-          tooTight ? 'text-refuse' : 'text-floor'
-        }`}
-      />
-      <p className="mt-1.5 text-center text-[11px] text-faint">
-        {quote} per {base} · reference {formatPrice(referencePrice)}
-      </p>
+      {/*
+        * Typed as a price, and prefixed as money. The number the owner reasons about is never a
+        * percentage — and the quote token is a dollar stablecoin, so the sign is what it is rather
+        * than decoration.
+        */}
+      {/*
+        * The sign and the number are one object, so the input is as wide as its own text rather
+        * than as wide as the card. Full width with centred text puts the digits in the middle and
+        * leaves the `$` stranded at the far left edge, which reads as two things that happen to be
+        * on the same line.
+        *
+        * `tabular-nums` is what makes the `ch` width honest: in proportional digits a `ch` is the
+        * width of a zero and nothing else, so the box would breathe as the price changed.
+        *
+        * The sign is the same size as the number and centres with it. At two different sizes a
+        * shared baseline is exactly what makes the smaller one look dropped — the glyphs sit on one
+        * line and their centres do not, which reads as a mistake rather than as a hierarchy.
+        */}
+      <div className="relative mt-1 flex items-center justify-center gap-1">
+        <span
+          className={`text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight ${tone}`}
+          aria-hidden
+        >
+          $
+        </span>
+        <input
+          inputMode="decimal"
+          value={formatPrice(price)}
+          onChange={(e) => {
+            const typed = Number(e.target.value.replace(/[^0-9.]/g, ''));
+            if (typed > 0) onChange(toBps(typed, referencePrice));
+          }}
+          style={{ width: `${formatPrice(price).length}ch` }}
+          className={`border-0 bg-transparent text-center text-[clamp(26px,7vw,34px)] leading-none font-semibold tracking-tight tabular-nums outline-none ${tone}`}
+        />
+      </div>
 
-      {/* Dragged in bps, in the detents the registry stores. */}
-      <input
-        type="range"
-        min={MIN_BPS}
-        max={MAX_BPS}
-        step={DETENT}
-        value={bps}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className={`mt-3 w-full ${tooTight ? 'accent-refuse' : 'accent-floor'}`}
-      />
-      {fillsBps && (
-        <p className={`mt-2 text-center text-[11px] ${tooTight ? 'text-refuse' : 'text-muted'}`}>
-          {tooTight
-            ? copy.floor.tooTight.replace('{n}', String(refused)).replace('{total}', String(fillsBps.length))
-            : copy.floor.clear.replace('{n}', String(bps - Math.max(...fillsBps.map(Math.abs))))}
-        </p>
+      {/*
+        * The pair as its own icons rather than as "tUSDC per WETH". The two marks say which two
+        * tokens without spending a line on their names, and the price above already reads as
+        * one-in-terms-of-the-other.
+        *
+        * The reference carries Chainlink's mark and links to the feed itself. It is the contract
+        * every relative floor here is a pure function of, so "the reference" stays a claim until
+        * someone can open it.
+        */}
+      <div className="relative mt-1.5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] text-faint">
+        <PairIcons base={base} quote={quote} size={16} ring="ring-sunken" />
+        <span className="flex items-center gap-1.5">
+          <ChainlinkMark />
+          {feed ? (
+            <a href={addressUrl(feed)} target="_blank" rel="noreferrer" className="hover:text-floor">
+              {copy.floor.reference} ${formatPrice(referencePrice)}
+            </a>
+          ) : (
+            <>
+              {copy.floor.reference} ${formatPrice(referencePrice)}
+            </>
+          )}
+        </span>
+      </div>
+
+      {/*
+        * Dragged in bps, in the detents the registry stores — and nudged by one detent either side,
+        * because a slider is for finding roughly the right place and a button is for landing on the
+        * exact one. The direction is the same as the slider's and the same as the labels under it:
+        * left is fewer bps and safer, right is more and riskier.
+        */}
+      <div className="relative mt-3 flex items-center gap-2.5">
+        <Nudge
+          to={Math.max(MIN_BPS, bps - DETENT)}
+          onChange={onChange}
+          disabled={bps <= MIN_BPS}
+          label={copy.floor.safer}
+        >
+          −
+        </Nudge>
+        <input
+          type="range"
+          min={MIN_BPS}
+          max={MAX_BPS}
+          step={DETENT}
+          value={bps}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className={`min-w-0 flex-1 ${accent}`}
+        />
+        <Nudge
+          to={Math.min(MAX_BPS, bps + DETENT)}
+          onChange={onChange}
+          disabled={bps >= MAX_BPS}
+          label={copy.floor.riskier}
+        >
+          +
+        </Nudge>
+      </div>
+      {fillsBps && fillsBps.length > 0 && (
+        /*
+         * A verdict on the line and the reasoning on hover. These ran to two lines in a card this
+         * narrow, and a line that wraps while the slider is being dragged moves the layout under
+         * the thing being dragged.
+         */
+        <Hoverable
+          content={<p className="m-0 max-w-[38ch] text-[12px] leading-relaxed text-muted">{why}</p>}
+        >
+          <p
+            className={`mt-2 cursor-help text-center text-[11px] underline decoration-dotted underline-offset-2 ${
+              tooTight ? 'text-refuse' : 'text-muted'
+            }`}
+          >
+            {verdict}
+          </p>
+        </Hoverable>
       )}
 
-      <div className="flex justify-between text-[11.5px] text-faint">
-        <span>safer · −{MIN_BPS} bps</span>
-        <span className={`font-medium ${tooTight ? 'text-refuse' : 'text-floor'}`}>−{bps} bps</span>
-        <span>−{MAX_BPS} bps · riskier</span>
+      {/*
+        * The ends carry two signals and one each: the chevron says which way to drag, the colour
+        * says what is down there.
+        *
+        * Cyan on the left because that is the colour of the owner's protection everywhere else on
+        * this board, and a tighter floor is a better price. The operational cost of tightness — it
+        * refuses ordinary fills — is not this label's job; the line above counts it and turns red
+        * when it actually bites. Muted on the right for the same reason it is muted in the middle:
+        * a floor far past everything that has happened is not wrong, it is just barely a floor.
+        *
+        * Both stay quiet until the handle is at that end, so the control reads as one number with
+        * two directions rather than as three things competing.
+        */}
+      <div className="relative flex items-center justify-between text-[11.5px] text-faint">
+        <span className={`flex items-center gap-0.5 ${bps <= MIN_BPS ? 'text-floor' : ''}`}>
+          <ChevronsLeft size={13} strokeWidth={2} />
+          {copy.floor.saferEnd} · −{MIN_BPS} bps
+        </span>
+        <span className={`font-medium ${tone}`}>−{bps} bps</span>
+        <span className={`flex items-center gap-0.5 ${bps >= MAX_BPS ? 'text-muted' : ''}`}>
+          −{MAX_BPS} bps · {copy.floor.riskierEnd}
+          <ChevronsRight size={13} strokeWidth={2} />
+        </span>
       </div>
     </div>
   );

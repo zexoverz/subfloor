@@ -38,6 +38,15 @@ export type Wallet = {
   disconnect: () => void;
   /** Re-read balances. Sending tokens out changes them, and nothing else would say so. */
   refresh: () => void;
+  /**
+   * Sign an EIP-712 payload with the connected account.
+   *
+   * The alternative to the Ledger, for a vault whose registered guardian is a soft wallet. It signs
+   * with whatever is connected — there is one connection at a time — so it can only produce a
+   * signature the vault will honour when the connected address *is* the guardian on file. The
+   * ceremony checks that before it asks, rather than after the vault refuses.
+   */
+  signTypedData: (typedData: unknown) => Promise<string | null>;
 };
 
 export function useWallet(): Wallet {
@@ -117,6 +126,22 @@ export function useWallet(): Wallet {
     }
   }, [subscribe]);
 
+  const signTypedData = useCallback(async (typedData: unknown) => {
+    if (!typedData) {
+      // Not a refusal. Nothing was asked, and reporting it as one teaches the owner that their
+      // wallet turned down something it was never shown.
+      setError('there is nothing to sign yet');
+      return null;
+    }
+    try {
+      const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
+      return await core.signTypedData(startAppKit().config, typedData as never);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message.slice(0, 140) : 'the wallet declined');
+      return null;
+    }
+  }, []);
+
   const disconnect = useCallback(async () => {
     setAddress(null);
     setHoldings(null);
@@ -124,7 +149,12 @@ export function useWallet(): Wallet {
     await core.disconnect(startAppKit().config).catch(() => {});
   }, []);
 
-  useEffect(() => () => unwatch.current?.(), []);
+  useEffect(
+    () => () => {
+      unwatch.current?.();
+    },
+    [],
+  );
 
   // Balances are read on chain rather than assumed, so "from wallet" is a fact on the screen.
   useEffect(() => {
@@ -165,5 +195,6 @@ export function useWallet(): Wallet {
     connect: () => void connect(),
     disconnect: () => void disconnect(),
     refresh: () => setBalanceTick((t) => t + 1),
+    signTypedData,
   };
 }

@@ -1,8 +1,8 @@
-import { Activity, ArrowDownToLine, Bot, ChartLine, ExternalLink, Pencil, Receipt, Wallet } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowDownToLine, ChartLine, Receipt, Wallet } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { copy } from '../../copy.ts';
 import { Card, CardBody, CardHead } from '../Card.tsx';
-import { Ghost } from '../Button.tsx';
+
 import { Tile, Tiles } from '../Tiles.tsx';
 import { Tape } from '../Tape.tsx';
 import { FloorChart } from '../FloorChart.tsx';
@@ -10,10 +10,14 @@ import { AddressChip } from '../AddressChip.tsx';
 import { PairIcons } from '../PairIcons.tsx';
 import { RefreshBadge } from '../RefreshBadge.tsx';
 import { ScopeSwitch } from '../ScopeSwitch.tsx';
+import type { InitialSetup } from '../../lib/vault.ts';
 import { PublicAside } from '../PublicAside.tsx';
 import { FloorDialog } from '../FloorDialog.tsx';
+import { AgentCard } from '../AgentCard.tsx';
+import { FloorControl } from '../FloorControl.tsx';
 import { ChainlinkMark, TokenIcon } from '../TokenIcon.tsx';
 import { Act } from '../Button.tsx';
+import { TopUp } from '../TopUp.tsx';
 import { formatBps, formatPrice, rateToPrice } from '../../lib/rate.ts';
 import { addressUrl } from '../../lib/chain.ts';
 import type { DataSource, Screen, VaultState } from '../../types.ts';
@@ -27,6 +31,9 @@ export function LiveView({
   state,
   source,
   vault,
+  wallet,
+  walletAddress,
+  walletHoldings,
   scope,
   onScope,
   canScope,
@@ -41,13 +48,19 @@ export function LiveView({
   onRaise,
   onConnect,
   onWithdraw,
+  onMoved,
   onCreateVault,
   creatingVault,
+  creatingStep,
   canCreateVault,
   vaultChecked,
   vaultError,
-  onSetup,
-  onEditAgent,
+  onSetAgent,
+  settingAgent,
+  agentStep,
+  mandate,
+  guardianStrip,
+  ledger,
   connected,
   connecting,
 }: {
@@ -57,6 +70,11 @@ export function LiveView({
   tapeStatus: 'loading' | 'live' | 'empty' | 'failed';
   /** The vault the tape is about, named on the card so a change of subject is visible. */
   vault: string | null;
+  /** The whole connection, for the lowering ceremony — a guardian may be a soft wallet. */
+  wallet: import('../../lib/wallet.ts').Wallet;
+  /** Whose wallet is sending, and what it holds — the vault's own balances are a different list. */
+  walletAddress: `0x${string}` | null;
+  walletHoldings: import('../../types.ts').Holding[] | null;
   /** Which tape is on screen. Two questions, so two tapes rather than one with a hidden filter. */
   scope: 'mine' | 'public';
   onScope: (scope: 'mine' | 'public') => void;
@@ -75,8 +93,12 @@ export function LiveView({
   onConnect: () => void;
   /** Owner-only: the vault's withdraw, which is onlyOwner on chain too. */
   onWithdraw: () => void;
-  onCreateVault: () => void;
+  /** Re-read the balances after money has moved in either direction. */
+  onMoved: () => void;
+  onCreateVault: (setup: InitialSetup) => void;
   creatingVault: boolean;
+  /** What the deploy is doing: one call sets six things and it is slower than it looks. */
+  creatingStep: string | null;
   canCreateVault: boolean;
   vaultChecked: boolean;
   vaultError: string | null;
@@ -84,19 +106,33 @@ export function LiveView({
   /** So the connect button can turn instead of growing a sentence. */
   connecting: boolean;
   /** Null when the vault is configured; otherwise the way back into the ceremony. */
-  onSetup: (() => void) | null;
   /** Replacing the agent is an ordinary owner action, so it needs a way in after setup. */
-  onEditAgent: (() => void) | null;
+  /** Non-null only for the owner: it is what tells the agent card who may edit and stop. */
+  /** Point the vault at a different agent. `onlyOwner`, no signature, no device. */
+  onSetAgent: (next: `0x${string}`) => Promise<void>;
+  settingAgent: boolean;
+  agentStep: string | null;
+  /** The mandate strip, built where the nonce and the device are. */
+  mandate?: import('react').ReactNode;
+  /** The key that may lower this floor, built where the writes are. */
+  guardianStrip?: import('react').ReactNode;
+  /** One session for the whole board — see PublicAside. */
+  ledger: import('../../lib/ledger.ts').Ledger;
 }) {
   const [adjusting, setAdjusting] = useState(false);
+  /*
+   * What the handle is on, which starts where the registry is. Keyed on the registered number so a
+   * floor that changes on chain — by this owner elsewhere, or by a guardian-signed lowering — moves
+   * the handle with it rather than leaving a stale draft sitting on the card.
+   */
+  const [draft, setDraft] = useState(state.floor.maxAdverseBps);
+  useEffect(() => setDraft(state.floor.maxAdverseBps), [state.floor.maxAdverseBps]);
   // One flag decides the badge and every provenance sentence on the screen, so the header and the
   // line under the tape can never again claim different things about the same rows.
   const live = source === 'chain';
   const { pair, stats, tape, agent, inventory, floor, floorBuy, reference } = state;
   // An unregistered floor is not a floor of zero, and rendering 0.00 would read as one.
-  const price = (value: number) => (floor.enforced ? formatPrice(value) : copy.floor.notSet);
   const sellFloor = rateToPrice(floor.absoluteRate, pair.baseDecimals, pair.quoteDecimals);
-  const buyCeiling = 1 / rateToPrice(floorBuy.absoluteRate, pair.quoteDecimals, pair.baseDecimals);
   const feedFresh = reference.ageSeconds < reference.stalenessBoundSeconds;
 
   return (
@@ -216,35 +252,6 @@ export function LiveView({
 
         {owner ? (
         <div className="flex flex-col gap-4.5">
-          {onSetup && (
-            <Card>
-              <CardHead icon={ArrowDownToLine} left={copy.onboarding.finishSetup} />
-              <CardBody>
-                {/*
-                 * The one card on the board with something still to do, so it is the one that gets
-                 * a face. Beside the text rather than behind it: this card is short and the drawing
-                 * fits next to it, where the stat tiles had to bleed theirs off a corner.
-                 */}
-                <div className="flex items-center gap-1">
-                  <div className="min-w-0 flex-1">
-                    <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
-                      {copy.onboarding.finishSetupNote}
-                    </p>
-                    <Act primary onClick={onSetup}>
-                      {copy.onboarding.finishSetup}
-                    </Act>
-                  </div>
-                  <img
-                    src="/mascot-setup.webp"
-                    alt=""
-                    aria-hidden
-                    draggable={false}
-                    className="tile-art pointer-events-none -my-2 -mr-2 w-[104px] shrink-0 select-none max-[420px]:hidden"
-                  />
-                </div>
-              </CardBody>
-            </Card>
-          )}
           <Card>
             <CardHead
               icon={Wallet}
@@ -269,24 +276,21 @@ export function LiveView({
                     </dd>
                   </div>
                 ))}
-                <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-rule pt-2">
+                <div className="mt-2 flex items-baseline justify-between gap-3 pt-1">
                   <dt className="text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.desk.marketPrice}</dt>
                   <dd className="m-0 text-right font-medium">{formatPrice(reference.price)}</dd>
                 </div>
               </dl>
-              {/*
-                * The exit, next to the balance it applies to. Not the panic path — that docks the
-                * strategy first and lives on its own screen. This is the ordinary owner right the
-                * vault enforces as onlyOwner, and a vault whose owner cannot see how to empty it
-                * is asking for trust it says it does not need.
-                */}
-              {inventory.some((h) => h.amount > 0) && (
-                <div className="mt-3 border-t border-rule pt-3">
-                  <Act onClick={onWithdraw}>{copy.wallet.withdraw}</Act>
-                  <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">{copy.wallet.withdrawHint}</p>
-                </div>
-              )}
-              <p className="mt-3 flex items-center gap-2 border-t border-rule pt-3 text-[11px] text-faint">
+              <TopUp
+                vault={vault as `0x${string}` | null}
+                owner={walletAddress}
+                holdings={walletHoldings}
+                inventory={inventory}
+                onWithdraw={onWithdraw}
+                onMoved={onMoved}
+              />
+
+              <p className="mt-4 flex items-center gap-2 text-[11px] text-faint">
                 <ChainlinkMark />
                 {/* Linked, because "the reference" is a claim until someone can open it. */}
                 {reference.feed ? (
@@ -318,88 +322,111 @@ export function LiveView({
               // freshness reading and the fills the number is being judged against.
               right={
                 /*
-                 * While setup is unfinished there is one task, not two entry points into it. A
-                 * floor registered on a vault with no funds, no guardian and no delegate protects
-                 * nothing, and half-configured is the state nobody wants to explain later.
+                 * Nothing. The card carries the control now, so the pencil opened a second way to
+                 * do what is already on screen — and while setup is unfinished the sheet is reached
+                 * from the setup card, which is one task with one entry rather than two.
                  */
-                /*
-                 * The glyph alone. "SET SUBFLOOR" wrapped to two lines in this header and spent
-                 * more of the card's top edge than the card's own title — and the pencil says
-                 * "change this" without any of it. The words move to the label, so nothing is lost
-                 * to a screen reader or to a hover.
-                 */
-                <Ghost
-                  onClick={() => (onSetup ? onSetup() : setAdjusting(true))}
-                  label={floor.enforced ? copy.onboarding.adjust : copy.floor.set}
-                >
-                  <Pencil size={13} strokeWidth={1.8} />
-                </Ghost>
-              }
-            />
-            <CardBody className="py-1">
-              {[
-                [`${copy.desk.selling} ${pair.base}`, `${copy.desk.neverBelow} ${price(sellFloor)}`, floor.enforced ? `−${floor.maxAdverseBps} bps from the reference` : copy.floor.setHint],
-                [`${copy.desk.buying} ${pair.base}`, `${copy.desk.neverAbove} ${price(buyCeiling)}`, floor.enforced ? `−${floorBuy.maxAdverseBps} bps from the reference` : copy.floor.setHint],
-                [copy.desk.feedDies, `${copy.desk.neverBelow} ${price(sellFloor)}`, copy.desk.backstopNote],
-              ].map(([label, value, note]) => (
-                <div key={label} className="flex flex-col gap-0.5 border-b border-rule py-2.5 last:border-b-0">
-                  <span className="text-[11.5px] tracking-[0.09em] text-faint uppercase">{label}</span>
-                  <span className="serif text-[15px] text-muted">
-                    {value?.split(' ').slice(0, -1).join(' ')}{' '}
-                    <b className="font-mono text-base font-semibold text-floor tabular-nums">
-                      {value?.split(' ').at(-1)}
-                    </b>
-                  </span>
-                  <span className="text-[11px] text-faint">{note}</span>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHead
-              icon={Bot}
-              left={copy.live.agentNow}
-              right={
-                onEditAgent ? (
-                  // The same control as the floor card's, because it is the same kind of thing:
-                  // the quiet way to change what the card is describing.
-                  <Ghost onClick={onEditAgent} label={copy.wallet.changeAgent}>
-                    <Pencil size={13} strokeWidth={1.8} />
-                  </Ghost>
-                ) : (
-                  <Activity size={12} strokeWidth={1.6} />
-                )
+                null
               }
             />
             <CardBody>
-              {/* #111: the address, not a nickname — the published key has to be checkable. */}
-              {state.delegate && (
-                <div className="mb-3 border-b border-rule pb-3">
-                  <span className="text-[11.5px] tracking-[0.08em] text-faint uppercase">
-                    {copy.wallet.agentAddress}
-                  </span>
-                  <a
-                    href={addressUrl(state.delegate)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium break-all hover:text-floor"
+              {/*
+                * The control itself, seeded with what the registry holds.
+                *
+                * It was three static rows, and two of them printed the wrong number: they rendered
+                * `floor.absoluteRate` — the backstop, which is deliberately zero here — under a
+                * caption naming the relative floor in bps. So a vault with a −50 bps floor read
+                * "never below 0.00". The same mistake the indexer made and fixed: the floor on a
+                * fill was the backstop, which is zero on every row here.
+                *
+                * Showing the live control rather than a picture of the number also removes the
+                * reason the pencil existed. The value starts where the registry is, so nothing is
+                * proposed until the owner moves it — which is the line §10 draws, and it is drawn
+                * by the handle's position rather than by a second screen.
+                */}
+              <FloorControl
+                bps={draft}
+                referencePrice={reference.price}
+                base={pair.base}
+                quote={pair.quote}
+                fillsBps={state.calibration.fillsBps}
+                feed={reference.feed ?? null}
+                onChange={setDraft}
+              />
+
+              {/*
+                * Only once it differs from what is registered. A button offering to set the number
+                * already set is a button that does nothing, and pressing it costs a transaction to
+                * find that out.
+                */}
+              {/*
+                * Always rendered, never disappearing. It sat behind `draft !== registered`, so the
+                * card grew a button the moment the handle moved and lost it again when it went
+                * back — the control jumping under the hand that is dragging it.
+                *
+                * Inert rather than absent when there is nothing to do, and it says which: a button
+                * that vanishes teaches nothing, and one that fires a transaction to set the number
+                * already set teaches it expensively.
+                *
+                * The asymmetry stays two different buttons. Tightening is one cheap transaction and
+                * happens here; loosening needs the device, and that ceremony lives in the sheet, so
+                * this opens it rather than pretending the card can finish the job. Routing it to
+                * `onLower` was exactly that pretence — the handler only records the number, so the
+                * button did nothing at all.
+                */}
+              {(() => {
+                const unchanged = floor.enforced && draft === floor.maxAdverseBps;
+                const tightening = !floor.enforced || draft < floor.maxAdverseBps;
+                return (
+                  <Act
+                    wide
+                    primary
+                    ceremony
+                    aria-disabled={unchanged}
+                    title={unchanged ? copy.floor.alreadyThere : undefined}
+                    onClick={() => {
+                      if (unchanged) return;
+                      // Both directions go through the sheet. Raising fired straight from the card,
+                      // which made the two halves of one decision behave differently for a reason
+                      // the reader cannot see — and the cheap half was the one with no confirmation
+                      // at all. The sheet is where the number is shown against the fills it will be
+                      // judged by, and that is worth a click in either direction.
+                      setAdjusting(true);
+                    }}
                   >
-                    {state.delegate}
-                    <ExternalLink size={11} strokeWidth={1.7} className="shrink-0 text-faint" />
-                  </a>
-                </div>
-              )}
-              <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
-                {agent.map((line) => (
-                  <li key={line} className="text-muted">
-                    <span className="mr-2 text-floor">›</span>
-                    <span className="text-ink">{line}</span>
-                  </li>
-                ))}
-              </ul>
+                    {!floor.enforced ? copy.floor.set : tightening ? copy.floor.raise : copy.floor.lower}
+                  </Act>
+                );
+              })()}
+
+              <p className="mt-2 mb-0 text-[11px] leading-relaxed text-faint">
+                {/*
+                  * The two things the control cannot show, said rather than drawn. The buying
+                  * direction only when it differs, because equal is the normal case and repeating
+                  * it is noise; and the backstop as a state rather than as a price, because "never
+                  * below 0.00" is what a missing backstop looked like.
+                  */}
+                {floor.enforced && floorBuy.maxAdverseBps !== floor.maxAdverseBps
+                  ? `${copy.desk.buying} ${pair.base}: −${floorBuy.maxAdverseBps} bps · `
+                  : ''}
+                {floor.absoluteRate > 0n
+                  ? `${copy.desk.backstopNote}: ${formatPrice(sellFloor)}`
+                  : copy.floor.noBackstop}
+              </p>
+
+              {guardianStrip}
             </CardBody>
           </Card>
+
+          <AgentCard
+            delegate={state.delegate}
+            behaviour={agent}
+            owner={owner}
+            onSetAgent={onSetAgent}
+            saving={settingAgent}
+            savingStep={agentStep}
+            mandate={mandate}
+          />
         </div>
         ) : (
           <PublicAside
@@ -409,9 +436,12 @@ export function LiveView({
             onConnect={onConnect}
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
+            creatingStep={creatingStep}
             canCreateVault={canCreateVault}
             checked={vaultChecked}
             vaultError={vaultError}
+            ledger={ledger}
+            walletAddress={walletAddress}
           />
         )}
       </div>
@@ -419,7 +449,11 @@ export function LiveView({
       {owner && (
         <FloorDialog
           state={state}
+          wallet={wallet}
           open={adjusting}
+          // Opened from the card's handle, so it starts where that handle was left rather than
+          // making the owner find the same number a second time.
+          startAt={draft}
           onClose={() => setAdjusting(false)}
           onLower={(bps) => {
             setAdjusting(false);

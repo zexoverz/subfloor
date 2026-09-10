@@ -251,6 +251,209 @@ body {
 }
 
 /*
+ * The device's answer, growing out of the button that gave it.
+ *
+ * It starts seated exactly where Approve or Reject sat — the four offsets are measured, not
+ * written down, because the buttons are a flex row and their halves move with the panel's width —
+ * and then travels to all four edges. Transitioning the offsets rather than a transform keeps the
+ * word inside it upright and readable the whole way; a scale that took a 50%-wide button to full
+ * screen would stretch its letters by two.
+ */
+.screen-answer {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  transition:
+    top 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    bottom 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    font-size 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 460ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.screen-answer[data-grown] {
+  font-size: 14px;
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-answer {
+    transition: none;
+  }
+}
+
+/*
+ * A cog turning at the speed of something working, not something loading.
+ *
+ * A spinner says "wait"; this says "running", and the difference is entirely the period. Tailwind's
+ * `animate-spin` is one second, which reads as a page fetching. Nine is slow enough to be noticed
+ * only when looked at, which is what an ambient indicator should be — and each line sets its own,
+ * because three cogs turning in lockstep read as one animation applied three times rather than as
+ * three things happening.
+ */
+.gear {
+  animation: gear-turn var(--gear-period, 9s) linear infinite;
+}
+
+@keyframes gear-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear {
+    animation: none;
+  }
+}
+
+/*
+ * A rule drawn the way a pixel display draws one: on for two pixels, off for two.
+ *
+ * A solid hairline is a thing a screen with 64 rows cannot render — at that resolution a divider is
+ * a dotted run, and drawing it as one costs nothing and finishes the impression the scanlines
+ * start. `background` rather than `border-style: dashed`, because the browser decides a dashed
+ * border's dash length itself and it lands differently at every width.
+ */
+.pixel-rule {
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #2A313C 0px,
+    #2A313C 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+/*
+ * The device's screen, as a screen: sunk into its own bezel, and lit from behind.
+ *
+ * Everything else on this board stands off the page. A display does the opposite — it is a window
+ * cut into a case — so the shadow goes inward on all four sides and the panel reads as recessed
+ * rather than as another card that happens to be dark.
+ *
+ * The scanlines are two pixels of repeating gradient and nothing more. A Nano's screen is 128×64
+ * monochrome, so its text has visible structure at any size a photograph of it is printed; this is
+ * the cheapest honest suggestion of that, and at 0.05 alpha it is felt rather than seen. It cannot
+ * hurt the contrast measurements below because it darkens the panel and the ink equally.
+ */
+.device-screen {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 10px 24px -12px rgba(0, 0, 0, 0.95);
+}
+
+.device-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05) 0px,
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+/*
+ * A well: the shadow goes in, not out.
+ *
+ * Everything else on this board stands off the page — the panels, the keys. This is the one control
+ * that should read as cut into it, because that is what it is: a number the owner drops into and
+ * the vault settles against. A raised card containing a raised button containing a slider is three
+ * things asking to be noticed; recessing the container leaves one.
+ *
+ * Two shadows again, and for the same reason as everywhere else here: the tight one is the lip the
+ * light catches, the wide one is the depth under it.
+ */
+.well {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.55),
+    inset 0 8px 20px -10px rgba(0, 0, 0, 0.8);
+}
+
+/*
+ * A coin turning over.
+ *
+ * The faucet has no button. It is the token's own mark, and pressing it spins the coin and pays —
+ * which is the only place a flourish like this belongs: on the one control that is a favour rather
+ * than part of the flow, on a testnet, where the worst case of finding it by accident is free
+ * money that is not money.
+ *
+ * `perspective` is what makes it a coin rather than a squashing rectangle: without it the rotation
+ * is orthographic and the mark simply thins to a line and comes back.
+ */
+@keyframes coin-flip {
+  from {
+    transform: perspective(320px) rotateY(0deg);
+  }
+  to {
+    transform: perspective(320px) rotateY(360deg);
+  }
+}
+
+.coin-flip {
+  animation: coin-flip 900ms cubic-bezier(0.4, 0, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-flip {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/*
+ * Water in the well.
+ *
+ * Two layers at two speeds, which is the same trick as the hero and works for the same reason:
+ * depth is the difference between them, not either one. They are drawn rather than an image so
+ * they stay crisp at any width and cost nothing to load.
+ *
+ * The loop is seamless because the tile is honest — the path repeats every 300 units inside a
+ * 1200-wide box, and the animation travels exactly 600, so the frame it lands on is the frame it
+ * started from. A wave that jumps every cycle is worse than no wave.
+ *
+ * Kept to the foot of the well and kept faint: this sits under a price the owner is reading, and
+ * the one thing it must never do is compete with it.
+ */
+@keyframes well-tide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.well-tide {
+  width: 200%;
+  animation: well-tide 14s linear infinite;
+}
+
+.well-tide-slow {
+  animation-duration: 23s;
+  animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .well-tide {
+    animation: none;
+  }
+}
+
+/*
  * Buttons that are physically there.
  *
  * A solid face standing 6px on a darker edge of itself, and the edge collapses when the button
@@ -753,7 +956,9 @@ body {
   background: var(--c-surface);
   color: var(--c-ink);
   padding: 0;
-  border-radius: 4px;
+  /* The same corner as the cards on the board. A 4px radius on a 440px sheet reads as a different
+     product from the panels behind it — the danger sheet already knew this and set its own. */
+  border-radius: 16px;
   box-shadow: var(--c-shadow);
   /* No width here. It lived in this rule and silently beat every w-[…] utility on the element,
      because this file loads after Tailwind's — so the setup sheet asked for 960px, got 440, and
@@ -835,6 +1040,83 @@ html {
 
 body:has(dialog[open]) {
   overflow: hidden;
+}
+
+/*
+ * The popover that carries the toasts. Everything a popover is by default — a bordered, padded,
+ * centred box with a backdrop — is wrong here; it is a transparent pane whose only job is to be in
+ * the top layer.
+ */
+/*
+ * The hover card, in the top layer with everything else that has to sit over a dialog.
+ *
+ * A portal to <body> is not enough: a native <dialog> is promoted to the top layer and nothing in
+ * the normal document paints over it, whatever its z-index says. Same fix as the toasts, and the
+ * same reset — a popover comes with a UA border, padding, background and `inset: 0; margin: auto`,
+ * all of which would centre the card instead of leaving it where the cursor is.
+ *
+ * It re-promotes for free: the card mounts on hover, which is always after the dialog opened, and
+ * the top layer stacks in promotion order.
+ */
+.hint-layer,
+.tip-layer {
+  position: fixed;
+  margin: 0;
+  border: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/*
+ * The two are shaped differently and the reset has to know it.
+ *
+ * The hover card is a *wrapper* — three stacked pieces of artwork with a panel between them — so it
+ * clears the UA popover's padding and ground entirely and lets its children draw. The tooltip *is*
+ * the card, so it keeps its own, and clearing them here is what left it a rectangle of text over
+ * whatever happened to be behind: `background: transparent` in this file beats `bg-surface` from
+ * Tailwind's, because this file loads second.
+ */
+.hint-layer {
+  padding: 0;
+  background: transparent;
+  /*
+   * Stated, not inherited. The popover UA sheet sets `color: CanvasText` on its own — black, in a
+   * browser whose default rendering is light — and a portalled element has nothing else to take a
+   * colour from. This card's ground is a navy sampled out of the artwork rather than a theme
+   * token, so its ink is fixed to match it.
+   */
+  color: #e9f1fb;
+}
+
+.tip-layer {
+  background: var(--c-surface);
+}
+
+.hint-layer::backdrop,
+.tip-layer::backdrop {
+  background: transparent;
+}
+
+.toast-layer {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  /* The pane covers the screen, so it must not eat clicks. The toasts inside take their own back. */
+  pointer-events: none;
+}
+
+.toast-layer::backdrop {
+  background: transparent;
+}
+
+.toast-layer > * {
+  pointer-events: auto;
 }
 
 /* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is

@@ -44,8 +44,35 @@ export type CeremonyState = {
   isOwner: boolean | null;
   /** vault.delegate(), for the screens that must show the address rather than a nickname. */
   delegate: Address | null;
-  /** The registered device, so the field can show what is set rather than an empty box. */
+  /**
+   * The registered device — but only when *both* slots hold one, which is what the setup step
+   * checks. For asking a key to sign, use the one the contract will actually check.
+   */
   guardian: Address | null;
+  /**
+   * `AquaGuardVault.guardian()`. This is the key a **mandate** is verified against:
+   * `_consumeMandate` recovers a signer and compares it to this, and to nothing else.
+   */
+  vaultGuardian: Address | null;
+  /**
+   * `FloorRegistry.guardian(vault)`. This is the key a **lowering** is verified against, and the
+   * one whose slot is write-once. Conflating the two was a real bug: a vault with only one of them
+   * set reported no guardian at all, so every ceremony led with the device even where the wallet
+   * was the key that would be checked.
+   */
+  registryGuardian: Address | null;
+  /**
+   * Whether the *registry's* slot for this vault is already taken, which is a different question
+   * from whether a device is set.
+   *
+   * `FloorRegistry.setGuardian` is write-once — it requires the current entry to be zero — so once
+   * it holds anything the only way to change it is `rotateGuardian`, under an EIP-712 signature
+   * from the guardian being replaced. A vault deployed through the factory's one-call setup comes
+   * out with this already filled, so "register your device" is not an action that can succeed on
+   * one, and offering it would write the vault's half and then revert on the registry's, leaving
+   * the two naming different keys.
+   */
+  registryGuardianSet: boolean;
   /**
    * The floor as the registry has it, or null while nothing is deployed. Every screen reads this
    * rather than the fixture: a proposed number rendered where a configured one goes is the same
@@ -89,6 +116,9 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
+  const [vaultGuardian, setVaultGuardian] = useState<Address | null>(null);
+  const [registryGuardianAddr, setRegistryGuardianAddr] = useState<Address | null>(null);
+  const [registryGuardianSet, setRegistryGuardianSet] = useState(false);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
   const [settled, setSettled] = useState(false);
@@ -145,6 +175,10 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
         const regGuardian = registryGuardian as Address;
         const zero = '0x0000000000000000000000000000000000000000';
         setGuardian(vaultGuardian !== zero && regGuardian !== zero ? vaultGuardian : null);
+        // Kept apart as well as together: each ceremony must ask the key its own contract checks.
+        setVaultGuardian(vaultGuardian === zero ? null : vaultGuardian);
+        setRegistryGuardianAddr(regGuardian === zero ? null : regGuardian);
+        setRegistryGuardianSet(regGuardian !== zero);
         // A floor is only real when both directions have one. One side covered is an agent that
         // can still sell the other way at any price.
         setFloorsSet(Boolean((sell as [bigint, boolean])[1] && (buy as [bigint, boolean])[1]));
@@ -240,6 +274,9 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     delegate,
     guardian,
+    vaultGuardian,
+    registryGuardian: registryGuardianAddr,
+    registryGuardianSet,
     floor,
     feed,
     inventory,

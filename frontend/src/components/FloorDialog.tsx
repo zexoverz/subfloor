@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
 import { X } from 'lucide-react';
-import { Act, Locked } from './Button.tsx';
+import { Act, Back, Locked } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { FloorHistogram } from './FloorHistogram.tsx';
 import { DeviceCeremony } from './DeviceCeremony.tsx';
@@ -21,16 +21,22 @@ import type { VaultState } from '../types.ts';
  */
 export function FloorDialog({
   state,
+  wallet,
   open,
   onClose,
   onLower,
   onRaise,
+  startAt,
 }: {
   state: VaultState;
+  /** Offered as the alternative key when the registered guardian is a soft wallet. */
+  wallet: import('../lib/wallet.ts').Wallet;
   open: boolean;
   onClose: () => void;
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
+  /** Where the card's handle was when this was opened. */
+  startAt?: number;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   // Loosening finishes here too. Sending someone to another page to answer a device question loses
@@ -43,12 +49,12 @@ export function FloorDialog({
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) {
-      setBps(current);
+      setBps(startAt ?? current);
       setOnDevice(false);
       dialog.showModal();
     }
     if (!open && dialog.open) dialog.close();
-  }, [open, current]);
+  }, [open, current, startAt]);
 
   // A smaller tolerance is a stronger floor, so tightening is dragging toward the reference.
   const tightening = bps <= current;
@@ -74,8 +80,11 @@ export function FloorDialog({
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
-      <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
-        <h2 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">
+      <div className="flex items-center justify-between border-b border-rule bg-sunken px-5 py-3">
+        <h2 className="m-0 flex items-center gap-1 text-[11.5px] tracking-[0.11em] text-faint uppercase">
+          {/* The way out of the ceremony sits beside the ceremony's own title, not loose in the
+              body under it — the title is the thing it takes you back from. */}
+          {onDevice && <Back onClick={() => setOnDevice(false)} label="back to the floor" />}
           {onDevice ? copy.ceremony.willDisplay : unset ? copy.onboarding.proposedPrice : copy.floor.title}
         </h2>
         <button
@@ -90,25 +99,25 @@ export function FloorDialog({
       <div className="p-5">
         {onDevice ? (
           <DeviceCeremony
+            expect={state.registryGuardian ?? null}
+            wallet={wallet}
             rows={[
               ['Action', 'Lower price floor'],
               ['Pair', `${state.pair.base} / ${state.pair.quote}`],
               ['New floor', `−${bps} bps`],
               ['Binds at', `${formatPrice(price)} ${state.pair.quote}`],
             ]}
-            payloadLine={`FloorLowering(${state.pair.base}, ${state.pair.quote}, ${bps}, nonce)`}
-            standingLine={`Your floor is still ${formatPrice(floorPriceFromBps(state.reference.price, current))}.`}
             onDone={() => {
               onLower(bps);
               onClose();
             }}
-            onBack={() => setOnDevice(false)}
           />
         ) : (
         <>
         <FloorControl
           bps={bps}
           referencePrice={state.reference.price}
+          feed={state.reference.feed ?? null}
           base={state.pair.base}
           quote={state.pair.quote}
                 fillsBps={state.calibration.fillsBps}
@@ -158,8 +167,8 @@ export function FloorDialog({
           </>
         ) : (
           <>
-            <Locked onClick={() => setOnDevice(true)}>
-              {copy.floor.lower} · {formatPrice(price)}
+            <Locked wide weakening onClick={() => setOnDevice(true)}>
+              {copy.floor.lower} · ${formatPrice(price)}
             </Locked>
             <p className="mt-2 text-[11.5px] text-faint">{copy.floor.lowerHint}</p>
           </>
