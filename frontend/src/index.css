@@ -984,6 +984,25 @@ body {
  * effect the product happens to have.
  */
 /*
+ * Where the scene stops being a scene.
+ *
+ * It ended at the foot of the hero in a straight line across the page — a reef in full colour on
+ * one side of it and flat ground on the other, which reads as the artwork having been cropped
+ * rather than as the picture ending.
+ *
+ * Masked out over the last third instead, and a third rather than a sliver because the brightest
+ * part of the drawing is its bottom edge: the reef. A short fade there is still a visible seam,
+ * just a blurred one.
+ *
+ * On the wrapper rather than on the layers, so the veil inside it goes with it — two things fading
+ * on different schedules would put the seam back.
+ */
+.hero-fade {
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 66%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 66%, transparent 100%);
+}
+
+/*
  * Not a panel. The light going out toward the deep, which is where the words are.
  *
  * There was a panel here twice: a rounded card with a border, then an "edgeless" radial that was

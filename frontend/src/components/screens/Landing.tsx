@@ -61,7 +61,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         * re-compositing them and diffing against the source, 1.25% RMSE. The board keeps the flat
         * one: eight layers moving behind a table of numbers is a page that is hard to read.
         */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-screen">
+      <div className="hero-fade pointer-events-none absolute inset-x-0 top-0 h-screen">
         <HeroParallax />
         {/*
           * The ground under the copy, and it belongs out here rather than behind the words: at the
