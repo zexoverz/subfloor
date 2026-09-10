@@ -87,17 +87,29 @@ export function SeaTrail({
   creature: Creature;
   down?: boolean;
 }) {
-  const path = down ? 'M0 6 C 300 6 340 74 620 74 S 880 20 1000 20' : 'M0 74 C 300 74 340 6 620 6 S 880 60 1000 60';
+  /*
+   * A current, not a rule. It was an 80px box inside the 1100px column drawing a shallow S, which
+   * at that height is a wavy line under a section — the shape of a divider rather than the shape of
+   * something crossing the page. This spans the window and swings most of its own height, so it
+   * reads as water moving between one section and the next.
+   */
+  const path = down
+    ? 'M0 24 C 260 24 300 190 560 196 S 860 60 1000 34'
+    : 'M0 196 C 260 196 300 24 560 20 S 860 150 1000 182';
 
   return (
-    <div className="pointer-events-none relative my-6 h-20 w-full" aria-hidden>
+    <div
+      aria-hidden
+      className="pointer-events-none relative my-10 h-56"
+      style={{ left: 'calc(50% - 50vw)', width: '100vw' }}
+    >
       {/*
         * `preserveAspectRatio="none"` so the route spans whatever width the column has, and
         * `vector-effect` so stretching it does not stretch the stroke with it. Dashes rather than
         * dots for the same reason: a round dot pulled across 1000 units is an oval.
         */}
       <svg
-        viewBox="0 0 1000 80"
+        viewBox="0 0 1000 220"
         preserveAspectRatio="none"
         className="absolute inset-0 h-full w-full text-floor/35"
       >
@@ -107,7 +119,7 @@ export function SeaTrail({
           stroke="currentColor"
           strokeWidth={2}
           strokeLinecap="round"
-          strokeDasharray="1 14"
+          strokeDasharray="1 15"
           vectorEffect="non-scaling-stroke"
         />
       </svg>
@@ -120,7 +132,7 @@ export function SeaTrail({
         strokeWidth={1.7}
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`absolute size-[52px] text-floor/70 ${down ? 'top-7 left-[56%]' : 'top-0 left-[56%]'}`}
+        className={`absolute size-[60px] text-floor/70 ${down ? 'top-[74%] left-[55%]' : 'top-[2%] left-[55%]'}`}
       >
         {CREATURES[creature]}
       </svg>

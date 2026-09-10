@@ -22,30 +22,38 @@ export function SideReef({
   art,
   side,
   /** How far down its section it starts, and how tall it stands. Both in the section's own terms. */
-  top = '-10%',
-  height = '120%',
-  width = 'clamp(120px, 17vw, 300px)',
+  top = '6%',
+  width = 'clamp(140px, 18vw, 320px)',
   /** Turned down where the column runs close to the edge, and left alone where it does not. */
   opacity = 0.85,
 }: {
   art: string;
   side: 'left' | 'right';
   top?: string;
-  height?: string;
   width?: string;
   opacity?: number;
 }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute -z-10 hidden bg-contain bg-no-repeat lg:block"
+      className="pointer-events-none absolute -z-10 hidden bg-no-repeat lg:block"
       style={{
         backgroundImage: `url(/reef/${art}.webp)`,
-        backgroundPosition: side === 'left' ? 'left center' : 'right center',
+        /*
+         * The box is the picture's own shape — width from the caller, height from the 2:3 the six
+         * files share — and the background fills it exactly.
+         *
+         * It was `contain` inside a box 120% of the section's height, which is where the fade below
+         * went wrong: `contain` centres the picture in a taller box, so the mask was dissolving the
+         * empty space above and below it and leaving the artwork's own edges untouched. That is the
+         * hard line across the reef. A box the picture fits exactly puts the fade back on the
+         * picture.
+         */
+        backgroundSize: '100% 100%',
         [side]: 'calc(50% - 50vw)',
         top,
-        height,
         width,
+        height: `calc(${width} * 1.5)`,
         opacity,
         /*
          * Faded top and bottom, for the same reason the hero is. Each piece ends in a flat line
