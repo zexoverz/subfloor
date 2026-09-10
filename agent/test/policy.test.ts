@@ -139,13 +139,15 @@ describe("reading the index is not allowed to silently succeed", () => {
   });
 });
 
-import { cycle, type LoopConfig } from "../src/policy/loop.ts";
+import { cycle, midFromIndex, type LoopConfig } from "../src/policy/loop.ts";
+import { IndexRateLimited } from "../src/market/index-reads.ts";
 
 const CFG: LoopConfig = {
   subgraph: "http://index.test",
   rpc: "http://rpc.test",
   maxReferenceAgeSeconds: 3600,
   maxIndexLagBlocks: 200,
+  maxIndexSilenceSeconds: 600,
   recenterBps: 50,
   spreadBps: 50,
   feeBps: 3000,
@@ -250,5 +252,83 @@ describe("running out of authority is not a market problem", () => {
 
   test("a loop that was not told about mandates behaves as before", () => {
     assert.equal(decide(inputs()).kind, "hold");
+  });
+});
+
+describe("a rate limit is not an outage, for a bounded while", () => {
+  const limited = (async () =>
+    new Response("", { status: 429, headers: { "retry-after": "45" } })) as unknown as typeof fetch;
+  const base = {
+    chainHead: async () => 1002,
+    venueMid: async () => 2_500_000_000n,
+    centredOn: () => 2_500_000_000n,
+    now: () => NOW,
+    fetchImpl: limited,
+    log: () => {},
+  };
+
+  test("a 429 throws a rate limit that still reads as an unavailable index", async () => {
+    const err = await readIndex("http://x", limited).catch((e) => e);
+    assert.ok(err instanceof IndexRateLimited);
+    assert.ok(err instanceof IndexUnavailable, "anything that only knows IndexUnavailable still fails closed");
+    assert.equal(err.retryAfterSeconds, 45);
+  });
+
+  test("with a recent good read it holds instead of docking a healthy book", async () => {
+    const a = await cycle(CFG, { ...base, lastGoodReadAt: () => NOW - 120 });
+    assert.equal(a.kind, "hold");
+    assert.match(a.why, /rate-limited; last good read 120s ago/);
+  });
+
+  test("once the index has gone unread past the bound it docks", async () => {
+    const a = await cycle(CFG, { ...base, lastGoodReadAt: () => NOW - 601 });
+    assert.equal(a.kind, "dock");
+    assert.match(a.why, /601s, past the 600s bound/);
+  });
+
+  test("a loop that has never read the index docks on a rate limit", async () => {
+    assert.equal((await cycle(CFG, base)).kind, "dock");
+  });
+
+  test("the index's own retry-after reaches the loop", async () => {
+    const seen: Array<[boolean, number | null]> = [];
+    await cycle(CFG, { ...base, onIndexRead: (ok, r) => seen.push([ok, r]) });
+    assert.deepEqual(seen, [[false, 45]]);
+  });
+
+  test("any other failure still docks at once, however recent the last read", async () => {
+    const down = (async () => new Response("", { status: 503 })) as unknown as typeof fetch;
+    const a = await cycle(CFG, { ...base, fetchImpl: down, lastGoodReadAt: () => NOW - 5 });
+    assert.equal(a.kind, "dock");
+    assert.match(a.why, /index unreadable: index HTTP 503/);
+  });
+});
+
+describe("one index read per cycle", () => {
+  test("the mid comes from the same read the decision rests on", async () => {
+    let calls = 0;
+    const f = (async () => {
+      calls++;
+      return new Response(JSON.stringify(indexResponse()), { status: 200 });
+    }) as unknown as typeof fetch;
+    const box: { v: IndexView | null } = { v: null };
+    await cycle(CFG, {
+      chainHead: async () => 1002,
+      venueMid: async (v) => {
+        box.v = v;
+        return midFromIndex(v);
+      },
+      centredOn: () => 2_500_000_000n,
+      now: () => NOW,
+      fetchImpl: f,
+      log: () => {},
+    });
+    assert.equal(calls, 1, "a second query for the mid doubles the load on a rate-limited index");
+    assert.equal(box.v?.indexedBlock, 1000);
+  });
+
+  test("the mid is the reference in raw units", () => {
+    assert.equal(midFromIndex(view()), 2_500_000_000n);
+    assert.equal(midFromIndex(view({ reference: null })), null);
   });
 });

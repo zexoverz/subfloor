@@ -1,3 +1,5 @@
+import { cachedPost } from "./indexCache.ts";
+
 /// The only place a URL or a query string lives. Everything else in this package takes data.
 ///
 /// The queries are exported as strings on purpose. The floor screen renders a [run query] affordance
@@ -82,14 +84,19 @@ export async function query<T>(
   endpoint: string = DEFAULT_ENDPOINT,
   fetchImpl: typeof fetch = fetch,
 ): Promise<T> {
-  const res = await fetchImpl(endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query: q, variables }),
-  });
-  if (!res.ok) throw new SubgraphError(`subgraph HTTP ${res.status}`);
+  const request = JSON.stringify({ query: q, variables });
+  // Through the shared cache on the real fetch, so the calibration, the report and every open tab
+  // cost the index one read per window between them. An injected fetch is a test, and a test must
+  // see its own fetch rather than an answer another test left behind.
+  const answer =
+    fetchImpl === fetch
+      ? await cachedPost(endpoint, request)
+      : await fetchImpl(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: request }).then(
+          async (r) => ({ status: r.status, body: await r.text(), retryAfter: null }),
+        );
+  if (answer.status < 200 || answer.status >= 300) throw new SubgraphError(`subgraph HTTP ${answer.status}`);
 
-  const body = (await res.json()) as { data?: T; errors?: { message: string }[] };
+  const body = JSON.parse(answer.body) as { data?: T; errors?: { message: string }[] };
   if (body.errors?.length) throw new SubgraphError(body.errors.map((e) => e.message).join("; "));
   if (!body.data) throw new SubgraphError("subgraph returned no data");
   return body.data;

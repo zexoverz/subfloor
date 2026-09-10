@@ -53,6 +53,11 @@ COPY indexer/consumers/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 COPY indexer/consumers/src ./indexer/consumers/src
 COPY frontend/api/_lib ./frontend/api/_lib
+# The policy loop and the program builder it composes through. Source only, and it shares the
+# viem at /app that the consumers already install — the loop holds no key and opens no port,
+# so it rides this image and is selected by a start command rather than a second build.
+COPY agent/src ./agent/src
+COPY sdk/src ./sdk/src
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 ENV STATIC_ROOT=/app/frontend/dist
 EXPOSE 8787

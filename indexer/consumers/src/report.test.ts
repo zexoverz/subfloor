@@ -34,10 +34,12 @@ test("the worst day is the worst p99, not the last row", async () => {
   assert.match(renderMarkdown(r), /Worst day by p99: day 1 at 90 bps/);
 });
 
-test("refusals are counted and shown, because they are the product working", async () => {
+test("the index's refusal field is never reported, because a refusal emits no logs", async () => {
+  // The snapshot claims 3. A subgraph cannot see a revert, so that field is structurally zero on the
+  // live index and a number here would be one the report cannot stand behind (0966328).
   const r = await generate(7, "https://x", new Date(0), stub([day(1, 4, 3, 5, 20)]) as unknown as typeof fetch);
-  assert.equal(r.totals.refusals, 3);
-  assert.match(renderMarkdown(r), /4 fills, 3 refused/);
+  assert.equal(r.totals.refusals, null);
+  assert.match(renderMarkdown(r), /Refusals are not countable from the index and are reported by \/api\/refusals/);
 });
 
 test("unscored fills are named as excluded rather than silently averaged in", async () => {

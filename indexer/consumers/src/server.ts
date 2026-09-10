@@ -1,4 +1,4 @@
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +7,7 @@ import { generate, renderMarkdown } from "./report.ts";
 import { DEFAULT_ENDPOINT, SubgraphError } from "./subgraph.ts";
 import { refusals } from "./refusals.ts";
 import { recentFills } from "../../../frontend/api/_lib/chain.ts";
+import { cachedPost } from "../../../frontend/api/_lib/indexCache.ts";
 
 /// One service: the built frontend and the two consumers it calls, on one origin.
 ///
@@ -49,6 +50,22 @@ async function resolveStatic(pathname: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/// A GraphQL query is a few hundred bytes. Anything far past that is not one of ours.
+const MAX_QUERY_BYTES = 16_384;
+
+/// The request body, or null once it passes the bound — read to the bound and no further, so a large
+/// upload costs this process nothing past the first sixteen kilobytes.
+async function readBody(req: IncomingMessage, max: number): Promise<string | null> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > max) return null;
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 /// What to do when a handler throws, pulled out so it can be tested — which is the reason the bug
@@ -120,6 +137,29 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // The interface's index reads, through this origin and one cache. Every open tab used to poll
+    // Studio on its own; now it costs one upstream query per distinct request per window. POST only,
+    // and only ever to our own subgraph, so this is not an open proxy.
+    if (url.pathname === "/api/subgraph") {
+      if (req.method !== "POST") {
+        res.writeHead(405, { "content-type": "application/json", allow: "POST" });
+        res.end(JSON.stringify({ error: "POST a GraphQL query" }));
+        return;
+      }
+      const body = await readBody(req, MAX_QUERY_BYTES);
+      if (body === null) {
+        res.writeHead(413, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: `query larger than ${MAX_QUERY_BYTES} bytes` }));
+        return;
+      }
+      const answer = await cachedPost(DEFAULT_ENDPOINT, body);
+      const headers: Record<string, string> = { "content-type": "application/json", "cache-control": "no-store" };
+      if (answer.retryAfter) headers["retry-after"] = answer.retryAfter;
+      res.writeHead(answer.status, headers);
+      res.end(answer.body);
+      return;
+    }
+
     if (url.pathname === "/api/health") {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: true, index: DEFAULT_ENDPOINT }));
@@ -128,7 +168,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname.startsWith("/api/")) {
       res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "not found", routes: ["/api/calibration", "/api/report", "/api/fills", "/api/refusals", "/api/health"] }));
+      res.end(JSON.stringify({ error: "not found", routes: ["/api/calibration", "/api/report", "/api/fills", "/api/refusals", "/api/subgraph", "/api/health"] }));
       return;
     }
 
