@@ -251,6 +251,40 @@ body {
 }
 
 /*
+ * The device's screen, as a screen: sunk into its own bezel, and lit from behind.
+ *
+ * Everything else on this board stands off the page. A display does the opposite — it is a window
+ * cut into a case — so the shadow goes inward on all four sides and the panel reads as recessed
+ * rather than as another card that happens to be dark.
+ *
+ * The scanlines are two pixels of repeating gradient and nothing more. A Nano's screen is 128×64
+ * monochrome, so its text has visible structure at any size a photograph of it is printed; this is
+ * the cheapest honest suggestion of that, and at 0.05 alpha it is felt rather than seen. It cannot
+ * hurt the contrast measurements below because it darkens the panel and the ink equally.
+ */
+.device-screen {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 10px 24px -12px rgba(0, 0, 0, 0.95);
+}
+
+.device-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05) 0px,
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+/*
  * A well: the shadow goes in, not out.
  *
  * Everything else on this board stands off the page — the panels, the keys. This is the one control
