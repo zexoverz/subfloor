@@ -1,12 +1,12 @@
 {
-  "programs": 980000,
-  "campaigns": 13,
-  "lastRun": "2026-09-10T13:42:17Z",
+  "programs": 1084000,
+  "campaigns": 14,
+  "lastRun": "2026-09-10T19:26:43Z",
   "note": "Updated only by the fuzz-cron workflow. Counts runs of the four suites that assert the floor property against the settlement check, and nothing else.",
   "lastCampaign": {
-    "testFuzz_noProgramSettlesAnyRecipientBelowItsFloor": 20000,
-    "testFuzz_quoteAndSwapAlwaysAgree": 20000,
-    "testFuzz_hostileExtructionCannotSettleBelowAFloor": 20000,
-    "testFuzz_hostileExtructionKeepsQuoteAndSwapInAgreement": 20000
+    "testFuzz_noProgramSettlesAnyRecipientBelowItsFloor": 26000,
+    "testFuzz_quoteAndSwapAlwaysAgree": 26000,
+    "testFuzz_hostileExtructionCannotSettleBelowAFloor": 26000,
+    "testFuzz_hostileExtructionKeepsQuoteAndSwapInAgreement": 26000
   }
 }
