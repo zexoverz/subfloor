@@ -553,6 +553,7 @@ export const copy = {
     handoverOnce: 'One mandate authorises one ship. An agent that re-quotes needs a batch, signed once.',
     handoverCopy: 'copy',
     handoverCopied: 'copied',
+    handoverDownload: 'download',
     inventory: 'inventory',
     floor: 'floor',
     live: 'live',
