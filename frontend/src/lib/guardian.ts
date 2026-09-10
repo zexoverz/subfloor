@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Address } from 'viem';
+import { chain } from './chain.ts';
 
 /**
  * A second key, opened straight from the browser and kept out of wagmi entirely.
@@ -22,7 +23,7 @@ import type { Address } from 'viem';
 /** A wallet this browser announced. Not connected, just present. */
 export type BrowserWallet = { uuid: string; name: string; icon: string };
 
-/** One that has been opened, and the account it offered. */
+/** One address an opened wallet offered. A wallet usually offers several. */
 export type GuardianKey = { address: Address; uuid: string; name: string; icon: string };
 
 type Provider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
@@ -30,12 +31,13 @@ type Announcement = { detail: { info: BrowserWallet & { rdns: string }; provider
 
 export type Guardian = {
   offers: BrowserWallet[];
-  key: GuardianKey | null;
+  /** Every address the opened wallets are offering. */
+  keys: GuardianKey[];
   connecting: boolean;
   error: string | null;
-  attach: (uuid: string) => Promise<GuardianKey | null>;
-  detach: () => void;
-  signTypedData: (typedData: unknown) => Promise<string | null>;
+  /** Open a wallet and take everything it already offers. Returns what it added. */
+  attach: (uuid: string) => Promise<GuardianKey[]>;
+  signTypedData: (typedData: unknown, as: GuardianKey) => Promise<string | null>;
 };
 
 /**
@@ -73,7 +75,7 @@ function withDomainType(typedData: Record<string, unknown>) {
 
 export function useGuardian(): Guardian {
   const [offers, setOffers] = useState<BrowserWallet[]>([]);
-  const [key, setKey] = useState<GuardianKey | null>(null);
+  const [keys, setKeys] = useState<GuardianKey[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Providers are objects, not data — they live in a ref so a re-render never loses the handle. */
@@ -93,68 +95,85 @@ export function useGuardian(): Guardian {
     return () => window.removeEventListener('eip6963:announceProvider', onAnnounce);
   }, []);
 
-  const attach = useCallback(async (uuid: string) => {
-    const provider = providers.current.get(uuid);
-    const offer = offers.find((o) => o.uuid === uuid);
-    if (!provider || !offer) return null;
+  const attach = useCallback(
+    async (uuid: string) => {
+      const provider = providers.current.get(uuid);
+      const offer = offers.find((o) => o.uuid === uuid);
+      if (!provider || !offer) return [];
 
-    setConnecting(true);
-    setError(null);
-    try {
-      /*
-       * Ask for the account picker, not just for an account.
-       *
-       * `eth_requestAccounts` hands back whatever is already selected, which for an owner whose
-       * guardian is their *second* account means the wrong one and no way to say so from here.
-       * Wallets that do not implement this throw, and the fallback below is the ordinary path.
-       */
+      setConnecting(true);
+      setError(null);
       try {
-        await provider.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
-      } catch {
-        // Either declined or unsupported; the request below distinguishes them.
-      }
-      const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as Address[];
-      const address = accounts[0];
-      if (!address) {
-        setError('that wallet returned no account');
-        return null;
-      }
-      const attached = { address, uuid, name: offer.name, icon: offer.icon };
-      setKey(attached);
-      return attached;
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message.slice(0, 140) : 'that wallet did not open');
-      return null;
-    } finally {
-      setConnecting(false);
-    }
-  }, [offers]);
-
-  const signTypedData = useCallback(
-    async (typedData: unknown) => {
-      const provider = key && providers.current.get(key.uuid);
-      if (!provider || !key) {
-        setError('no key is attached');
-        return null;
-      }
-      if (!typedData) {
-        setError('there is nothing to sign yet');
-        return null;
-      }
-      try {
-        const payload = JSON.stringify(withDomainType(typedData as Record<string, unknown>));
-        const signature = await provider.request({
-          method: 'eth_signTypedData_v4',
-          params: [key.address, payload],
-        });
-        return signature as string;
+        /*
+         * Silence first, and this is the whole fix.
+         *
+         * `eth_accounts` reads what the wallet already offers this origin without prompting and
+         * without changing anything. Asking instead — `eth_requestAccounts`, or worse the account
+         * chooser — moves the selected account inside the extension, and an extension broadcasts
+         * that to every connection on the origin. Ours included: wagmi heard it, the page's address
+         * changed, and the sheet un-rendered under the owner because it is gated on ownership. The
+         * account the owner wanted was already on the list; the asking was the damage.
+         *
+         * The request below is for a wallet that has never been opened here, where there is nothing
+         * to disturb because there is no connection yet.
+         */
+        let found = (await provider.request({ method: 'eth_accounts' })) as Address[];
+        if (!found?.length) found = (await provider.request({ method: 'eth_requestAccounts' })) as Address[];
+        if (!found?.length) {
+          setError('that wallet is offering no account to this page');
+          return [];
+        }
+        const added = found.map((address) => ({ address, uuid, name: offer.name, icon: offer.icon }));
+        setKeys((was) => [
+          ...was.filter((k) => !added.some((a) => a.address.toLowerCase() === k.address.toLowerCase())),
+          ...added,
+        ]);
+        return added;
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message.slice(0, 140) : 'the wallet declined');
-        return null;
+        setError(cause instanceof Error ? cause.message.slice(0, 140) : 'that wallet did not open');
+        return [];
+      } finally {
+        setConnecting(false);
       }
     },
-    [key],
+    [offers],
   );
 
-  return { offers, key, connecting, error, attach, detach: () => setKey(null), signTypedData };
+  const signTypedData = useCallback(async (typedData: unknown, as: GuardianKey) => {
+    const provider = providers.current.get(as.uuid);
+    if (!provider) {
+      setError('that wallet is no longer here');
+      return null;
+    }
+    if (!typedData) {
+      setError('there is nothing to sign yet');
+      return null;
+    }
+    try {
+      /*
+       * A wallet will not sign a domain for a chain it is not on, and its own refusal arrives as
+       * something unreadable. Moving it to the chain this vault lives on is safe in a way that
+       * moving the *account* is not: it is the chain the page is already using, so nothing about
+       * who is here changes.
+       */
+      const on = (await provider.request({ method: 'eth_chainId' })) as string;
+      if (Number.parseInt(on, 16) !== chain.id) {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${chain.id.toString(16)}` }],
+        });
+      }
+      const payload = JSON.stringify(withDomainType(typedData as Record<string, unknown>));
+      const signature = await provider.request({
+        method: 'eth_signTypedData_v4',
+        params: [as.address, payload],
+      });
+      return signature as string;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message.slice(0, 140) : 'the wallet declined');
+      return null;
+    }
+  }, []);
+
+  return { offers, keys, connecting, error, attach, signTypedData };
 }

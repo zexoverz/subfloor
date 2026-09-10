@@ -72,13 +72,13 @@ export function signingKeys(wallet: Wallet | undefined, guardian: Guardian): Sig
     sign: (typedData) => wallet!.signTypedData(typedData, account),
   }));
 
-  const attached = guardian.key;
-  if (attached && !keys.some((k) => k.address.toLowerCase() === attached.address.toLowerCase())) {
+  for (const attached of guardian.keys) {
+    if (keys.some((k) => k.address.toLowerCase() === attached.address.toLowerCase())) continue;
     keys.push({
       address: attached.address,
       name: attached.name,
       icon: attached.icon,
-      sign: guardian.signTypedData,
+      sign: (typedData) => guardian.signTypedData(typedData, attached),
     });
   }
   return keys;

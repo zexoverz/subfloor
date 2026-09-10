@@ -141,7 +141,7 @@ export function DeviceCeremony({
                 expect={expect}
                 chosen={signer.address ? (keys.find((k) => k.address === signer.address) ?? null) : null}
                 onChoose={(key) => setPick(key.address)}
-                onAttach={(uuid) => void guardian.attach(uuid).then((k) => k && setPick(k.address))}
+                onAttach={(uuid) => void guardian.attach(uuid).then((added) => added[0] && setPick(added[0].address))}
                 busy={guardian.connecting}
               />
             )}
@@ -197,6 +197,14 @@ export function DeviceCeremony({
               >
                 {other === 'wallet' ? copy.ceremony.useWallet : copy.ceremony.useDevice}
               </button>
+            )}
+
+            {/*
+             * What went wrong, where it went wrong. A wallet that refuses reports something, and
+             * swallowing it leaves an owner pressing a button that does nothing and says nothing.
+             */}
+            {signer.error && stage !== 'waiting' && (
+              <p className="mt-2 text-[11.5px] leading-relaxed text-refuse">{signer.error}</p>
             )}
 
             {/*

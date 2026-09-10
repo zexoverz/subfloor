@@ -42,6 +42,7 @@ export function SigningKeys({
   busy?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
+  const missing = Boolean(expect) && !keys.some((k) => k.address.toLowerCase() === expect?.toLowerCase());
 
   return (
     <div className="mb-3">
@@ -99,6 +100,22 @@ export function SigningKeys({
           ))
         )}
       </div>
+
+      {/*
+        * Said, not fixed from here.
+        *
+        * The only way to add an account this page cannot see is to ask the wallet for one, and
+        * asking moves the selected account inside the extension — which the extension broadcasts to
+        * every connection on the origin, including the one that says who this page is about. That
+        * closed the sheet and changed the owner's account twice. So the sentence points at the
+        * wallet, where the owner can see what is happening while it happens.
+        */}
+      {missing && (
+        <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+          The guardian on file is not among these. Add that account to this site in your wallet, and it will appear
+          here.
+        </p>
+      )}
     </div>
   );
 }
