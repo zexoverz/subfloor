@@ -1022,6 +1022,31 @@ body:has(dialog[open]) {
  * centred box with a backdrop — is wrong here; it is a transparent pane whose only job is to be in
  * the top layer.
  */
+/*
+ * The hover card, in the top layer with everything else that has to sit over a dialog.
+ *
+ * A portal to <body> is not enough: a native <dialog> is promoted to the top layer and nothing in
+ * the normal document paints over it, whatever its z-index says. Same fix as the toasts, and the
+ * same reset — a popover comes with a UA border, padding, background and `inset: 0; margin: auto`,
+ * all of which would centre the card instead of leaving it where the cursor is.
+ *
+ * It re-promotes for free: the card mounts on hover, which is always after the dialog opened, and
+ * the top layer stacks in promotion order.
+ */
+.hint-layer {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.hint-layer::backdrop {
+  background: transparent;
+}
+
 .toast-layer {
   position: fixed;
   inset: 0;

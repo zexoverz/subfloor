@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 
@@ -16,6 +16,22 @@ export type Hint = { content: ReactNode; x: number; y: number } | null;
  */
 export function RowHint({ hint }: { hint: Hint }) {
   const [coarse, setCoarse] = useState(false);
+
+  /*
+   * Raised the moment it exists. A ref callback rather than an effect, because the card is mounted
+   * and unmounted per hover — there is no second render to wait for, and the browser drops it out
+   * of the top layer on removal without being asked.
+   */
+  const raise = useCallback((el: HTMLDivElement | null) => {
+    // Older browsers have no popover. They lose the layering and keep the card, which is the right
+    // way round to degrade.
+    if (!el || typeof el.showPopover !== 'function' || el.matches(':popover-open')) return;
+    try {
+      el.showPopover();
+    } catch {
+      // A card that cannot be promoted still renders where the cursor is; only the stacking is lost.
+    }
+  }, []);
 
   useEffect(() => {
     // A touch screen has no hover, so the pointer that opened this cannot close it again.
@@ -44,7 +60,9 @@ export function RowHint({ hint }: { hint: Hint }) {
    */
   return createPortal(
     <div
-      className="pointer-events-none fixed z-50 w-[280px]"
+      ref={raise}
+      popover="manual"
+      className="hint-layer pointer-events-none z-50 w-[280px]"
       style={{
         left: flipX ? hint.x - 292 : hint.x + 16,
         top: flipY ? hint.y - 212 : hint.y + 16,
