@@ -15,15 +15,13 @@ import { HeroAnnotations } from './HeroAnnotations.tsx';
  *     an image so it can never drift out of step with the token that defines it.
  *   - **the mascot**, coming down and stopping on it.
  *
- * The mascot's paws rest on the bottom edge of its own crop, which is the whole reason it works
- * here: the bar goes directly under that edge and there is no gap to explain. The pose is the one
- * it already has in the seabed scene, so it is the same creature doing the same thing.
+ * The drawing is kept whole and the offset is measured instead. Cutting the file at the body's own
+ * bottom edge was the first attempt and it took the paddle and the ball with it; below the body
+ * there is 16.6% of soft glow, so the image is pushed down by exactly that and the bar lands under
+ * the creature rather than under its shadow.
  *
- * Worth saying plainly, because it is the one thing to redirect if it reads wrong: the thing that
- * stops is now our own mascot rather than an anonymous fill. It reads as "not even this one gets
- * below the floor", which is true and is the argument. If it should instead read as the *agent*
- * being refused, the falling element wants to be a price marker in the refusal red and the mascot
- * wants to be standing on the bar watching it — a different drawing, same two parts.
+ * The pose is a return rather than a landing, which is the reading this component's name already
+ * had: something arrives at the floor and is sent back. Nothing gets under it.
  */
 
 /** Where the floor sits in the frame. The drawing is built around it, not the other way round. */
@@ -47,10 +45,16 @@ export function HeroStrike() {
        */}
       <img
         src="/hero-mascot.webp"
-        alt="A creature descends and comes to rest on the floor, and goes no further"
+        alt="A creature meets the floor and returns what came down at it"
         draggable={false}
-        className="hero-strike absolute left-1/2 w-[46%] -translate-x-1/2 select-none"
-        style={{ bottom: `${100 - FLOOR_TOP}%` }}
+        className="hero-strike absolute left-1/2 w-[52%] select-none"
+        /*
+         * Two shifts, one transform. The half-width one centres it; the 16.6% one is measured off
+         * the artwork — below the drawn body there is that much soft glow, and anchoring the file's
+         * bottom edge to the bar would have floated the creature clear of the thing it is meeting.
+         * A percentage on `translateY` is of the image's own height, so it stays true at every size.
+         */
+        style={{ bottom: `${100 - FLOOR_TOP}%`, transform: 'translate(-50%, 16.6%)' }}
       />
 
       <HeroAnnotations />

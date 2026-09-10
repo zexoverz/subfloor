@@ -870,24 +870,30 @@ body {
  * effect the product happens to have.
  */
 .hero-scrim {
-  border-radius: 22px;
   /*
-   * 90/94 rather than 82/88, and the number is measured against the worst ground the panel can
-   * land on: the water layer's brightest point with the rays screened over it, rgb(27,147,235). At
-   * 82 the smallest type came to 4.43 and the refusal red to 4.29. 88 is the first step that clears
-   * 4.5 and 90 is what is set, for the margin.
+   * A wash with no edge, which is not the same as no wash.
    *
-   * It is a fill rather than a brightness filter now, so it is measured as a composite — the old
-   * scrim darkened whatever was behind it, this one covers it, and those are different sums.
+   * The panel had to go — a rounded rectangle with a border and a drop shadow in the middle of an
+   * illustration reads as a dialog that wandered onto the page. What could not go is the ground
+   * under the words: over the water layer's brightest point, rgb(27,147,235), the headline measures
+   * 2.87 and the standfirst 1.36. There is no typographic trick that recovers that.
+   *
+   * So the fill stays and the edge goes. Radial, densest under the first line and gone before it
+   * reaches anything, so there is no boundary anywhere for the eye to read as a frame — and no
+   * blur, because a backdrop filter ends exactly where its box ends and that boundary is the
+   * container all over again.
+   *
+   * 94% at the centre: it puts the smallest type on #052b54, where muted reads 5.89 and ink 12.46.
+   * The eyebrow moved from faint to muted for this — faint lands at 4.63 and that is too close to
+   * the line to spend on the first thing anyone reads.
    */
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--c-surface-top) 90%, transparent),
-    color-mix(in srgb, var(--c-surface-foot) 94%, transparent)
+  background: radial-gradient(
+    115% 95% at 32% 42%,
+    color-mix(in srgb, var(--c-surface-top) 94%, transparent) 0%,
+    color-mix(in srgb, var(--c-surface-top) 88%, transparent) 42%,
+    color-mix(in srgb, var(--c-surface-foot) 55%, transparent) 72%,
+    transparent 100%
   );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--c-shadow);
 }
 
 

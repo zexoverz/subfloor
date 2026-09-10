@@ -56,14 +56,18 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
         <div className="relative order-1 md:order-2">
           {/*
-            * The panel the headline sits on. Inset tight to the words rather than bleeding well
-            * past them, because it has an edge now and an edge that lands nowhere in particular
-            * reads as a mistake.
+            * The ground under the headline, spread well past it now rather than inset tight.
+            *
+            * The old rule was the opposite — hold it close, because an edge that lands nowhere in
+            * particular reads as a mistake. That was right while it had an edge. Without one the
+            * reasoning inverts: the fade has to finish somewhere the eye is not, so it needs room
+            * to be over before it reaches anything.
             */}
-          <div className="hero-scrim pointer-events-none absolute -inset-x-7 -inset-y-6" />
+          <div className="hero-scrim pointer-events-none absolute -inset-x-[22%] -inset-y-[42%]" />
 
           <div className="relative">
-          <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-faint uppercase">
+          {/* Muted, not faint: it is the smallest type on the page and it sits on artwork. */}
+          <p className="m-0 text-[11px] font-semibold tracking-[0.17em] text-muted uppercase">
             {copy.landing.eyebrow}
           </p>
           <h1 className="mt-3 mb-0 text-[clamp(30px,5.2vw,44px)] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">
