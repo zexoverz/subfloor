@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ExternalLink, Info, Loader2, Usb, Wallet as WalletIcon } from 'lucide-react';
 import { isAddress } from 'viem';
 import { copy } from '../copy.ts';
@@ -75,6 +75,18 @@ export function PublicAside({
    * is silent.
    */
   const [hasDevice, setHasDevice] = useState<boolean | null>(null);
+
+  /*
+   * Derived, not copied on the click.
+   *
+   * Filling the field inside the button's handler read `walletAddress` at the instant of the press
+   * and never again — so a press that happened before the connection had reported its address left
+   * the field empty and the owner staring at a box the answer was supposed to have filled. This
+   * follows the connection instead, which is what "use this wallet" means.
+   */
+  useEffect(() => {
+    if (hasDevice === false) setDevice(walletAddress ?? '');
+  }, [hasDevice, walletAddress]);
   // Empty is allowed and is a decision; wrong is not.
   const usable = (v: string) => v === '' || isAddress(v);
   /*
@@ -228,11 +240,11 @@ export function PublicAside({
                       </label>
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         {/*
-                          * Two answers, coloured by what they cost rather than by which is the
-                          * default. The device keeps the split and wears the floor's own brass; the
-                          * wallet collapses it and wears the colour this board uses for a refusal,
-                          * which is the only honest place to spend it here.
-                          */}
+                         * Two answers, coloured by what they cost rather than by which is the
+                         * default. The device keeps the split and wears the floor's own brass; the
+                         * wallet collapses it and wears the colour this board uses for a refusal,
+                         * which is the only honest place to spend it here.
+                         */}
                         {(
                           [
                             [true, copy.wallet.deviceYes, Usb, 'floor'],
@@ -241,12 +253,7 @@ export function PublicAside({
                         ).map(([answer, label, Mark, tone]) => (
                           <button
                             key={label}
-                            onClick={() => {
-                              setHasDevice(answer);
-                              // "No" is the answer that fills the field, so it fills it here rather
-                              // than leaving a box the owner has to paste their own address into.
-                              setDevice(answer ? '' : (walletAddress ?? ''));
-                            }}
+                            onClick={() => setHasDevice(answer)}
                             className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] transition-colors ${
                               hasDevice === answer
                                 ? tone === 'floor'
