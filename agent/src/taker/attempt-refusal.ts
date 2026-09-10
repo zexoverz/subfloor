@@ -43,9 +43,16 @@ export async function run(): Promise<void> {
   const order = buildOrder({ maker: vault, tokenA, tokenB, program, useAquaInsteadOfSignature: true });
   const tuple = { maker: order.maker as Address, traits: order.traits, data: order.data };
 
-  // Spending the quote token to receive WETH: the direction the hostile book prices badly for the
-  // vault, which is the direction the vault's floor has to refuse.
-  const tokenIn = quote;
+  /*
+   * Which side the taker takes.
+   *
+   * Defaults to spending the quote token, because that is the direction the guard-free book prices
+   * badly for the vault and so the direction its floor has to refuse. `SUBFLOOR_TOKEN_IN=weth` takes
+   * the other side, which matters for more than symmetry: `checkSettlement` scores both recipients
+   * against their own floors, and a tape with one direction in it has only ever exercised one of
+   * them.
+   */
+  const tokenIn = (process.env.SUBFLOOR_TOKEN_IN ?? "quote").toLowerCase() === "weth" ? weth : quote;
   const isAToB = tokenA.toLowerCase() === tokenIn.toLowerCase();
   const takerData = buildTakerData({ isAToB, isExactIn: true });
 
