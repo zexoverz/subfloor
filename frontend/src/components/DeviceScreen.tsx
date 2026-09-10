@@ -31,6 +31,9 @@ import { Hoverable } from './Hoverable.tsx';
 /** The device's answer, once it has given one. */
 export type Answer = 'approved' | 'rejected';
 
+/** `.screen-answer`'s 460ms transition plus a frame, so the card is never removed mid-travel. */
+const SLIDE = 480;
+
 /** Where the winning button started, in pixels from each edge of the panel. */
 type Seat = { top: number; left: number; right: number; bottom: number };
 
@@ -84,12 +87,21 @@ export function DeviceScreen({
   /** Measured rather than written down: the buttons are a flex row and their halves move with it. */
   const [seat, setSeat] = useState<Seat | null>(null);
   const [grown, setGrown] = useState(false);
+  /**
+   * What is on screen, which outlives the answer that put it there.
+   *
+   * Asking again clears `answer`, and unmounting on that would make the way back a disappearance.
+   * The card that grew out of Approve goes back into Approve, and only then stops existing.
+   */
+  const [shown, setShown] = useState<Answer | null>(null);
 
   useLayoutEffect(() => {
     if (!answer) {
-      setSeat(null);
       setGrown(false);
-      return;
+      // Long enough for the shrink to finish, and it must not be a `transitionend` — reduced motion
+      // removes the transition, and then the event never fires and the card never leaves.
+      const done = setTimeout(() => setShown(null), SLIDE);
+      return () => clearTimeout(done);
     }
     const p = panel.current?.getBoundingClientRect();
     const b = (answer === 'approved' ? approve : reject).current?.getBoundingClientRect();
@@ -100,25 +112,41 @@ export function DeviceScreen({
       right: p.right - b.right,
       bottom: p.bottom - b.bottom,
     });
+    setShown(answer);
     /*
      * Two frames, not one. A layout effect runs before this frame's rendering steps and so does a
      * single rAF callback — the seat would never be painted and the growth would be a jump. The
      * second frame is the first one that can see where it started from.
      */
     let inner = 0;
+    let hold: ReturnType<typeof setTimeout> | undefined;
+    let gone: ReturnType<typeof setTimeout> | undefined;
     const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => setGrown(true));
+      inner = requestAnimationFrame(() => {
+        setGrown(true);
+        /*
+         * Held half a second, then it puts itself away.
+         *
+         * The answer is a moment, not a state — leaving it over the screen meant the only way back
+         * to the rows that were signed was to ask the device all over again. Now the review is what
+         * the panel returns to, and reading what was approved costs nothing.
+         */
+        hold = setTimeout(() => {
+          setGrown(false);
+          gone = setTimeout(() => setShown(null), SLIDE);
+        }, SLIDE + 500);
+      });
     });
     return () => {
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
+      clearTimeout(hold);
+      clearTimeout(gone);
     };
   }, [answer]);
 
   const skin =
-    answer === 'approved'
-      ? { background: '#14261F', color: '#57AC8C' }
-      : { background: '#2A1614', color: '#E2705F' };
+    shown === 'approved' ? { background: '#14261F', color: '#57AC8C' } : { background: '#2A1614', color: '#E2705F' };
 
   return (
     <div
@@ -163,10 +191,10 @@ export function DeviceScreen({
       </div>
 
       {/*
-        * Below the scanlines on purpose: no z-index here, and ::after is generated last, so the
-        * answer is lit behind the same glass as the words it replaces rather than pasted on top.
-        */}
-      {answer && seat && (
+       * Below the scanlines on purpose: no z-index here, and ::after is generated last, so the
+       * answer is lit behind the same glass as the words it replaces rather than pasted on top.
+       */}
+      {shown && seat && (
         <div
           className="screen-answer tracking-[0.14em] uppercase"
           data-grown={grown || undefined}
@@ -179,8 +207,8 @@ export function DeviceScreen({
           }}
           role="status"
         >
-          {answer === 'approved' ? <Check size={16} strokeWidth={2.4} /> : <X size={16} strokeWidth={2.4} />}
-          {answer === 'approved' ? 'Approved' : 'Rejected'}
+          {shown === 'approved' ? <Check size={16} strokeWidth={2.4} /> : <X size={16} strokeWidth={2.4} />}
+          {shown === 'approved' ? 'Approved' : 'Rejected'}
         </div>
       )}
     </div>

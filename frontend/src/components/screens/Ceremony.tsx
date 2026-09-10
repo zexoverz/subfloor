@@ -63,11 +63,6 @@ export function Ceremony({
         ledger={ledger}
         // The lowering payload is not built yet; the panel refuses to sign rather than send noise.
         typedData={null}
-        payloadLine={
-          purpose === 'lower'
-            ? `FloorLowering(${pair.base}, ${pair.quote}, ${draftBps}, nonce)`
-            : 'Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)'
-        }
         standing={standing}
         scheduledAt={state.pendingLowering?.effectiveAt ?? null}
         onDone={onDone}

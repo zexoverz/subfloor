@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Usb } from 'lucide-react';
 import { copy } from '../copy.ts';
-import { Act, Ghost } from './Button.tsx';
+import { Act, Back, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead } from './Card.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
@@ -26,7 +26,6 @@ export function DeviceSign({
   rows,
   expect,
   purpose,
-  payloadLine,
   standing,
   scheduledAt,
   typedData,
@@ -45,8 +44,6 @@ export function DeviceSign({
    */
   expect?: `0x${string}` | null;
   purpose: SignPurpose;
-  /** The call being built, spelled out while the device is thinking. */
-  payloadLine: string;
   /**
    * The EIP-712 object the device is actually asked to sign.
    *
@@ -88,8 +85,15 @@ export function DeviceSign({
   return (
     <Card>
       <CardHead
-        icon={Usb}
-        left={`Ledger · ${purpose === 'lower' ? 'lower the floor' : 'authorise the agent'}`}
+        left={
+          <>
+            {/* Ahead of the card's own landmark icon, because it is navigation and the icon is a
+                label — CardHead draws `icon` first, so the chevron has to come in through `left`. */}
+            <Back onClick={onBack} />
+            <Usb size={13} strokeWidth={1.6} className="text-floor" />
+            {`Ledger · ${purpose === 'lower' ? 'lower the floor' : 'authorise the agent'}`}
+          </>
+        }
         right={stage === 'waiting' ? 'waiting for device' : stage}
       />
       <CardBody>
@@ -107,11 +111,11 @@ export function DeviceSign({
                 </p>
 
                 {/*
-                  * What the device will display, verbatim and in order, before it lights up — and
-                  * then the answer it gave, in the same place. §10 makes this the point of the
-                  * screen: the habit it teaches is "confirm only if it matches", and there is
-                  * nothing to match against if the strings are not here.
-                  */}
+                 * What the device will display, verbatim and in order, before it lights up — and
+                 * then the answer it gave, in the same place. §10 makes this the point of the
+                 * screen: the habit it teaches is "confirm only if it matches", and there is
+                 * nothing to match against if the strings are not here.
+                 */}
                 <div className="my-3">
                   <DeviceScreen
                     rows={rows}
@@ -136,85 +140,56 @@ export function DeviceSign({
                 )}
 
                 {/*
-                  * One line, and it keeps its height. A status that grows the page moves the button
-                  * under the reader's cursor at the moment they are deciding whether to press it.
-                  */}
-                <p className="serif mb-3 min-h-[3.4em] text-[14px] leading-relaxed text-muted">
-                  {stage === 'waiting' ? (
-                    <>
-                      {step ? step.replace('signer.eth.steps.', '') : payloadLine} {copy.ceremony.takeYourTime}
-                    </>
-                  ) : stage === 'signed' ? (
-                    <span className="text-settle">{copy.ceremony.signed}</span>
-                  ) : stage === 'scheduled' ? (
-                    <>
-                      {copy.ceremony.scheduled}{' '}
-                      <b className="font-mono font-semibold text-floor tabular-nums">
-                        {new Date((scheduledAt ?? 0) * 1000).toLocaleTimeString('en-US')}
-                      </b>
-                      . Until then the standing floor of{' '}
-                      <b className="font-mono font-semibold text-ink tabular-nums">{standing}</b> is what settlement
-                      uses.
-                    </>
-                  ) : stage === 'declined' ? (
-                    <>
-                      {copy.ceremony.declined} Your floor is still{' '}
-                      <b className="font-mono font-semibold text-floor tabular-nums">{standing}</b>.
-                    </>
-                  ) : (
-                    copy.ceremony.onlyIfMatches
-                  )}
-                </p>
-
-                {stage === 'signed' || stage === 'scheduled' ? (
-                  <Ghost onClick={onDone}>continue</Ghost>
-                ) : stage === 'declined' ? (
-                  <Ghost onClick={onBack}>back</Ghost>
-                ) : (
-                  <Act
-                    primary
-                    busy={stage === 'waiting'}
-                    busyLabel="awaiting approval on device"
-                    disabled={ledger.presence === 'unsupported'}
-                    onClick={async () => {
-                      setStage('waiting');
-                      // The real thing: the device renders the payload and answers. A decline and
-                      // an unreachable device are both ordinary outcomes, not errors.
-                      /*
-                       * Read the device before asking it for anything. `connect()` returns what it
-                       * read rather than only storing it — `ledger.address` here is a render behind,
-                       * so checking it would check the previous device.
-                       */
-                      const at = ledger.address ?? (await ledger.connect());
-                      setAttached(at);
-                      if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
-                        setStage('pre');
-                        return;
-                      }
-                      // `rows` is what the screen renders; this is what the device verifies. They
-                      // must describe the same thing, and only one of them can be signed.
-                      const signature = await ledger.signTypedData(typedData, setStep);
-                      if (signature) onSigned?.(signature);
-                      setStage(signature ? (scheduledAt ? 'scheduled' : 'signed') : 'declined');
-                    }}
-                  >
-                    {copy.ceremony.continue}
-                  </Act>
+                 * The one thing the screen cannot say. Approved and rejected are already drawn on it;
+                 * a delayed lowering has a time attached, and that is new information rather than the
+                 * same answer repeated in a second place.
+                 */}
+                {stage === 'scheduled' && (
+                  <p className="serif mb-3 text-[14px] leading-relaxed text-muted">
+                    {copy.ceremony.scheduled}{' '}
+                    <b className="font-mono font-semibold text-floor tabular-nums">
+                      {new Date((scheduledAt ?? 0) * 1000).toLocaleTimeString('en-US')}
+                    </b>
+                    . Until then the standing floor of{' '}
+                    <b className="font-mono font-semibold text-ink tabular-nums">{standing}</b> is what settlement
+                    uses.
+                  </p>
                 )}
 
-                {/*
-                  * No spinner beyond the button, no countdown, and nothing here cancels the
-                  * ceremony. The device is allowed to be slow, and someone comparing eight lines of
-                  * text on a small screen is not to be hurried. In development only, stand-ins for
-                  * the two answers a device gives, so the states can be built without hardware.
-                  */}
-                {import.meta.env?.DEV && stage === 'waiting' && (
-                  <div className="mt-3 flex gap-2">
-                    <Ghost onClick={() => (scheduledAt ? setStage('scheduled') : setStage('signed'))}>
-                      approved
-                    </Ghost>
-                    <Ghost onClick={() => setStage('declined')}>rejected</Ghost>
-                    <Ghost onClick={() => setStage('absent')}>no device</Ghost>
+                {answered ? (
+                  <Ghost onClick={onDone}>continue</Ghost>
+                ) : (
+                  /* Declining re-arms the same button. `back` appears beside it only then. */
+                  <div className="flex items-center gap-2">
+                    <Act
+                      primary
+                      busy={stage === 'waiting'}
+                      busyLabel={step ? step.replace('signer.eth.steps.', '') : 'awaiting approval on device'}
+                      disabled={ledger.presence === 'unsupported'}
+                      onClick={async () => {
+                        setStage('waiting');
+                        // The real thing: the device renders the payload and answers. A decline and
+                        // an unreachable device are both ordinary outcomes, not errors.
+                        /*
+                         * Read the device before asking it for anything. `connect()` returns what it
+                         * read rather than only storing it — `ledger.address` here is a render behind,
+                         * so checking it would check the previous device.
+                         */
+                        const at = ledger.address ?? (await ledger.connect());
+                        setAttached(at);
+                        if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
+                          setStage('pre');
+                          return;
+                        }
+                        // `rows` is what the screen renders; this is what the device verifies. They
+                        // must describe the same thing, and only one of them can be signed.
+                        const signature = await ledger.signTypedData(typedData, setStep);
+                        if (signature) onSigned?.(signature);
+                        setStage(signature ? (scheduledAt ? 'scheduled' : 'signed') : 'declined');
+                      }}
+                    >
+                      {copy.ceremony.continue}
+                    </Act>
                   </div>
                 )}
               </>

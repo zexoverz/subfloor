@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { copy } from '../copy.ts';
-import { Act, Ghost } from './Button.tsx';
+import { Act } from './Button.tsx';
 import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import { useLedger } from '../lib/ledger.ts';
@@ -26,10 +26,7 @@ type Stage = 'pre' | 'waiting' | 'declined' | 'signed' | 'absent';
 export function DeviceCeremony({
   rows,
   expect,
-  payloadLine,
-  standingLine,
   onDone,
-  onBack,
 }: {
   /** Exactly what the device will render, in its order. */
   rows: [string, string][];
@@ -42,11 +39,7 @@ export function DeviceCeremony({
    * A signature is cheap to produce and expensive to discover was worthless.
    */
   expect?: `0x${string}` | null;
-  payloadLine: string;
-  /** What remains true if they decline — the reassurance that makes rejection safe to choose. */
-  standingLine: string;
   onDone: () => void;
-  onBack?: () => void;
 }) {
   const ledger = useLedger();
   const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
@@ -58,8 +51,7 @@ export function DeviceCeremony({
    * and treating it as a match would defeat the check entirely.
    */
   const [attached, setAttached] = useState<`0x${string}` | null>(null);
-  const mismatch =
-    expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
+  const mismatch = expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
 
   return (
     <div className="grid items-start gap-5 md:grid-cols-[minmax(0,300px)_1fr]">
@@ -76,11 +68,11 @@ export function DeviceCeremony({
             </p>
 
             {/*
-              * What the device will display, verbatim and in order, before it lights up — and then
-              * the answer it gave, in the same place. It used to be a drawn screen; it is the same
-              * strings either way, and the rule §10 sets is about the strings matching rather than
-              * about the picture.
-              */}
+             * What the device will display, verbatim and in order, before it lights up — and then
+             * the answer it gave, in the same place. It used to be a drawn screen; it is the same
+             * strings either way, and the rule §10 sets is about the strings matching rather than
+             * about the picture.
+             */}
             <div className="my-3">
               <DeviceScreen
                 rows={rows}
@@ -93,37 +85,16 @@ export function DeviceCeremony({
               />
             </div>
 
-            {/*
-              * One line, four things it can say. Fixed height, because a status that changes the
-              * page's height moves the button under the reader's cursor at the exact moment they
-              * are deciding whether to press it again.
-              */}
-            <p className="serif mb-3 min-h-[3.4em] text-[13.5px] leading-relaxed text-muted">
-              {stage === 'waiting' ? (
-                <>
-                  {payloadLine} {copy.ceremony.takeYourTime}
-                </>
-              ) : stage === 'signed' ? (
-                <span className="text-settle">{copy.ceremony.signed}</span>
-              ) : stage === 'declined' ? (
-                <>
-                  {copy.ceremony.declined} {standingLine}
-                </>
-              ) : (
-                copy.ceremony.onlyIfMatches
-              )}
-            </p>
-
             {stage === 'signed' ? (
               <Act wide primary onClick={onDone}>
                 continue
               </Act>
-            ) : stage === 'declined' ? (
-              <div className="flex gap-2">
-                <Ghost onClick={() => setStage('pre')}>try again</Ghost>
-                {onBack && <Ghost onClick={onBack}>back</Ghost>}
-              </div>
             ) : (
+              /*
+               * One button, re-armed. A decline is not a different question, so it does not get a
+               * different control — "try again" beside a spent button is two things to read where
+               * the first one still says what to do.
+               */
               <Act
                 wide
                 primary
@@ -131,6 +102,8 @@ export function DeviceCeremony({
                 busyLabel="awaiting approval on device"
                 disabled={ledger.presence === 'unsupported'}
                 onClick={async () => {
+                  // Also the way back from a decline: this is what sends the answer on the screen
+                  // shrinking into the button it grew out of.
                   setStage('waiting');
                   /*
                    * Read the device before asking it for anything. `connect()` returns the address
@@ -152,9 +125,9 @@ export function DeviceCeremony({
             )}
 
             {/*
-              * Named, not just refused. "Wrong device" leaves the owner guessing which of theirs it
-              * is; the two addresses side by side answer it without them going to look.
-              */}
+             * Named, not just refused. "Wrong device" leaves the owner guessing which of theirs it
+             * is; the two addresses side by side answer it without them going to look.
+             */}
             {mismatch && (
               <p className="mt-2 text-[11.5px] leading-relaxed text-refuse">
                 {copy.ceremony.wrongDevice}
@@ -164,14 +137,6 @@ export function DeviceCeremony({
                   {copy.ceremony.registered} {expect}
                 </span>
               </p>
-            )}
-
-            {/* Stand-ins for the two answers a device gives, so the states can be built without one. */}
-            {import.meta.env?.DEV && stage === 'waiting' && (
-              <div className="mt-3 flex gap-2">
-                <Ghost onClick={() => setStage('signed')}>approved</Ghost>
-                <Ghost onClick={() => setStage('declined')}>rejected</Ghost>
-              </div>
             )}
           </>
         )}

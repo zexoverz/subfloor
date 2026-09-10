@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
 import { X } from 'lucide-react';
-import { Act, Locked } from './Button.tsx';
+import { Act, Back, Locked } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
 import { FloorHistogram } from './FloorHistogram.tsx';
 import { DeviceCeremony } from './DeviceCeremony.tsx';
@@ -77,8 +77,11 @@ export function FloorDialog({
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
-      <div className="flex items-baseline justify-between border-b border-rule bg-sunken px-5 py-3">
-        <h2 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">
+      <div className="flex items-center justify-between border-b border-rule bg-sunken px-5 py-3">
+        <h2 className="m-0 flex items-center gap-1 text-[11.5px] tracking-[0.11em] text-faint uppercase">
+          {/* The way out of the ceremony sits beside the ceremony's own title, not loose in the
+              body under it — the title is the thing it takes you back from. */}
+          {onDevice && <Back onClick={() => setOnDevice(false)} label="back to the floor" />}
           {onDevice ? copy.ceremony.willDisplay : unset ? copy.onboarding.proposedPrice : copy.floor.title}
         </h2>
         <button
@@ -100,13 +103,10 @@ export function FloorDialog({
               ['New floor', `−${bps} bps`],
               ['Binds at', `${formatPrice(price)} ${state.pair.quote}`],
             ]}
-            payloadLine={`FloorLowering(${state.pair.base}, ${state.pair.quote}, ${bps}, nonce)`}
-            standingLine={`Your floor is still ${formatPrice(floorPriceFromBps(state.reference.price, current))}.`}
             onDone={() => {
               onLower(bps);
               onClose();
             }}
-            onBack={() => setOnDevice(false)}
           />
         ) : (
         <>

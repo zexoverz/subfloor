@@ -320,7 +320,6 @@ export function SetupDialog({
                 nonce: ceremony.nonce ?? 0n,
                 expiresInDays: mandate.expiresInDays,
               })}
-              payloadLine="Mandate(delegate, app, tokens, maxAmounts, nonce, expiry)"
               standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
               onSigned={(signature) => {
                 if (!vault) return;

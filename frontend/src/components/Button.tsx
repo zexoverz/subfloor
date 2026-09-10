@@ -1,4 +1,4 @@
-import { KeyRound, Loader2 } from 'lucide-react';
+import { ChevronLeft, KeyRound, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 type Props = { children: ReactNode; onClick?: () => void; disabled?: boolean };
@@ -48,7 +48,7 @@ export function Act({
       onClick={onClick}
       disabled={disabled || busy}
       aria-disabled={rest['aria-disabled'] || undefined}
-      title={rest['aria-disabled'] ? rest.title : (busy ? busyLabel : rest.title)}
+      title={rest['aria-disabled'] ? rest.title : busy ? busyLabel : rest.title}
       // The words still exist for anyone who cannot see the spinner turn.
       aria-busy={busy || undefined}
       aria-label={busy ? busyLabel : undefined}
@@ -78,7 +78,12 @@ export function Act({
  * `weakening` turns it red. Lowering a floor is the one press on this board that leaves the owner
  * with less protection than before, and it should not look like every other quiet control.
  */
-export function Locked({ children, onClick, wide = false, weakening = false }: Props & { wide?: boolean; weakening?: boolean }) {
+export function Locked({
+  children,
+  onClick,
+  wide = false,
+  weakening = false,
+}: Props & { wide?: boolean; weakening?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -88,11 +93,11 @@ export function Locked({ children, onClick, wide = false, weakening = false }: P
     >
       <span className={`flex items-center gap-2 ${wide ? 'justify-center' : ''}`}>
         {/*
-          * The glyph is the device, and its colour is what the press does. Cyan where the device is
-          * simply required; red where the press weakens the guarantee, which is the only action on
-          * this board that does — and a red key is a truer warning than a red word, because it is
-          * the key itself that authorises the weakening.
-          */}
+         * The glyph is the device, and its colour is what the press does. Cyan where the device is
+         * simply required; red where the press weakens the guarantee, which is the only action on
+         * this board that does — and a red key is a truer warning than a red word, because it is
+         * the key itself that authorises the weakening.
+         */}
         <KeyRound size={13} strokeWidth={1.7} className={weakening ? '' : 'text-floor'} />
         {children}
       </span>
@@ -105,6 +110,27 @@ export function Locked({ children, onClick, wide = false, weakening = false }: P
  * and the label carries it everywhere else, which is the only honest way to drop the words — a
  * button whose text is gone and whose name is gone too is a button nobody can find.
  */
+/**
+ * The way out, as a chevron.
+ *
+ * It used to be the word "back" in a row with the affirmative button, and only after a decline —
+ * which made leaving look like one of two answers to the question, and made it unavailable to
+ * anyone who simply changed their mind before asking. A chevron in the corner is the shape every
+ * other application uses for this, and it can stay there the whole time without competing.
+ */
+export function Back({ onClick, label = 'back' }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="-ml-1.5 flex cursor-pointer items-center rounded-lg p-1 text-faint transition-colors hover:text-ink"
+    >
+      <ChevronLeft size={15} strokeWidth={2} />
+    </button>
+  );
+}
+
 export function Ghost({ children, onClick, label }: Props & { label?: string }) {
   return (
     <button
@@ -143,9 +169,7 @@ export function Stepper({
       >
         −
       </button>
-      <span className="grid min-w-[78px] place-items-center border-x border-rule font-semibold">
-        {format(value)}
-      </span>
+      <span className="grid min-w-[78px] place-items-center border-x border-rule font-semibold">{format(value)}</span>
       <button
         onClick={() => onChange(Math.min(max, value + step))}
         aria-label="riskier"
