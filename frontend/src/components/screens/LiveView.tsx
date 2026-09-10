@@ -47,6 +47,7 @@ export function LiveView({
   onRaise,
   onConnect,
   onWithdraw,
+  onMoved,
   onCreateVault,
   creatingVault,
   creatingStep,
@@ -87,6 +88,8 @@ export function LiveView({
   onConnect: () => void;
   /** Owner-only: the vault's withdraw, which is onlyOwner on chain too. */
   onWithdraw: () => void;
+  /** Re-read the balances after money has moved in either direction. */
+  onMoved: () => void;
   onCreateVault: (setup: InitialSetup) => void;
   creatingVault: boolean;
   /** What the deploy is doing: one call sets six things and it is slower than it looks. */
@@ -299,6 +302,7 @@ export function LiveView({
                 holdings={walletHoldings}
                 inventory={inventory}
                 onWithdraw={onWithdraw}
+                onMoved={onMoved}
               />
 
               <p className="mt-4 flex items-center gap-2 text-[11px] text-faint">

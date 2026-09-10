@@ -29,6 +29,7 @@ export function TopUp({
   holdings,
   inventory,
   onWithdraw,
+  onMoved,
 }: {
   vault: Address | null;
   owner: Address | null;
@@ -37,6 +38,16 @@ export function TopUp({
   /** The *vault's* balances: what leaving would move, and whether there is anything to leave. */
   inventory: Holding[];
   onWithdraw: () => void;
+  /**
+   * Re-read the balances, because a transfer that lands changes two of them and nothing else says
+   * so.
+   *
+   * Both numbers on this card are read once and then cached until something asks again. Sending
+   * tokens in and drawing from the faucet both moved money and asked nothing — so the card went on
+   * showing what was true before the press, which reads as the transfer having failed. Withdrawing
+   * already did this; these two were the ones that did not.
+   */
+  onMoved: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -142,7 +153,7 @@ export function TopUp({
               onChange={(v) => setAmounts((a) => ({ ...a, [h.symbol]: v }))}
               {...(faucet.available && h.symbol === USDC_SYMBOL
                 ? {
-                    onMarkPress: () => void faucet.draw(),
+                    onMarkPress: () => void faucet.draw().then(onMoved),
                     markBusy: faucet.drawing,
                     markLabel: copy.wallet.drawTokens,
                   }
@@ -160,7 +171,10 @@ export function TopUp({
                   .send(ACTIVE_TOKENS.map((t) => ({ ...t, amount: amounts[t.symbol] ?? '0' })))
                   // Closed on the way out rather than on the click: the sheet is where the progress
                   // is reported, so it has to outlive the transaction it started.
-                  .then(() => setOpen(false))
+                  .then(() => {
+                    setOpen(false);
+                    onMoved();
+                  })
               }
               disabled={!hasAmount || !vault}
               busy={fund.sending}

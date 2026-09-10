@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
 import { useOwnVault } from './lib/vault.ts';
@@ -75,6 +75,16 @@ export default function App() {
   const floorWrite = useFloor(vault);
 
   const ceremony = useCeremony(wallet.address, vault);
+
+  /*
+   * Read the two balances again, because a transfer that lands changes them and nothing else says
+   * so. The vault's inventory comes from the ceremony read, the wallet's from the wallet — both are
+   * cached until asked, so every path that moves money has to ask.
+   */
+  const reread = useCallback(() => {
+    ceremony.refresh();
+    wallet.refresh();
+  }, [ceremony.refresh, wallet.refresh]);
   const calibration = useCalibration(index.tape);
   /*
    * The tape is the index's, or it is nothing.
@@ -163,7 +173,7 @@ export default function App() {
       wide={screen === 'live'}
     >
       {panic.stage === 'stopped' ? (
-        <StoppedState state={state} onWithdraw={() => void panic.withdraw()} />
+        <StoppedState state={state} onWithdraw={() => void panic.withdraw().then(reread)} />
       ) : (
         <>
       {screen === 'live' && (
@@ -189,12 +199,8 @@ export default function App() {
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
           onConnect={wallet.connect}
-          onWithdraw={() =>
-            void panic.withdraw().then(() => {
-              ceremony.refresh();
-              wallet.refresh();
-            })
-          }
+          onWithdraw={() => void panic.withdraw().then(reread)}
+          onMoved={reread}
           onCreateVault={own.create}
           creatingVault={own.creating}
           creatingStep={own.step}
