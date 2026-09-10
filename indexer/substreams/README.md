@@ -1,6 +1,6 @@
 # subfloor_refusals
 
-Fills that a recipient-keyed price floor turned away, on Base.
+Fills that a recipient-keyed price floor turned away, on Base Sepolia.
 
 The floor is checked inside `swap()` on a forked 1inch SwapVM router, between taker validation and
 the transfers. When a fill would settle below it, the transaction reverts with
