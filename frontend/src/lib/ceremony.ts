@@ -44,8 +44,23 @@ export type CeremonyState = {
   isOwner: boolean | null;
   /** vault.delegate(), for the screens that must show the address rather than a nickname. */
   delegate: Address | null;
-  /** The registered device, so the field can show what is set rather than an empty box. */
+  /**
+   * The registered device — but only when *both* slots hold one, which is what the setup step
+   * checks. For asking a key to sign, use the one the contract will actually check.
+   */
   guardian: Address | null;
+  /**
+   * `AquaGuardVault.guardian()`. This is the key a **mandate** is verified against:
+   * `_consumeMandate` recovers a signer and compares it to this, and to nothing else.
+   */
+  vaultGuardian: Address | null;
+  /**
+   * `FloorRegistry.guardian(vault)`. This is the key a **lowering** is verified against, and the
+   * one whose slot is write-once. Conflating the two was a real bug: a vault with only one of them
+   * set reported no guardian at all, so every ceremony led with the device even where the wallet
+   * was the key that would be checked.
+   */
+  registryGuardian: Address | null;
   /**
    * Whether the *registry's* slot for this vault is already taken, which is a different question
    * from whether a device is set.
@@ -101,6 +116,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
+  const [vaultGuardian, setVaultGuardian] = useState<Address | null>(null);
+  const [registryGuardianAddr, setRegistryGuardianAddr] = useState<Address | null>(null);
   const [registryGuardianSet, setRegistryGuardianSet] = useState(false);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
@@ -158,6 +175,9 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
         const regGuardian = registryGuardian as Address;
         const zero = '0x0000000000000000000000000000000000000000';
         setGuardian(vaultGuardian !== zero && regGuardian !== zero ? vaultGuardian : null);
+        // Kept apart as well as together: each ceremony must ask the key its own contract checks.
+        setVaultGuardian(vaultGuardian === zero ? null : vaultGuardian);
+        setRegistryGuardianAddr(regGuardian === zero ? null : regGuardian);
         setRegistryGuardianSet(regGuardian !== zero);
         // A floor is only real when both directions have one. One side covered is an agent that
         // can still sell the other way at any price.
@@ -254,6 +274,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     delegate,
     guardian,
+    vaultGuardian,
+    registryGuardian: registryGuardianAddr,
     registryGuardianSet,
     floor,
     feed,

@@ -134,8 +134,14 @@ export function MandateStrip({
         </div>
 
         <div className="p-5">
+          {/*
+            * `_consumeMandate` recovers a signer and compares it to the *vault's* guardian and to
+            * nothing else. The registry's is the key a lowering is checked against, and asking the
+            * wrong one is how a ceremony leads with hardware where the wallet is what will be
+            * checked — or worse, produces a signature the vault refuses.
+            */}
           <DeviceSign
-            expect={state.guardian ?? null}
+            expect={state.vaultGuardian ?? null}
             wallet={wallet}
             ledger={ledger}
             purpose="mandate"

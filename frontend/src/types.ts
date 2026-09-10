@@ -193,6 +193,16 @@ export type VaultState = {
   delegate: `0x${string}` | null;
   /** The device the registry has on file, so a ceremony can check the one in the owner's hand. */
   guardian?: `0x${string}` | null;
+  /**
+   * The two keys, kept apart, because two different contracts check two different ones.
+   *
+   * `AquaGuardVault.guardian` verifies a **mandate**; `FloorRegistry.guardian(vault)` verifies a
+   * **lowering** and is the slot that is write-once. `guardian` above is the conflation of the two
+   * and is only true when both hold the same key — which is what the setup check wants and what a
+   * ceremony must never ask, because a vault with one of them set reported no guardian at all.
+   */
+  vaultGuardian?: `0x${string}` | null;
+  registryGuardian?: `0x${string}` | null;
   fuzz: { programs: number; settledBelowFloor: number };
   addresses: Addresses;
 };

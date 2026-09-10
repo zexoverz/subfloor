@@ -61,7 +61,7 @@ export function Ceremony({
   return (
     <>
       <DeviceSign
-              expect={state.guardian ?? null}
+              expect={state.registryGuardian ?? null}
         rows={rows}
         purpose={purpose}
         ledger={ledger}

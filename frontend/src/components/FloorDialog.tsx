@@ -99,7 +99,7 @@ export function FloorDialog({
       <div className="p-5">
         {onDevice ? (
           <DeviceCeremony
-            expect={state.guardian ?? null}
+            expect={state.registryGuardian ?? null}
             wallet={wallet}
             rows={[
               ['Action', 'Lower price floor'],
