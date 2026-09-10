@@ -389,7 +389,8 @@ The fix scales the answer to `10 ** (18 + tokenOutDecimals - tokenInDecimals)`, 
 eighteen-and-eighteen pair is the original instruction unchanged. It is in our fork with an
 end-to-end test on an 18/6 book, written up as [counterexample 3](docs/counterexamples.md), and
 offered upstream as [`1inch/swap-vm#197`](https://github.com/1inch/swap-vm/pull/197) with a test on
-their own fixture, taking their suite from 797 to 803.
+their own fixture, taking their suite from 797 to 803. The full write-up, including what was already
+known and what was not, is in [`docs/upstream-contributions.md`](docs/upstream-contributions.md).
 
 That counterexample is the one worth reading, because it is the one the floor does **not** catch. A
 floor bounds how bad a fill can be; it does not make a wrong price right. Anything that treats a
