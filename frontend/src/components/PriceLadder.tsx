@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
 import { Tide } from './Tide.tsx';
+import { PanelPattern } from './SeaTexture.tsx';
 import { formatPrice } from '../lib/rate.ts';
 
 /**
@@ -50,6 +51,35 @@ export function PriceLadder() {
         * bands reach #04425b and `text-faint` falls to 3.54. The axis labels down the left are
         * faint. See Tide.
         */}
+      {/* The same drawing the "what it does" cards sit on, bounded to this panel. */}
+      <PanelPattern />
+
+      {/*
+        * The reef behind the top half, the same picture and the same treatment as the agent card's.
+        *
+        * Masked rather than dimmed with a colour over it: the panel is a flat surface here but the
+        * agent card's is a gradient, and painting anything over the image to hide it leaves a
+        * rectangle of the wrong shade halfway down. A mask removes the image and lets the panel be
+        * the panel.
+        *
+        * 0.09 rather than the agent card's 0.12, and the difference is the ground. That card's foot
+        * is darker; this one sits on `--c-surface`, where the artwork's brightest pixel — the
+        * anglerfish's lantern — composites to #182d48 at this opacity. `text-faint` reads 4.54
+        * there, and the three labels in the right-hand column are faint. At 0.12 they fell to 4.13.
+        */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 overflow-hidden" aria-hidden>
+        <img
+          src="/agent-banner.webp"
+          alt=""
+          draggable={false}
+          className="h-full w-full origin-top scale-[1.02] object-cover object-center opacity-[0.09] select-none"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
+          }}
+        />
+      </div>
+
       <Tide height={72} depth={0.5} />
 
       <div className="relative border-b border-rule p-6 md:border-r md:border-b-0">
