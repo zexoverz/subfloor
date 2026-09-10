@@ -29,6 +29,7 @@ export const REVERT_REASONS: Record<string, string> = {
   "0x771946d9": "ReferenceAlreadySet", // ReferenceAlreadySet(address,address,address)
   "0x89051165": "RenounceDisabled", // RenounceDisabled()
   "0x027e4c46": "SettledBelowFloor", // SettledBelowFloor(address,address,address,uint256,uint256)
+  "0xc4679dec": "SetupLengthMismatch", // SetupLengthMismatch()
   "0xcd21db4f": "SignatureExpired", // SignatureExpired(uint256)
   "0x50ee0156": "StaleReference", // StaleReference(address,address,uint256,uint256)
   "0xc7d0d7fb": "TokenOutsideMandate", // TokenOutsideMandate(address)
