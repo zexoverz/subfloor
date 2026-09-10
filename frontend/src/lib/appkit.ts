@@ -19,6 +19,22 @@ let started: { modal: ReturnType<typeof createAppKit>; config: Config } | undefi
 export function startAppKit() {
   if (started) return started;
 
+  /*
+   * Fail closed, and say which build is at fault.
+   *
+   * Vite bakes this in, so an id missing here is missing from a file the browser already
+   * downloaded — there is no runtime to recover in. AppKit accepts the empty string and builds a
+   * modal that can never reach the relay, so the button opened nothing and reported nothing, which
+   * is exactly what shipped: the Docker build passed no VITE_ vars at all and nobody found out
+   * until someone pressed connect in production.
+   *
+   * A thrown error reaches the connect handler's catch and puts a sentence on screen. A wrong build
+   * that says so is a five-minute fix; a wrong build that stays quiet is the afternoon this cost.
+   */
+  if (!projectId) {
+    throw new Error('this build has no wallet project id — VITE_REOWN_PROJECT_ID was not set when it was built');
+  }
+
   // One network, and it is the one the contracts are on. Offering a switcher here would invite an
   // owner to connect to a chain where their vault does not exist.
   const network = import.meta.env.VITE_CHAIN === 'base' ? base : baseSepolia;
