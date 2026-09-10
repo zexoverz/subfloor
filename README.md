@@ -220,7 +220,9 @@ key, off-chain, before the fact — which is the separation working rather than 
 guardian still being the owner's key is the remaining gap, and it is named here rather than hidden:
 until a device holds it, the key that can lower the floor is a key on a machine.
 
-`docs/bring-your-own-agent.md` is what it takes to be the delegate yourself.
+`docs/e2e-walkthrough.md` walks the whole thing from a cold wallet — vault, mandate, book, and the
+floor turning a fill away — in about ten minutes. `docs/bring-your-own-agent.md` is what it takes to
+be the delegate yourself.
 
 **The router was redeployed on 8 Sep, and the reason is worth stating.** The first one could not be
 built from any commit: its runtime was 23,983 bytes where every build of the source produced ~24,3xx,
