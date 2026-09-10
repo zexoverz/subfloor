@@ -469,6 +469,7 @@ export function SetupDialog({
                     onChange={setGuardian}
                     action={{
                       label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
+                      busy: ledger.connecting,
                       /*
                        * Was a no-op: the button existed, reported nothing, and left the owner to
                        * type an address they were being told to read off the device.

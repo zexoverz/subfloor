@@ -207,6 +207,7 @@ export function PublicAside({
                       onChange={setDevice}
                       action={{
                         label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
+                        busy: ledger.connecting,
                         onClick: () => {
                           void (async () => {
                             // `connect()` returns what it read: `ledger.address` here is a render
