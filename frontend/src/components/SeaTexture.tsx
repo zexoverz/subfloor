@@ -14,6 +14,11 @@
  * to the top, and a fading gradient sized to whatever is left, pinned to the bottom. One layer
  * cannot, because a curve stretched to a section's full height stops being the curve.
  *
+ * The curve itself is blurred, in the SVG rather than in CSS — a mask cannot be blurred from
+ * outside, and a hard-filled shape gives a crisp cut, which is the thing this was meant to replace.
+ * Its path runs past both sides of the viewBox so the blur has solid shape to fade into at the left
+ * and right edges rather than fading the texture off the sides of the window.
+ *
  * **White, not cyan.** The drawing would sit more comfortably in the floor's colour and that is
  * exactly the argument against it: cyan is what the floor is everywhere on this site — the tape's
  * axis, the seabed's top edge, the owner's own number. Spending it on wallpaper is spending the one
@@ -26,11 +31,19 @@
  */
 
 /** The height the curve keeps for itself, whatever the section does. Matches SeaTrail's own box. */
-const WAVE = 224;
+const WAVE = 300;
+/**
+ * How far the lower layer reaches back up under the curve.
+ *
+ * The two mask layers overlap rather than meet. A blurred edge that ends exactly where the next
+ * layer begins puts a faint line right where the softness was supposed to be; overlapping them
+ * means the blur has nothing but solid mask underneath it to fade into.
+ */
+const LAP = 70;
 
 const CUT = {
-  down: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20224'%20preserveAspectRatio='none'><path%20d='M0%2024%20C%20260%2024%20300%20190%20560%20196%20S%20860%2060%201000%2034%20L1000%20224%20L0%20224%20Z'%20fill='%23fff'/></svg>")`,
-  up: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20224'%20preserveAspectRatio='none'><path%20d='M0%20196%20C%20260%20196%20300%2024%20560%2020%20S%20860%20150%201000%20182%20L1000%20224%20L0%20224%20Z'%20fill='%23fff'/></svg>")`,
+  down: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20300'%20preserveAspectRatio='none'><filter%20id='s'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%20color-interpolation-filters='sRGB'><feGaussianBlur%20stdDeviation='16'/></filter><path%20d='M-80%2024%20C%20260%2024%20300%20190%20560%20196%20S%20860%2060%201080%2034%20L1080%20400%20L-80%20400%20Z'%20fill='%23fff'%20filter='url%28%23s%29'/></svg>")`,
+  up: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20300'%20preserveAspectRatio='none'><filter%20id='s'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%20color-interpolation-filters='sRGB'><feGaussianBlur%20stdDeviation='16'/></filter><path%20d='M-80%20196%20C%20260%20196%20300%2024%20560%2020%20S%20860%20150%201080%20182%20L1080%20400%20L-80%20400%20Z'%20fill='%23fff'%20filter='url%28%23s%29'/></svg>")`,
 } as const;
 
 export function SeaTexture({
@@ -42,7 +55,7 @@ export function SeaTexture({
   cut?: keyof typeof CUT;
 }) {
   const mask = `${CUT[cut]}, linear-gradient(to bottom, black 0%, black 74%, transparent 100%)`;
-  const size = `100% ${WAVE}px, 100% calc(100% - ${WAVE}px)`;
+  const size = `100% ${WAVE}px, 100% calc(100% - ${WAVE - LAP}px)`;
 
   return (
     <div
