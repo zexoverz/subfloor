@@ -97,7 +97,10 @@ export default function App() {
   const withHoldings = ceremony.inventory ? { ...indexed, inventory: ceremony.inventory } : indexed;
   const withDelegate = ceremony.delegate ? { ...withHoldings, delegate: ceremony.delegate } : withHoldings;
   // The registry's answer wins over the fixture's, including when the answer is "nothing is set".
-  const withFloor = ceremony.floor ? { ...withDelegate, floor: ceremony.floor } : withDelegate;
+  // The registered device, so a ceremony can compare it with the one actually attached rather
+  // than producing a signature the chain will refuse.
+  const withGuardian = ceremony.guardian ? { ...withDelegate, guardian: ceremony.guardian } : withDelegate;
+  const withFloor = ceremony.floor ? { ...withGuardian, floor: ceremony.floor } : withGuardian;
   const withFeed = ceremony.feed
     ? { ...withFloor, reference: { ...withFloor.reference, feed: ceremony.feed } }
     : withFloor;

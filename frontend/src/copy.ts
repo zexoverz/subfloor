@@ -537,6 +537,9 @@ export const copy = {
 
   ceremony: {
     willDisplay: 'your device will display',
+    wrongDevice: 'this is not the device registered for this vault — a signature from it would be refused on chain',
+    attached: 'attached',
+    registered: 'registered',
     onlyIfMatches: 'confirm on the device only if it matches',
     continue: 'CONTINUE ON DEVICE',
     waiting: 'waiting for your device',

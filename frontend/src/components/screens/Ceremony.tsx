@@ -57,6 +57,7 @@ export function Ceremony({
   return (
     <>
       <DeviceSign
+              expect={state.guardian ?? null}
         rows={rows}
         purpose={purpose}
         ledger={ledger}

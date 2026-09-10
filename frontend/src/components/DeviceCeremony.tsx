@@ -19,6 +19,7 @@ type Stage = 'pre' | 'waiting' | 'declined' | 'signed' | 'absent';
 
 export function DeviceCeremony({
   rows,
+  expect,
   payloadLine,
   standingLine,
   onDone,
@@ -26,6 +27,15 @@ export function DeviceCeremony({
 }: {
   /** Exactly what the device will render, in its order. */
   rows: [string, string][];
+  /**
+   * The device the registry has on file for this vault, when there is one.
+   *
+   * Checked before anything is signed, because a signature from the wrong Ledger is not a failure
+   * the owner finds out about here — it is a transaction that reverts later, or a mandate the vault
+   * will not honour, and either way the moment to catch it is while the device is in their hand.
+   * A signature is cheap to produce and expensive to discover was worthless.
+   */
+  expect?: `0x${string}` | null;
   payloadLine: string;
   /** What remains true if they decline — the reassurance that makes rejection safe to choose. */
   standingLine: string;
@@ -34,6 +44,16 @@ export function DeviceCeremony({
 }) {
   const ledger = useLedger();
   const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
+  /**
+   * Which device is actually attached, once it has been asked.
+   *
+   * Null until the read happens — and null is not "the wrong one". Everything below distinguishes
+   * the three states, because treating "not asked yet" as a mismatch would refuse a correct device
+   * and treating it as a match would defeat the check entirely.
+   */
+  const [attached, setAttached] = useState<`0x${string}` | null>(null);
+  const mismatch =
+    expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
 
   return (
     <div className="grid items-start gap-5 md:grid-cols-[minmax(0,300px)_1fr]">
@@ -69,14 +89,35 @@ export function DeviceCeremony({
               primary
               disabled={ledger.presence === 'unsupported'}
               onClick={async () => {
+                /*
+                 * Read the device before asking it for anything. `connect()` returns the address it
+                 * read rather than only storing it, because the state from this render is a render
+                 * behind — reading `ledger.address` here would check the previous device.
+                 */
+                const at = ledger.address ?? (await ledger.connect());
+                setAttached(at);
+                if (expect && at && at.toLowerCase() !== expect.toLowerCase()) return;
                 setStage('waiting');
-                if (!ledger.address) await ledger.connect();
                 const signature = await ledger.signTypedData({ rows });
                 setStage(signature ? 'signed' : 'declined');
               }}
             >
               {copy.ceremony.continue}
             </Act>
+            {/*
+              * Named, not just refused. "Wrong device" leaves the owner guessing which of theirs it
+              * is; the two addresses side by side answer it without them going to look.
+              */}
+            {mismatch && (
+              <p className="mt-2 text-[11.5px] leading-relaxed text-refuse">
+                {copy.ceremony.wrongDevice}
+                <span className="t-num mt-1 block text-faint">
+                  {copy.ceremony.attached} {attached}
+                  <br />
+                  {copy.ceremony.registered} {expect}
+                </span>
+              </p>
+            )}
             <p className="mt-2 text-[11.5px] text-faint">{copy.ceremony.onlyIfMatches}</p>
           </>
         )}

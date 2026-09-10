@@ -304,6 +304,7 @@ export function SetupDialog({
             </>
           ) : signing ? (
             <DeviceSign
+              expect={state.guardian ?? null}
               rows={[
                 ['Action', 'Authorise agent'],
                 ['Delegate', delegate || mandate.delegateLabel],

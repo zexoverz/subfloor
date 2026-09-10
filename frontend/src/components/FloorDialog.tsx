@@ -93,6 +93,7 @@ export function FloorDialog({
       <div className="p-5">
         {onDevice ? (
           <DeviceCeremony
+            expect={state.guardian ?? null}
             rows={[
               ['Action', 'Lower price floor'],
               ['Pair', `${state.pair.base} / ${state.pair.quote}`],

@@ -191,6 +191,8 @@ export type VaultState = {
   mandate: Mandate;
   /** vault.delegate(). Shown in full, never as a nickname — see copy.wallet.agentAddressHint. */
   delegate: `0x${string}` | null;
+  /** The device the registry has on file, so a ceremony can check the one in the owner's hand. */
+  guardian?: `0x${string}` | null;
   fuzz: { programs: number; settledBelowFloor: number };
   addresses: Addresses;
 };

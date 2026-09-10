@@ -24,6 +24,7 @@ type Stage = 'pre' | 'waiting' | 'signed' | 'declined' | 'absent' | 'scheduled';
  */
 export function DeviceSign({
   rows,
+  expect,
   purpose,
   payloadLine,
   standing,
@@ -35,6 +36,14 @@ export function DeviceSign({
   onBack,
 }: {
   rows: [string, string][];
+  /**
+   * The device the registry has on file, when there is one.
+   *
+   * A mandate signed by the wrong Ledger is not refused here — it is a signature the vault will not
+   * honour, discovered the first time the agent tries to ship. The moment to catch that is while
+   * the device is still in the owner's hand.
+   */
+  expect?: `0x${string}` | null;
   purpose: SignPurpose;
   /** The call being built, spelled out while the device is thinking. */
   payloadLine: string;
@@ -68,6 +77,9 @@ export function DeviceSign({
   // Starts at 'pre' unless the browser cannot speak to a device at all, which is worth saying to
   // someone who has already completed a form.
   const [stage, setStage] = useState<Stage>(ledger.presence === 'unsupported' ? 'absent' : 'pre');
+  /** Which device is attached, once asked. Null is "not asked", never "the wrong one". */
+  const [attached, setAttached] = useState<`0x${string}` | null>(null);
+  const mismatch = expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
   /** The kit's own step name, so a wait says what it is waiting on. */
   const [step, setStep] = useState<string | null>(null);
 
@@ -97,6 +109,16 @@ export function DeviceSign({
                 <div className="my-3 text-[11.5px] leading-[1.9] text-muted">
                   <DeviceScreen rows={rows} waiting={false} />
                 </div>
+                {mismatch && (
+                  <p className="mb-3 text-[11.5px] leading-relaxed text-refuse">
+                    {copy.ceremony.wrongDevice}
+                    <span className="t-num mt-1 block text-faint">
+                      {copy.ceremony.attached} {attached}
+                      <br />
+                      {copy.ceremony.registered} {expect}
+                    </span>
+                  </p>
+                )}
                 <Note className="mb-3">{copy.ceremony.onlyIfMatches}</Note>
                 <p className="mb-3 text-[11.5px] text-faint">
                   {ledger.presence === 'paired' ? (
@@ -115,7 +137,17 @@ export function DeviceSign({
                     setStage('waiting');
                     // The real thing: the device renders the payload and answers. A decline and
                     // an unreachable device are both ordinary outcomes, not errors.
-                    if (!ledger.address) await ledger.connect();
+                    /*
+                     * Read the device before asking it for anything. `connect()` returns what it
+                     * read rather than only storing it — `ledger.address` here is a render behind,
+                     * so checking it would check the previous device.
+                     */
+                    const at = ledger.address ?? (await ledger.connect());
+                    setAttached(at);
+                    if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
+                      setStage('pre');
+                      return;
+                    }
                     // `rows` is what the screen renders; this is what the device verifies. They
                     // must describe the same thing, and only one of them can be signed.
                     const signature = await ledger.signTypedData(typedData, setStep);
