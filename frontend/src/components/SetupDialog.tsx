@@ -14,7 +14,6 @@ import { DeviceSign } from './DeviceSign.tsx';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import { buildMandate } from '../lib/mandate.ts';
 import { saveMandate } from '../lib/mandateStore.ts';
-import { Toasts } from './Toasts.tsx';
 import { useLedger } from '../lib/ledger.ts';
 import { withTransition } from '../lib/transition.ts';
 // Lazy, like every other heavy thing here: a WebGL library is not something a visitor who never
@@ -548,7 +547,6 @@ export function SetupDialog({
       </div>
       {/* Inside the sheet, because a modal dialog is in the top layer and a toast painted
           outside it cannot rise above it however high its z-index goes. */}
-      <Toasts />
     </dialog>
   );
 }

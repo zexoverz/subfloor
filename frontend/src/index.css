@@ -926,6 +926,33 @@ body:has(dialog[open]) {
   overflow: hidden;
 }
 
+/*
+ * The popover that carries the toasts. Everything a popover is by default — a bordered, padded,
+ * centred box with a backdrop — is wrong here; it is a transparent pane whose only job is to be in
+ * the top layer.
+ */
+.toast-layer {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  /* The pane covers the screen, so it must not eat clicks. The toasts inside take their own back. */
+  pointer-events: none;
+}
+
+.toast-layer::backdrop {
+  background: transparent;
+}
+
+.toast-layer > * {
+  pointer-events: auto;
+}
+
 /* A fixed dark scrim. Mixing from --c-ink inverted with the theme: on the dark palette ink is
    nearly white, so the backdrop came out as a pale wash over a dark page. */
 /* Scrolls without drawing a track. Used by the panel inside a fixed-height sheet as well as the

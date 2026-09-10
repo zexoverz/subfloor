@@ -219,8 +219,9 @@ export default function App() {
       )}
         </>
       )}
-      {/* The sheet carries its own while it is open; see SetupDialog. */}
-      {!sheetOpen && <Toasts />}
+      {/* One container, in the top layer — see Toasts. It no longer has to be hidden for a
+          sheet to be able to raise one. */}
+      <Toasts />
     </AppShell>
   );
 }
