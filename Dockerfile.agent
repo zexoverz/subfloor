@@ -1,0 +1,19 @@
+# The policy loop, as its own service.
+#
+# Same shape as Dockerfile.taker and separate from it for the same reason: one process, one job.
+# This one holds no key at all — it reads the index, decides, and composes. Shipping is a separate
+# explicit step by whoever holds the delegate key, which is why there is nothing to leak here.
+#
+# Node's own type stripping, so what runs here is the TypeScript the tests exercise.
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY agent/package.json ./agent/package.json
+RUN cd agent && npm install --omit=dev --no-audit --no-fund --ignore-scripts
+
+COPY agent/src ./agent/src
+COPY sdk/src ./sdk/src
+
+# No listener, no healthcheck path. Railway watches the process.
+CMD ["node", "--experimental-strip-types", "agent/src/policy/loop.ts"]
