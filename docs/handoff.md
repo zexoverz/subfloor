@@ -1,7 +1,8 @@
 # Handoff
 
-Written 10 Sep 2026, end of session `07fe383f-8343-418d-a0ca-58851e185406`. Submission is
-**13 Sep 2026, 16:00 UTC**.
+Written 10 Sep 2026, end of session `07fe383f-8343-418d-a0ca-58851e185406`, and extended the same
+evening from session `136b9b22-a62a-47ed-bea4-91695b1601ed`, which walked the end-to-end from the
+interface — see §8b. Submission is **13 Sep 2026, 16:00 UTC**.
 
 Everything here was verified against the running system on 10 Sep rather than recalled. Where a
 number appears, the way to re-check it appears next to it. Where something is unfinished, it says so.
@@ -135,8 +136,33 @@ Both routers are Sourcify `exact_match`. Re-check:
 
 | What | Where |
 |---|---|
-| App and API | `https://web-production-37798.up.railway.app` |
+| App and API | `https://subfloor.xyz` (custom domain on the Railway `web` service, port 8080) |
+| Same, direct | `https://web-production-37798.up.railway.app` |
 | Subgraph | `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0` |
+
+Three Railway services in project `subfloor`, all in `production`:
+
+| Service | What it runs | Holds a key? |
+|---|---|---|
+| `web` | the app and every `/api/*` endpoint | no |
+| `taker` | the taker bot | yes, the taker's |
+| `agent` | the policy loop, added 10 Sep | **no** |
+
+The `agent` service reads the index, decides, composes, and **prints** the ship command. It does not
+ship, so there is no key in that image — `configFromEnv` requires only `SUBFLOOR_SUBGRAPH`. Shipping
+is a separate explicit step by whoever holds the delegate key, which is
+`docs/bring-your-own-agent.md`'s design and not an omission.
+
+`POLICY_INTERVAL_MS` is set to **180000** on the service; the code's own default is 120000 since
+`#237`. It was 30000 for part of the evening and that was a mistake worth recording, because the free
+Studio endpoint is shared: while the loop was polling it every thirty seconds the subgraph answered
+429, and a vault-scoped tape under a 429 renders **refusals and no fills** — refusals come from
+`/api/refusals` reading transaction status, while fills need `maker`, which only the index carries.
+Half a tape disappearing looks like lost transactions and is not.
+
+`#237` fixed the loop's half properly: one index read per cycle, and a 429 now **holds** while the
+last good read is younger than `maxIndexSilenceSeconds` rather than docking on every one. The
+frontend's half is `frontend/api/_lib/indexCache.ts` from the same PR.
 
 There is no Vercel deployment any more. The `subfloor` project was deleted on 10 Sep because it
 served a stale build whose `/api/*` functions did not run, while the README's headline link pointed
@@ -154,8 +180,8 @@ Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, 
 |---|---|---|
 | Contract tests | **962 pass, 0 fail** | `cd contracts && forge test` |
 | Programs fuzzed | **980,000** over 13 campaigns; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
-| Scored fills | **261** | `curl .../api/fills` |
-| Refusals on chain | **4** (read 10 Sep, 15:50 UTC) | `curl .../api/refusals` |
+| Scored fills | **265** (read 10 Sep, 16:54 UTC) | `curl .../api/fills` |
+| Refusals on chain | **6** (read 10 Sep, 16:54 UTC) | `curl .../api/refusals` |
 | Index health | `hasIndexingErrors: false` | `{ _meta { hasIndexingErrors block { number } } }` |
 | Upstream suite | 797 → **803** | `1inch/swap-vm#197` |
 
@@ -246,6 +272,24 @@ and made every PR show a red check that had nothing to do with the code.
 
 ---
 
+**Running the injection harness deletes the evidence of the last one.** `src/injection/run.ts`
+rewrites `docs/injection/case-N-*.json` whole, and those files carry a hand-written `broadcast` block
+— the shipped strategy hash, the refusal tx, the block, the decoded revert — that the harness never
+produces, because it composes and records and does not broadcast. Re-running `escalation` on 10 Sep
+to look at the program wiped `refusalTx 0x0cbf7b45…`, which is cited in `docs/e2e-walkthrough.md` and
+is a video asset. Recovered with `git restore`, and only because it had been committed. Filed as
+`#225`. **Check `git status` after running the harness.**
+
+**Railway ignores a service's `dockerfilePath` when `railway.json` is in the repo root.** Three
+builds of the agent service produced the frontend image instead: the root `railway.json` pins
+`dockerfilePath: Dockerfile`, and the builder reads that file even though the API refuses to *set*
+`railwayConfigFile` on the grounds that config-as-code is deprecated. `RAILWAY_DOCKERFILE_PATH` as an
+env var did not win either. The way through was to stop needing a second image — the policy loop
+rides the root image and a `startCommand` selects it. If you add a service to this project, expect
+the same and plan for it.
+
+---
+
 ## 8. What changed on 10 Sep
 
 Merged: `#205` `#206` `#207` `#208` `#209` `#210` `#211` `#212` `#213` `#214`. Closed: `#145` `#170`
@@ -273,6 +317,84 @@ Merged: `#205` `#206` `#207` `#208` `#209` `#210` `#211` `#212` `#213` `#214`. C
   metadata fallback, which ships in the bundle and is what a wallet shows on connect.
 - **README honesty passes**: the router divergence in §6, the corrected fill counts, and the server
   env vars documented for the first time.
+
+---
+
+## 8b. The e2e, walked end to end on the evening of 10 Sep
+
+The first time the walkthrough was run from a mandate signed in the **interface** rather than by
+`cast`. It found four frontend bugs that no amount of clicking would have surfaced, because all four
+only appear when something tries to spend what the screen produced.
+
+**A second vault exists, and it is the one to use for this.** Ours (`0xaf6b…c33f`) is set up for the
+live book; this one was created from a fresh wallet through the factory, which is what made it a real
+test of first-run.
+
+| | |
+|---|---|
+| Vault | `0x5a436B0e8EFBe12E9068105eC4d650018817AD60` |
+| Owner and guardian | `0x7EdAA11fEBc57A5115105ECCC94023D1e76746Fd` — MetaMask, **gas-sponsored** |
+| Delegate | `0x76b36d8f88Df6f61E65779DB99F1769b15D50C81` |
+
+The owner holds **no ETH**. The vault was created gaslessly through MetaMask's sponsorship, so that
+wallet cannot send a transaction — and it does not need to. Signing a mandate is a signature, and the
+vault's inventory is its ERC20 balance, so anyone can fund it. Both funding transfers were sent from
+the delegate. If you find yourself telling someone to `cast send` from that owner, it will not work.
+
+The delegate's private key is **testnet only** and lives in `agent/.env.local`, gitignored by
+`.gitignore:8`. It is not the live delegate and must never be used on mainnet.
+
+**What was walked, and what it produced.** Both books were shipped by the delegate against mandates
+signed in the interface by the guardian.
+
+| | tx | |
+|---|---|---|
+| ship, honest book (nonce 0) | `0x546bddc15b17269e839e70f5c19afced3991e826c4283a271d50fe6546f72f9f` | 237,222 gas |
+| ship, guard-free book (nonce 1) | `0x9d48715b0889f72abcd124bffb724a551675b77ba406ae34a243fbd42eaff61c` | 168,738 gas |
+| four fills, quote token in | `0x362abaca…` `0x944d17d1…` `0xcfb4b365…` `0x9b936dec…` | succeeded |
+| two refusals, guard-free book | `0x96a2c1a1…` `0xb4e13b4d…` | reverted |
+| two refusals, honest book, other side | `0x54a4ba18…` `0xdc1d9473…` | reverted |
+
+The fills are the 1inch qualification's *"on-chain execution of token transfers … not only reverts"*,
+and the transfers mirror exactly: the vault gave 0.000407486854855867 WETH and received 1.000000
+tUSDC on the first, and so on. Vault balances after the refusals were unchanged to the wei, which is
+the sentence the refusal card leads with.
+
+**The last two refusals are the interesting ones, and they are not the attack.** They are the
+*honest* book, refused on the side where it had gone stale. The reference moved −24.0 bps after it
+was shipped, and the vault's buy side fell ~21 bps under its own floor. Nothing was armed; the
+mechanism caught a book that was merely old. This is exactly what the policy loop's `recenter` exists
+to prevent — and the loop had been saying `recenter` for an hour, into a log, because nothing ships
+what it composes. Two layers, and the second one earned its place.
+
+**Two tools were needed and are now in the repo.** Neither forge script can spend an
+interface-signed mandate: both build the mandate themselves with hardcoded amounts, so they can only
+spend a signature over their own struct, while the interface signs `maxAmounts` equal to the vault's
+inventory. And `contracts/` has no `node_modules`, so reaching them at all is the measured
+ten-minute `via_ir` build.
+
+- `agent/src/vault/ship-signed.ts` — ships a mandate as it was signed, recovering the signature
+  against the vault's guardian before broadcasting.
+- `agent/src/taker/attempt-refusal.ts` — attempts one fill against a named book and reads what
+  settlement says, reusing the taker bot's `buildTakerData`, `ROUTER_ABI` and `decodeFloorRevert`.
+  `SUBFLOOR_TOKEN_IN=weth` takes the other side, which is what produced the last two refusals.
+
+**Merged: `#217` and `#221`. Closed: `#216` `#218` `#219` `#220` `#223`.**
+
+- **`#216`** — the mandate the interface signed named **Aqua** as its `app` where the vault wants the
+  **router**. Valid signature, well-formed struct, and `_consumeMandate` only compares the two at
+  ship time — so the ceremony completed, the device approved, and it failed days later on another
+  machine as `MandateWrongApp`.
+- **`#218`** — `saveMandate` kept the signature and threw the struct away. The vault rebuilds the
+  hash from every field, so it was unspendable by anyone. `expiry` made it unrecoverable rather than
+  inconvenient: it is derived from the instant `buildMandate` ran, which is not the instant
+  `saveMandate` recorded.
+- **`#219`** — nothing in the interface handed over the vault address or the mandate. The only
+  clipboard call in the frontend copied the connected wallet, and getting the mandate out meant
+  devtools. The signed state now hands over both.
+- **`#220`** — the interface offered nonce 0 and then nothing, so once the first mandate was spent it
+  could never sign another. One mandate is one ship, so an interface that authorises once can start
+  an agent and never keep it running.
 
 ---
 
@@ -306,6 +428,16 @@ SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams regi
 ```
 
 **4. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
+
+**Open from the 10 Sep e2e, both small, both `frontend` except the first:**
+
+- **`#230`** — a maker-side refusal in the tUSDC→WETH direction renders as **`$0.00`**. The decoder is
+  right and the bps column is right; `formatPrice` is fixed at two decimals and the tape prefixes a
+  dollar sign, and that direction's price is `0.00040773 WETH per tUSDC`. Do **not** fix it by
+  inverting: shown the other way the attempt reads *above* the floor, because inverting flips which
+  direction is worse, and the card would have to flip its language per side. Significant digits and a
+  unit label from the decoded tokens.
+- **`#225`** — the harness clobber above.
 
 **Not mine, and parked by the builder:** `#31` and `#41`, the second-chain subgraph and its README
 demo. Everything labelled `frontend` is Zikri's.
