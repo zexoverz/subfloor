@@ -31,6 +31,7 @@ export function PublicAside({
   checked,
   vaultError,
   ledger,
+  walletAddress,
 }: {
   state: VaultState;
   /** A connected wallet that is not the owner is a different message, not the same button again. */
@@ -53,6 +54,8 @@ export function PublicAside({
    * one panel came back unpaired on another.
    */
   ledger: import('../lib/ledger.ts').Ledger;
+  /** What answering "no" fills the guardian field with. */
+  walletAddress: `0x${string}` | null;
 }) {
   /*
    * Collected before the vault exists, because that is the only moment the factory can set them.
@@ -63,9 +66,22 @@ export function PublicAside({
   const [bps, setBps] = useState(state.calibration.houseDefaultBps);
   const [agent, setAgent] = useState('');
   const [device, setDevice] = useState('');
+  /**
+   * Whether the owner has a device at all. Null until asked, and asked before the field.
+   *
+   * Not a preference: it decides what goes in the write-once registry slot. Null keeps the field
+   * off the card entirely, because an empty box for the guardian is a box whose only wrong answer
+   * is silent.
+   */
+  const [hasDevice, setHasDevice] = useState<boolean | null>(null);
   // Empty is allowed and is a decision; wrong is not.
   const usable = (v: string) => v === '' || isAddress(v);
-  const setupReady = usable(agent) && usable(device);
+  /*
+   * The question has to be answered, even though an empty guardian is a legal vault. Deploying
+   * without answering is not the same decision as deploying having decided — and the registry slot
+   * is write-once, so "I did not see the field" is a permanent answer.
+   */
+  const setupReady = hasDevice !== null && usable(agent) && usable(device);
 
   return (
     <div className="flex flex-col gap-4.5">
@@ -126,9 +142,7 @@ export function PublicAside({
              * which then bounced anyone whose vault was already set up.
              */
             <>
-              <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">
-                {copy.landing.publicOwnBody}
-              </p>
+              <p className="serif m-0 mb-3 text-[13.5px] leading-relaxed text-muted">{copy.landing.publicOwnBody}</p>
               <div className="flex items-end gap-1">
                 <Act primary onClick={onConnect} busy={connecting} busyLabel={copy.wallet.connecting}>
                   {copy.wallet.connect}
@@ -177,11 +191,11 @@ export function PublicAside({
                    * drawing next to that would take the width the sentences need.
                    */}
                   {/*
-                    * The same control the owner uses to change a floor later, not a second way of
-                    * asking the same question. It leads with the price, which is what a non-quant
-                    * decides — "never below 2,445", never "100 bps" — and it counts the realized
-                    * fills a number this tight would have refused, which a stepper cannot do.
-                    */}
+                   * The same control the owner uses to change a floor later, not a second way of
+                   * asking the same question. It leads with the price, which is what a non-quant
+                   * decides — "never below 2,445", never "100 bps" — and it counts the realized
+                   * fills a number this tight would have refused, which a stepper cannot do.
+                   */}
                   <FloorControl
                     bps={bps}
                     referencePrice={state.reference.price}
@@ -194,34 +208,94 @@ export function PublicAside({
 
                   <div className="mb-4 flex flex-col gap-3">
                     {/*
-                      * Read off the device, not typed off it.
-                      *
-                      * This is the field that decides which key may ever weaken the floor, and the
-                      * registry takes it write-once — a transposed character here is a vault whose
-                      * guardian is an address nobody holds, and nothing on chain can undo that. The
-                      * setup sheet has had this button for a while; the card that deploys the vault
-                      * in the first place, which is the one moment the mistake is unrecoverable,
-                      * did not.
-                      */}
-                    <AddressField
-                      label={copy.wallet.deployDeviceLabel}
-                      hint={copy.wallet.deployDeviceHint}
-                      value={device}
-                      onChange={setDevice}
-                      action={{
-                        label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
-                        busy: ledger.connecting,
-                        onClick: () => {
-                          void (async () => {
-                            // `connect()` returns what it read: `ledger.address` here is a render
-                            // behind, so reading it would fill the field from the previous device.
-                            const found = ledger.address ?? (await ledger.connect());
-                            if (found) setDevice(found);
-                          })();
-                        },
-                        disabled: ledger.connecting || !ledger.supported,
-                      }}
-                    />
+                     * Asked before the field, because the field cannot be answered without it.
+                     *
+                     * The guardian is the key that may weaken the floor, and the registry takes it
+                     * write-once. An owner with no hardware was being shown an empty box and left
+                     * to work out that their own wallet goes in it — and that putting it there
+                     * collapses the split this whole design is about. So the choice is the
+                     * question, and the consequence of the wrong answer is printed beside it
+                     * rather than discovered afterwards.
+                     */}
+                    <div>
+                      <span className="text-[11.5px] tracking-[0.09em] text-muted uppercase">
+                        {copy.wallet.deviceAsk}
+                      </span>
+                      <p className="serif m-0 mt-1 mb-2 text-[12.5px] leading-relaxed text-faint">
+                        {copy.wallet.deviceWhy}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(
+                          [
+                            [true, copy.wallet.deviceYes],
+                            [false, copy.wallet.deviceNo],
+                          ] as const
+                        ).map(([answer, label]) => (
+                          <button
+                            key={label}
+                            onClick={() => {
+                              setHasDevice(answer);
+                              // "No" is the answer that fills the field, so it fills it here rather
+                              // than leaving a box the owner has to paste their own address into.
+                              setDevice(answer ? '' : (walletAddress ?? ''));
+                            }}
+                            className={`cursor-pointer rounded-xl border px-3 py-2 text-left text-[12px] leading-snug transition-colors ${
+                              hasDevice === answer
+                                ? 'border-floor/60 bg-floor-wash text-ink'
+                                : 'border-rule bg-sunken text-muted hover:text-ink'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/*
+                     * Read off the device, not typed off it.
+                     *
+                     * This is the field that decides which key may ever weaken the floor, and the
+                     * registry takes it write-once — a transposed character here is a vault whose
+                     * guardian is an address nobody holds, and nothing on chain can undo that. The
+                     * setup sheet has had this button for a while; the card that deploys the vault
+                     * in the first place, which is the one moment the mistake is unrecoverable,
+                     * did not.
+                     */}
+                    {hasDevice !== null && (
+                      <div>
+                        <AddressField
+                          label={copy.wallet.deployDeviceLabel}
+                          hint={copy.wallet.deployDeviceHint}
+                          value={device}
+                          onChange={setDevice}
+                          readOnly={!hasDevice}
+                          {...(hasDevice
+                            ? {
+                                action: {
+                                  label: ledger.connecting ? copy.wallet.readingDevice : copy.wallet.useDevice,
+                                  busy: ledger.connecting,
+                                  onClick: () => {
+                                    void (async () => {
+                                      // `connect()` returns what it read: `ledger.address` here is
+                                      // a render behind, so reading it would fill the field from
+                                      // the device before this one.
+                                      const found = ledger.address ?? (await ledger.connect());
+                                      if (found) setDevice(found);
+                                    })();
+                                  },
+                                  disabled: ledger.connecting || !ledger.supported,
+                                },
+                              }
+                            : {})}
+                        />
+                        {/* The cost of the answer, next to the answer. */}
+                        {!hasDevice && (
+                          <p className="serif m-0 mt-1.5 text-[12px] leading-relaxed text-refuse">
+                            {copy.wallet.deviceSameKey}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <AddressField
                       label={copy.wallet.deployAgentLabel}
                       hint={copy.wallet.deployAgentHint}

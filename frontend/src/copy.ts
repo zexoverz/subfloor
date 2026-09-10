@@ -201,6 +201,14 @@ export const copy = {
     deployAgentLabel: 'the agent’s address',
     deployAgentHint: 'the key that may compose and ship, and nothing else. Empty means no agent can trade yet.',
     deployDeviceLabel: 'your device address',
+    deviceAsk: 'Do you have a hardware wallet?',
+    deviceYes: 'Yes — I will read it from the device',
+    deviceNo: 'No — use this wallet',
+    /// Said before the choice is made, not after. The registry takes the guardian write-once.
+    deviceWhy:
+      'The key that may lower your floor. It should not be the key that trades, and it is registered once.',
+    deviceSameKey:
+      'This wallet will be both the key that trades and the key that may lower your floor. One compromise reaches both. The registry takes this once and only a signature from it can move it later.',
     deployDeviceHint: 'set on the vault and the registry at once. Empty means lowering the floor has nobody to authorise it.',
     creatingVault: 'Deploying…',
     checkingVault: 'Checking whether this wallet owns a vault…',

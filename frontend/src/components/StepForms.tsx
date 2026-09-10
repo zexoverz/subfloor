@@ -95,6 +95,7 @@ export function AddressField({
   onChange,
   action,
   icon = 'key',
+  readOnly = false,
 }: {
   label: string;
   hint: string;
@@ -103,6 +104,8 @@ export function AddressField({
   /** The one-press way to fill it. `label` is the whole explanation: it is a glyph on screen. */
   action?: { label: string; onClick: () => void; disabled?: boolean; busy?: boolean };
   icon?: 'key' | 'wallet';
+  /** Filled by a decision made elsewhere: shown, checkable, and not typed into. */
+  readOnly?: boolean;
 }) {
   const Mark = icon === 'wallet' ? Wallet : KeyRound;
   const invalid = value.length > 0 && !isAddress(value);
@@ -131,6 +134,7 @@ export function AddressField({
           value={value}
           onChange={(e) => onChange(e.target.value.trim())}
           placeholder="0x…"
+          readOnly={readOnly}
           spellCheck={false}
           className={`w-full border-0 bg-transparent py-2.5 font-mono text-[12.5px] outline-none ${
             invalid ? 'text-refuse' : ''

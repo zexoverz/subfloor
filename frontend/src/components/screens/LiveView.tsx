@@ -445,6 +445,7 @@ export function LiveView({
             checked={vaultChecked}
             vaultError={vaultError}
             ledger={ledger}
+            walletAddress={walletAddress}
           />
         )}
       </div>
