@@ -14,6 +14,12 @@ import { useLedger } from '../lib/ledger.ts';
  *
  * Four states, per §10 and #129: what the device will show, waiting, declined, and device-absent —
  * and the absent one is known before this is offered, from enumeration on page load.
+ *
+ * **All four wear the same body.** The panel used to be swapped out on the click: the screen the
+ * owner had been reading disappeared and a column of terminal lines took its place, so the moment
+ * of pressing Approve on the device was the moment the thing being approved left the page. Now the
+ * click only puts the button to work, and every state after it is reported on the screen and in one
+ * status line, in the places those things already were.
  */
 type Stage = 'pre' | 'waiting' | 'declined' | 'signed' | 'absent';
 
@@ -60,50 +66,91 @@ export function DeviceCeremony({
       <DeviceReview />
 
       <div>
-        {stage === 'pre' && (
+        {stage === 'absent' ? (
+          <p className="serif mt-0 text-[14px] leading-relaxed text-muted">{copy.ceremony.absent}</p>
+        ) : (
           <>
             <p className="serif mt-0 text-[14px] leading-relaxed text-muted">
               The device spells the action out in words instead of raw calldata. Whoever presses Approve can read it
               on the device screen itself.
             </p>
+
             {/*
-              * What the device will display, verbatim and in order, before it lights up. It used to
-              * be a drawn screen; it is the same strings either way, and the rule §10 sets is about
-              * the strings matching rather than about the picture.
+              * What the device will display, verbatim and in order, before it lights up — and then
+              * the answer it gave, in the same place. It used to be a drawn screen; it is the same
+              * strings either way, and the rule §10 sets is about the strings matching rather than
+              * about the picture.
               */}
-            <div className="mb-3 text-[11.5px] leading-[1.9] text-muted">
-              <DeviceScreen rows={rows} waiting={false} />
+            <div className="my-3">
+              <DeviceScreen
+                rows={rows}
+                waiting={stage === 'waiting'}
+                answer={stage === 'signed' ? 'approved' : stage === 'declined' ? 'rejected' : null}
+                device={{
+                  paired: ledger.presence === 'paired',
+                  hint: ledger.presence === 'paired' ? copy.ceremony.paired : copy.ceremony.unknownDevice,
+                }}
+              />
             </div>
-            <p className="mb-3 text-[11.5px] text-faint">
-              {ledger.presence === 'paired' ? (
-                <span className="text-settle">
-                  <span className="mr-1 inline-block size-[6px] rounded-full bg-current align-[1px]" />
-                  {copy.ceremony.paired}
-                </span>
+
+            {/*
+              * One line, four things it can say. Fixed height, because a status that changes the
+              * page's height moves the button under the reader's cursor at the exact moment they
+              * are deciding whether to press it again.
+              */}
+            <p className="serif mb-3 min-h-[3.4em] text-[13.5px] leading-relaxed text-muted">
+              {stage === 'waiting' ? (
+                <>
+                  {payloadLine} {copy.ceremony.takeYourTime}
+                </>
+              ) : stage === 'signed' ? (
+                <span className="text-settle">{copy.ceremony.signed}</span>
+              ) : stage === 'declined' ? (
+                <>
+                  {copy.ceremony.declined} {standingLine}
+                </>
               ) : (
-                copy.ceremony.unknownDevice
+                copy.ceremony.onlyIfMatches
               )}
             </p>
-            <Act
-              wide
-              primary
-              disabled={ledger.presence === 'unsupported'}
-              onClick={async () => {
-                /*
-                 * Read the device before asking it for anything. `connect()` returns the address it
-                 * read rather than only storing it, because the state from this render is a render
-                 * behind — reading `ledger.address` here would check the previous device.
-                 */
-                const at = ledger.address ?? (await ledger.connect());
-                setAttached(at);
-                if (expect && at && at.toLowerCase() !== expect.toLowerCase()) return;
-                setStage('waiting');
-                const signature = await ledger.signTypedData({ rows });
-                setStage(signature ? 'signed' : 'declined');
-              }}
-            >
-              {copy.ceremony.continue}
-            </Act>
+
+            {stage === 'signed' ? (
+              <Act wide primary onClick={onDone}>
+                continue
+              </Act>
+            ) : stage === 'declined' ? (
+              <div className="flex gap-2">
+                <Ghost onClick={() => setStage('pre')}>try again</Ghost>
+                {onBack && <Ghost onClick={onBack}>back</Ghost>}
+              </div>
+            ) : (
+              <Act
+                wide
+                primary
+                busy={stage === 'waiting'}
+                busyLabel="awaiting approval on device"
+                disabled={ledger.presence === 'unsupported'}
+                onClick={async () => {
+                  setStage('waiting');
+                  /*
+                   * Read the device before asking it for anything. `connect()` returns the address
+                   * it read rather than only storing it, because the state from this render is a
+                   * render behind — reading `ledger.address` here would check the previous device.
+                   */
+                  const at = ledger.address ?? (await ledger.connect());
+                  setAttached(at);
+                  if (expect && at && at.toLowerCase() !== expect.toLowerCase()) {
+                    setStage('pre');
+                    return;
+                  }
+                  const signature = await ledger.signTypedData({ rows });
+                  setStage(signature ? 'signed' : 'declined');
+                }}
+              >
+                {copy.ceremony.continue}
+              </Act>
+            )}
+
             {/*
               * Named, not just refused. "Wrong device" leaves the owner guessing which of theirs it
               * is; the two addresses side by side answer it without them going to look.
@@ -118,27 +165,9 @@ export function DeviceCeremony({
                 </span>
               </p>
             )}
-            <p className="mt-2 text-[11.5px] text-faint">{copy.ceremony.onlyIfMatches}</p>
-          </>
-        )}
 
-        {stage === 'waiting' && (
-          <>
-            <div className="text-[11.5px] leading-[1.9] text-muted">
-              {/* The same rows again while it waits, so the device and the screen can be compared
-                  without the reader having to remember what was there a moment ago. */}
-              <DeviceScreen rows={rows} waiting={stage === 'waiting'} />
-              <div>
-                <b className="font-medium text-ink">›</b> {payloadLine}
-              </div>
-              <div>
-                <b className="font-medium text-ink">›</b> awaiting approval on device{' '}
-                <span className="animate-pulse">▍</span>
-              </div>
-            </div>
-            {/* No spinner, no countdown, and nothing here cancels it. */}
-            <p className="serif mt-3 text-[14px] text-muted">{copy.ceremony.takeYourTime}</p>
-            {import.meta.env?.DEV && (
+            {/* Stand-ins for the two answers a device gives, so the states can be built without one. */}
+            {import.meta.env?.DEV && stage === 'waiting' && (
               <div className="mt-3 flex gap-2">
                 <Ghost onClick={() => setStage('signed')}>approved</Ghost>
                 <Ghost onClick={() => setStage('declined')}>rejected</Ghost>
@@ -146,32 +175,6 @@ export function DeviceCeremony({
             )}
           </>
         )}
-
-        {/* Rejection is a success of the system, and is styled as an ordinary outcome. */}
-        {stage === 'declined' && (
-          <>
-            <p className="serif mt-0 text-[14px] text-muted">
-              {copy.ceremony.declined} {standingLine}
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Ghost onClick={() => setStage('pre')}>try again</Ghost>
-              {onBack && <Ghost onClick={onBack}>back</Ghost>}
-            </div>
-          </>
-        )}
-
-        {stage === 'signed' && (
-          <>
-            <p className="serif mt-0 text-[14px] text-muted">{copy.ceremony.signed}</p>
-            <div className="mt-3">
-              <Act primary onClick={onDone}>
-                continue
-              </Act>
-            </div>
-          </>
-        )}
-
-        {stage === 'absent' && <p className="serif mt-0 text-[14px] text-muted">{copy.ceremony.absent}</p>}
       </div>
     </div>
   );

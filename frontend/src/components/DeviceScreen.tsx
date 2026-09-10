@@ -1,3 +1,7 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+import { Check, Usb, X } from 'lucide-react';
+import { Hoverable } from './Hoverable.tsx';
+
 /**
  * What the Ledger renders, drawn as the device draws it.
  *
@@ -23,6 +27,13 @@
  * glance, which is the point of drawing it this way at all. A true pixel face would be sharper and
  * would cost a fourth font for eleven lines of text; it is one `font-family` away if it is wanted.
  */
+
+/** The device's answer, once it has given one. */
+export type Answer = 'approved' | 'rejected';
+
+/** Where the winning button started, in pixels from each edge of the panel. */
+type Seat = { top: number; left: number; right: number; bottom: number };
+
 /**
  * Ledger's frame mark, drawn rather than fetched.
  *
@@ -44,12 +55,90 @@ function LedgerMark({ size = 11 }: { size?: number }) {
   );
 }
 
-export function DeviceScreen({ rows, waiting = true }: { rows: [string, string][]; waiting?: boolean }) {
+export function DeviceScreen({
+  rows,
+  waiting = true,
+  answer = null,
+  device,
+}: {
+  rows: [string, string][];
+  waiting?: boolean;
+  /**
+   * Whether a device has answered an enumeration yet, shown as the screen's own status corner.
+   *
+   * It was a line of text under the panel, which put a fact about the cable in the same weight as
+   * the transaction being reviewed. On the screen it is what it is — a connection light — and the
+   * sentence is still there for anyone who wants it, one hover away.
+   */
+  device?: { paired: boolean; hint: string };
+  /**
+   * When the device has answered, the button it answered with grows out of its own place and takes
+   * the screen. The answer is reported where the question was asked, which is the whole reason this
+   * panel is a screen and not a list.
+   */
+  answer?: Answer | null;
+}) {
+  const panel = useRef<HTMLDivElement>(null);
+  const approve = useRef<HTMLElement>(null);
+  const reject = useRef<HTMLElement>(null);
+  /** Measured rather than written down: the buttons are a flex row and their halves move with it. */
+  const [seat, setSeat] = useState<Seat | null>(null);
+  const [grown, setGrown] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!answer) {
+      setSeat(null);
+      setGrown(false);
+      return;
+    }
+    const p = panel.current?.getBoundingClientRect();
+    const b = (answer === 'approved' ? approve : reject).current?.getBoundingClientRect();
+    if (!p || !b) return;
+    setSeat({
+      top: b.top - p.top,
+      left: b.left - p.left,
+      right: p.right - b.right,
+      bottom: p.bottom - b.bottom,
+    });
+    /*
+     * Two frames, not one. A layout effect runs before this frame's rendering steps and so does a
+     * single rAF callback — the seat would never be painted and the growth would be a jump. The
+     * second frame is the first one that can see where it started from.
+     */
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setGrown(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [answer]);
+
+  const skin =
+    answer === 'approved'
+      ? { background: '#14261F', color: '#57AC8C' }
+      : { background: '#2A1614', color: '#E2705F' };
+
   return (
-    <div className="device-screen relative w-full overflow-hidden rounded-xl bg-[#0A0C10] px-4 py-3.5 font-mono text-[11px] leading-[1.75] tracking-[0.02em] text-[#F2F4F7] tabular-nums">
+    <div
+      ref={panel}
+      className="device-screen relative w-full overflow-hidden rounded-xl bg-[#0A0C10] px-4 py-3.5 font-mono text-[11px] leading-[1.75] tracking-[0.02em] text-[#F2F4F7] tabular-nums"
+    >
       <div className="mb-2.5 flex items-center gap-2 text-[10px] tracking-[0.16em] text-[#7C8794] uppercase">
         <LedgerMark />
         Review transaction
+        {device && (
+          <Hoverable content={device.hint}>
+            <span
+              className="ml-auto flex cursor-help items-center"
+              style={{ color: device.paired ? '#57AC8C' : '#5A6472' }}
+              aria-label={device.hint}
+            >
+              <Usb size={12} strokeWidth={2} />
+            </span>
+          </Hoverable>
+        )}
       </div>
       {rows.map(([k, v]) => (
         <div key={k} className="flex justify-between gap-3">
@@ -59,11 +148,41 @@ export function DeviceScreen({ rows, waiting = true }: { rows: [string, string][
       ))}
       <div className="pixel-rule mt-3" />
       <div className="mt-2.5 flex gap-2 text-[10.5px]">
-        <b className="flex-1 rounded-md bg-[#2A1614] py-1.5 text-center tracking-[0.08em] text-[#E2705F] uppercase">Reject</b>
-        <b className={`flex-1 rounded-md bg-[#14261F] py-1.5 text-center tracking-[0.08em] text-[#57AC8C] uppercase ${waiting ? 'animate-pulse' : ''}`}>
+        <b
+          ref={reject}
+          className="flex-1 rounded-md bg-[#2A1614] py-1.5 text-center tracking-[0.08em] text-[#E2705F] uppercase"
+        >
+          Reject
+        </b>
+        <b
+          ref={approve}
+          className={`flex-1 rounded-md bg-[#14261F] py-1.5 text-center tracking-[0.08em] text-[#57AC8C] uppercase ${waiting ? 'animate-pulse' : ''}`}
+        >
           Approve
         </b>
       </div>
+
+      {/*
+        * Below the scanlines on purpose: no z-index here, and ::after is generated last, so the
+        * answer is lit behind the same glass as the words it replaces rather than pasted on top.
+        */}
+      {answer && seat && (
+        <div
+          className="screen-answer tracking-[0.14em] uppercase"
+          data-grown={grown || undefined}
+          style={{
+            ...skin,
+            top: grown ? 0 : seat.top,
+            left: grown ? 0 : seat.left,
+            right: grown ? 0 : seat.right,
+            bottom: grown ? 0 : seat.bottom,
+          }}
+          role="status"
+        >
+          {answer === 'approved' ? <Check size={16} strokeWidth={2.4} /> : <X size={16} strokeWidth={2.4} />}
+          {answer === 'approved' ? 'Approved' : 'Rejected'}
+        </div>
+      )}
     </div>
   );
 }
