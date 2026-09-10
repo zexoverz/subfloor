@@ -1,6 +1,7 @@
 import type { Address } from 'viem';
 import type { Ledger } from './ledger.ts';
-import type { Wallet, WalletAccount } from './wallet.ts';
+import type { Wallet } from './wallet.ts';
+import type { Guardian } from './guardian.ts';
 
 /**
  * Whatever holds the guardian key, behind one shape.
@@ -41,30 +42,58 @@ export function deviceSigner(ledger: Ledger): Signer {
 }
 
 /**
- * @param as Which of the browser's addresses signs. Defaults to the one the page is about, which is
- * right only when the owner registered their trading account as the guardian — everyone else picks.
+ * One address the browser can sign with, and the way to ask it.
+ *
+ * Two kinds arrive here and the difference matters only inside `sign`: an account of the connection
+ * this page is about, asked through wagmi, and a key attached for signing alone, asked through its
+ * own provider. Everything above treats them as the same thing, which is the point — the vault
+ * recovers an address and compares it to the guardian on file, and does not care which library
+ * produced the signature.
  */
-export function walletSigner(wallet: Wallet, as?: WalletAccount | null): Signer {
-  const account = as ?? wallet.accounts.find((a) => a.address === wallet.address) ?? null;
+export type SignKey = {
+  address: Address;
+  /** Which wallet it came from, for a list where two rows are otherwise forty hex characters. */
+  name: string;
+  icon?: string;
+  sign: (typedData: unknown) => Promise<string | null>;
+};
+
+/**
+ * Everything signable right now, in the order it should be offered.
+ *
+ * The trading connection's accounts first, because most owners registered one of them, then the key
+ * attached by hand. De-duplicated by address: attaching the account that is already connected is a
+ * thing an owner will do, and it should not double the list.
+ */
+export function signingKeys(wallet: Wallet | undefined, guardian: Guardian): SignKey[] {
+  const keys: SignKey[] = (wallet?.accounts ?? []).map((account) => ({
+    address: account.address,
+    name: account.name,
+    sign: (typedData) => wallet!.signTypedData(typedData, account),
+  }));
+
+  const attached = guardian.key;
+  if (attached && !keys.some((k) => k.address.toLowerCase() === attached.address.toLowerCase())) {
+    keys.push({
+      address: attached.address,
+      name: attached.name,
+      icon: attached.icon,
+      sign: guardian.signTypedData,
+    });
+  }
+  return keys;
+}
+
+/** The chosen key, as the ceremony's one signer. */
+export function keySigner(key: SignKey | null, busy: boolean, error: string | null): Signer {
   return {
     kind: 'wallet',
-    address: account?.address ?? wallet.address,
-    ready: Boolean(account ?? wallet.address),
-    connecting: wallet.connecting,
-    error: wallet.error,
-    /*
-     * Already connected, or nothing to read yet. `wallet.connect()` opens a modal and returns
-     * immediately — the address arrives through the account watcher on a later render — so there is
-     * no address to hand back from this call and pretending otherwise would fail the guardian check
-     * against null.
-     */
-    connect: async () => {
-      if (account) return account.address;
-      if (wallet.address) return wallet.address;
-      wallet.connect();
-      return null;
-    },
-    /* The step callback belongs to the device kit; a browser wallet reports no progress. */
-    signTypedData: (typedData) => wallet.signTypedData(typedData, account ?? undefined),
+    address: key?.address ?? null,
+    ready: Boolean(key),
+    connecting: busy,
+    error,
+    // Nothing to open: a key is on this list because it has already answered.
+    connect: async () => key?.address ?? null,
+    signTypedData: (typedData) => (key ? key.sign(typedData) : Promise.resolve(null)),
   };
 }
