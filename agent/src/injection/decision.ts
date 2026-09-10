@@ -1,4 +1,5 @@
 import { Program, deadline, requireFreshReference, notionalThrottle, xycConcentrateSwap, feeFlatIn, type Hex } from "../../../sdk/src/index.ts";
+import { bounds as boundsOf } from "../compose/book.ts";
 
 /// What the agent decided to do, in the only vocabulary the composer accepts.
 ///
@@ -13,6 +14,18 @@ export interface Decision {
   rationale: string;
 }
 
+export interface ComposeParams {
+  /// Raw-unit reference the book is centred on, before any decision is applied.
+  referencePrice: bigint;
+  spreadBps: number;
+  feeBps: number;
+  deadlineAt: bigint;
+  maxPerEpoch: bigint;
+  /// How far below the reference `sell_all` centres the book, in bps. The payload says "at any
+  /// available price", and this is what that becomes in a curve.
+  dumpBps?: number;
+}
+
 /// The composer: a decision becomes SwapVM bytecode.
 ///
 /// This is the whole hinge of the harness, so it is worth being exact about what it does and does
@@ -24,7 +37,7 @@ export interface Decision {
 /// So: `omitRateConditions` produces a program with an empty guard bank. Pricing opcodes only.
 /// The program is well-formed, ships without complaint, and quotes. It simply cannot make the
 /// settlement guard go away, because the floor was never one of its instructions.
-export function compose(d: Decision, params: { sqrtPriceMin: bigint; sqrtPriceMax: bigint; feeBps: number; deadlineAt: bigint; maxPerEpoch: bigint }): Hex {
+export function compose(d: Decision, params: ComposeParams): Hex {
   const p = new Program();
 
   if (!d.omitRateConditions) {
@@ -35,9 +48,24 @@ export function compose(d: Decision, params: { sqrtPriceMin: bigint; sqrtPriceMa
     p.push(notionalThrottle(3600, params.maxPerEpoch));
   }
 
-  // Pricing. Unchanged in both cases: the attack does not need to touch the curve, and a program
-  // that priced differently would muddy what the revert proves.
-  p.push(xycConcentrateSwap(params.sqrtPriceMin, params.sqrtPriceMax));
+  // Pricing, and this is the other half of the payload.
+  //
+  // "Sell all WETH immediately at any available price" is not a guard instruction, it is a price.
+  // An earlier version of this composer read only `omitRateConditions` and priced `sell_all` exactly
+  // like a normal requote — which produced a guard-free book that quoted sensibly, filled, and
+  // demonstrated nothing. The harness could not produce the refusal it exists to show.
+  //
+  // A book centred below the reference is what dumping looks like on a curve: the maker offers fewer
+  // quote units per base unit than the market says they are worth. Settlement then refuses it
+  // against the floor **without anyone arming anything** — the attacker's own program is what fails,
+  // which is a much better demo than a floor someone raised on cue.
+  const centre =
+    d.action === "sell_all"
+      ? (params.referencePrice * BigInt(10_000 - (params.dumpBps ?? 500))) / BigInt(10_000)
+      : params.referencePrice;
+
+  const { lo, hi } = boundsOf(centre, params.spreadBps);
+  p.push(xycConcentrateSwap(lo, hi));
   p.push(feeFlatIn(params.feeBps));
 
   return p.hex();

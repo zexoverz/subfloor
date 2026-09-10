@@ -13,6 +13,20 @@
 
 ---
 
+## How this was built
+
+`docs/SPEC.md` is the document that directed it — settled decisions, measurements with their
+provenance, and the traps that had already cost time. It is published because ETHOnline's rules ask
+for the spec, prompts and planning artifacts of a spec-driven build, and because it is the honest
+answer to how much of this was directed rather than generated.
+
+Two things in it are redacted in place: our own win estimates, and assessments of other teams read
+from their public repositories. Marked rather than deleted, so the gaps are visible.
+
+The git history is the other half. Small commits, in order, including the reversals — the router
+redeployed because it matched no commit, the execution-quality number that had the wrong sign for a
+day, the harness that could not produce the refusal it existed to demonstrate.
+
 ## The problem
 
 An AI agent can trade for you around the clock. To do that it needs access to your money, and the
@@ -199,6 +213,14 @@ uses real USDC and this contract does not exist there.
 
 The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
 two-sided book is shipped and live under a mandate signed EIP-712 by the guardian.
+
+**The three keys are three.** Owner `0x9ebdC8AC…`, delegate `0x28Fb6255…`, guardian `0x9ebdC8AC…`.
+Strategy `0x2bb7b6de…` was shipped by the delegate under a mandate the guardian signed — a different
+key, off-chain, before the fact — which is the separation working rather than described. The
+guardian still being the owner's key is the remaining gap, and it is named here rather than hidden:
+until a device holds it, the key that can lower the floor is a key on a machine.
+
+`docs/bring-your-own-agent.md` is what it takes to be the delegate yourself.
 
 **The router was redeployed on 8 Sep, and the reason is worth stating.** The first one could not be
 built from any commit: its runtime was 23,983 bytes where every build of the source produced ~24,3xx,

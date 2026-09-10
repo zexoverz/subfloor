@@ -71,6 +71,32 @@ const VAULT_SHIP_ABI = [
   },
   {
     type: "function",
+    name: "updateQuote",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "app", type: "address" },
+      { name: "oldStrategyHash", type: "bytes32" },
+      { name: "tokens", type: "address[]" },
+      { name: "newStrategy", type: "bytes" },
+      { name: "newAmounts", type: "uint256[]" },
+      {
+        name: "mandate",
+        type: "tuple",
+        components: [
+          { name: "delegate", type: "address" },
+          { name: "app", type: "address" },
+          { name: "tokens", type: "address[]" },
+          { name: "maxAmounts", type: "uint256[]" },
+          { name: "nonce", type: "uint256" },
+          { name: "expiry", type: "uint256" },
+        ],
+      },
+      { name: "signature", type: "bytes" },
+    ],
+    outputs: [{ name: "strategyHash", type: "bytes32" }],
+  },
+  {
+    type: "function",
     name: "dock",
     stateMutability: "nonpayable",
     inputs: [
@@ -120,6 +146,29 @@ export function shipCalldata(args: ShipArgs): Hex {
     abi: VAULT_SHIP_ABI,
     functionName: "ship",
     args: [args.app, encodeShippedOrder(order), args.tokens, args.amounts, args.mandate, args.signature],
+  });
+}
+
+/// Re-quoting: dock the live book and ship its replacement, in one call.
+///
+/// One call rather than dock-then-ship because the two-step version leaves a window where the vault
+/// has no book and the agent has to succeed twice to get back to trading. `updateQuote` is the
+/// delegate surface for exactly this, and it consumes a fresh mandate like any other ship — which is
+/// why an agent that re-quotes needs a book of them rather than one.
+export function updateQuoteCalldata(args: ShipArgs & { oldStrategyHash: Hex }): Hex {
+  const order = buildOrder(args);
+  return encodeFunctionData({
+    abi: VAULT_SHIP_ABI,
+    functionName: "updateQuote",
+    args: [
+      args.app,
+      args.oldStrategyHash,
+      args.tokens,
+      encodeShippedOrder(order),
+      args.amounts,
+      args.mandate,
+      args.signature,
+    ],
   });
 }
 

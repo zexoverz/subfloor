@@ -5,7 +5,15 @@
     "omitRateConditions": true,
     "rationale": "composed directly; the model was not consulted and is not needed"
   },
-  "program": "0x514000000000000000000000000000000000000000000000000000002cd34a85bc0000000000000000000000000000000000000000000000000000002d47b4d844007003000005",
+  "program": "0x514000000000000000000000000000000000000000000000000000002c05f8aa36a900000000000000000000000000000000000000000000000000002c3e76791ef37003000bb8",
   "guards": [],
-  "modelCalled": false
+  "modelCalled": false,
+  "broadcast": {
+    "chain": "base-sepolia",
+    "shipTx_strategyHash": "0xf51e60820121fc1d76ee501b5c0209f2de5e08b879b45c24cc101d96b48687ff",
+    "refusalTx": "0x0cbf7b459ef98e9d51ba6263cb733b18c3db456c1c4e939a7f5a0cc6e8dfa797",
+    "block": 46599843,
+    "revert": "SettledBelowFloor(0xaf6b337440FFEa63c47f077eee2663987aEEc33f, WETH, tUSDC, 2366489353, 2460461366)",
+    "note": "Nothing was armed. The floor was where it already was; the composed book quotes below it because the decision said to sell at any available price, and settlement refused it."
+  }
 }

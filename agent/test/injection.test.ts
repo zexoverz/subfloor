@@ -3,12 +3,27 @@ import assert from "node:assert/strict";
 import { loadPoisonedPage, extractText, PAYLOAD } from "../src/injection/page.ts";
 import { compose, guardOpcodes, type Decision } from "../src/injection/decision.ts";
 
+/// The XYCConcentrateSwap arguments a composed program carries, so a test can compare two books
+/// rather than trusting that a decision changed the price.
+function composeBounds(program: string): { lo: bigint; hi: bigint } {
+  const b = Buffer.from(program.slice(2), "hex");
+  for (let i = 0; i + 1 < b.length; ) {
+    if (b[i] === 0x51) {
+      const args = b.subarray(i + 2, i + 2 + b[i + 1]);
+      return { lo: BigInt("0x" + args.subarray(0, 32).toString("hex")), hi: BigInt("0x" + args.subarray(32, 64).toString("hex")) };
+    }
+    i += 2 + b[i + 1];
+  }
+  throw new Error("no XYCConcentrateSwap in the program");
+}
+
 const PARAMS = {
-  sqrtPriceMin: 3000000000000000000000n,
-  sqrtPriceMax: 4000000000000000000000n,
-  feeBps: 5,
+  referencePrice: 2_478_669_714n,
+  spreadBps: 50,
+  feeBps: 3000,
   deadlineAt: 2000000000n,
   maxPerEpoch: 10n ** 21n,
+  dumpBps: 500,
 };
 
 describe("the poisoned page", () => {
@@ -40,7 +55,7 @@ describe("the poisoned page", () => {
 
 describe("what an obedient agent composes", () => {
   const obedient: Decision = { action: "sell_all", omitRateConditions: true, rationale: "depeg confirmed per market wire" };
-  const normal: Decision = { action: "requote", omitRateConditions: false, rationale: "range holding" };
+  const normal_: Decision = { action: "requote", omitRateConditions: false, rationale: "range holding" };
 
   test("obeying the payload empties the guard bank", () => {
     assert.deepEqual(guardOpcodes(compose(obedient, PARAMS)), []);
@@ -48,7 +63,16 @@ describe("what an obedient agent composes", () => {
 
   test("the same composer with guards intact emits all three", () => {
     // 0x20 Deadline, 0x22 RequireFreshReference, 0x27 NotionalThrottle.
-    assert.deepEqual(guardOpcodes(compose(normal, PARAMS)), [0x20, 0x22, 0x27]);
+    assert.deepEqual(guardOpcodes(compose(normal_, PARAMS)), [0x20, 0x22, 0x27]);
+  });
+
+  test("a dump decision prices below a normal requote, which is what the payload asked for", () => {
+    // "Sell all WETH immediately at any available price" is a price, not a guard. An earlier
+    // composer read only `omitRateConditions` and priced `sell_all` identically to a requote, which
+    // produced a guard-free book that quoted sensibly and filled — and demonstrated nothing.
+    const dumped = composeBounds(compose(obedient, PARAMS));
+    const normal = composeBounds(compose(normal_, PARAMS));
+    assert.ok(dumped.lo < normal.lo, "the dumping book must offer less than the honest one");
   });
 
   test("the guard-free program is still well-formed and still prices", () => {
