@@ -5,7 +5,7 @@ package:
   url: https://github.com/zexoverz/subfloor
   image: ./logo.png
   description: |
-    Fills refused by a recipient-keyed price floor enforced inside SwapVM settlement on Base.
+    Fills refused by a recipient-keyed price floor enforced inside SwapVM settlement on Base Sepolia.
     A refusal is a revert and emits no logs, so this reads transaction status and the call tree —
     the only place these numbers exist.
 protobuf:
@@ -22,10 +22,10 @@ binaries:
 modules:
   - name: map_refusals
     kind: map
-    initialBlock: 35000000
+    initialBlock: 46513825
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:subfloor.v1.Refusals
 
-network: base
+network: base-sepolia

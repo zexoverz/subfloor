@@ -292,17 +292,18 @@ hardware-owned path. "Even a hacked agent cannot go below your floor" is circula
 floor-setting key sits on the machine the agent runs on. The asymmetry is enforced on chain; what is
 unproven is that the key lives on the device.
 
-**3. Publish the Substreams package.** `#33`. The package is built and `substreams registry verify`
-is clean. `substreams registry login` needs a TTY and cannot run from an agent session, but the
-binary reads `SUBSTREAMS_REGISTRY_TOKEN`, so:
+**3. ~~Publish the Substreams package~~ — done 10 Sep.** `subfloor-refusals` v0.1.0 is on
+[substreams.dev](https://substreams.dev/packages/subfloor-refusals/v0.1.0), linked from the README.
+The manifest said `network: base` from block 35,000,000, where nothing of ours is deployed, so it was
+changed to `base-sepolia` from 46,513,825 before publishing. **Not yet streamed end to end** — there
+is no Substreams API key on this machine, so nobody has watched it emit refusal `0xd8969d01…` at block
+46534207. That run is the check before citing it. To publish a new version, `registry login` needs a
+TTY, but the binary reads `SUBSTREAMS_REGISTRY_TOKEN`:
 
 ```bash
 cd indexer/substreams
-SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams registry publish
+SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams registry publish ./subfloor-refusals-v0.1.0.spkg
 ```
-
-Note `substreams.yaml` says `network: base` while the deployment is Base **Sepolia**. If the registry
-objects, that is the thing to fix first. Link the result from the README once it is up.
 
 **4. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
 

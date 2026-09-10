@@ -315,7 +315,9 @@ One detail decides the whole indexing design: **a refused fill emits nothing.**
 `SettledBelowFloor` is a revert, reverted transactions produce no logs, and a subgraph is
 log-driven. The refusal counter — the headline number — provably cannot come from a subgraph at all.
 It has to come from something that sees transaction status. `indexer/substreams/` decodes exactly
-that and the package is built; what serves the live number today is `/api/refusals`, which walks the
+that, and is published as [`subfloor-refusals`](https://substreams.dev/packages/subfloor-refusals/v0.1.0)
+on substreams.dev, declared on Base Sepolia from the contracts' creation block. What serves the live
+number today is `/api/refusals`, which walks the
 router's transaction history through HyperSync, filters on status, and recovers each revert payload
 by replaying the call. Either way the point stands and is the reason the composition exists: the
 headline number is structurally outside the subgraph.
