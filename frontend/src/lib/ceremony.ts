@@ -47,6 +47,18 @@ export type CeremonyState = {
   /** The registered device, so the field can show what is set rather than an empty box. */
   guardian: Address | null;
   /**
+   * Whether the *registry's* slot for this vault is already taken, which is a different question
+   * from whether a device is set.
+   *
+   * `FloorRegistry.setGuardian` is write-once — it requires the current entry to be zero — so once
+   * it holds anything the only way to change it is `rotateGuardian`, under an EIP-712 signature
+   * from the guardian being replaced. A vault deployed through the factory's one-call setup comes
+   * out with this already filled, so "register your device" is not an action that can succeed on
+   * one, and offering it would write the vault's half and then revert on the registry's, leaving
+   * the two naming different keys.
+   */
+  registryGuardianSet: boolean;
+  /**
    * The floor as the registry has it, or null while nothing is deployed. Every screen reads this
    * rather than the fixture: a proposed number rendered where a configured one goes is the same
    * class of lie as a fixture labelled live.
@@ -89,6 +101,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
   const [floor, setFloor] = useState<Floor | null>(null);
   const [feed, setFeed] = useState<Address | null>(null);
   const [guardian, setGuardian] = useState<Address | null>(null);
+  const [registryGuardianSet, setRegistryGuardianSet] = useState(false);
   const [delegate, setDelegate] = useState<Address | null>(null);
   const [tick, setTick] = useState(0);
   const [settled, setSettled] = useState(false);
@@ -145,6 +158,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
         const regGuardian = registryGuardian as Address;
         const zero = '0x0000000000000000000000000000000000000000';
         setGuardian(vaultGuardian !== zero && regGuardian !== zero ? vaultGuardian : null);
+        setRegistryGuardianSet(regGuardian !== zero);
         // A floor is only real when both directions have one. One side covered is an agent that
         // can still sell the other way at any price.
         setFloorsSet(Boolean((sell as [bigint, boolean])[1] && (buy as [bigint, boolean])[1]));
@@ -240,6 +254,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
     isOwner: mocked ? true : owner && address ? owner.toLowerCase() === address.toLowerCase() : null,
     delegate,
     guardian,
+    registryGuardianSet,
     floor,
     feed,
     inventory,

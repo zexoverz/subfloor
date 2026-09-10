@@ -15,6 +15,7 @@ import { RowHint, type Hint } from './RowHint.tsx';
 import { formatBps, formatUsd } from '../lib/rate.ts';
 import type { Pair, TapeEntry, VaultState } from '../types.ts';
 import { FillHint } from './Tape.tsx';
+import { fillsInWindow } from '../lib/window.ts';
 
 /**
  * A theme token, or a literal when it cannot be read.
@@ -296,13 +297,7 @@ export function FloorChart({
     if (!floorLine.current || !refLine.current || !volume.current) return;
 
     const chosen = WINDOWS.find((w) => w.id === window_);
-    const newest = state.tape.reduce((max, e) => Math.max(max, e.ts), 0);
-    const fills = state.tape
-      .filter((e) => e.kind === 'fill')
-      // Measured back from the most recent fill rather than from now: a venue that stopped trading
-      // an hour ago would otherwise show an empty 15m window and look broken.
-      .filter((e) => !chosen || e.ts >= newest - chosen.seconds)
-      .slice()
+    const fills = fillsInWindow(state.tape, chosen?.seconds ?? null)
       .sort((a, b) => a.ts - b.ts)
       // One point per second, because two fills in the same second are one x-position.
       .filter((f, i, all) => i === 0 || f.ts !== all[i - 1]?.ts);

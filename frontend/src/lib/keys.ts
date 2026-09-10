@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
+import { copy } from '../copy.ts';
 import type { Address } from 'viem';
 import { chain } from './chain.ts';
 import { setRegistryGuardianAsVault, vaultAbi } from './contracts.ts';
@@ -33,13 +34,29 @@ function reason(error: unknown): string {
   return message.split('\n')[0]?.slice(0, 140) ?? 'the transaction was not sent';
 }
 
-export function useKeys(vault: Address | null, onWritten: () => void): Keys {
+export function useKeys(vault: Address | null, onWritten: () => void, registryTaken: boolean): Keys {
   const [sending, setSending] = useState(false);
   const [step, setStep] = useState<string | null>(null);
 
+  /**
+   * Registering the device, which is only possible once.
+   *
+   * `registryTaken` is not a convenience — it decides whether this function may run at all. The
+   * registry's slot is write-once, so on a vault whose slot is filled the second write reverts, and
+   * by then the first has already changed the vault's guardian. The owner would be left with a
+   * vault naming one key and a registry naming another, and the registry is the one that authorises
+   * weakening a floor.
+   *
+   * Changing it after that is `rotateGuardian`, under a signature from the key being replaced.
+   * That is a device ceremony this screen does not have, so it says so rather than half-doing it.
+   */
   const setGuardian = useCallback(
     async (guardian: Address) => {
       if (!vault) return;
+      if (registryTaken) {
+        toast.error(copy.wallet.guardianLocked);
+        return;
+      }
       setSending(true);
       try {
         const [{ startAppKit }, core] = await Promise.all([import('./appkit.ts'), import('@wagmi/core')]);
@@ -77,7 +94,7 @@ export function useKeys(vault: Address | null, onWritten: () => void): Keys {
         setSending(false);
       }
     },
-    [vault, onWritten],
+    [vault, onWritten, registryTaken],
   );
 
   const setDelegate = useCallback(

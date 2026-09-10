@@ -111,7 +111,7 @@ export function SetupDialog({
   const { pair, floor, mandate, reference } = state;
   const connected = Boolean(wallet.address);
   const floorWrite = useFloor(vault);
-  const keys = useKeys(vault, ceremony.refresh);
+  const keys = useKeys(vault, ceremony.refresh, ceremony.registryGuardianSet);
   /*
    * Signing happens here rather than on its own route. §10 puts setup on one screen ending in one
    * signature, and navigating away took the sheet — and the thing being authorised — off screen at

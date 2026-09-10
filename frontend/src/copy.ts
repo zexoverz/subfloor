@@ -252,6 +252,13 @@ export const copy = {
     max: 'max',
     inWallet: 'in wallet',
     guardianLabel: 'your device address',
+    /*
+     * Said plainly, because the alternative is a revert whose own name says the opposite: the
+     * registry's require reads `guardian[msg.sender] == address(0)` and fails with
+     * `NoGuardianRegistered`, which fires precisely when one *is* registered.
+     */
+    guardianLocked:
+      'this vault already has a device on the registry, and that entry can only be set once — replacing it needs a signature from the device being replaced',
     guardianHint: 'the key that may weaken the floor — hardware, never this browser.',
     useDevice: 'read it from my device',
     readingDevice: 'asking the device…',
