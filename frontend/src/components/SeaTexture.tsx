@@ -31,9 +31,13 @@
  */
 
 /** The height the curve keeps for itself, whatever the section does. Matches SeaTrail's own box. */
-const WAVE = 300;
+export const WAVE = 224;
 /**
  * How far the lower layer reaches back up under the curve.
+ *
+ * WAVE is 224 rather than any round number: it is SeaTrail's own box height, and the curve is drawn
+ * in a viewBox of the same 224 units. That is what lets the footer reuse this mask and have its cut
+ * land exactly on the dotted line rather than near it.
  *
  * The two mask layers overlap rather than meet. A blurred edge that ends exactly where the next
  * layer begins puts a faint line right where the softness was supposed to be; overlapping them
@@ -41,9 +45,9 @@ const WAVE = 300;
  */
 const LAP = 70;
 
-const CUT = {
-  down: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20300'%20preserveAspectRatio='none'><filter%20id='s'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%20color-interpolation-filters='sRGB'><feGaussianBlur%20stdDeviation='16'/></filter><path%20d='M-80%2024%20C%20260%2024%20300%20190%20560%20196%20S%20860%2060%201080%2034%20L1080%20400%20L-80%20400%20Z'%20fill='%23fff'%20filter='url%28%23s%29'/></svg>")`,
-  up: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20300'%20preserveAspectRatio='none'><filter%20id='s'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%20color-interpolation-filters='sRGB'><feGaussianBlur%20stdDeviation='16'/></filter><path%20d='M-80%20196%20C%20260%20196%20300%2024%20560%2020%20S%20860%20150%201080%20182%20L1080%20400%20L-80%20400%20Z'%20fill='%23fff'%20filter='url%28%23s%29'/></svg>")`,
+export const CUT = {
+  down: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20224'%20preserveAspectRatio='none'><filter%20id='s'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%20color-interpolation-filters='sRGB'><feGaussianBlur%20stdDeviation='13'/></filter><path%20d='M-80%2024%20C%20260%2024%20300%20190%20560%20196%20S%20860%2060%201080%2034%20L1080%20320%20L-80%20320%20Z'%20fill='%23fff'%20filter='url%28%23s%29'/></svg>")`,
+  up: `url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201000%20224'%20preserveAspectRatio='none'><filter%20id='s'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%20color-interpolation-filters='sRGB'><feGaussianBlur%20stdDeviation='13'/></filter><path%20d='M-80%20196%20C%20260%20196%20300%2024%20560%2020%20S%20860%20150%201080%20182%20L1080%20320%20L-80%20320%20Z'%20fill='%23fff'%20filter='url%28%23s%29'/></svg>")`,
 } as const;
 
 export function SeaTexture({

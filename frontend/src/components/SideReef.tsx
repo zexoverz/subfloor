@@ -27,10 +27,11 @@ export function SideReef({
    *
    * Anchored to the bottom rather than the top, because a reef grows off a seabed and the seabed is
    * down. Hung from the top it floated: its base dissolved in mid-water halfway down the section
-   * with nothing under it. Negative by default so the foot runs past the section's end and into the
-   * wave that follows, which is what puts it *on* something instead of near it.
+   * with nothing under it. Negative by default so the foot runs past the section's end and well into
+   * the wave that follows — 70px left it stopping just short of the crest, which reads worse than
+   * not reaching for it at all.
    */
-  bottom = '-70px',
+  bottom = '-150px',
   width = 'clamp(140px, 18vw, 320px)',
   /** Turned down where the column runs close to the edge, and left alone where it does not. */
   opacity = 0.85,
@@ -61,9 +62,16 @@ export function SideReef({
            */
           backgroundSize: '100% 100%',
           opacity,
-          /* Only the top. The foot is covered by the wave below rather than faded. */
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 16%, black 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 16%, black 100%)',
+          /*
+           * Soft at both ends, and the foot's fade is the long one.
+           *
+           * It was left hard at `black 100%` when the opaque wave came out, which is the flat cut
+           * across the rock. A short fade would not have been much better: this artwork is dense
+           * and bright right down to its own frame, so the dissolve has to run a third of the
+           * picture to read as water rather than as an eraser.
+           */
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 62%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 62%, transparent 100%)',
         }}
       />
 
