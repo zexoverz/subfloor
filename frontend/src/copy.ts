@@ -141,7 +141,7 @@ export const copy = {
   },
 
   panic: {
-    label: 'STOP THE AGENT',
+    label: 'STOP AGENT',
     hint: 'stops trading and revokes the agent’s credential',
     confirmTitle: 'Stop the agent',
     confirmLead: 'This cannot be undone. Two things happen, in this order.',
@@ -532,8 +532,8 @@ export const copy = {
     mandateHeld: 'signed, and held in this browser until the agent ships with it',
     mandateStale: 'signed for a different agent — it authorises nobody now',
     mandateNone: 'not signed. The agent cannot ship without it',
-    mandateSign: 'Sign the mandate',
-    mandateAgain: 'Sign it again',
+    mandateSign: 'SIGN MANDATE',
+    mandateAgain: 'SIGN AGAIN',
     inventory: 'inventory',
     floor: 'floor',
     live: 'live',
