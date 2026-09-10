@@ -81,28 +81,3 @@ export function SeaTexture({
     />
   );
 }
-
-/**
- * The same drawing, bounded to a panel instead of to the window.
- *
- * `SeaTexture` is full-bleed on purpose — it belongs to the page. A panel that wants the pattern
- * wants it inside its own frame, which is a different element and not a prop: this one has no wave
- * cut, no viewport arithmetic, and fades at all four edges so it never reaches a corner as a hard
- * line.
- *
- * Lighter than the page's, and the reason is what it sits under. The page's 6% is behind a column
- * of prose; a panel's is behind axis labels, numbers and chips, which are smaller and closer to it.
- */
-export function PanelPattern({ opacity = 0.045 }: { opacity?: number }) {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 bg-[url('/sea-pattern.webp')] bg-cover bg-center"
-      style={{
-        opacity,
-        maskImage: 'radial-gradient(120% 120% at 50% 50%, black 40%, transparent 100%)',
-        WebkitMaskImage: 'radial-gradient(120% 120% at 50% 50%, black 40%, transparent 100%)',
-      }}
-    />
-  );
-}

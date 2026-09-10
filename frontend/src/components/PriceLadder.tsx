@@ -1,7 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
-import { Tide } from './Tide.tsx';
-import { PanelPattern } from './SeaTexture.tsx';
 import { formatPrice } from '../lib/rate.ts';
 
 /**
@@ -43,46 +41,27 @@ export function PriceLadder() {
   return (
     <div className="relative grid gap-0 overflow-hidden rounded-xl border border-rule bg-surface shadow-card md:grid-cols-[minmax(280px,1fr)_minmax(260px,1fr)]">
       {/*
-        * Rounded and watered like the cards above it, because it is one of them: the only panel on
-        * this page that was square-cornered and dry, which read as a diagram dropped in rather than
-        * as part of the set.
-        *
-        * Half depth, and the reason is the ground: this panel is `--c-surface`, where the full four
-        * bands reach #04425b and `text-faint` falls to 3.54. The axis labels down the left are
-        * faint. See Tide.
+        * Rounded like the cards above it, because it is one of them: the only panel on this page
+        * that was square-cornered, which read as a diagram dropped in rather than as part of the
+        * set.
         */}
-      {/* The same drawing the "what it does" cards sit on, bounded to this panel. */}
-      <PanelPattern />
+
 
       {/*
-        * The reef behind the top half, the same picture and the same treatment as the agent card's.
+        * Two grounds, split down the same rule the columns are.
         *
-        * Masked rather than dimmed with a colour over it: the panel is a flat surface here but the
-        * agent card's is a gradient, and painting anything over the image to hide it leaves a
-        * rectangle of the wrong shade halfway down. A mask removes the image and lets the panel be
-        * the panel.
-        *
-        * 0.09 rather than the agent card's 0.12, and the difference is the ground. That card's foot
-        * is darker; this one sits on `--c-surface`, where the artwork's brightest pixel — the
-        * anglerfish's lantern — composites to #182d48 at this opacity. `text-faint` reads 4.54
-        * there, and the three labels in the right-hand column are faint. At 0.12 they fell to 4.13.
+        * The picture belongs to the side that reads as a picture. On the left is a chart with an
+        * axis, a draggable rail and a hatched refusal zone — every one of them a drawn thing, and a
+        * drawn thing behind them is a fifth. So that half gets light rather than artwork: a wash
+        * falling from the surface toward the deep, which is what the chart is about anyway.
         */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 overflow-hidden" aria-hidden>
-        <img
-          src="/agent-banner.webp"
-          alt=""
-          draggable={false}
-          className="h-full w-full origin-top scale-[1.02] object-cover object-center opacity-[0.09] select-none"
-          style={{
-            maskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
-          }}
-        />
-      </div>
-
-      <Tide height={72} depth={0.5} />
-
-      <div className="relative border-b border-rule p-6 md:border-r md:border-b-0">
+      <div
+        className="relative border-b border-rule p-6 md:border-r md:border-b-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, color-mix(in srgb, var(--c-surface-top) 55%, transparent) 0%, transparent 62%)',
+        }}
+      >
         <div
           ref={rail}
           role="slider"
@@ -149,7 +128,30 @@ export function PriceLadder() {
         </div>
       </div>
 
-      <div className="relative flex flex-col gap-4 p-6">
+      <div className="relative flex flex-col gap-4 overflow-hidden p-6">
+        {/*
+          * The reef, on this half only, and the same treatment as the agent card's: behind the top
+          * of it, masked out rather than dimmed with a colour over it — painting over the image to
+          * hide it leaves a rectangle of the wrong shade halfway down the panel.
+          *
+          * 0.09 rather than that card's 0.12, and the difference is the ground. Its foot is darker;
+          * this sits on `--c-surface`, where the artwork's brightest pixel — the anglerfish's
+          * lantern — composites to #182d48 at this opacity. `text-faint` reads 4.54 there, and the
+          * three labels in this column are faint. At 0.12 they fell to 4.13.
+          */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-3/5 overflow-hidden" aria-hidden>
+          <img
+            src="/agent-banner.webp"
+            alt=""
+            draggable={false}
+            className="h-full w-full origin-top scale-[1.02] object-cover object-center opacity-[0.09] select-none"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 34%, transparent 100%)',
+            }}
+          />
+        </div>
+
         <span
           className={`inline-flex w-fit items-center gap-2 rounded-xl border px-2.5 py-1.5 text-[12px] font-semibold tracking-[0.12em] uppercase ${
             refused
