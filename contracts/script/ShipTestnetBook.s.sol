@@ -94,17 +94,19 @@ contract ShipTestnetBook is Script {
 
         // `book.oracle` is deliberately left unset, and it is not an oversight.
         //
-        // `OraclePriceAdjuster` compares the feed answer rescaled to 1e18 against the swap's price
-        // computed in **raw** token units. On an eighteen-and-eighteen pair those are the same scale.
-        // On WETH/tUSDC — and on WETH/USDC, which is what mainnet trades — the raw price is 1e12
-        // smaller, so the oracle looks better on every fill and the taker is handed the clamp:
-        // `min(priceRatio, 2e18 - maxPriceDecay)`, which at the permissive setting is **twice** the
-        // tokenOut the curve priced. It does not revert. It fills, at a price nobody meant.
+        // The instruction is fixed — it takes both tokens' decimals now and scales the feed answer
+        // to the raw-unit price the curve works in, so WETH/tUSDC no longer hands the taker twice
+        // the tokenOut. See #175, `OraclePriceAdjuster`, and
+        // `test/subfloor/OracleAdjusterMismatchedPair.t.sol`, which fills on an eighteen-and-six
+        // pair through the shipped router.
         //
-        // Measured in `test/subfloor/OracleAdjusterDecimals.t.sol`. There is an exponent that lines
-        // the two sides up, but it means passing something other than the feed's decimals in the
-        // argument named `oracleDecimals`, which is a trap for the next reader rather than a fix.
-        // See #175.
+        // What is not done is the deployment. The live router parses the **old** four-field
+        // encoding at `0xb2`, so a book built from this commit with a feed would have its
+        // `tokenInDecimals` byte read as the first byte of the oracle address. Turning the oracle on
+        // means redeploying and reverifying the router first, then re-shipping the book. Until that
+        // happens the field stays zero, which costs the position an improvement it never had rather
+        // than risking a fill nobody meant.
+
         return ConcentratedBook.build(book);
     }
 

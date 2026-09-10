@@ -169,7 +169,11 @@ contract ConcentratedBookTest is Test {
             maxStaleness: 3600,
             decimals: 8,
             maxPriceDecay: 0.9e18,
-            onDirectionAToB: true
+            onDirectionAToB: true,
+            // Deliberately not the fixture's own decimals. Only the bytes are under test here, and
+            // two different numbers catch a builder that pushes them the wrong way round.
+            tokenADecimals: 18,
+            tokenBDecimals: 6
         });
 
         bytes memory expected = bytes.concat(
@@ -179,7 +183,7 @@ contract ConcentratedBookTest is Test {
             FeeFlatIn.build(FEE),
             XYCConcentrateSwap.build(pinned.sqrtPriceMin, pinned.sqrtPriceMax),
             JumpIfDirection.build(false, uint16(ConcentratedBook.sizeOf(pinned))),
-            OraclePriceAdjuster.build(0.9e18, 3600, 8, address(0xFEED))
+            OraclePriceAdjuster.build(0.9e18, 3600, 8, 18, 6, address(0xFEED))
         );
         assertEq(ConcentratedBook.build(pinned), expected, "the full-set book");
         assertEq(expected.length, ConcentratedBook.sizeOf(pinned), "sizeOf agrees with build");
@@ -337,6 +341,10 @@ contract ConcentratedBookTest is Test {
     /// The adjuster hands the taker the feed price when it beats the curve. It is single-direction
     /// by construction, so the book emits it behind a `JumpIfDirection`: applying it to both sides
     /// would give the spread away twice. This is that gate, measured.
+    ///
+    /// @dev The declared decimals are the fixture's, eighteen on both sides, which is the case the
+    ///      adjuster was always safe on. `OracleAdjusterMismatchedPair.t.sol` runs the same gate on
+    ///      an eighteen-and-six pair, which is where it was not.
     function test_theOracleImprovesOneDirectionAndLeavesTheOtherAlone() public {
         FeedMock feed = new FeedMock(int256(2_600e8), block.timestamp);
 
@@ -350,7 +358,9 @@ contract ConcentratedBookTest is Test {
             maxStaleness: 3600,
             decimals: 8,
             maxPriceDecay: 0.9e18,
-            onDirectionAToB: true
+            onDirectionAToB: true,
+            tokenADecimals: 18,
+            tokenBDecimals: 18
         });
         (ISwapVM.Order memory adjustedOrder,) = _shipBook(adjusted, address(fullRouter));
 
