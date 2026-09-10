@@ -40,7 +40,9 @@ import { ValidateSeriesEpoch } from "../../instructions/SeriesEpochManager.sol";
 ///   `sqrtPriceMin` and `sqrtPriceMax`, which is where the capital efficiency comes from and what
 ///   makes a fixed inventory quote a tight spread on both sides.
 /// - `OraclePriceAdjuster` (0xb2), optional, hands the taker the better of the curve price and the
-///   feed price. It is single-direction by construction — a Chainlink feed is quoted one way round
+///   feed price. This repo's copy diverges from upstream: it takes both tokens' decimals, because
+///   upstream compares a 1e18-scaled answer against a raw-unit price and is unsafe on any pair that
+///   is not eighteen-and-eighteen. It is single-direction by construction — a Chainlink feed is quoted one way round
 ///   and the instruction only ever moves the price in the taker's favour — so applying it to both
 ///   sides of a book would give away the spread twice. It is therefore emitted behind a
 ///   `JumpIfDirection` (0x30) that skips it on the other side.
@@ -82,12 +84,29 @@ library ConcentratedBook {
     /// @param maxPriceDecay Cap on the adjustment, 1e18 scaled, strictly below `ONE`.
     /// @param onDirectionAToB The single direction the feed is quoted for: true when the feed
     ///                     prices `tokenB` per `tokenA` with `tokenA < tokenB`.
+    /// @param tokenADecimals ERC-20 decimals of `tokenA`.
+    /// @param tokenBDecimals ERC-20 decimals of `tokenB`. Both are needed because the adjuster
+    ///                     compares the feed answer against a price in raw token units, so it has
+    ///                     to know how far apart those units are. Getting either wrong on a
+    ///                     mismatched pair does not revert, it gives the taker up to twice the
+    ///                     `tokenOut` the curve priced — see `OraclePriceAdjuster`.
     struct Oracle {
         address feed;
         uint16 maxStaleness;
         uint8 decimals;
         uint64 maxPriceDecay;
         bool onDirectionAToB;
+        uint8 tokenADecimals;
+        uint8 tokenBDecimals;
+    }
+
+    /// @notice `(tokenInDecimals, tokenOutDecimals)` for the one direction the adjuster runs on.
+    /// @dev The adjuster sits behind a `JumpIfDirection` that skips it on the other side, so there
+    ///      is exactly one direction to describe and `onDirectionAToB` names which.
+    function _adjusterDecimals(Oracle memory oracle) private pure returns (uint8 tokenInDecimals, uint8 tokenOutDecimals) {
+        return oracle.onDirectionAToB
+            ? (oracle.tokenADecimals, oracle.tokenBDecimals)
+            : (oracle.tokenBDecimals, oracle.tokenADecimals);
     }
 
     /// @param sqrtPriceMin  Lower bound, `sqrt(price * 1e18)`. Build it with `bounds`.
@@ -132,8 +151,9 @@ library ConcentratedBook {
         if (book.decayPeriod > 0) size += Decay.sizeOf(book.decayPeriod);
         if (book.feeBps > 0) size += FeeFlatIn.sizeOf(book.feeBps);
         if (book.oracle.feed != address(0)) {
+            (uint8 tokenInDecimals, uint8 tokenOutDecimals) = _adjusterDecimals(book.oracle);
             size += JumpIfDirection.sizeOf(book.oracle.onDirectionAToB, 0) +
-                OraclePriceAdjuster.sizeOf(book.oracle.maxPriceDecay, book.oracle.maxStaleness, book.oracle.decimals, book.oracle.feed);
+                OraclePriceAdjuster.sizeOf(book.oracle.maxPriceDecay, book.oracle.maxStaleness, book.oracle.decimals, tokenInDecimals, tokenOutDecimals, book.oracle.feed);
         }
     }
 
@@ -162,8 +182,9 @@ library ConcentratedBook {
         // After the curve, because the adjuster reads the amounts the curve computed. Skipped on
         // the direction the feed is not quoted for.
         if (book.oracle.feed != address(0)) {
+            (uint8 tokenInDecimals, uint8 tokenOutDecimals) = _adjusterDecimals(book.oracle);
             ptr = JumpIfDirection.build(ptr, !book.oracle.onDirectionAToB, uint16(programSize));
-            ptr = OraclePriceAdjuster.build(ptr, book.oracle.maxPriceDecay, book.oracle.maxStaleness, book.oracle.decimals, book.oracle.feed);
+            ptr = OraclePriceAdjuster.build(ptr, book.oracle.maxPriceDecay, book.oracle.maxStaleness, book.oracle.decimals, tokenInDecimals, tokenOutDecimals, book.oracle.feed);
         }
 
         return ptr.resolve();

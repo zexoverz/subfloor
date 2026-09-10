@@ -3,16 +3,11 @@ package:
   name: subfloor_refusals
   version: v0.1.0
   url: https://github.com/zexoverz/subfloor
+  image: ./logo.png
   description: |
     Fills refused by a recipient-keyed price floor enforced inside SwapVM settlement on Base.
     A refusal is a revert and emits no logs, so this reads transaction status and the call tree —
     the only place these numbers exist.
-  doc: |
-    Fills the floor turned away, on Base.
-
-    A refusal is a revert. Reverted transactions emit no logs, so a subgraph cannot see one — this
-    module reads transaction status and the call tree, which is where the numbers actually are.
-
 protobuf:
   files:
     - subfloor.proto

@@ -375,6 +375,26 @@ instructions to the `0x20` guard bank and run a property suite against the full 
 An agent can be handed a whole portfolio on Aqua and still cannot hurt you. That is what turns Aqua
 into somewhere agent capital can actually live.
 
+**Upstream, we found and fixed a live giveaway in SwapVM.** `OraclePriceAdjuster` compares a
+1e18-scaled Chainlink answer against a swap price computed from raw token amounts. On any pair whose
+tokens differ in decimals — WETH/USDC included — the two are 1e12 apart, so the feed looks better on
+every fill, the ratio saturates `min(priceRatio, 2e18 - maxPriceDecay)`, and the taker is handed the
+cap. Measured through our own router: **5,046,836,538 out where the curve priced 2,523,418,269.
+Exactly twice, and no revert.** No setting avoids it, because `maxPriceDecay < ONE` is required at
+build, so some giveaway is always expressible.
+
+[`1inch/swap-vm#31`](https://github.com/1inch/swap-vm/issues/31) had reported the scale mismatch and
+been closed as out of focus; what was missing was that it pays out rather than merely misbehaves.
+The fix scales the answer to `10 ** (18 + tokenOutDecimals - tokenInDecimals)`, which on an
+eighteen-and-eighteen pair is the original instruction unchanged. It is in our fork with an
+end-to-end test on an 18/6 book, written up as [counterexample 3](docs/counterexamples.md), and
+offered upstream as [`1inch/swap-vm#197`](https://github.com/1inch/swap-vm/pull/197) with a test on
+their own fixture, taking their suite from 797 to 803.
+
+That counterexample is the one worth reading, because it is the one the floor does **not** catch. A
+floor bounds how bad a fill can be; it does not make a wrong price right. Anything that treats a
+settlement guard as a substitute for correct pricing has mistaken a backstop for a brake.
+
 ### Ledger
 
 Every hardware-wallet integration signs a transaction. This one signs the constraint the chain then

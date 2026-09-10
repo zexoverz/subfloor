@@ -19,3 +19,6 @@ docs/DEMO-LIVE.md
 feedbacks/
 # Deliberate frontend assets are not browser artefacts: the hero drawing ships with the page.
 !frontend/public/*.png
+# The Substreams package image is part of the manifest: without it `substreams pack` fails on a
+# fresh clone, and the registry listing goes up with a blank tile.
+!indexer/substreams/logo.png

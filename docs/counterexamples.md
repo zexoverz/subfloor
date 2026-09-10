@@ -72,12 +72,55 @@ worse than no fuzz test: the counter goes up, the suite is green, and nobody loo
 
 ---
 
+## 3 — A scaling bug the floor does not catch: twice the fill, and no revert
+
+**Against:** the shipped router, with the settlement check present and working. This one is here
+because the first two could be read as "the floor makes bad programs safe", and it does not.
+
+`OraclePriceAdjuster` hands the taker the better of the curve price and a Chainlink feed. Upstream
+it rescales the feed answer to 1e18 and compares it against `amountOut * 1e18 / amountIn`, which is
+a price in **raw** token units. Those are the same scale only when both tokens carry eighteen
+decimals. On WETH/USDC the raw price is 1e12 smaller, so the feed looks better on every single fill,
+`min(priceRatio, 2e18 - maxPriceDecay)` clamps, and the taker is handed the clamp.
+
+**Measured through the shipped router, on an eighteen-and-six pair:**
+
+```
+book        : 1,000 WETH and 5,000,000 tUSDC, centred on 2,478.67, no fee and no decay
+in          : 1e18 wei, quoted through FloorRouter
+
+curve alone : 2,523,418,269 tUSDC
+feed $2,530 : 2,529,999,999   corrected, +0.26%, which is what the feed is better by
+feed $2,600 : 2,599,999,999   corrected
+misdeclared : 5,046,836,538   the same $2,478.67 feed, decimals declared 18 and 18: exactly 2x
+```
+
+Reproduce with `forge test --match-contract OracleAdjusterMismatchedPair -vvvv` and read the
+`FloorRouter::quote` returns.
+
+There is no revert anywhere in that. `maxPriceDecay` cannot express "no giveaway" — `maxPriceDecay
+< ONE` is required at build, so `maxIncrease` is always above `ONE` — and the floor only refuses a
+settlement that crosses it, so a maker whose floor sits below the doubled price is simply worse off
+by the difference on every fill, quietly, forever.
+
+The fix is one line: rescale the answer to `10 ** (18 + tokenOutDecimals - tokenInDecimals)`, the
+convention the swap price is already in. The instruction now takes both tokens' decimals to do it.
+
+**Why this one matters.** The floor is a settlement condition, not a pricing oracle. It bounds how
+bad a fill can be; it does not make a wrong price right, and a design that leans on it to do so has
+mistaken a backstop for a brake. Recorded because the bug was found while trying to ship a fuller
+position, and the suggestion that produced it — "just populate the remaining `Book` fields" — was
+the reasonable-sounding one. See #175.
+
+---
+
 ## Reproducing
 
 ```bash
 cd contracts
 forge test --match-contract RedThenGreen -vv     # counterexample 1, both arms
 forge test --match-contract HostileFuzz          # counterexample 2, green
+forge test --match-contract OracleAdjusterMismatchedPair -vv   # counterexample 3, both arms
 ```
 
 To see counterexample 2 red, delete the `FLOOR_REGISTRY.checkSettlement(...)` call in
