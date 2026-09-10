@@ -1023,31 +1023,6 @@ body:has(dialog[open]) {
  * the top layer.
  */
 /*
- * The wallet modal, once it has been promoted to the top layer.
- *
- * A popover arrives with a UA border, padding, background and `inset: 0; margin: auto` — which
- * would centre AppKit's own full-screen overlay inside a box the size of its content. Outer
- * document rules beat a shadow tree's `:host` rules on the host element, so these are what land;
- * `display` is deliberately not among them, because AppKit drives its own open and close with it.
- */
-w3m-modal[popover] {
-  inset: 0;
-  width: auto;
-  height: auto;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  overflow: visible;
-}
-
-w3m-modal[popover]::backdrop {
-  background: transparent;
-}
-
-/*
  * The hover card, in the top layer with everything else that has to sit over a dialog.
  *
  * A portal to <body> is not enough: a native <dialog> is promoted to the top layer and nothing in
