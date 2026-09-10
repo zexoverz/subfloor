@@ -148,7 +148,31 @@ export function AgentCard({
             )
           )}
 
-          <ul className="m-0 list-none space-y-1.5 p-0 text-[12.5px]">
+          {/*
+           * The machine itself, turning behind the list of what it is doing.
+           *
+           * Right-aligned and running off the edge, because a cog centred in its own space reads
+           * as an icon and a cog cut by the frame reads as part of something larger — which is
+           * what it is standing in for. Forty seconds and counter to the small ones: at this size
+           * a matching period would be three times the linear speed and the eye would go to the
+           * decoration instead of the sentences.
+           *
+           * Low enough to sit under the text without being a scrim under it — measured, not
+           * chosen: where a sentence crosses the thickest spoke the ground composites to #1e3448,
+           * where ink reads 11.24 and muted 5.31.
+           *
+           * The stroke is 0.6 in a 24-unit box, ~4px at this size. At lucide's default of 2 the
+           * spokes came out 14px thick and the thing read as a blob rather than as a gear.
+           */}
+          <Cog
+            size={168}
+            strokeWidth={0.6}
+            aria-hidden
+            className="gear pointer-events-none absolute -right-14 bottom-2 text-floor opacity-[0.07]"
+            style={{ '--gear-period': '40s', animationDirection: 'reverse' } as CSSProperties}
+          />
+
+          <ul className="relative m-0 list-none space-y-1.5 p-0 text-[12.5px]">
             {behaviour.map((line, i) => {
               /*
                * ponytail: reads the word out of the line, because the line is all there is. These
