@@ -6,7 +6,7 @@
 
 export const ENDPOINT =
   process.env.SUBFLOOR_SUBGRAPH ??
-  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v0.0.4";
+  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0";
 
 export const QUERIES = {
   floorFor: `query FloorFor($recipient: Bytes!) {
@@ -54,7 +54,10 @@ export const QUERIES = {
     referencePrice
     adverseDeviationBps
     referenceAgeSeconds
-    floorAtFill
+    takerFloorAtFill
+    makerExecutionRate
+    makerAdverseDeviationBps
+    makerFloorAtFill
     timestamp
   }
 }`,

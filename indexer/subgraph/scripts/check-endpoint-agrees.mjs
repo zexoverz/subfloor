@@ -18,6 +18,9 @@ const FILES = [
   "../../README.md",
   "../../docs/SPEC.md",
   "../../indexer/mcp/skill/SKILL.md",
+  // The MCP server's own default. It sat at v0.0.4 until 10 Sep because this list did not include it,
+  // which is the fourth time the paragraph above came true.
+  "../../indexer/mcp/src/queries.ts",
 ];
 
 const URL_RE = /https:\/\/api\.studio\.thegraph\.com\/query\/\d+\/subfloor-base-sepolia\/v[\d.]+/g;
