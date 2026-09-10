@@ -146,12 +146,14 @@ Three Railway services in project `subfloor`, all in `production`:
 |---|---|---|
 | `web` | the app and every `/api/*` endpoint | no |
 | `taker` | the taker bot | yes, the taker's |
-| `agent` | the policy loop, added 10 Sep | **no** |
+| `agent` | the policy loop; the house agent once `SUBFLOOR_DELEGATE_KEY` is set (`#236`) | **not yet** |
 
-The `agent` service reads the index, decides, composes, and **prints** the ship command. It does not
-ship, so there is no key in that image — `configFromEnv` requires only `SUBFLOOR_SUBGRAPH`. Shipping
-is a separate explicit step by whoever holds the delegate key, which is
-`docs/bring-your-own-agent.md`'s design and not an omission.
+The `agent` service builds from `main` (it deployed from a side branch until the evening of 10 Sep)
+and runs `policy/loop.ts`. Without `SUBFLOOR_DELEGATE_KEY` it reads the index, decides, composes and
+**prints** the ship command, holding no key. With the key set it is the house agent (`#236`): for every
+vault whose mandates reach `/api/mandates` it ships one book, recentres it on drift, docks on the
+fail-closed branches and retires older books so each vault runs one. The key is deliberately not set
+yet; it goes in from the dashboard, never from an agent session. See §9 step 4.
 
 `POLICY_INTERVAL_MS` is set to **180000** on the service; the code's own default is 120000 since
 `#237`. It was 30000 for part of the evening and that was a mistake worth recording, because the free
@@ -164,13 +166,26 @@ Half a tape disappearing looks like lost transactions and is not.
 last good read is younger than `maxIndexSilenceSeconds` rather than docking on every one. The
 frontend's half is `frontend/api/_lib/indexCache.ts` from the same PR.
 
+**`/api/subgraph` is the only way anything of ours reads Studio now.** The browser bundle
+(`VITE_SUBGRAPH_URL=/api/subgraph`), the consumers and the agent (`SUBFLOOR_SUBGRAPH` set to
+`<web>/api/subgraph`) share that one 30s cache. The agent needed it: its Railway egress IP was still
+being answered 429 by Studio directly after `#237` deployed, and through the proxy it read cleanly on
+the first cycle. A 429 is passed through and never cached.
+
+**`/api/mandates` holds the signed batches the house agent spends** (`#235`), on the `web-mandates`
+volume at `/data` (`SUBFLOOR_MANDATES_PATH=/data/mandates.json`). It refuses anything the house agent
+could not spend, with the reason. `SUBFLOOR_HOUSE_AGENT` names the agent it serves; unset, it answers
+503 rather than holding signatures for nobody. Attaching the volume replaced the web deployment
+outright, so the site returned Railway's 404 for about twenty seconds; expect the same on any volume
+change.
+
 There is no Vercel deployment any more. The `subfloor` project was deleted on 10 Sep because it
 served a stale build whose `/api/*` functions did not run, while the README's headline link pointed
 at it. `subfloor.vercel.app` now returns `DEPLOYMENT_NOT_FOUND`. If you find that URL anywhere, it is
 wrong.
 
 Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, `/api/fills`,
-`/api/report`. All returned 200 on 10 Sep.
+`/api/report`, `/api/subgraph` and `/api/mandates`. All returned 200 on 10 Sep.
 
 ---
 
@@ -427,7 +442,18 @@ cd indexer/substreams
 SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams registry publish ./subfloor-refusals-v0.1.0.spkg
 ```
 
-**4. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
+**4. Switch the house agent on, which also unsticks the live book (`#233`).** The code is merged and
+deployed. Three things are left, and none of them can be done from an agent session:
+
+- set `SUBFLOOR_DELEGATE_KEY` on the Railway `agent` service to the key for `0x28Fb6255…`
+- sign a mandate batch for vault `0xaf6b…` as its guardian `0x9ebdC8AC…`, naming that delegate, and
+  POST it to `/api/mandates`, from the interface once `#232` lands or from the keystore
+- decide the backstop: the vault's WETH→tUSDC absolute is 2,460.46, above the market on 10 Sep, so
+  even a recentred book cannot sell WETH until it is lowered with a guardian signature
+
+After that the agent retires the vault's two older books and recentres the newest one.
+
+**5. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
 
 **Open from the 10 Sep e2e, both small, both `frontend` except the first:**
 
