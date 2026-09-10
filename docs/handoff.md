@@ -153,9 +153,9 @@ Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, 
 | Claim | Value | How to re-check |
 |---|---|---|
 | Contract tests | **962 pass, 0 fail** | `cd contracts && forge test` |
-| Hostile programs fuzzed | **980,000** over 13 campaigns | `docs/fuzz-counter.json`, written only by CI |
+| Programs fuzzed | **980,000** over 13 campaigns; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
 | Scored fills | **261** | `curl .../api/fills` |
-| Refusals on chain | **2** | `curl .../api/refusals` |
+| Refusals on chain | **4** (read 10 Sep, 15:50 UTC) | `curl .../api/refusals` |
 | Index health | `hasIndexingErrors: false` | `{ _meta { hasIndexingErrors block { number } } }` |
 | Upstream suite | 797 → **803** | `1inch/swap-vm#197` |
 
