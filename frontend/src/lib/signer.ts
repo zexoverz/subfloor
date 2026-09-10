@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import type { Address } from 'viem';
 import type { Ledger } from './ledger.ts';
 import type { Wallet } from './wallet.ts';
@@ -64,4 +66,23 @@ export function walletSigner(wallet: Wallet): Signer {
     /* The step callback belongs to the device kit; a browser wallet reports no progress. */
     signTypedData: (typedData) => wallet.signTypedData(typedData),
   };
+}
+
+/**
+ * Report what the key said, once, and not on the page.
+ *
+ * A refusal is a moment, not a state. As a red line under the button it sat there after the owner
+ * had moved on, and it was the widest thing on a panel whose subject is four rows of transaction
+ * detail — the failure of one press outweighing the thing being signed.
+ *
+ * Only on a change, and never the value that was already there when this mounted. Both hooks keep
+ * their last error for the life of the session, so toasting whatever is present on mount would
+ * announce a refusal from ten minutes ago every time the sheet is opened.
+ */
+export function useSignerError(error: string | null): void {
+  const seen = useRef(error);
+  useEffect(() => {
+    if (error && error !== seen.current) toast.error(error);
+    seen.current = error;
+  }, [error]);
 }

@@ -7,7 +7,7 @@ import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import type { Ledger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
-import { deviceSigner, walletSigner } from '../lib/signer.ts';
+import { deviceSigner, useSignerError, walletSigner } from '../lib/signer.ts';
 
 export type SignPurpose = 'mandate' | 'lower';
 
@@ -111,6 +111,7 @@ export function DeviceSign({
   const other = wallet && (isWallet ? 'device' : 'wallet');
   /** Approved and applied, or approved and waiting out the registry's delay — both are a yes. */
   const answered = stage === 'signed' || stage === 'scheduled';
+  useSignerError(signer.error);
 
   /*
    * The frame is the host's to draw, not ours.
@@ -161,13 +162,6 @@ export function DeviceSign({
                 />
               </div>
 
-              {/*
-               * What went wrong, where it went wrong. A wallet that refuses reports something, and
-               * swallowing it leaves an owner pressing a button that does nothing and says nothing.
-               */}
-              {signer.error && stage !== 'waiting' && (
-                <p className="mt-2 text-[11.5px] leading-relaxed text-refuse">{signer.error}</p>
-              )}
 
               {mismatch && (
                 <p className="mb-3 text-[11.5px] leading-relaxed text-refuse">

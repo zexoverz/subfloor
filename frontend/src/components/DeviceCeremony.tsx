@@ -5,7 +5,7 @@ import { DeviceReview } from './DeviceReview.tsx';
 import { DeviceScreen } from './DeviceScreen.tsx';
 import { useLedger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
-import { deviceSigner, walletSigner } from '../lib/signer.ts';
+import { deviceSigner, useSignerError, walletSigner } from '../lib/signer.ts';
 
 /**
  * The two hardware moments, as a body that can sit in a screen or in a sheet.
@@ -76,6 +76,7 @@ export function DeviceCeremony({
   const signer = isWallet && wallet ? walletSigner(wallet) : deviceSigner(ledger);
   /** The other one, when the owner has one worth offering. */
   const other = wallet && (isWallet ? 'device' : 'wallet');
+  useSignerError(signer.error);
 
   return (
     <div className="grid items-start gap-5 md:grid-cols-[minmax(0,300px)_1fr]">
@@ -168,13 +169,6 @@ export function DeviceCeremony({
               </button>
             )}
 
-            {/*
-             * What went wrong, where it went wrong. A wallet that refuses reports something, and
-             * swallowing it leaves an owner pressing a button that does nothing and says nothing.
-             */}
-            {signer.error && stage !== 'waiting' && (
-              <p className="mt-2 text-[11.5px] leading-relaxed text-refuse">{signer.error}</p>
-            )}
 
             {/*
              * Named, not just refused. "Wrong device" leaves the owner guessing which of theirs it
