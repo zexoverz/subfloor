@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { copy } from '../copy.ts';
+import { Tide } from './Tide.tsx';
 import { Hoverable } from './Hoverable.tsx';
 import { PairIcons } from './PairIcons.tsx';
 import { ChainlinkMark } from './TokenIcon.tsx';
@@ -121,44 +122,7 @@ export function FloorControl({
         * the same water the landing page's currents are made of. Two at 5% read as a smudge; four
         * read as depth, and depth is the thing this control is about.
         */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[76px] overflow-hidden">
-        <svg
-          viewBox="0 0 1200 60"
-          preserveAspectRatio="none"
-          className="well-tide well-tide-slow absolute bottom-0 h-full"
-          fill="var(--c-floor)"
-          opacity="0.06"
-        >
-          <path d="M0 18 Q 75 0 150 18 T 300 18 T 450 18 T 600 18 T 750 18 T 900 18 T 1050 18 T 1200 18 V60 H0 Z" />
-        </svg>
-        <svg
-          viewBox="0 0 1200 60"
-          preserveAspectRatio="none"
-          className="well-tide absolute bottom-0 h-full"
-          fill="var(--c-floor)"
-          opacity="0.05"
-        >
-          <path d="M0 27 Q 75 9 150 27 T 300 27 T 450 27 T 600 27 T 750 27 T 900 27 T 1050 27 T 1200 27 V60 H0 Z" />
-        </svg>
-        <svg
-          viewBox="0 0 1200 60"
-          preserveAspectRatio="none"
-          className="well-tide well-tide-slow well-tide-deep absolute bottom-0 h-full"
-          fill="var(--c-floor)"
-          opacity="0.045"
-        >
-          <path d="M0 36 Q 75 18 150 36 T 300 36 T 450 36 T 600 36 T 750 36 T 900 36 T 1050 36 T 1200 36 V60 H0 Z" />
-        </svg>
-        <svg
-          viewBox="0 0 1200 60"
-          preserveAspectRatio="none"
-          className="well-tide well-tide-deep absolute bottom-0 h-full"
-          fill="var(--c-floor)"
-          opacity="0.06"
-        >
-          <path d="M0 45 Q 75 27 150 45 T 300 45 T 450 45 T 600 45 T 750 45 T 900 45 T 1050 45 T 1200 45 V60 H0 Z" />
-        </svg>
-      </div>
+      <Tide />
 
       <label className="relative block text-center text-[11.5px] tracking-[0.09em] text-faint uppercase">
         {copy.onboarding.worstPrice}

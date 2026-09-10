@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
+import { Tide } from './Tide.tsx';
 import { fixtures } from '../fixtures.ts';
 import { Act, Locked } from './Button.tsx';
 import { PanicButton } from './PanicButton.tsx';
@@ -34,10 +35,11 @@ function Feature({
   /**
    * Where it sits, and the two cases are really "is there a hole in this card".
    *
-   * Four of the six put their content at the foot and leave the middle empty, so the drawing goes
-   * into the hole — that is the space it was brought in to answer. The other two are full to the
-   * edges with a panel, and there the only place left is the corner it bleeds off, where it reads
-   * as something standing behind the panel.
+   * Three of the six put their content at the foot and leave the middle empty, so the drawing goes
+   * into the hole — that is the space it was brought in to answer. The other three keep the corner
+   * it bleeds off, where it reads as something standing behind what is already there: two are full
+   * to the edges with a panel, and the third carries a number big enough that anything centred sits
+   * across it.
    */
   artPlace?: 'corner' | 'middle';
   children?: ReactNode;
@@ -48,7 +50,13 @@ function Feature({
         * Behind everything either way, and sized like the tiles' so the two rows of cards on this
         * page read as one family. `overflow-hidden` on the card is what lets the cornered ones
         * bleed off it instead of sitting in a box of their own.
+        *
+        * The middle ones are centred on both axes. Pushed to the right they read as something
+        * hiding at the edge of a mostly empty card; in the middle of the hole they read as the
+        * subject of it, which is what a card with nothing else in its centre should have.
         */}
+      <Tide height={64} depth={0.5} />
+
       {art && (
         <img
           src={art}
@@ -57,7 +65,7 @@ function Feature({
           draggable={false}
           className={`tile-art pointer-events-none absolute w-auto object-contain opacity-90 select-none ${
             artPlace === 'middle'
-              ? 'top-1/2 right-3 h-[96px] max-w-[46%] -translate-y-1/2 object-right'
+              ? 'top-1/2 left-1/2 h-[96px] max-w-[70%] -translate-x-1/2 -translate-y-1/2'
               : 'right-1 -bottom-1 h-[76px] max-w-[40%] object-right-bottom'
           }`}
         />
@@ -76,9 +84,17 @@ export function FeatureGrid() {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <Feature label={copy.landing.f1Label} title={copy.landing.f1Title} artPlace="middle" art="/tiles/worst.webp">
-        <div className="flex flex-wrap gap-2">
-          <Act primary>{copy.floor.raise}</Act>
-          <Locked>{copy.floor.lower}</Locked>
+        {/*
+          * Halves rather than a wrapping row. At a third of the grid's width the two labels do not
+          * fit side by side at their own sizes, so they stacked — and stacked, the pair reads as two
+          * decisions taken one after the other rather than as the two directions of one. Given a
+          * half each they fill it and stay level, which is the shape they have everywhere else.
+          */}
+        <div className="grid grid-cols-2 gap-2">
+          <Act primary wide>
+            {copy.floor.raise}
+          </Act>
+          <Locked wide>{copy.floor.lower}</Locked>
         </div>
       </Feature>
 
@@ -97,7 +113,7 @@ export function FeatureGrid() {
         </div>
       </Feature>
 
-      <Feature label={copy.landing.f4Label} title={copy.landing.f4Title} artPlace="middle" art="/tiles/fills.webp">
+      <Feature label={copy.landing.f4Label} title={copy.landing.f4Title} art="/tiles/fills.webp">
         <div className="text-[30px] leading-none font-semibold tracking-tight">
           <RollingNumber value={fixtures.fuzz.programs} />
         </div>
