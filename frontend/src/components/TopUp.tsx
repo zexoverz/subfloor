@@ -57,31 +57,36 @@ export function TopUp({
 
   const rows = holdings ?? ACTIVE_TOKENS.map((t) => ({ symbol: t.symbol, amount: Number.NaN }));
   const hasAmount = Object.values(amounts).some((v) => Number(v) > 0);
+  const hasBalance = inventory.some((h) => h.amount > 0);
 
   return (
-    <div className="mt-3 border-t border-rule pt-3">
+    <div className="mt-4">
       {/*
        * Money in and money out on one row, because they are the two ends of one question and an
        * owner deciding between them should not have to look in two places to find both.
+       *
+       * Halves rather than content-width. They are the same kind of decision and neither is the
+       * default, so sizing them by the length of their labels would make "Withdraw everything" the
+       * bigger target for no reason but its name.
        *
        * Only the exit is red, and only when there is something to take. A destructive colour on a
        * button that would do nothing is a warning about nothing, and it spends the one colour that
        * has to keep meaning something.
        */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Act onClick={() => setOpen(true)}>
+      <div className={`grid gap-2.5 ${hasBalance ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <Act wide onClick={() => setOpen(true)}>
           <span className="flex items-center gap-2">
             <ArrowDownToLine size={13} strokeWidth={1.8} />
             {copy.wallet.topUp}
           </span>
         </Act>
 
-        {inventory.some((h) => h.amount > 0) && (
+        {hasBalance && (
           <button
             onClick={() => setLeaving(true)}
-            className="pushable push-panic push-sm mb-1 cursor-pointer rounded-xl px-3.5 py-2 text-xs font-semibold tracking-[0.06em]"
+            className="pushable push-panic mb-1.5 w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-xs font-semibold tracking-[0.06em]"
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
               <Undo2 size={13} strokeWidth={1.9} />
               {copy.wallet.withdraw}
             </span>

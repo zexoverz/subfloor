@@ -279,7 +279,7 @@ export function LiveView({
                     </dd>
                   </div>
                 ))}
-                <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-rule pt-2">
+                <div className="mt-2 flex items-baseline justify-between gap-3 pt-1">
                   <dt className="text-[11.5px] tracking-[0.08em] text-faint uppercase">{copy.desk.marketPrice}</dt>
                   <dd className="m-0 text-right font-medium">{formatPrice(reference.price)}</dd>
                 </div>
@@ -292,7 +292,7 @@ export function LiveView({
                 onWithdraw={onWithdraw}
               />
 
-              <p className="mt-3 flex items-center gap-2 border-t border-rule pt-3 text-[11px] text-faint">
+              <p className="mt-4 flex items-center gap-2 text-[11px] text-faint">
                 <ChainlinkMark />
                 {/* Linked, because "the reference" is a claim until someone can open it. */}
                 {reference.feed ? (
