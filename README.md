@@ -239,10 +239,15 @@ to be discovered.** Fixing [#175](https://github.com/zexoverz/subfloor/issues/17
 `OraclePriceAdjuster`'s encoding, and that instruction compiles into the router. Measured with
 `cast code` against the local artifact: **24,323 bytes on chain, 23,988 at `main`.**
 
-The behavioural difference on chain is nothing, and that is checkable rather than reassuring. The
-changed opcode is `0xb2`, the live book ships with `oracle` unset — the reason is written into
-`contracts/script/ShipTestnetBook.s.sol` — so no program on this router has ever reached that
-instruction. Every fill and every refusal above went through code the two versions share.
+The behavioural difference on chain is nothing, and that is measured rather than assumed. The changed
+opcode is `0xb2`. Every strategy ever shipped to this router is in the index, and querying all ten for
+their decoded opcodes returns `Salt`, `ValidateSeriesEpoch`, `Decay`, `FeeFlatIn` and
+`XYCConcentrateSwap` — `0xb2` appears in none of them, and neither does the `JumpIfDirection` that
+would gate it. Every fill and every refusal above went through code the two versions share.
+
+```graphql
+{ strategies(first: 1000) { strategyHash steps { opcode } } }
+```
 
 It is not redeployed because the address is load-bearing three days from submission: the subgraph's
 data source, the taker, the frontend and every explorer link in this table point at it, and trading
