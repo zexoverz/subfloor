@@ -84,11 +84,11 @@ export type CeremonyState = {
   /** What the vault itself holds. Null until read — never the owner's wallet, which is a different address. */
   inventory: Holding[] | null;
   /**
-   * A mandate nonce that has not been spent.
+   * A mandate nonce nobody has revoked.
    *
-   * Mandates are single-use, so signing against a spent nonce produces a signature the vault will
-   * reject — and it would look like a device fault rather than a stale number. Null until read,
-   * because guessing zero is right exactly once.
+   * Since #253 using a mandate does not spend it, but the owner or the guardian can revoke one, and
+   * signing against a revoked nonce produces a signature the vault will reject — which would look
+   * like a device fault rather than a stale number. Null until read.
    */
   nonce: bigint | null;
   steps: Step[];

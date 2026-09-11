@@ -18,9 +18,10 @@ import type { MandateMessage } from './mandate.ts';
  * and re-quote until its expiry, and only `revokeMandate` or expiry retires it. Before that, one
  * signature authorised exactly one ship and a re-centring agent ran through a batch in hours.
  *
- * Nothing is weakened by the batch. Each mandate still names the tokens, still caps the amount per
- * token, and still expires. What the owner chooses is how many re-quotes to authorise and until
- * when, which is a thing they can reason about: "fifty of these, until Friday" is a sentence.
+ * Nothing is weakened by lasting. Each mandate still names the tokens, still caps the amount per
+ * token (what is live at once, not each call), and still expires. What the owner chooses is which
+ * agent, how much and until when, which is a thing they can reason about: "this agent, up to this
+ * much, until the 25th" is a sentence.
  */
 const KEY = 'subfloor.mandate';
 
@@ -95,11 +96,11 @@ export function saveBatch(entry: StoredBatch): void {
 }
 
 /**
- * The next mandate to spend, given what the chain says is already used.
+ * The next mandate to use, given what the chain says is revoked.
  *
- * `isUsed` is asked rather than remembered. A local counter drifts the moment a ship lands and this
- * tab is closed, and the failure is a revert on a nonce that was already burned — which reads as a
- * broken agent rather than a stale browser.
+ * `isUsed` is asked rather than remembered, and callers pass `mandateRevoked`. The owner or the
+ * guardian can revoke from another device at any moment, and a browser that trusted its own record
+ * would find out as a revert — which reads as a broken agent rather than a stale browser.
  *
  * Returns null when the batch is spent or expired. That is not an error state to hide: the agent has
  * reached the end of what its owner authorised, and the screen's job is to say so and offer to sign

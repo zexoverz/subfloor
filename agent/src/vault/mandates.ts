@@ -10,10 +10,10 @@ import type { Mandate } from "./ship.ts";
 /// market maker re-quotes every few minutes; asking the owner to approve each one on hardware is not
 /// a product, it is a person sitting next to a laptop.
 ///
-/// The pattern that works, and the one this implements: the owner signs a batch once, on the device,
-/// and the agent burns them one at a time. Nothing is weakened by it — each mandate still names the
-/// tokens, still caps the amount per token, and still expires. What the owner chooses is *how many*
-/// re-quotes to authorise and for how long, which is a decision they can actually reason about.
+/// The owner signs once, on the device, and the agent ships under that mandate until it expires or
+/// the owner or the guardian revokes it. Each mandate still names the tokens, still caps the amount
+/// per token (what is live at once, not each call), and still expires. A batch only signs several
+/// windows ahead, and it is what a vault from before #253 needs.
 ///
 /// When the book runs out the agent stops. That is the whole point of it being finite: an agent that
 /// could mint its own authorisation would not need the device at all.
@@ -71,8 +71,8 @@ export function issueBatch(
 /// Holds a signed batch and hands out the next unused one.
 ///
 /// `used` is supplied by the caller from the chain — `mandateRevoked(nonce)` — rather than tracked
-/// here. A local counter drifts the moment a ship lands and the process restarts, and the failure is
-/// a revert on a nonce that was already burned.
+/// here. The owner or the guardian can revoke at any moment, and an agent that trusted its own record
+/// would find out as a revert.
 export class MandateBook {
   private readonly signed: SignedMandate[];
 

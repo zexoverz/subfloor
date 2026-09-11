@@ -32,43 +32,48 @@ the thing that could weaken its bounds is a different key it has never seen.
 
 ## Getting authority
 
-`_consumeMandate` marks `mandateUsed[nonce]`, so **one mandate authorises exactly one ship**. An
-agent that re-quotes needs a batch, signed once.
+Since #253 a mandate is **one signature for as long as it lasts**. The vault checks it on every ship
+and re-quote until its expiry, the per-token cap binds what is live at once rather than each call,
+and only expiry or `revokeMandate(nonce)` (the owner or the guardian, never you) retires it. An agent
+that re-centres every few minutes needs one.
 
 ```ts
 import { issueBatch, mandateDigest, MandateBook } from "./agent/src/vault/mandates.ts";
 
-const batch = issueBatch(
+const [mandate] = issueBatch(
   {
     delegate: AGENT,
     app: ROUTER,
     tokens: [WETH, USDC],
     maxAmounts: [1n * 10n ** 18n, 5_000n * 10n ** 6n],
-    expiry: BigInt(Math.floor(Date.now() / 1000) + 86_400),
+    expiry: BigInt(Math.floor(Date.now() / 1000) + 14 * 86_400),
   },
   firstNonce,
-  50,
+  1,
 );
 
-for (const m of batch) console.log(mandateDigest(VAULT, chainId, m));
+console.log(mandateDigest(VAULT, chainId, mandate));
 ```
 
-Hand those digests to the guardian. On hardware each renders as a sentence rather than a hash,
-because `contracts/erc7730/eip712-AquaGuardVault.json` describes the type — the agent, the tokens,
-the caps, the expiry. Approving a hash is a ritual; approving that is a decision.
+Hand that digest to the guardian. On hardware it renders as a sentence rather than a hash, because
+`contracts/erc7730/eip712-AquaGuardVault.json` describes the type — the agent, the tokens, the caps,
+the expiry. Approving a hash is a ritual; approving that is a decision.
 
-Then the agent holds the signatures and spends them:
+Then the agent holds the signature and ships under it until it expires:
 
 ```ts
-const book = new MandateBook(batch.map((mandate, i) => ({ mandate, signature: signatures[i] })));
-const next = book.next(nonce => onChainMandateUsed(nonce), BigInt(now));
+const book = new MandateBook([{ mandate, signature }]);
+const next = book.next(nonce => onChainMandateRevoked(nonce), BigInt(now));
 ```
 
-Used-ness is read from the chain, not counted locally. A local counter drifts the moment a ship
-lands and the process restarts, and the failure is a revert on a nonce already burned.
+Revocation is read from the chain, not remembered. The owner or the guardian can withdraw a mandate
+at any moment, and an agent shipping on a signature it had cached would find out as a revert.
 
-When the book runs out, the agent stops. That is the point of it being finite — an agent that could
-mint its own authority would not need the guardian at all.
+When the mandate expires or is revoked, the agent stops. That is the point of it being bounded — an
+agent that could mint its own authority would not need the guardian at all.
+
+A vault from a factory deployed before #253 still spends one mandate per ship. For one of those, sign
+several with `issueBatch(template, firstNonce, n)` and the book spends them lowest nonce first.
 
 ## Deciding
 
