@@ -10,7 +10,7 @@ Since #274 the house agent can run that way. This is the runbook.
 | the delegate key | nowhere in the clear; sealed in `SUBFLOOR_DELEGATE_SEALED` on the `agent` service | ciphertext |
 | the ring blocks | `SUBFLOOR_RING_BLOCKS` on `agent`, and `~/.subfloor/ring.json` on the owner's laptop | no key material |
 | the agent host's member credential | `/data/ring-member.json` on the `agent` volume, generated there on first start | yes, and it never leaves that volume |
-| the owner's member credential | `~/.subfloor/owner-member.json` | yes, laptop only |
+| the owner's member credential | `~/.subfloor/member.json` | yes, laptop only |
 | the ring's root | the owner's Ledger | on the device |
 
 The agent opens the envelope at start with its own member credential (`agent/src/house/key.ts`).
@@ -22,10 +22,14 @@ asymmetry as the floor: strengthening is cheap, weakening needs the hardware.
 1. On `agent`: a volume at `/data` and `SUBFLOOR_RING_MEMBER_PATH=/data/ring-member.json`. On the next
    start the log says `[ring] this host is ring member <id>`. While nothing is sealed it keeps trading
    on `SUBFLOOR_DELEGATE_KEY`, so there is no gap.
-2. On the owner's laptop, Ledger plugged in and unlocked:
-   `bash scripts/key-ring-setup.sh <id>`. It creates the ring on the device if there is none, adds the
-   agent host by its public id, and seals the delegate key straight from the keystore without
-   printing it.
+2. The ring on whichever machine has the Ledger, the seal on whichever has the delegate keystore.
+   Only public ids and the ring blocks move between them:
+   - owner's laptop: `bash scripts/key-ring-setup.sh id` prints that laptop's member id
+   - the Ledger machine, device plugged in and unlocked: `bash scripts/key-ring-setup.sh ring
+     <agent id> <laptop id>` creates the ring on the device if there is none and adds both ids; send
+     the resulting `~/.subfloor/ring.json` to the owner
+   - owner's laptop: `bash scripts/key-ring-setup.sh seal <ring.json>` seals the delegate key
+     straight from the keystore without printing it
 3. On `agent`: `SUBFLOOR_RING_BLOCKS` from `~/.subfloor/ring.json` and `SUBFLOOR_DELEGATE_SEALED` from
    `~/.subfloor/delegate.sealed.json`, then delete `SUBFLOOR_DELEGATE_KEY`. The log says
    `[ring] opened the delegate key from the Key Ring`.
@@ -37,11 +41,14 @@ A revocation that a fallback could route around would not be a revocation.
 
 ```bash
 cd agent && node --experimental-strip-types src/cli.ts revoke \
-  --member ~/.subfloor/owner-member.json --ring ~/.subfloor/ring.json \
+  --member ~/.subfloor/member.json --ring ~/.subfloor/ring.json \
   --member-id <agent id> --reseal ~/.subfloor/delegate.sealed.json
 ```
 
-Approve on the Ledger. Put the new `ring.json` and `delegate.sealed.json` into the two variables. The
+Run it on the Ledger machine and approve on the device. `--reseal` opens the key on that machine to
+seal it again on the new branch, so whoever holds the Ledger sees it for that moment; if that should
+not be them, the owner reseals instead. Put the new `ring.json` and `delegate.sealed.json` into the
+two variables. The
 agent restarts, cannot derive the ring key on the new branch, logs `the kill switch working. Not
 trading.`, and watches instead.
 
