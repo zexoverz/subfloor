@@ -398,8 +398,8 @@ from verifier-produced bytes so it could be verified (#167). These are the live 
 |---|---|
 | FloorRegistry | `0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123` |
 | FloorRouter | `0x03189D102286fa8cDd0fBF3578B492e67e665A27` |
-| VaultFactory | `0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3` (since 12 Sep, #253's vault; `0xbfF5…A7C5` before) |
-| AquaGuardVault | `0x1168C48a74055486BC4D1E7036d3b1aC4bb75586` (since 12 Sep; `0xaf6b…c33f` before, docked and emptied into it) |
+| VaultFactory | `0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3` (since 11 Sep, #253's vault; `0xbfF5…A7C5` before) |
+| AquaGuardVault | `0x1168C48a74055486BC4D1E7036d3b1aC4bb75586` (since 11 Sep; `0xaf6b…c33f` before, docked and emptied into it) |
 | Aqua (ours) | `0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB` |
 | tUSDC | `0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD` |
 | TestnetFaucet | `0x044BB6a857A875e30f8933aDf652905d02EB65D2` |
@@ -435,6 +435,12 @@ and every provenance block. Everything of ours already reads through that one or
 **Published 11 Sep** as subgraph `vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5`, deployment `QmfYvt…`,
 the same one Studio serves. The gateway answered about 40 seconds after the publish, at the same
 block as Studio with identical entities, and production reads it first.
+
+**HyperSync on a paid plan, 11 Sep.** The builder moved Envio HyperSync to the Starter plan ($70) and
+rotated `SUBFLOOR_HYPERSYNC_TOKEN` on Railway, so both data paths the app reads are paid rather than
+shared free tiers: fills and refusals come through HyperSync (`/api/fills`, `/api/refusals`, the
+taker's book discovery), the index through the Graph gateway. Checked after the rotation:
+`/api/refusals` and `/api/fills` answered 200, with 6 refusals and 325 fills on the tape.
 
 ### Verified addresses (Base, chainId 8453)
 
@@ -1045,7 +1051,7 @@ Aqua maker. This is the answer to Round 2 objection 1 (§1) — but only if buil
   every ship and re-quote until its expiry, and the per-token cap binds **what is live at once**
   (`committed[token] + amount <= cap`), not each call, so re-shipping cannot compound past what the
   guardian signed. `revokeMandate(nonce)`, owner or guardian and never the delegate, is how one is
-  withdrawn early; the view is `mandateRevoked(nonce)`. **Live since 12 Sep:** factory `0x5c43…`
+  withdrawn early; the view is `mandateRevoked(nonce)`. **Live since 11 Sep:** factory `0x5c43…`
   and vault `0x1168…`, both Sourcify `match`, the vault under one fourteen-day mandate (nonce 0).
   The previous vault `0xaf6b…` was docked and emptied into it by `scripts/new-vault.sh`.
 - Delegate-callable, exhaustively: **compose/ship/dock/update-quote. Nothing else.**
