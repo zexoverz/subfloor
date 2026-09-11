@@ -432,6 +432,10 @@ is the fail-closed rule unchanged. `SUBFLOOR_GRAPH_API_KEY` goes as a bearer hea
 and every provenance block. Everything of ours already reads through that one origin (the handoff's
 §4), so the key lives on the `web` service only.
 
+**Published 11 Sep** as subgraph `vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5`, deployment `QmfYvt…`,
+the same one Studio serves. The gateway answered about 40 seconds after the publish, at the same
+block as Studio with identical entities, and production reads it first.
+
 ### Verified addresses (Base, chainId 8453)
 
 | Contract | Address | Provenance |
