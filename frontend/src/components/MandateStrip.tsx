@@ -9,6 +9,7 @@ import { PanicDialog } from './PanicDialog.tsx';
 import { buildMandate } from '../lib/mandate.ts';
 import { AgentHandover } from './AgentHandover.tsx';
 import { loadMandate, saveMandate, type StoredMandate } from '../lib/mandateStore.ts';
+import { handToHouseAgent, useHouseAgent, type PostResult } from '../lib/houseAgent.ts';
 import { floorPriceFromBps, formatPrice } from '../lib/rate.ts';
 import type { Ledger } from '../lib/ledger.ts';
 import type { Wallet } from '../lib/wallet.ts';
@@ -61,6 +62,9 @@ export function MandateStrip({
    * re-read of local storage — `held` below is computed before `onSigned` writes.
    */
   const [fresh, setFresh] = useState<StoredMandate | null>(null);
+  /** What the house agent said when the mandate was handed over, or null if it was not. */
+  const [handed, setHanded] = useState<PostResult | null>(null);
+  const house = useHouseAgent(vault);
   const ref = useRef<HTMLDialogElement>(null);
   const { mandate, inventory, reference, floor } = state;
 
@@ -114,6 +118,20 @@ export function MandateStrip({
         </div>
         {current && <Check size={14} strokeWidth={2.4} className="shrink-0 text-settle" />}
       </div>
+
+      {/*
+        * Whether the agent running here can actually act, which is a different fact from whether a
+        * mandate was signed. A vault that names it and holds no mandate for it looks like a working
+        * one until nothing ships, and that is the silence this line exists to break.
+        *
+        * Only when the vault names it. An owner running their own agent is told nothing, because
+        * this deployment knows nothing about theirs.
+        */}
+      {house.known && house.address && state.delegate?.toLowerCase() === house.address.toLowerCase() && (
+        <p className={`m-0 mt-2 text-[11.5px] leading-relaxed ${house.holds ? 'text-floor' : 'text-faint'}`}>
+          {house.holds ? copy.live.houseReady : copy.live.houseWaiting}
+        </p>
+      )}
 
       {/* Halves rather than content-width: they are the two ends of one decision and neither is
           the default, so sizing them by their labels would make the longer one the bigger target. */}
@@ -179,7 +197,7 @@ export function MandateStrip({
               ['Expires', `${mandate.expiresInDays} days`],
             ]}
             typedData={typed}
-            handover={<AgentHandover vault={vault} mandate={fresh} />}
+            handover={<AgentHandover vault={vault} mandate={fresh} handed={handed} />}
             standing={formatPrice(floorPriceFromBps(reference.price, floor.maxAdverseBps))}
             onSigned={(signature) => {
               if (!vault || !state.delegate || !typed) return;
@@ -200,6 +218,20 @@ export function MandateStrip({
               saveMandate(entry);
               setFresh(entry);
               onSigned();
+              /*
+               * Hand it to the agent this deployment runs, when the mandate is for it.
+               *
+               * Only then: a mandate naming somebody else's agent is not ours to keep, and the
+               * endpoint would refuse it anyway. The result is shown rather than thrown — the
+               * signature exists either way, and an owner running their own agent needs nothing
+               * from this endpoint.
+               */
+              if (house.address && entry.message.delegate.toLowerCase() === house.address.toLowerCase()) {
+                void handToHouseAgent(entry).then((r) => {
+                  setHanded(r);
+                  house.refresh();
+                });
+              }
             }}
             onDone={() => {
               setOpen(false);

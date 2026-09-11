@@ -3,6 +3,7 @@ import { Check, Copy, Download } from 'lucide-react';
 import type { Address } from 'viem';
 import { copy as strings } from '../copy.ts';
 import type { StoredMandate } from '../lib/mandateStore.ts';
+import type { PostResult } from '../lib/houseAgent.ts';
 
 /**
  * The end of the ceremony, which is a handover rather than a tick.
@@ -85,7 +86,16 @@ function CopyRow({
   );
 }
 
-export function AgentHandover({ vault, mandate }: { vault: Address | null; mandate: StoredMandate | null }) {
+export function AgentHandover({
+  vault,
+  mandate,
+  handed,
+}: {
+  vault: Address | null;
+  mandate: StoredMandate | null;
+  /** What the house agent said, or null when the mandate was not for it. */
+  handed?: PostResult | null;
+}) {
   if (!vault || !mandate) return null;
 
   return (
@@ -102,6 +112,21 @@ export function AgentHandover({ vault, mandate }: { vault: Address | null; manda
       />
 
       <p className="serif m-0 text-[13.5px] leading-relaxed text-faint">{strings.live.handoverOnce}</p>
+
+      {/*
+        * What the agent this deployment runs said about it. Absent unless the mandate was for it —
+        * an owner running their own sees the file above and nothing here, which is correct, because
+        * this endpoint has nothing to do with them.
+        */}
+      {handed?.ok === true && (
+        <p className="serif m-0 mt-2 text-[13.5px] leading-relaxed text-floor">
+          {handed.accepted > 0 ? strings.live.handoverHanded : strings.live.handoverRefused}
+          {handed.rejected.length > 0 && <span className="text-faint"> {handed.rejected.join('; ')}</span>}
+        </p>
+      )}
+      {handed?.ok === false && (
+        <p className="serif m-0 mt-2 text-[13.5px] leading-relaxed text-faint">{strings.live.handoverNotHanded}</p>
+      )}
     </div>
   );
 }

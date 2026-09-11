@@ -289,6 +289,8 @@ export const copy = {
      * vault trades through" if the interface only ever shows a nickname. Hiding it here would turn
      * the strongest claim in the entry into a claim about a label.
      */
+    houseUse: 'use the one running here',
+    houseHint: 'An agent this deployment runs. It trades any vault that names it and holds a mandate for it — and it can never move a token out of one.',
     agentAddressHint: 'the key that trades. Its private key is published; the floor is what makes that safe.',
     mandateSummary: 'what your device will sign',
     invalidAddress: 'that is not an address',
@@ -578,6 +580,11 @@ export const copy = {
     mandateHeld: 'signed. It covers every ship until it expires, or until you revoke it',
     mandateStale: 'signed for a different agent — it authorises nobody now',
     mandateNone: 'not signed. The agent cannot ship without it',
+    handoverHanded: 'Handed to the agent running here — it can ship now.',
+    handoverRefused: 'The agent would not keep it:',
+    handoverNotHanded: 'Could not reach the agent running here, so it has not been handed over. The file above is still everything an agent needs.',
+    houseReady: 'the agent running here holds a mandate for this vault',
+    houseWaiting: 'named, but it holds no mandate for this vault yet — sign one below',
     agentQuiet: 'no book is live. The index shows nothing shipped for this vault.',
     tourAgain: 'what am I looking at?',
     mandateSign: 'SIGN MANDATE',
