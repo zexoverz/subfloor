@@ -1,4 +1,4 @@
-import { cachedPost } from "./indexCache.ts";
+import { cachedPost, firstClean } from "./indexCache.ts";
 
 /// The only place a URL or a query string lives. Everything else in this package takes data.
 ///
@@ -16,9 +16,32 @@ import { cachedPost } from "./indexCache.ts";
 ///
 /// `SUBFLOOR_SUBGRAPH` overrides it, and Railway should set it so a subgraph deploy does not need a
 /// code deploy to follow.
-export const DEFAULT_ENDPOINT =
-  process.env.SUBFLOOR_SUBGRAPH ??
-  "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0";
+export const STUDIO_ENDPOINT = "https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0";
+export const DEFAULT_ENDPOINT = process.env.SUBFLOOR_SUBGRAPH ?? STUDIO_ENDPOINT;
+
+/// Where to ask when the primary does not answer cleanly. Studio by default, which is free to read
+/// and serves the same deployment; when the primary *is* Studio the list collapses to one.
+const FALLBACK_ENDPOINT = process.env.SUBFLOOR_SUBGRAPH_FALLBACK ?? STUDIO_ENDPOINT;
+export const INDEX_ENDPOINTS: readonly string[] = [...new Set([DEFAULT_ENDPOINT, FALLBACK_ENDPOINT])];
+
+const GATEWAY_HOST = "gateway.thegraph.com";
+
+/// The paid gateway's key, as a header, to the gateway and nowhere else. A key in the URL would be
+/// printed by `/api/health`, the startup line and every provenance block, all of which are public.
+export function headersFor(endpoint: string, key: string | undefined = process.env.SUBFLOOR_GRAPH_API_KEY): Record<string, string> {
+  if (!key) return {};
+  try {
+    return new URL(endpoint).hostname === GATEWAY_HOST ? { authorization: `Bearer ${key}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+/// An endpoint fit to print. The gateway also accepts its key as a path segment
+/// (`/api/<key>/subgraphs/...`), and an operator who configures it that way should not publish it.
+export function publicEndpoint(endpoint: string): string {
+  return endpoint.replace(/\/api\/[0-9a-f]{32}\//i, "/api/<key>/");
+}
 
 export const DAILY_QUALITY_QUERY = `query DailyQuality($since: Int!) {
   executionQualityDailySnapshots(
@@ -105,7 +128,9 @@ export async function query<T>(
   // see its own fetch rather than an answer another test left behind.
   const answer =
     fetchImpl === fetch
-      ? await cachedPost(endpoint, request)
+      ? endpoint === DEFAULT_ENDPOINT
+        ? await firstClean(INDEX_ENDPOINTS, request, (e) => headersFor(e))
+        : await cachedPost(endpoint, request, fetch, undefined, undefined, headersFor(endpoint))
       : await fetchImpl(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: request }).then(
           async (r) => ({ status: r.status, body: await r.text(), retryAfter: null }),
         );
