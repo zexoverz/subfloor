@@ -248,11 +248,12 @@ async function main(): Promise<void> {
     console.log(`[switch-on] effective floor now ${floorRate} (the ${bps} bps relative floor alone)`);
   }
 
+  const keystore = env("DELEGATE_ACCOUNT", "subfloor-delegate");
   console.log(`
 [switch-on] done on the vault's side. The last step is the agent's key, by hand:
-  1. find the keystore that is the delegate:   cast wallet address --account subfloor-testnet
-     (it must print ${delegate}; if not, try the other keystore)
-  2. print its private key:                    cast wallet decrypt-keystore subfloor-testnet
+  1. check the keystore is the delegate:   cast wallet address --account ${keystore}
+     (it must print ${delegate}; set DELEGATE_ACCOUNT if yours is named differently)
+  2. print its private key:                cast wallet decrypt-keystore ${keystore}
   3. paste it into Railway -> agent -> Variables -> SUBFLOOR_DELEGATE_KEY
 The agent restarts, finds these mandates, retires the vault's older books and recentres the newest.`);
 }
