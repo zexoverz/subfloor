@@ -261,6 +261,7 @@ export const copy = {
     wrapNote: 'You hold ETH but no WETH, so this wraps what is missing first — two signatures, not one.',
     /** Named so it reads as our failure to look, never as a finding about their wallet. */
     vaultReadFailed: 'Could not reach the factory, so whether this wallet owns a vault is unknown:',
+    stateReadFailed: 'The vault is there, but reading its state failed, so what is shown below may be incomplete:',
     ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */

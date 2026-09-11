@@ -113,6 +113,36 @@ export type CeremonyState = {
  */
 const MANDATE_NONCE_SCAN = 64n;
 
+/**
+ * Is this nonce unusable — revoked on a vault that has #253's bytecode, spent on one that does not.
+ *
+ * Both are `mapping(uint256 => bool) public` and both answer the same question for the interface:
+ * can a fresh mandate still be signed at this nonce. The older vaults on chain carry `mandateUsed`
+ * and revert on `mandateRevoked`, and because reads are batched through Multicall3 that revert took
+ * the whole tick with it — the factory read in the same batch failed too, and its error was
+ * rendered under "could not reach the factory" (#266).
+ *
+ * Tried in that order because the new name is the one the migration moves vaults onto, so the
+ * fallback costs a round trip only on a vault that has not been moved yet.
+ */
+async function nonceUnavailable(vault: Address, nonce: bigint): Promise<boolean> {
+  try {
+    return (await publicClient.readContract({
+      address: vault,
+      abi: vaultAbi,
+      functionName: 'mandateRevoked',
+      args: [nonce],
+    })) as boolean;
+  } catch {
+    return (await publicClient.readContract({
+      address: vault,
+      abi: vaultAbi,
+      functionName: 'mandateUsed',
+      args: [nonce],
+    })) as boolean;
+  }
+}
+
 export function useCeremony(address: Address | null, vault: Address | null): CeremonyState {
   /** Mock mode advances one step per press, so the whole flow is walkable with nothing deployed. */
   const [mockDone, setMockDone] = useState(0);
@@ -171,8 +201,15 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
               publicClient.readContract({ address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [vault] }),
             ),
           ),
-          // Nonce 0 is the usual answer and the loop below only looks further if it is taken.
-          publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'mandateRevoked', args: [0n] }),
+          /*
+           * Nonce 0 is the usual answer and the loop below only looks further if it is taken.
+           *
+           * Read through the tolerant path rather than inline: a vault predating #253 reverts on
+           * `mandateRevoked`, and inside this batch that failure is not its own — it fails the
+           * whole `Promise.all`, so owner, delegate, guardian, floors and inventory all go missing
+           * over one mapping's name.
+           */
+          nonceUnavailable(vault, 0n),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -220,13 +257,8 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
         } else {
           let next: bigint | null = null;
           for (let n = 1n; n <= MANDATE_NONCE_SCAN; n++) {
-            const spent = await publicClient.readContract({
-              address: vault,
-              abi: vaultAbi,
-              functionName: 'mandateRevoked',
-              args: [n],
-            });
-            if (!(spent as boolean)) {
+            const spent = await nonceUnavailable(vault, n);
+            if (!spent) {
               next = n;
               break;
             }

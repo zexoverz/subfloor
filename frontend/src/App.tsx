@@ -13,6 +13,7 @@ import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { MandateStrip } from './components/MandateStrip.tsx';
 import { GuardianStrip } from './components/GuardianStrip.tsx';
+import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
@@ -214,7 +215,14 @@ export default function App() {
            * still in flight.
            */
           vaultChecked={own.known && ceremony.settled}
-          vaultError={own.error ?? ceremony.error}
+          /*
+           * Whose failure it was, not just that there was one. These are two different reads — the
+           * factory's list of vaults, and the vault's own state — and both were rendered under
+           * "could not reach the factory", so a vault read that reverted was reported as a factory
+           * that could not be reached (#266). One string for two failures sent the last diagnosis
+           * looking in the wrong contract.
+           */
+          vaultError={own.error ? `${copy.wallet.vaultReadFailed} ${own.error}` : ceremony.error ? `${copy.wallet.stateReadFailed} ${ceremony.error}` : null}
           connected={Boolean(wallet.address)}
           connecting={wallet.connecting}
           onSetAgent={async (next) => {

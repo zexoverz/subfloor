@@ -46,6 +46,12 @@ export const vaultAbi = [
   { type: 'function', name: 'setGuardian', stateMutability: 'nonpayable', inputs: [{ name: 'newGuardian', type: 'address' }], outputs: [] },
   /** A mandate is single-use; this says whether a nonce has already been spent. */
   { type: 'function', name: 'mandateRevoked', stateMutability: 'view', inputs: [{ name: 'nonce', type: 'uint256' }], outputs: [{ type: 'bool' }] },
+  /*
+   * The same mapping under the name it had before #253. Vaults deployed against the old bytecode —
+   * including the ones live on Base Sepolia today — answer this and revert on the one above, and
+   * the interface has to read whichever the vault in front of it actually has.
+   */
+  { type: 'function', name: 'mandateUsed', stateMutability: 'view', inputs: [{ name: 'nonce', type: 'uint256' }], outputs: [{ type: 'bool' }] },
   { type: 'function', name: 'dock', stateMutability: 'nonpayable', inputs: [{ name: 'app', type: 'address' }, { name: 'strategyHash', type: 'bytes32' }, { name: 'tokens', type: 'address[]' }], outputs: [] },
 ] as const;
 

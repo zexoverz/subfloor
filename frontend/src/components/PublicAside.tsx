@@ -173,7 +173,8 @@ export function PublicAside({
             /* Ours to explain, not theirs to interpret: we could not look, so we say nothing about
                what we would have found. */
             <p className="m-0 text-[12.5px] leading-relaxed text-refuse">
-              {copy.wallet.vaultReadFailed} <span className="text-faint">{vaultError}</span>
+              {/* The label travels with the error now, because which read failed is half the answer. */}
+              <span className="text-faint">{vaultError}</span>
             </p>
           ) : !checked ? (
             /*
