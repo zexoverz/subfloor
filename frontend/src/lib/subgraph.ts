@@ -17,16 +17,45 @@ import type { DataSource, Stats, TapeEntry } from '../types.ts';
  */
 const ENDPOINT = import.meta.env?.VITE_SUBGRAPH_URL ?? '';
 
+/**
+ * Same-origin first, because that is the only side the paid gateway key can live on.
+ *
+ * `/api/subgraph` tries the network gateway and falls back to Studio behind it (#257). The key is a
+ * server secret and must stay one: a `VITE_` variable is compiled into a file the browser
+ * downloads, so putting it there would publish it.
+ *
+ * Without this the board queried Studio directly and the gateway fix did not reach it — which is
+ * the "half the tape" symptom, and it is worse than it reads. Under a 429 the refusals still render
+ * (they come from `/api/refusals`, which asks the chain for transaction status) while the fills do
+ * not, so a screen showing only refusals looks like a venue where nothing ever fills.
+ *
+ * `VITE_SUBGRAPH_URL` stays as the fallback for `vite dev`, where nothing serves `/api`.
+ */
+const PROXY = '/api/subgraph';
+
 type Query = { query: string; variables?: Record<string, unknown> };
 
+/** Set once the proxy has answered, or failed to exist, so the choice is made a single time. */
+let proxyWorks: boolean | null = null;
+
 async function ask<T>(body: Query): Promise<T | null> {
-  if (!ENDPOINT) return null;
+  if (!ENDPOINT && proxyWorks === false) return null;
   try {
-    const response = await fetch(ENDPOINT, {
+    const viaProxy = proxyWorks !== false;
+    const response = await fetch(viaProxy ? PROXY : ENDPOINT, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+    /*
+     * A 404 means nothing is serving `/api` — `vite dev`, or a static host. Remember that and take
+     * the direct endpoint from here on rather than paying a failed round trip per query.
+     */
+    if (viaProxy && response.status === 404) {
+      proxyWorks = false;
+      return ENDPOINT ? ask<T>(body) : null;
+    }
+    if (viaProxy) proxyWorks = true;
     const json = (await response.json()) as { data?: T; errors?: unknown[]; message?: string };
     /*
      * The status alone proves nothing here, twice over. A GraphQL error arrives with HTTP 200, and
@@ -102,10 +131,27 @@ const SNAPSHOT = `
 const HISTORY = 300;
 
 /** This vault's own trading. */
+/*
+ * The books this vault has live, in the register §10 asks for.
+ *
+ * `classification` and `families` are computed by the indexer from the program's own opcodes — the
+ * agent zone used to print three fixture lines about a TWAP exit and an auction rebalance that no
+ * vault here has ever run (#252). Asked only for the owner's own vault, because the public page has
+ * no business naming what a stranger's strategies are.
+ */
+const STRATEGIES = `
+    strategies(first: 10, orderBy: shippedBlock, orderDirection: desc, where: { maker: $maker, active: true }) {
+      strategyHash
+      classification
+      families
+      stepCount
+    }`;
+
 const MINE = `
   query Fills($maker: Bytes!) {
     fillQualities(first: ${HISTORY}, orderBy: timestamp, orderDirection: desc, where: { maker: $maker }) {
 ${FILL_FIELDS}    }
+${STRATEGIES}
 ${SNAPSHOT}  }
 `;
 
@@ -232,6 +278,27 @@ async function askRefusals(
   }
 }
 
+/** One live book, as the indexer decoded it. */
+interface IndexedStrategy {
+  strategyHash: string;
+  classification: string;
+  families?: string[] | null;
+  stepCount?: number | null;
+}
+
+/**
+ * A book in the register a person reads, per §10 zone 3: never bytecode, never opcode names.
+ *
+ * The indexer's `classification` is the primary curve family and `families` is every one present,
+ * so a program running two shows both rather than being reported as only its first. The words are
+ * the indexer's own; nothing here invents a strategy the program does not contain.
+ */
+function describeStrategy(s: IndexedStrategy): string {
+  const families = (s.families ?? []).filter((f) => f && f !== s.classification);
+  const also = families.length > 0 ? ` with ${families.join(' and ')}` : '';
+  return `${s.classification}${also} · ${s.strategyHash.slice(0, 10)}`;
+}
+
 export type IndexData = {
   source: DataSource;
   /**
@@ -244,6 +311,13 @@ export type IndexData = {
   status: 'loading' | 'live' | 'empty' | 'failed';
   tape: TapeEntry[] | null;
   stats: Partial<Stats> | null;
+  /**
+   * What the vault's live books are, in words, decoded by the indexer from their own opcodes.
+   *
+   * Null when nobody has asked or the index has not answered — which is not the same as a vault
+   * with no books, and must not render as it (#252).
+   */
+  agent: string[] | null;
   /**
    * What the last read saw, so freshness is checkable rather than assumed.
    *
@@ -297,6 +371,7 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
     status: 'loading',
     tape: null,
     stats: null,
+    agent: null,
     block: null,
     fetchedAt: null,
   });
@@ -304,9 +379,14 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
   const [asked, setAsked] = useState(0);
 
   useEffect(() => {
-    if (!ENDPOINT || (scope === 'mine' && !vault)) {
+    /*
+     * The proxy is always worth asking, so a missing `VITE_SUBGRAPH_URL` is no longer "nothing to
+     * ask" — on a deployment it is the normal case, because the endpoint lives on the server with
+     * the key. Only a proxy already known to be absent *and* no direct endpoint is nothing.
+     */
+    if ((!ENDPOINT && proxyWorks === false) || (scope === 'mine' && !vault)) {
       // Nothing configured to ask. Not a load in progress, and not an empty venue either.
-      setData((c) => ({ ...c, source: 'fixtures', status: 'failed', tape: null, stats: null }));
+      setData((c) => ({ ...c, source: 'fixtures', status: 'failed', tape: null, stats: null, agent: null }));
       return;
     }
     // Only the first pass may blank the tape. A poll that reset to `loading` would flash skeleton
@@ -329,6 +409,9 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
           fillQualities: FillRow[];
           _meta?: { block?: { number?: number } };
           executionQualityDailySnapshots: { fills: number; refusals: number; adverseDeviationP50Bps: number }[];
+          // Only the vault-scoped query selects these, so the public scope leaves them undefined —
+          // which is why it is optional here rather than an empty array.
+          strategies?: IndexedStrategy[];
         }>(
           scope === 'mine'
             ? { query: MINE, variables: { maker: vault?.toLowerCase() } }
@@ -347,6 +430,7 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
         setData((c) => ({
           ...c,
           source: 'chain',
+          agent: null,
           status: result ? 'empty' : 'failed',
           tape: [],
           stats: null,
@@ -460,6 +544,12 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
         block: result?._meta?.block?.number ?? c.block,
         fetchedAt: Date.now(),
         tape,
+        /*
+         * One line per live book, from the classification the indexer already computed. Absent from
+         * the public query, so a stranger's board leaves this alone rather than describing a vault
+         * that is not theirs.
+         */
+        agent: result?.strategies ? result.strategies.map(describeStrategy) : null,
         stats: {
           fills: snapshot?.fills ?? refused?.fills ?? fills.length,
           /*
@@ -484,7 +574,7 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
        * the index was answering perfectly.
        */
       console.error('[index] the reader failed while shaping the response', cause);
-      setData((c) => ({ ...c, source: 'fixtures', status: 'failed', tape: null, stats: null }));
+      setData((c) => ({ ...c, source: 'fixtures', status: 'failed', tape: null, stats: null, agent: null }));
     });
 
     /*

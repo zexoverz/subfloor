@@ -95,6 +95,15 @@ export default function App() {
     ...fed,
     tape: index.tape ?? (feedSource === 'simulated' ? fed.tape : []),
     ...(index.stats ? { stats: { ...fed.stats, ...index.stats } } : {}),
+    /*
+     * What the agent is doing, from the index or not at all.
+     *
+     * The fixture said "quoting both sides ±35 bps, decaying · TWAP exit 0.4 WETH over 6h · auction
+     * rebalance idle" on every board, for every vault, forever — three specific-sounding sentences
+     * about strategies this vault has never run (#252). An empty list is the honest answer when the
+     * index has not said: the zone renders nothing rather than something invented.
+     */
+    agent: index.agent ?? (feedSource === 'simulated' ? fed.agent : []),
   };
   /*
    * "What is in the vault" has to be the vault's balance. This used to render the owner's wallet

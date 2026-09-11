@@ -186,6 +186,15 @@ export function AgentCard({
             style={{ '--gear-period': '40s', animationDirection: 'reverse' } as CSSProperties}
           />
 
+          {/*
+            * Nothing shipped, or nothing known yet — either way there is no list. The fixture used
+            * to fill this space on every board, so an empty state was never reachable and never
+            * drawn; a vault with no live book now says so instead of describing one (#252).
+            */}
+          {behaviour.length === 0 && (
+            <p className="serif relative m-0 text-[12.5px] leading-relaxed text-faint">{copy.live.agentQuiet}</p>
+          )}
+
           <ul className="relative m-0 list-none space-y-1.5 p-0 text-[12.5px]">
             {behaviour.map((line, i) => {
               /*
