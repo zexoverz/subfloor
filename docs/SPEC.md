@@ -414,6 +414,24 @@ alias, so `SUBFLOOR_SUBGRAPH` on Railway is the thing to update, not the code de
 default is silent, and the endpoint keeps answering with `indexing_error` from a halted version
 while `/api/fills`, which reads the chain, stays green.
 
+**The paid index path, 11 Sep (#255).** Studio's development URL is capped at **3,000 queries a day on
+every plan**: the response carries `x-ratelimit-limit: 3000` with and without an API key, read 11 Sep
+after the builder moved Studio to the billing plan. Billing does not lift that cap. What it pays for
+is the network gateway (`gateway.thegraph.com/api/subgraphs/id/<id>`, 100,000 queries a month free,
+then $2 per 100,000), which only serves a subgraph once it is **published to The Graph Network** on
+Arbitrum One. `base-sepolia` carries `issuanceRewards: true` in the networks registry (v0.7.120), so
+the upgrade indexer picks a published subgraph up without curation. Publishing is also the rubric's
+"Published to The Graph Network" line below, so it is one step for two reasons.
+
+`/api/subgraph` reads the list `SUBFLOOR_SUBGRAPH`, then `SUBFLOOR_SUBGRAPH_FALLBACK` (Studio by
+default), and returns the first clean answer: data and no errors, so a 402 from an unfunded gateway,
+an auth error that arrives with a 200, a 429 or an unpublished version's `{"message":"Not found"}` all
+fall through. When neither answers cleanly the last failure is returned and nothing is cached, which
+is the fail-closed rule unchanged. `SUBFLOOR_GRAPH_API_KEY` goes as a bearer header to
+`gateway.thegraph.com` and nowhere else, because a key in the URL would be printed by `/api/health`
+and every provenance block. Everything of ours already reads through that one origin (the handoff's
+§4), so the key lives on the `web` service only.
+
 ### Verified addresses (Base, chainId 8453)
 
 | Contract | Address | Provenance |
@@ -1017,6 +1035,14 @@ Aqua maker. This is the answer to Round 2 objection 1 (§1) — but only if buil
   app, so the address named in the mandate is the only contract that can ever pull the shipped
   balance, and the guardian is approving it as much as the numbers.
   The vault validates the mandate on-chain, then ships to canonical Aqua with itself as maker.
+  **Changed 11 Sep (#253): a mandate is not spent by use.** Until then the vault marked every nonce
+  used on `ship` and `updateQuote`, so §10's "one signature, 14 days" was one signature per
+  re-centre, and a re-centring agent ran through a pre-signed batch in hours. Now one mandate covers
+  every ship and re-quote until its expiry, and the per-token cap binds **what is live at once**
+  (`committed[token] + amount <= cap`), not each call, so re-shipping cannot compound past what the
+  guardian signed. `revokeMandate(nonce)`, owner or guardian and never the delegate, is how one is
+  withdrawn early; the view is `mandateRevoked(nonce)`. The live vault `0xaf6b…` predates this and
+  keeps single-use mandates; taking it needs a new `VaultFactory` and a vault created from it.
 - Delegate-callable, exhaustively: **compose/ship/dock/update-quote. Nothing else.**
   - No arbitrary-call passthrough.
   - No delegate-reachable `approve` or `transfer`.
