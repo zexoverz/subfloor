@@ -44,6 +44,7 @@ const SWAPPED_TOPIC0 = "0x54bc5c027d15d7aa8ae083f994ab4411d2f223291672ecd3a344f3
 export const CHAIN = {
   rpc: process.env.SUBFLOOR_RPC ?? "https://sepolia.base.org",
   router: (process.env.SUBFLOOR_ROUTER ?? "0x03189D102286fa8cDd0fBF3578B492e67e665A27") as Address,
+  registry: (process.env.SUBFLOOR_REGISTRY ?? "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123") as Address,
   aggregator: (process.env.SUBFLOOR_AGGREGATOR ?? "0xa24A68DD788e1D7eb4CA517765CFb2b7e217e7a3") as Address,
   weth: (process.env.SUBFLOOR_WETH ?? "0x4200000000000000000000000000000000000006") as Address,
   quote: (process.env.SUBFLOOR_QUOTE ?? "0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD") as Address,
