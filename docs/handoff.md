@@ -42,8 +42,8 @@ does **not** lift the development URL's 3,000 queries a day (measured, §4). The
 network gateway, which needs the subgraph published to The Graph Network. `/api/subgraph` now tries
 the gateway first and Studio second (`#255`), so it is ready the moment both exist. The API key works
 (a public subgraph answered through the gateway on 11 Sep, after a first attempt minutes after it was
-created returned `API key not found`); our deployment answers `subgraph not found` there, so the
-network publish is the one step left (§9 step 2).
+created returned `API key not found`); the subgraph was then published to the network and production reads the gateway first, with Studio
+behind it (§4).
 
 ---
 
@@ -168,7 +168,7 @@ Both routers are Sourcify `exact_match`. Re-check:
 | App and API | `https://subfloor.xyz` (custom domain on the Railway `web` service, port 8080) |
 | Same, direct | `https://web-production-37798.up.railway.app` |
 | Subgraph, Studio | `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0` (free, 3,000 queries a day) |
-| Subgraph, gateway | not yet: needs the network publish and a working API key (§9 step 2) |
+| Subgraph, gateway (read first) | `https://gateway.thegraph.com/api/subgraphs/id/vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5`, published to The Graph Network on Arbitrum One on 11 Sep; needs the API key |
 
 **The index, measured 11 Sep 13:20 UTC.** Deployment `QmfYvtWkyPkNEwG5QVt83dcXG8D6YVDJjcTnN8VedZtEkn`,
 3 blocks behind the chain head, `hasIndexingErrors: false`. Studio answered
@@ -504,8 +504,18 @@ lowering and door one or remove them.
 that it was filed. Draft: `docs/check-in-2.md`. `docs/SPEC.md` records a missed check-in as
 elimination by technicality, so ask the builder before anything else.
 
-**2. Put the index on the paid gateway (`#255`).** The code is ready; the rest needs the builder's
-Studio account and wallet, so it is theirs to run.
+**2. ~~Put the index on the paid gateway~~ — done 11 Sep (`#255`).** Published as subgraph
+`vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5` (deployment `QmfYvt…`, the one Studio serves). The
+gateway answered about 40 seconds after the publish, at the same block as Studio and with identical
+entities (17 floor changes, 12 strategies, 317 fill qualities, same content hash). Both variables are
+on `web` and `/api/health` lists the gateway first. The steps are kept for the next subgraph deploy,
+which needs a new version published the same way.
+
+**How to tell production is on the gateway rather than falling back**, since the answers are
+identical: read Studio's `x-ratelimit-remaining`, send a few `/api/subgraph` queries with a fresh
+alias each so the cache cannot answer, and read it again. On 11 Sep five such queries moved Studio's
+counter by exactly one, the second read itself (2465 → 2464). A counter that drops by the number of
+queries means the gateway is refusing and Studio is carrying it.
 
 1. The query key exists: `subfloor` in Studio → API Keys, active, $5 spending limit. Checked on
    11 Sep against a public subgraph through the gateway. A key minutes old answered

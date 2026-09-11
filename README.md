@@ -279,6 +279,10 @@ That URL is free to query and capped at 3,000 queries a day. The app does not le
 402, a 429, an auth error or an empty answer, and fails closed when neither answers cleanly. Both
 serve the same deployment, so a number on screen reads the same whichever one answered.
 
+The subgraph is **published to The Graph Network** on Arbitrum One as
+[`vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5`](https://thegraph.com/explorer/subgraphs/vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5?chain=arbitrum-one),
+and that is the endpoint the app reads first.
+
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
 implementations. SUBFLOOR-specific facts (`Floor`, `FloorChange`, `FillQuality`, `Refusal`) hang off
 the standard entities by id rather than modifying them, so anyone who knows `dex-agg` can query this
