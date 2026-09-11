@@ -219,7 +219,7 @@ A mandate names the delegate, the app, the tokens, a cap per token and an expiry
 honours it for every ship and re-quote until it expires. The cap binds what is live at once rather
 than each call, so re-centring a book cannot add up past what the guardian signed, and
 `revokeMandate(nonce)` lets the owner or the guardian withdraw one early. The delegate cannot. The
-factory and vault in the table above are on this bytecode since 12 Sep. The vault before them,
+factory and vault in the table above are on this bytecode since 11 Sep. The vault before them,
 `0xaf6b…`, had its books docked and its inventory moved across, and the factory before them,
 `0xbfF5…`, still deploys the single-use version.
 

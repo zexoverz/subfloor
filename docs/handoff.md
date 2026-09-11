@@ -27,13 +27,24 @@ If you only have budget for one, read the spec. This file goes stale; the spec d
 default (`#246`), the `switch-on` script (`#249`), and **mandates that last until they expire**
 (`#254`, closing `#253`). Details in §8c.
 
-**The vault moved on 12 Sep.** `scripts/new-vault.sh` deployed factory `0x5c43…` and vault
+**The vault moved on 11 Sep.** `scripts/new-vault.sh` deployed factory `0x5c43…` and vault
 `0x1168…` (both Sourcify `match`), docked `0xaf6b…`'s three books, moved its 0.0438 WETH and 49,923
 tUSDC across, and posted one fourteen-day mandate (nonce 0, expiry 1790361860). The new delegate is
 `0xFfCc8ee26a9aA8c3b4DddBf4a5aE957CBd509242`, keystore `subfloor-delegate`, funded with 0.02 ETH;
 `subfloor-testnet` and `0x28Fb…` are retired. Railway points at all of it (`SUBFLOOR_HOUSE_AGENT`,
-`VITE_VAULT` and `VITE_VAULT_FACTORY` on `web`, `SUBFLOOR_VAULT` on `taker`). What is left is the
-delegate key on `agent`, which the owner pastes in from the dashboard.
+`VITE_VAULT` and `VITE_VAULT_FACTORY` on `web`, `SUBFLOOR_VAULT` on `taker`).
+
+**The house agent is live since 11 Sep, 19:10 UTC.** The first deploy with the delegate key
+crash-looped: `policy/loop.ts` and `house/run.ts` imported each other under a top-level await, and
+Node exits that before logging anything (`#269`, fixed in `#270` with a test that starts the process
+the way Railway does). Its first cycle shipped book `0xa5e7eb6e…` for `0x1168…` (`0x63741b33…`,
+block 46,692,771, 80% of the vault's inventory), and the taker filled it about thirty seconds later
+(`0xd6fe61f3…`). It re-centres under the one mandate from here.
+
+**A refusal on demand: `scripts/demo-refusal.sh`** (`DRY_RUN=1` first). It plays a compromised house
+agent: the delegate ships a book 500 bps under the reference under the live mandate, the owner as an
+ordinary taker asks it for a fill, settlement reverts `SettledBelowFloor`, and the delegate docks the
+book again so the house agent keeps its own.
 
 **The product gap is the frontend, not the contracts.** A stranger reaches the thesis and not the
 product: the interface signs a mandate and never delivers it to the agent (`#232`). The audit and
@@ -101,7 +112,7 @@ cap binds what is live at once (`committed + amount <= cap`), and `revokeMandate
 guardian, never the delegate) withdraws one early; the view is `mandateRevoked(nonce)`. The agent
 and the frontend pick the lowest unexpired, unrevoked nonce by reading the chain, never by counting
 locally. **Only vaults from a factory deployed after `#254` behave this way**: ours, `0x1168…`, since
-12 Sep. The previous vault `0xaf6b…` marks every nonce used and has been emptied.
+11 Sep. The previous vault `0xaf6b…` marks every nonce used and has been emptied.
 
 **Ledger's role is a role, not a login.** Raising a floor is free and device-free, because it can
 only help you. Lowering it is the one dangerous action, so it is the one the device owns, enforced on
@@ -144,8 +155,8 @@ L2 testnet, so this deploys its own from the same source.
 |---|---|
 | FloorRegistry | `0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123` |
 | FloorRouter | `0x03189D102286fa8cDd0fBF3578B492e67e665A27` |
-| VaultFactory (since 12 Sep, #253's vault) | `0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3` |
-| AquaGuardVault (ours, since 12 Sep) | `0x1168C48a74055486BC4D1E7036d3b1aC4bb75586` |
+| VaultFactory (since 11 Sep, #253's vault) | `0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3` |
+| AquaGuardVault (ours, since 11 Sep) | `0x1168C48a74055486BC4D1E7036d3b1aC4bb75586` |
 | Previous factory and vault (single-use mandates; the vault is emptied) | `0xbfF5…A7C5`, `0xaf6b…c33f` |
 | Aqua (ours, not canonical) | `0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB` |
 | tUSDC | `0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD` |
@@ -240,9 +251,9 @@ Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, 
 | Claim | Value | How to re-check |
 |---|---|---|
 | Contract tests | **967 pass, 0 fail** (after `#254`) | `cd contracts && forge test` |
-| Programs fuzzed | **1,292,000** over 16 campaigns, last 11 Sep 08:06 UTC; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
-| Fills through the router | **310** (read 11 Sep, 13:22 UTC) | `curl .../api/refusals`, field `fills` |
-| Refusals on chain | **6** (read 11 Sep, 13:22 UTC) | `curl .../api/refusals`, field `floorRefusals` |
+| Programs fuzzed | **1,500,000** over 18 campaigns, last 11 Sep 19:17 UTC; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
+| Fills through the router | **325** (read 11 Sep, 19:25 UTC), the first on `0x1168…` among them | `curl .../api/refusals`, field `fills` |
+| Refusals on chain | **6** (read 11 Sep, 19:25 UTC) | `curl .../api/refusals`, field `floorRefusals` |
 | Index health | `hasIndexingErrors: false`, 3 blocks behind head | `{ _meta { hasIndexingErrors block { number } } }` |
 | Upstream suite | 797 → **803** | `1inch/swap-vm#197` |
 
@@ -544,7 +555,7 @@ Cost, roughly: Studio counted about 450 queries in the first eleven hours of 11 
 the order of 1,000 a day with the agent idle. That is inside the plan's 100,000 free a month; the
 house agent and a demo day add to it, at $2 per 100,000 past the free tier.
 
-**3. ~~Move to a vault on `#253`'s bytecode~~ done 12 Sep (§0b); switch the house agent on (`#233`).** Everything that
+**3. ~~Move to a vault on `#253`'s bytecode~~ done 11 Sep (§0b); switch the house agent on (`#233`).** Everything that
 signs runs from the owner's terminal; an agent session cannot open the keystores and must not be
 handed a password or a key.
 
@@ -621,7 +632,8 @@ committed shape.
 
 - `SUBFLOOR_HYPERSYNC_TOKEN` — required by every API endpoint that reads chain history. Documented in
   `frontend/.env.example` as of 10 Sep; it was undocumented before that, and a deployment missing it
-  fails at the first request rather than at build.
+  fails at the first request rather than at build. On Envio's Starter plan ($70) since 11 Sep, when
+  it was rotated on Railway. The `taker` service holds its own copy, so a rotation has to reach it too.
 - `SUBSTREAMS_REGISTRY_TOKEN` — publishing only.
 - `SUBFLOOR_GRAPH_API_KEY` — the network gateway's query key, on `web` only (§9 step 2).
 - `SUBFLOOR_DELEGATE_KEY` — the house agent's key, on `agent` only, set from the dashboard.
