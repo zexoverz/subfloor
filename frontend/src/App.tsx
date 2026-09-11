@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRoute } from './lib/route.ts';
 import { usePanic } from './lib/panic.ts';
 import { useOwnVault } from './lib/vault.ts';
@@ -21,6 +21,7 @@ import { useCeremony } from './lib/ceremony.ts';
 import { useKeys } from './lib/keys.ts';
 import { useLedger } from './lib/ledger.ts';
 import { useCalibration } from './lib/calibration.ts';
+import { runTourOnce } from './lib/tour.ts';
 
 /**
  * Skeleton wiring. `fixtures` stands in for every reader — contract reads, the subgraph, and the
@@ -84,6 +85,13 @@ export default function App() {
     wallet.refresh();
   }, [ceremony.refresh, wallet.refresh]);
   const calibration = useCalibration(index.tape);
+
+  /*
+   * The first minute, once, for a visitor who arrived with nobody beside them. It waits for the
+   * board to lay itself out and cancels if they navigate away — a tour that opens over a screen
+   * that has gone is worse than no tour.
+   */
+  useEffect(() => (screen === 'live' ? runTourOnce() : undefined), [screen]);
   /*
    * The tape is the index's, or it is nothing.
    *

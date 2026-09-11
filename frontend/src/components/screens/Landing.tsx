@@ -104,11 +104,7 @@ export function Landing({ onNavigate }: { onNavigate: (s: Screen) => void }) {
             */}
           <Wordmark height={26} />
 
-          {/* Muted, not faint: it is the smallest type on the page and it sits on artwork. */}
-          <p className="mt-5 mb-0 text-[11px] font-semibold tracking-[0.17em] text-muted uppercase">
-            {copy.landing.eyebrow}
-          </p>
-          <h1 className="mt-3 mb-0 text-[clamp(30px,5.2vw,44px)] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">
+          <h1 className="mt-6 mb-0 text-[clamp(30px,5.2vw,44px)] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">
             <ScrambleText text={copy.onboarding.title} />
             <br />
             <ScrambleText text={copy.onboarding.lede} className="text-faint" delay={700} />

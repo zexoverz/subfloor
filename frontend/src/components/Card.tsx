@@ -1,9 +1,18 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  tour,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** An anchor for the first-run tour, so it points at a panel rather than at a class name. */
+  tour?: string;
+}) {
   return (
-    <div className={`panel-fill overflow-hidden rounded-xl shadow-card backdrop-blur-md ${className}`}>
+    <div data-tour={tour} className={`panel-fill overflow-hidden rounded-xl shadow-card backdrop-blur-xs ${className}`}>
       {children}
     </div>
   );
@@ -35,9 +44,8 @@ export function CardBody({ children, className = '' }: { children: ReactNode; cl
 export function Chip({ children, live = false }: { children: ReactNode; live?: boolean }) {
   return (
     <span
-      className={`rounded-xl px-2 py-[3px] text-[11.5px] font-semibold tracking-[0.1em] uppercase ${
-        live ? 'bg-live text-white' : 'border border-rule bg-surface font-normal text-muted'
-      }`}
+      className={`rounded-xl px-2 py-[3px] text-[11.5px] font-semibold tracking-[0.1em] uppercase ${live ? 'bg-live text-white' : 'border border-rule bg-surface font-normal text-muted'
+        }`}
     >
       {live && <span className="mr-1.5 inline-block size-[5px] animate-pulse rounded-full bg-white align-[1px]" />}
       {children}

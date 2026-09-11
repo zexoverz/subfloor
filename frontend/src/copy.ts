@@ -295,21 +295,50 @@ export const copy = {
     nothingToFund: 'enter an amount',
   },
 
+  /*
+   * The first-run tour. Five steps, and the §3 register binds them hardest: a stranger's first
+   * sentence about this product decides which shelf they file it on, and the price shelf is the
+   * only one worth being on.
+   *
+   * Each says what the thing on screen *is*. None asks for anything until the last, and that one
+   * offers rather than instructs.
+   */
+  tour: {
+    progress: '{{current}} of {{total}}',
+    next: 'next',
+    back: 'back',
+    done: 'got it',
+    strip: {
+      title: 'What this venue has done',
+      body: 'A vault here trades one pair with an agent running it. Every number above comes off the public index — the same query anyone else can run, which is what makes them worth reading.',
+    },
+    chart: {
+      title: 'Every fill, against one line',
+      body: 'The line is the worst price the vault signed. Each fill is drawn as its distance from it, so a good day and a bad one look different at a glance rather than needing to be worked out.',
+    },
+    refused: {
+      title: 'The number to look at',
+      body: 'A fill that would land below that price does not happen. Not warned about, not scored, not reversed after the fact — the venue refuses to settle it, and the balances on both sides are unchanged.',
+    },
+    proof: {
+      title: 'Why that holds for programs nobody wrote',
+      body: 'The agent composes its own trading programs, so the guarantee has to cover ones that do not exist yet. This counts hostile programs generated and run against the settlement path. None of them settled below a floor.',
+    },
+    start: {
+      title: 'The worst price is the one you set',
+      body: 'Connect a wallet to set your own and you are protected on every fill through this venue. No vault, no agent, nothing to deploy — one transaction, and the number is yours.',
+    },
+  },
+
   landing: {
-    eyebrow: 'Settlement-level price bound · Base mainnet',
     standfirst:
       'Drag the fill. Below the floor, the venue itself refuses to settle — no classifier, no verdict, just arithmetic where the tokens move.',
     /** What the poisoned agent asks for, in its own words. Act one of the drawing. */
-    bubbleAgent: 'sell it all — any price',
     /*
      * The rest of the drawing's labels. Every one of them is a thing the mechanism does, said in
      * the fewest words that stay true: the settlement reverts, the key is the owner's, and the
      * check is arithmetic rather than a judgement about intent.
      */
-    bubbleDump: 'dump the book',
-    bubbleReverted: 'reverted on chain',
-    bubbleDevice: 'your key, not ours',
-    bubbleArithmetic: 'arithmetic, not judgement',
     settled: 'Settled',
     refused: 'Refused',
     settledNote: 'Above the floor, the fill settles like any other. The check costs the same either way.',
@@ -550,6 +579,7 @@ export const copy = {
     mandateStale: 'signed for a different agent — it authorises nobody now',
     mandateNone: 'not signed. The agent cannot ship without it',
     agentQuiet: 'no book is live. The index shows nothing shipped for this vault.',
+    tourAgain: 'what am I looking at?',
     mandateSign: 'SIGN MANDATE',
     mandateAgain: 'SIGN AGAIN',
     handoverLead: 'Your agent needs two things from here, and this is the only place it can get them.',

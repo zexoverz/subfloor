@@ -46,10 +46,29 @@
    */
   --c-surface-top: #04244a;
   --c-surface-foot: #01142f;
-  --c-sunken: #000e24;
+  /*
+   * Softened from #000e24, which was nearly black and read as a hole rather than a recess.
+   *
+   * It is a recess the panel is now translucent enough for: with the fill at 70% the drawing shows
+   * through the body, and a near-black header alongside it looked like a separate opaque strip
+   * pasted on rather than the same pane, deeper. This sits below `--c-surface` and above black, so
+   * the hierarchy it carries — header behind body, field behind panel — still reads.
+   *
+   * Contrast was never the constraint here: faint text on it goes 10.1 to 9.0 against a floor of
+   * 4.5, so the choice is a visual one and is recorded as such.
+   */
+  --c-sunken: #031b39;
   --c-raise: #0d3160;
   --c-ink: #e9f1fb;
-  --c-muted: #93a9c4;
+  /*
+   * Lightened with the glass. These two are what bind the panel's opacity — ink has headroom to
+   * spare and the refusal red is pinned to its own band — so thinning the fill without moving them
+   * would have been trading legibility for transparency rather than buying it.
+   *
+   * The hue is unchanged; only the lightness moves, so the hierarchy between ink, muted and faint
+   * reads the same. At 70% over the drawing's brightest shaft: muted 4.60, faint 4.79.
+   */
+  --c-muted: #a6bad2;
   /*
    * Raised until it passes. At #5f7ba1 this measured 3.95 against the card surface — under the 4.5
    * a body size needs — and it is the colour carrying the smallest type on the board, so the
@@ -61,7 +80,7 @@
    * where the shafts land. Measured against that composite rather than against the panel colour,
    * because the panel colour is not what the text sits on any more.
    */
-  --c-faint: #8aa0be;
+  --c-faint: #aabddb;
   /* Against a near-black panel the old #18406e read as a bright line rather than a division. */
   --c-rule: #123a68;
   --c-floor: #0ee6ea;
@@ -99,8 +118,28 @@
    */
   --c-live: #238046;
   --c-settle-wash: rgba(64, 182, 107, 0.16);
-  --c-refuse: #ff6b73;
-  --c-refuse-wash: rgba(255, 107, 115, 0.14);
+  /*
+   * Lightened from #ff6b73, which did not clear AA on the row it is most often read on.
+   *
+   * A refusal row paints its own pink wash under this red, and over the drawing's brightest light
+   * shaft that row measured 4.35 — under the line, and under it before the panel was thinned, so
+   * this is a pre-existing failure rather than a cost of the glass. #ff8f95 reads 4.86 there and
+   * keeps the hue: the red still says refusal, it is simply bright enough to be read on the one
+   * background it always appears on.
+   */
+  --c-refuse: #ff8f95;
+  /*
+   * Opaque, and that is the point rather than a side effect.
+   *
+   * This was a 14% red over whatever the panel happened to be, so the refusal red's contrast moved
+   * with the panel's opacity and with the drawing behind it — and it was the single colour holding
+   * the panels at 94%, because it is the only thing on screen near the line. Pinned to its own
+   * colour it reads 7.7:1 wherever the row lands, and the panels are free.
+   *
+   * A refusal is also the product's proudest row. A band that states itself rather than tinting
+   * through is the right weight for it.
+   */
+  --c-refuse-wash: #2e1524;
   /*
    * The panic control's own red, and it is not the refusal red.
    *
@@ -137,8 +176,17 @@
    * beneath. Panel and ground are only three units of luminance apart, so the shadow is doing the
    * work of an edge rather than merely suggesting depth, and it has to be darker than either.
    */
-  --c-shadow: 0 1px 1px rgba(0, 0, 0, 0.55), 0 6px 14px -6px rgba(0, 0, 0, 0.7),
-    0 26px 56px -28px rgba(0, 0, 0, 0.95);
+  /*
+   * The lit edge leads, and it is the half that makes a pane read as glass rather than as a slab.
+   * Light in this drawing comes from above, so it catches along the top face; inset, so it sits
+   * inside the radius instead of fighting the border.
+   *
+   * It lives in the token rather than in `.panel-fill` because `.shadow-card` also sets
+   * `box-shadow`, and two rules setting one property do not merge — the later one simply wins, so
+   * a highlight declared beside the fill would be silently dropped on every card that has both.
+   */
+  --c-shadow: inset 0 1px 0 0 rgba(197, 226, 255, 0.14), 0 1px 1px rgba(0, 0, 0, 0.55),
+    0 6px 14px -6px rgba(0, 0, 0, 0.7), 0 26px 56px -28px rgba(0, 0, 0, 0.95);
 }
 
 :root[data-theme='light'] {
@@ -160,12 +208,14 @@
   --c-settle: #209853;
   --c-settle-wash: rgba(32, 152, 83, 0.12);
   --c-refuse: #c41926;
-  --c-refuse-wash: rgba(196, 25, 38, 0.1);
+  --c-refuse-wash: #fde8ea;
   --c-panic-face: #c41926;
   --c-panic-hover: #d42433;
   --c-panic-side: #7d0c16;
   --c-panic-ink: #ffffff;
-  --c-shadow: 0 1px 1px rgba(10, 21, 36, 0.08), 0 6px 14px -6px rgba(10, 21, 36, 0.16),
+  /* Paler, and barely there: on the light palette the pane is already brighter than the drawing. */
+  --c-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6), 0 1px 1px rgba(10, 21, 36, 0.08),
+    0 6px 14px -6px rgba(10, 21, 36, 0.16),
     0 22px 48px -26px rgba(10, 21, 36, 0.4);
 }
 /* `inline` keeps the var reference at the use site, so one class follows the theme. */
@@ -671,16 +721,30 @@ body {
    * right colour.
    */
   /*
-   * 94% and no further. Measured against the drawing's light shafts, which is what these panels
-   * sit over: at 92% the refusal red falls to 4.45 and every step down is worse. The glassiness
-   * comes from the blur being light enough to leave shapes behind the panel, not from the panel
-   * being thinner than the text can survive.
+   * 70%, and every step down from 94% was bought by moving a colour rather than by accepting
+   * worse text.
+   *
+   * Measured against the drawing's brightest light shaft, which is what these panels sit over.
+   * At 70% every text colour still clears WCAG AA there: ink 8.0, muted 4.60, faint 4.79, and the
+   * refusal red 7.7 on its own band.
+   *
+   * It used to be the refusal red that bound this, at 94%, which is why the panels were nearly
+   * opaque. That red sat on a translucent pink wash, so its contrast moved with both the panel and
+   * the drawing behind it — and over a light shaft it measured 4.35 and failed anyway. Pinning the
+   * refusal row to its own colour took that colour out of the question entirely, and the eight
+   * points of glass between 94% and here are what that bought.
+   *
+   * Which is why the rest of the glass is not opacity at all. A pane reads as glass from what its
+   * edge does to light and from how soft the world behind it goes — a brighter hairline along the
+   * top, a heavier blur — and those cost no contrast, so they can be spent freely where thinning
+   * the fill cannot.
    */
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--c-surface-top) 94%, transparent),
-    color-mix(in srgb, var(--c-surface-foot) 94%, transparent)
-  );
+  background-image:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--c-surface-top) 60%, transparent),
+      color-mix(in srgb, var(--c-surface-foot) 60%, transparent)
+    );
 }
 
 .shadow-card {
@@ -846,122 +910,9 @@ body {
  * on this ellipse only covers about 3% of the frame a second at 150s, which is under what reads as
  * travel at all.
  */
-@keyframes hero-orbit {
-  /*
-   * The z-index is half the illusion. Without it the labels slide across the picture; with it they
-   * go round it. The two swaps land at 0% and 50%, which are the far left and far right of the
-   * ellipse — the sides, which is exactly where a thing travelling round something crosses it.
-   *
-   * Held rather than interpolated: `z-index` is an integer and it does interpolate, so a single
-   * pair of stops would walk it through every value between and the pass would happen somewhere in
-   * the middle of a sweep rather than at the edge.
-   */
-  0%,
-  49.99% {
-    z-index: 9;
-  }
-
-  50%,
-  100% {
-    z-index: 1;
-  }
-
-  0% {
-    left: 94.0%;
-    top: 50.0%;
-  }
-
-  8.333% {
-    left: 88.1%;
-    top: 65.0%;
-  }
-
-  16.67% {
-    left: 72.0%;
-    top: 76.0%;
-  }
-
-  25% {
-    left: 50.0%;
-    top: 80.0%;
-  }
-
-  33.33% {
-    left: 28.0%;
-    top: 76.0%;
-  }
-
-  41.67% {
-    left: 11.9%;
-    top: 65.0%;
-  }
-
-  50% {
-    left: 6.0%;
-    top: 50.0%;
-  }
-
-  58.33% {
-    left: 11.9%;
-    top: 35.0%;
-  }
-
-  66.67% {
-    left: 28.0%;
-    top: 24.0%;
-  }
-
-  75% {
-    left: 50.0%;
-    top: 20.0%;
-  }
-
-  83.33% {
-    left: 72.0%;
-    top: 24.0%;
-  }
-
-  91.67% {
-    left: 88.1%;
-    top: 35.0%;
-  }
-
-  100% {
-    left: 94.0%;
-    top: 50.0%;
-  }
-}
-
 /* Opacity only. Two animations on one element that both write `transform` do not blend — the later
    simply wins — and the transform here is doing the centring. */
-@keyframes hero-bubble-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 /* The swell, folded into the centring transform so the two do not fight over the property. */
-@keyframes hero-bubble-breathe {
-  from {
-    transform: translate(-50%, -50%) scale(0.97);
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1.06);
-  }
-}
-
-.hero-bubble {
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  animation:
-    hero-bubble-in 600ms ease-out both,
-    hero-bubble-breathe 12s ease-in-out infinite alternate,
-    hero-orbit 70s linear infinite;
-}
-
 /*
  * The hero drawing breathes. Slow enough that it reads as weight rather than motion — the point of
  * the picture is a thing that does not move, so the drift is a few pixels and nothing more.
@@ -1056,14 +1007,8 @@ body {
 
 /* Reduced motion keeps the finished picture: nothing here carries meaning that the motion adds. */
 @media (prefers-reduced-motion: reduce) {
-  .hero-art,
-  .hero-bubble {
+  .hero-art {
     animation: none;
-  }
-
-  .hero-bubble {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -1303,4 +1248,82 @@ body:has(dialog[open]) {
       animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
     }
   }
+}
+
+/*
+ * The tour's popover, wearing the board's own clothes.
+ *
+ * driver.js ships a white card with a system font, which on this page reads as a browser dialog
+ * that wandered in — and the one thing a first-run tour must not look like is something that
+ * happened *to* the page rather than a part of it.
+ *
+ * Scoped to `.subfloor-tour`, the class the driver is configured with, so nothing here reaches a
+ * popover this app did not ask for.
+ */
+.subfloor-tour.driver-popover {
+  max-width: 320px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--c-rule);
+  border-radius: 14px;
+  background: var(--c-surface-top);
+  box-shadow: var(--c-shadow);
+  color: var(--c-ink);
+}
+
+.subfloor-tour .driver-popover-title {
+  margin-bottom: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+.subfloor-tour .driver-popover-description {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--c-muted);
+}
+
+/* The arrow is drawn from border colours, so it has to be told the panel's, not the default white. */
+.subfloor-tour .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--c-surface-top);
+}
+.subfloor-tour .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--c-surface-top);
+}
+.subfloor-tour .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--c-surface-top);
+}
+.subfloor-tour .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--c-surface-top);
+}
+
+.subfloor-tour .driver-popover-progress-text {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--c-faint);
+  text-transform: uppercase;
+}
+
+.subfloor-tour .driver-popover-navigation-btns button {
+  padding: 5px 12px;
+  border: 1px solid var(--c-rule);
+  border-radius: 9px;
+  background: var(--c-sunken);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-ink);
+  text-shadow: none;
+}
+
+.subfloor-tour .driver-popover-navigation-btns button:hover {
+  border-color: var(--c-floor);
+  color: var(--c-floor);
+}
+
+.subfloor-tour .driver-popover-close-btn {
+  color: var(--c-faint);
+}
+
+.subfloor-tour .driver-popover-close-btn:hover {
+  color: var(--c-ink);
 }

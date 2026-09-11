@@ -98,7 +98,7 @@ export function PublicAside({
 
   return (
     <div className="flex flex-col gap-4.5">
-      <Card>
+      <Card tour="proof">
         <CardHead left={copy.publicPage.programsExecuted} right="counted by CI" />
         <div className="p-5">
           <div className="text-[34px] leading-none font-semibold tracking-tight">
@@ -142,7 +142,7 @@ export function PublicAside({
         </Card>
       )}
 
-      <Card>
+      <Card tour="start">
         <CardHead left={copy.landing.publicOwnTitle} />
         <div className="p-4">
           {!connected ? (

@@ -16,6 +16,7 @@
     "@reown/appkit": "^1.8.23",
     "@reown/appkit-adapter-wagmi": "^1.8.23",
     "@tanstack/react-query": "^5.102.8",
+    "driver.js": "^1.8.0",
     "lightweight-charts": "^5.2.1",
     "lucide-react": "^1.41.0",
     "ogl": "^1.0.11",

@@ -172,6 +172,7 @@ export function LiveView({
           value={stats.refused}
           sub={copy.desk.refusedSub}
           tone="refuse"
+          tour="refused"
         />
       </Tiles>
 
@@ -185,7 +186,7 @@ export function LiveView({
           * panel is narrow enough that the shape has to be dense to fill it.
           */}
         <div className="flex min-w-0 flex-col gap-4.5">
-        <Card>
+        <Card tour="chart">
           <CardHead
             icon={ChartLine}
             left={
@@ -209,7 +210,7 @@ export function LiveView({
           * aside defined; wrapped in a column with the chart it sizes to its own content instead,
           * and an empty tape left the panel a third of its height with the seabed showing under it.
           */}
-        <Card className="flex flex-1 flex-col">
+        <Card tour="tape" className="flex flex-1 flex-col">
           <CardHead
             icon={Receipt}
             left={

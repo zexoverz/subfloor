@@ -78,7 +78,7 @@ export function RowHint({ hint }: { hint: Hint }) {
         alt=""
         aria-hidden
         draggable={false}
-        className="relative z-10 -mb-3 block w-full select-none"
+        className="relative z-10 mb-[-26px] block w-full select-none"
       />
       {/*
        * The panel wears the rail's own colours — #000d23 is sampled out of the artwork, not chosen
@@ -86,8 +86,8 @@ export function RowHint({ hint }: { hint: Hint }) {
        * pictures, the three read as three things stacked rather than one object.
        */}
       <div
-        className="border-x-2 px-3.5 py-3 shadow-card"
-        style={{ background: '#071a30', borderColor: '#000d23' }}
+        className="border-x-2 px-3.5 py-6 shadow-card backdrop-blur-xs"
+        style={{ background: '#071a30AA', borderColor: '#000d23' }}
       >
         {hint.content}
       </div>
@@ -96,7 +96,7 @@ export function RowHint({ hint }: { hint: Hint }) {
         alt=""
         aria-hidden
         draggable={false}
-        className="relative z-10 -mt-3 block w-full select-none"
+        className="relative z-10 mt-[-26px] block w-full select-none"
       />
     </div>,
     document.body,

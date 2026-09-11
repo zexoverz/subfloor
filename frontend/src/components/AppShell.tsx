@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Wordmark } from './Wordmark.tsx';
 import { Chip } from './Card.tsx';
+import { CircleHelp } from 'lucide-react';
 import { AccountMenu } from './AccountMenu.tsx';
+import { runTour } from '../lib/tour.ts';
 import { Seabed } from './Seabed.tsx';
 import type { Wallet } from '../lib/wallet.ts';
 import { mocked } from '../lib/mock.ts';
@@ -123,6 +125,19 @@ export function AppShell({
         </div>
 
         <div className="ml-auto flex items-center gap-3.5">
+          {/*
+            * A way back to the tour, because it runs once and someone who dismissed it at step one
+            * has no other route to the argument. Small and unlabelled-by-default: it is for the
+            * visitor who wants it, not a thing the board asks to be noticed.
+            */}
+          <button
+            onClick={runTour}
+            title={copy.live.tourAgain}
+            aria-label={copy.live.tourAgain}
+            className="cursor-pointer p-1 text-faint transition-colors hover:text-floor"
+          >
+            <CircleHelp size={15} strokeWidth={1.8} />
+          </button>
           <AccountMenu wallet={wallet} />
 
         </div>

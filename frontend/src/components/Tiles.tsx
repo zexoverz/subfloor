@@ -32,7 +32,7 @@ export function Tiles({ children }: { children: ReactNode }) {
    * every other panel on the board let the drawing through.
    */
   return (
-    <div className="mt-1.5 mb-4.5 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-px overflow-hidden rounded-xl bg-rule/40 shadow-card backdrop-blur-md">
+    <div data-tour="strip" className="mt-1.5 mb-4.5 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-px overflow-hidden rounded-xl bg-rule/40 shadow-card backdrop-blur-xs">
       {children}
     </div>
   );
@@ -46,6 +46,7 @@ export function Tile({
   tone,
   art,
   onQuery,
+  tour,
 }: {
   label: string;
   /** A number rolls; anything else is rendered as given. */
@@ -62,6 +63,8 @@ export function Tile({
   art?: string;
   /** The guarantee is anyone's query, never our claim — so the sentence is made clickable. */
   onQuery?: () => void;
+  /** An anchor for the first-run tour. */
+  tour?: string;
 }) {
   const toneClass =
     tone === 'settle' ? 'text-settle' : tone === 'refuse' ? 'text-refuse' : tone === 'floor' ? 'text-floor' : '';
@@ -72,7 +75,7 @@ export function Tile({
   const pulseClass = changed ? `value-pulse ${tone === 'refuse' ? 'value-pulse-refuse' : ''}` : '';
 
   return (
-    <div className="stat-tile panel-fill relative flex flex-col gap-0.5 overflow-hidden px-3.5 py-3">
+    <div data-tour={tour} className="stat-tile panel-fill relative flex flex-col gap-0.5 overflow-hidden px-3.5 py-3">
       {art && (
         /*
          * Sized in pixels, not in percent, and that is the whole trick.
