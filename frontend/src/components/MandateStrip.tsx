@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, OctagonX, ShieldCheck, X } from 'lucide-react';
 import type { Address } from 'viem';
 import { copy } from '../copy.ts';
+import { shortAddress } from '../lib/chain.ts';
 import { Act } from './Button.tsx';
 import { DeviceSign } from './DeviceSign.tsx';
 import { PanicDialog } from './PanicDialog.tsx';
@@ -173,7 +174,7 @@ export function MandateStrip({
             framed={false}
             rows={[
               ['Action', 'Authorise agent'],
-              ['Delegate', state.delegate ?? mandate.delegateLabel],
+              ['Delegate', shortAddress(state.delegate ?? mandate.delegateLabel)],
               ['Tokens', inventory.map((h) => h.symbol).join(' / ')],
               ['Expires', `${mandate.expiresInDays} days`],
             ]}

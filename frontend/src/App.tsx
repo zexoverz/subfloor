@@ -13,6 +13,7 @@ import { LiveView } from './components/screens/LiveView.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { MandateStrip } from './components/MandateStrip.tsx';
 import { GuardianStrip } from './components/GuardianStrip.tsx';
+import { copy } from './copy.ts';
 import { fixtures } from './fixtures.ts';
 import { useSimulatedFeed } from './lib/feed.ts';
 import { useWallet } from './lib/wallet.ts';
@@ -95,6 +96,15 @@ export default function App() {
     ...fed,
     tape: index.tape ?? (feedSource === 'simulated' ? fed.tape : []),
     ...(index.stats ? { stats: { ...fed.stats, ...index.stats } } : {}),
+    /*
+     * What the agent is doing, from the index or not at all.
+     *
+     * The fixture said "quoting both sides ±35 bps, decaying · TWAP exit 0.4 WETH over 6h · auction
+     * rebalance idle" on every board, for every vault, forever — three specific-sounding sentences
+     * about strategies this vault has never run (#252). An empty list is the honest answer when the
+     * index has not said: the zone renders nothing rather than something invented.
+     */
+    agent: index.agent ?? (feedSource === 'simulated' ? fed.agent : []),
   };
   /*
    * "What is in the vault" has to be the vault's balance. This used to render the owner's wallet
@@ -205,7 +215,14 @@ export default function App() {
            * still in flight.
            */
           vaultChecked={own.known && ceremony.settled}
-          vaultError={own.error ?? ceremony.error}
+          /*
+           * Whose failure it was, not just that there was one. These are two different reads — the
+           * factory's list of vaults, and the vault's own state — and both were rendered under
+           * "could not reach the factory", so a vault read that reverted was reported as a factory
+           * that could not be reached (#266). One string for two failures sent the last diagnosis
+           * looking in the wrong contract.
+           */
+          vaultError={own.error ? `${copy.wallet.vaultReadFailed} ${own.error}` : ceremony.error ? `${copy.wallet.stateReadFailed} ${ceremony.error}` : null}
           connected={Boolean(wallet.address)}
           connecting={wallet.connecting}
           onSetAgent={async (next) => {

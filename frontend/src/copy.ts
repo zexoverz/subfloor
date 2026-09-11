@@ -261,6 +261,7 @@ export const copy = {
     wrapNote: 'You hold ETH but no WETH, so this wraps what is missing first — two signatures, not one.',
     /** Named so it reads as our failure to look, never as a finding about their wallet. */
     vaultReadFailed: 'Could not reach the factory, so whether this wallet owns a vault is unknown:',
+    stateReadFailed: 'The vault is there, but reading its state failed, so what is shown below may be incomplete:',
     ceremonyWhy: 'Four ordinary transactions, then one signature. Only the last one needs your device, because only the last one is worth stealing.',
     done: 'done',
     /** The floor is registered for the vault. Saying so is not a detail; it is the whole guarantee. */
@@ -540,9 +541,15 @@ export const copy = {
     axisKey: 'floor ┊ reference',
     agentNow: 'the agent now',
     mandateLabel: 'the mandate',
-    mandateHeld: 'signed, and held in this browser until the agent ships with it',
+    /*
+     * Not "until the agent ships with it" any more. A mandate is spent by shipping no longer — it
+     * covers every ship until it expires or is revoked — so the old line was wrong in the other
+     * direction, telling an owner their authority was about to be used up when it was not.
+     */
+    mandateHeld: 'signed. It covers every ship until it expires, or until you revoke it',
     mandateStale: 'signed for a different agent — it authorises nobody now',
     mandateNone: 'not signed. The agent cannot ship without it',
+    agentQuiet: 'no book is live. The index shows nothing shipped for this vault.',
     mandateSign: 'SIGN MANDATE',
     mandateAgain: 'SIGN AGAIN',
     handoverLead: 'Your agent needs two things from here, and this is the only place it can get them.',
