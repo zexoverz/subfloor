@@ -536,8 +536,14 @@ house agent and a demo day add to it, at $2 per 100,000 past the free tier.
 
 **3. Move to a vault on `#253`'s bytecode and switch the house agent on (`#233`).** Everything that
 signs runs from the owner's terminal; an agent session cannot open the keystores and must not be
-handed a password or a key. Set the password once there so nothing prompts repeatedly:
-`read -s P && export ETH_PASSWORD="$P" CAST_UNSAFE_PASSWORD="$P" && unset P`.
+handed a password or a key.
+
+**`scripts/new-vault.sh` does steps 1 to 4 and the mandate in one run (`#260`).** Run it with
+`DRY_RUN=1` first; that reads and simulates everything and sends nothing (checked 11 Sep: all three
+of `0xaf6b`'s books dock from the owner, 0.0438 WETH and 49,923 tUSDC to move). The real run asks for
+the password once, creates a new delegate keystore `subfloor-delegate` instead of recovering
+`subfloor-testnet`, keeps what it made in `~/.subfloor-new-vault` so a stopped run resumes, and pauses
+for an agent session to set `SUBFLOOR_HOUSE_AGENT` before posting the mandate. The steps it runs:
 
 1. deploy a `VaultFactory` with `forge create` and verify it on Sourcify (a small contract; only the
    router needs verifier-produced bytes)
