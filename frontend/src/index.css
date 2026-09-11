@@ -1261,8 +1261,14 @@ body:has(dialog[open]) {
  * popover this app did not ask for.
  */
 .subfloor-tour.driver-popover {
-  max-width: 320px;
-  padding: 14px 16px 12px;
+  max-width: 358px;
+  /*
+   * Room on the left for the guide, who hangs off the card rather than sitting in a corner of it.
+   * The padding is what keeps the text clear of him; he overlaps the edge into it rather than
+   * standing entirely outside, because a popover pinned to the left of the viewport has nothing
+   * outside it to stand in.
+   */
+  padding: 14px 16px 12px 96px;
   border: 1px solid var(--c-rule);
   border-radius: 14px;
   background: var(--c-surface-top);
@@ -1326,4 +1332,41 @@ body:has(dialog[open]) {
 
 .subfloor-tour .driver-popover-close-btn:hover {
   color: var(--c-ink);
+}
+
+/*
+ * The guide, hanging off the card's left edge.
+ *
+ * He leans in over the top of it, which is why he is allowed above the border: a figure clipped to
+ * the panel's box reads as a picture inside a card, and one that breaks the edge reads as someone
+ * holding it up. `overflow: visible` is the whole trick and the popover has no reason to clip.
+ */
+.subfloor-tour.driver-popover {
+  overflow: visible;
+}
+
+.subfloor-tour.driver-popover::before {
+  content: '';
+  position: absolute;
+  top: -26px;
+  left: -30px;
+  width: 122px;
+  height: 122px;
+  background-image: url('/tour-guide.webp');
+  background-size: contain;
+  background-repeat: no-repeat;
+  /* His own glow, so he sits on the dark panel rather than being pasted onto it. */
+  filter: drop-shadow(0 6px 14px rgba(0, 10, 28, 0.75));
+  pointer-events: none;
+}
+
+/* Small screens have no room for him; the words are the part that has to survive. */
+@media (max-width: 560px) {
+  .subfloor-tour.driver-popover {
+    padding-left: 16px;
+  }
+
+  .subfloor-tour.driver-popover::before {
+    display: none;
+  }
 }
