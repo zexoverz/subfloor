@@ -23,6 +23,11 @@
 # Railway yourself.
 set -euo pipefail
 
+# A password or keystore exported in the calling shell changes what every cast call means: Foundry
+# reads ETH_PASSWORD as a password *file* and then demands --keystore, so even a plain `cast call`
+# fails. Everything here passes its wallet explicitly.
+unset ETH_PASSWORD CAST_UNSAFE_PASSWORD ETH_KEYSTORE_ACCOUNT
+
 export PATH="$HOME/.foundry/bin:$PATH"
 cd "$(git rev-parse --show-toplevel)"
 
@@ -129,7 +134,8 @@ $out"
   fi
 fi
 if [ -n "${FACTORY:-}" ]; then
-  same "$(cast call "$FACTORY" 'AQUA()(address)' --rpc-url "$RPC")" "$AQUA" || stop "factory $FACTORY does not point at our Aqua"
+  aqua="$(cast call "$FACTORY" 'AQUA()(address)' --rpc-url "$RPC")" || stop "could not read AQUA() from factory $FACTORY"
+  same "$aqua" "$AQUA" || stop "factory $FACTORY points at $aqua, not our Aqua $AQUA"
   if [ -z "${FACTORY_VERIFIED:-}" ] && sending; then
     if (cd contracts && forge verify-contract "$FACTORY" src/subfloor/VaultFactory.sol:VaultFactory \
         --chain 84532 --verifier sourcify --constructor-args "$(cast abi-encode 'constructor(address)' "$AQUA")" --watch); then

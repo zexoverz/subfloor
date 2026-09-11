@@ -398,8 +398,8 @@ from verifier-produced bytes so it could be verified (#167). These are the live 
 |---|---|
 | FloorRegistry | `0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123` |
 | FloorRouter | `0x03189D102286fa8cDd0fBF3578B492e67e665A27` |
-| VaultFactory | `0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5` |
-| AquaGuardVault | `0xaf6b337440FFEa63c47f077eee2663987aEEc33f` |
+| VaultFactory | `0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3` (since 12 Sep, #253's vault; `0xbfF5…A7C5` before) |
+| AquaGuardVault | `0x1168C48a74055486BC4D1E7036d3b1aC4bb75586` (since 12 Sep; `0xaf6b…c33f` before, docked and emptied into it) |
 | Aqua (ours) | `0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB` |
 | tUSDC | `0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD` |
 | TestnetFaucet | `0x044BB6a857A875e30f8933aDf652905d02EB65D2` |
@@ -1045,8 +1045,9 @@ Aqua maker. This is the answer to Round 2 objection 1 (§1) — but only if buil
   every ship and re-quote until its expiry, and the per-token cap binds **what is live at once**
   (`committed[token] + amount <= cap`), not each call, so re-shipping cannot compound past what the
   guardian signed. `revokeMandate(nonce)`, owner or guardian and never the delegate, is how one is
-  withdrawn early; the view is `mandateRevoked(nonce)`. The live vault `0xaf6b…` predates this and
-  keeps single-use mandates; taking it needs a new `VaultFactory` and a vault created from it.
+  withdrawn early; the view is `mandateRevoked(nonce)`. **Live since 12 Sep:** factory `0x5c43…`
+  and vault `0x1168…`, both Sourcify `match`, the vault under one fourteen-day mandate (nonce 0).
+  The previous vault `0xaf6b…` was docked and emptied into it by `scripts/new-vault.sh`.
 - Delegate-callable, exhaustively: **compose/ship/dock/update-quote. Nothing else.**
   - No arbitrary-call passthrough.
   - No delegate-reachable `approve` or `transfer`.

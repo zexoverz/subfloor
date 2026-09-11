@@ -161,8 +161,8 @@ mainnet uses canonical Aqua and never forks it.
 |---|---|---|
 | FloorRegistry | [`0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123`](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123) | Sourcify |
 | FloorRouter | [`0x03189D102286fa8cDd0fBF3578B492e67e665A27`](https://sepolia.basescan.org/address/0x03189D102286fa8cDd0fBF3578B492e67e665A27) | Sourcify |
-| VaultFactory | [`0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5`](https://sepolia.basescan.org/address/0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5) | Sourcify |
-| AquaGuardVault (ours) | [`0xaf6b337440FFEa63c47f077eee2663987aEEc33f`](https://sepolia.basescan.org/address/0xaf6b337440FFEa63c47f077eee2663987aEEc33f) | Sourcify |
+| VaultFactory | [`0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3`](https://sepolia.basescan.org/address/0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3) | Sourcify |
+| AquaGuardVault (ours) | [`0x1168C48a74055486BC4D1E7036d3b1aC4bb75586`](https://sepolia.basescan.org/address/0x1168C48a74055486BC4D1E7036d3b1aC4bb75586) | Sourcify |
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
 | tUSDC (testnet stand-in) | [`0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD`](https://sepolia.basescan.org/address/0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD) | — |
 | TestnetFaucet | [`0x044BB6a857A875e30f8933aDf652905d02EB65D2`](https://sepolia.basescan.org/address/0x044BB6a857A875e30f8933aDf652905d02EB65D2) | Sourcify |
@@ -219,12 +219,14 @@ A mandate names the delegate, the app, the tokens, a cap per token and an expiry
 honours it for every ship and re-quote until it expires. The cap binds what is live at once rather
 than each call, so re-centring a book cannot add up past what the guardian signed, and
 `revokeMandate(nonce)` lets the owner or the guardian withdraw one early. The delegate cannot. The
-vault in the table above predates this and still spends one mandate per ship; the change reaches the
-chain through a new factory, and the table will say so when it does.
+factory and vault in the table above are on this bytecode since 12 Sep. The vault before them,
+`0xaf6b…`, had its books docked and its inventory moved across, and the factory before them,
+`0xbfF5…`, still deploys the single-use version.
 
-**The three keys are three.** Owner `0x9ebdC8AC…`, delegate `0x28Fb6255…`, guardian `0x9ebdC8AC…`.
-Strategy `0x2bb7b6de…` was shipped by the delegate under a mandate the guardian signed — a different
-key, off-chain, before the fact — which is the separation working rather than described. The
+**The three keys are three.** Owner `0x9ebdC8AC…`, delegate `0xFfCc8ee2…` (the house agent),
+guardian `0x9ebdC8AC…`. On the previous vault, strategy `0x2bb7b6de…` was shipped by that vault's
+delegate under a mandate the guardian signed — a different key, off-chain, before the fact — which is
+the separation working rather than described. The
 guardian still being the owner's key is the remaining gap, and it is named here rather than hidden:
 until a device holds it, the key that can lower the floor is a key on a machine.
 
