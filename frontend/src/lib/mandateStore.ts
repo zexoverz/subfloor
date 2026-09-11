@@ -10,14 +10,13 @@ import type { MandateMessage } from './mandate.ts';
  *
  * So the evidence is the artifact itself. Holding the signature is a fact about this browser, not
  * about the chain, and everything built on it says so: the step reads "signed, not yet used", and
- * `mandateUsed` is what turns that into "used". Losing local storage loses the signature, which is
+ * the vault's `committed` is what shows it in use. Losing local storage loses the signature, which is
  * correct — the owner would have to sign again, and that is honest rather than a claim that
  * survives its own evidence.
  *
- * **A batch, not one.** `_consumeMandate` marks `mandateUsed[nonce]`, so one signature authorises
- * exactly one ship. An agent that re-quotes every few minutes and holds a single mandate stops after
- * its first one — which looks like the agent breaking rather than the agent running out of what it
- * was given. The owner signs a run of nonces in one sitting and the agent spends them in order.
+ * **One signature, fourteen days.** Since #253 a mandate is not spent by use: it covers every ship
+ * and re-quote until its expiry, and only `revokeMandate` or expiry retires it. Before that, one
+ * signature authorised exactly one ship and a re-centring agent ran through a batch in hours.
  *
  * Nothing is weakened by the batch. Each mandate still names the tokens, still caps the amount per
  * token, and still expires. What the owner chooses is how many re-quotes to authorise and until

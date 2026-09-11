@@ -17,7 +17,8 @@ import { plan, type HouseConfig, type StoredMandate, type VaultChain } from "./h
 /// it does nothing new, which only ever means not trading.
 
 const VAULT_ABI = [
-  { type: "function", name: "mandateUsed", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "mandateRevoked", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "committed", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ] as const;
 const ERC20_ABI = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
@@ -48,7 +49,9 @@ export async function runHouse(): Promise<void> {
   const client = createPublicClient({ chain: baseSepolia, transport: http(policy.rpc) });
   const wallet = createWalletClient({ account, chain: baseSepolia, transport: http(policy.rpc) });
   const chain: VaultChain = {
-    used: (vault, nonce) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "mandateUsed", args: [nonce] }),
+    revoked: (vault, nonce) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "mandateRevoked", args: [nonce] }),
+    committed: (vault, tokens) =>
+      Promise.all(tokens.map((t) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "committed", args: [t] }))),
     balances: (vault, tokens) =>
       Promise.all(tokens.map((t) => client.readContract({ address: t, abi: ERC20_ABI, functionName: "balanceOf", args: [vault] }))),
   };

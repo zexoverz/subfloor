@@ -3,7 +3,10 @@ import type { Mandate } from "./ship.ts";
 
 /// A book of pre-signed mandates, so an agent can re-quote without a device in the room.
 ///
-/// `_consumeMandate` marks `mandateUsed[nonce]`, so **one mandate authorises exactly one ship**. A
+/// Since #253 a mandate is not spent by use: one signature covers every ship until it expires, and
+/// only `revokeMandate` or expiry retires it. The batch below is kept for owners who want several
+/// windows signed at once. Before #253, `_consumeMandate` marked every nonce used, so one mandate
+/// authorised exactly one ship. A
 /// market maker re-quotes every few minutes; asking the owner to approve each one on hardware is not
 /// a product, it is a person sitting next to a laptop.
 ///
@@ -67,7 +70,7 @@ export function issueBatch(
 
 /// Holds a signed batch and hands out the next unused one.
 ///
-/// `used` is supplied by the caller from the chain — `mandateUsed(nonce)` — rather than tracked
+/// `used` is supplied by the caller from the chain — `mandateRevoked(nonce)` — rather than tracked
 /// here. A local counter drifts the moment a ship lands and the process restarts, and the failure is
 /// a revert on a nonce that was already burned.
 export class MandateBook {

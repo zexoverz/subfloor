@@ -550,7 +550,7 @@ export const copy = {
     handoverVaultHint: 'the address the agent trades, and the one your floor is keyed to',
     handoverMandateLabel: 'the mandate',
     handoverMandateHint: 'the signature and what it signed — the agent needs both, and neither works alone',
-    handoverOnce: 'One mandate authorises one ship. An agent that re-quotes needs a batch, signed once.',
+    handoverOnce: 'One signature covers every re-quote until it expires. Sign again when it runs out.',
     handoverCopy: 'copy',
     handoverCopied: 'copied',
     handoverDownload: 'download',

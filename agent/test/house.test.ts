@@ -75,8 +75,8 @@ function index(strategies: OpenStrategy[] = [], over: Partial<IndexView> = {}): 
   };
 }
 
-function chain(spent: number[] = [], held: bigint[] = [10n ** 18n, 50_000_000_000n]): VaultChain {
-  return { used: async (_v, n) => spent.includes(Number(n)), balances: async () => held };
+function chain(revoked: number[] = [], held: bigint[] = [10n ** 18n, 50_000_000_000n], live: bigint[] = [0n, 0n]): VaultChain {
+  return { revoked: async (_v, n) => revoked.includes(Number(n)), balances: async () => held, committed: async () => live };
 }
 
 const run = (idx: IndexView, mandates: StoredMandate[], ch: VaultChain = chain(), pending = new Map<string, bigint>()) =>
@@ -92,9 +92,24 @@ describe("the house agent gives every vault that names it one book", () => {
     assert.ok(s.data.startsWith(SHIP));
   });
 
-  test("a spent nonce is skipped, and the chain is what says it is spent", async () => {
+  test("a revoked mandate is skipped, and the chain is what says it is revoked", async () => {
     const [s] = await run(index(), [mandate(0), mandate(1)], chain([0]));
     assert.equal(s.kind === "ship" && s.nonce, 1n);
+  });
+
+  test("the same mandate carries a re-centre after it has already shipped a book", async () => {
+    // One signature, fourteen days: nonce 0 shipped the book that is now drifted, and nothing
+    // stops it shipping the replacement too.
+    const [s] = await run(index([book({ centre: (MID * 101n) / 100n })]), [mandate(0)]);
+    assert.equal(s.kind === "recenter" && s.nonce, 0n);
+  });
+
+  test("a first ship leaves room for what the vault already has live under the cap", async () => {
+    // WETH cap 4e15 with 1e15 already committed: room 3e15, and 80% of that is shipped.
+    const [s] = await run(index(), [mandate(0)], chain([], [10n ** 18n, 50_000_000_000n], [1_000_000_000_000_000n, 0n]));
+    assert.equal(s.kind, "ship");
+    if (s.kind !== "ship") return;
+    assert.ok(s.data.includes((2_400_000_000_000_000n).toString(16).padStart(64, "0")), "80% of the 3e15 of room");
   });
 
   test("it commits the smaller of the mandate cap and the balance, times its share", async () => {

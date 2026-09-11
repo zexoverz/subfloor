@@ -29,8 +29,9 @@ const ROUTER = env("SUBFLOOR_ROUTER", "0x03189D102286fa8cDd0fBF3578B492e67e665A2
 const WETH = "0x4200000000000000000000000000000000000006" as Address;
 const TUSDC = env("SUBFLOOR_TUSDC", "0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD") as Address;
 const ACCOUNT = env("GUARDIAN_ACCOUNT", "subfloor-dev");
-const COUNT = Number(env("MANDATE_COUNT", "8"));
-const DAYS = Number(env("MANDATE_DAYS", "7"));
+// One mandate covers every ship and re-quote until it expires, so one is the normal number to sign.
+const COUNT = Number(env("MANDATE_COUNT", "1"));
+const DAYS = Number(env("MANDATE_DAYS", "14"));
 const LOWER_BACKSTOP = env("LOWER_BACKSTOP", "1") === "1";
 const DRY_RUN = process.argv.includes("--dry-run");
 const CHAIN_ID = baseSepolia.id;
@@ -51,7 +52,7 @@ const VAULT_ABI = [
   { type: "function", name: "guardian", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
   { type: "function", name: "delegate", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
   { type: "function", name: "DOMAIN_SEPARATOR", stateMutability: "view", inputs: [], outputs: [{ type: "bytes32" }] },
-  { type: "function", name: "mandateUsed", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "mandateRevoked", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
   { type: "function", name: "hashMandate", stateMutability: "pure", inputs: [MANDATE_TUPLE], outputs: [{ type: "bytes32" }] },
 ] as const;
 
@@ -127,7 +128,7 @@ async function main(): Promise<void> {
   const nonces: bigint[] = [];
   for (let n = 0n; nonces.length < COUNT && n < 512n; n++) {
     if (held.has(n.toString())) continue;
-    if (!(await read<boolean>(VAULT, VAULT_ABI, "mandateUsed", [n]))) nonces.push(n);
+    if (!(await read<boolean>(VAULT, VAULT_ABI, "mandateRevoked", [n]))) nonces.push(n);
   }
   if (nonces.length < COUNT) stop(`found only ${nonces.length} unused nonces below 512`);
 

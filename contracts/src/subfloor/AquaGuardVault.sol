@@ -42,8 +42,14 @@ contract AquaGuardVault is Ownable, EIP712 {
     /// @notice Docking can only stop trading, never worsen a price, so software may hold it.
     mapping(address => bool) public dockOperator;
 
-    /// @notice Consumed mandate nonces. A mandate is single-use.
-    mapping(uint256 => bool) public mandateUsed;
+    /// @notice Mandates the owner or the guardian has withdrawn before their expiry.
+    ///
+    /// A mandate is not spent by use. One signature authorises every ship and re-quote until it
+    /// expires, which is what SPEC §10 promised the owner — "one signature, 14 days", renewed every
+    /// fourteen days. It used to be single-use, so a re-centring agent needed a fresh signature per
+    /// re-centre and ran through a batch in hours. What bounds a reusable mandate is the per-token cap
+    /// on everything live at once, the expiry, and this.
+    mapping(uint256 => bool) public mandateRevoked;
 
     /// @notice Total shipped and not yet docked, per token, across every live strategy.
     ///
@@ -86,11 +92,13 @@ contract AquaGuardVault is Ownable, EIP712 {
     event DockOperatorSet(address operator, bool allowed);
     event Shipped(address indexed app, bytes32 indexed strategyHash, uint256 nonce);
     event Docked(address indexed app, bytes32 indexed strategyHash);
+    event MandateRevoked(uint256 nonce, address by);
 
     error NotDelegate(address caller);
     error NotDockAuthorised(address caller);
     error MandateExpired(uint256 expiry);
-    error MandateAlreadyUsed(uint256 nonce);
+    error MandateWasRevoked(uint256 nonce);
+    error NotRevokeAuthorised(address caller);
     error MandateWrongDelegate(address mandateDelegate, address caller);
     error MandateWrongApp(address mandateApp, address app);
     error NoGuardian();
@@ -139,13 +147,18 @@ contract AquaGuardVault is Ownable, EIP712 {
     ) internal returns (bytes32 strategyHash) {
         require(tokens.length == amounts.length, LengthMismatch(tokens.length, amounts.length));
         require(mandate.tokens.length == mandate.maxAmounts.length, LengthMismatch(mandate.tokens.length, mandate.maxAmounts.length));
-        _consumeMandate(mandate, app, signature);
+        _checkMandate(mandate, app, signature);
 
         for (uint256 i = 0; i < tokens.length; ++i) {
+            // The cap binds what is live at once, not each ship on its own. A mandate that can be
+            // spent any number of times would otherwise let a delegate ship the cap again and again
+            // and commit a multiple of what the guardian approved. `updateQuote` docks first, so a
+            // re-quote releases the old book's commitment before the new one is counted against it.
             uint256 cap = _capFor(mandate, tokens[i]);
-            require(amounts[i] <= cap, AmountAboveMandate(tokens[i], amounts[i], cap));
+            uint256 live = committed[tokens[i]] + amounts[i];
+            require(live <= cap, AmountAboveMandate(tokens[i], live, cap));
 
-            committed[tokens[i]] += amounts[i];
+            committed[tokens[i]] = live;
             IERC20(tokens[i]).forceApprove(address(AQUA), committed[tokens[i]]);
         }
 
@@ -185,8 +198,8 @@ contract AquaGuardVault is Ownable, EIP712 {
         }
     }
 
-    /// @notice Re-quote a live strategy: dock the old one and ship its replacement, under a fresh
-    ///         mandate. Kept as one call so a strategy is never left docked with the agent unable
+    /// @notice Re-quote a live strategy: dock the old one and ship its replacement, under a live
+    ///         mandate — the same one as last time, until it expires or is revoked. Kept as one call so a strategy is never left docked with the agent unable
     ///         to continue.
     function updateQuote(
         address app,
@@ -222,6 +235,16 @@ contract AquaGuardVault is Ownable, EIP712 {
     function setGuardian(address newGuardian) external onlyOwner {
         emit GuardianSet(guardian, newGuardian);
         guardian = newGuardian;
+    }
+
+    /// @notice Withdraw a mandate before it expires.
+    ///
+    /// The owner or the guardian may, because either should be able to take authority back without
+    /// the other. The delegate cannot, and does not need to: it can already stop trading by docking.
+    function revokeMandate(uint256 nonce) external {
+        require(msg.sender == owner() || msg.sender == guardian, NotRevokeAuthorised(msg.sender));
+        mandateRevoked[nonce] = true;
+        emit MandateRevoked(nonce, msg.sender);
     }
 
     function setDockOperator(address operator, bool allowed) external onlyOwner {
@@ -270,17 +293,15 @@ contract AquaGuardVault is Ownable, EIP712 {
         );
     }
 
-    function _consumeMandate(Mandate calldata m, address app, bytes calldata signature) internal {
+    function _checkMandate(Mandate calldata m, address app, bytes calldata signature) internal view {
         require(block.timestamp <= m.expiry, MandateExpired(m.expiry));
-        require(!mandateUsed[m.nonce], MandateAlreadyUsed(m.nonce));
+        require(!mandateRevoked[m.nonce], MandateWasRevoked(m.nonce));
         require(m.delegate == msg.sender, MandateWrongDelegate(m.delegate, msg.sender));
         require(m.app == app, MandateWrongApp(m.app, app));
 
         address signer = guardian;
         require(signer != address(0), NoGuardian());
         require(SignatureChecker.isValidSignatureNow(signer, _hashTypedDataV4(hashMandate(m)), signature), BadMandateSignature());
-
-        mandateUsed[m.nonce] = true;
     }
 
     /// @dev The per-token cap, or a revert if the token is not in the mandate at all.

@@ -155,17 +155,74 @@ contract AquaGuardVaultTest is Test {
         vault.ship(app, "strategy", tokens, amounts, m, sig);
     }
 
-    function test_mandateIsSingleUse() public {
+    /// One signature, fourteen days: SPEC §10. A mandate is not spent by the ship that uses it.
+    function test_aMandateShipsAgainUntilItExpires() public {
         (address[] memory tokens, uint256[] memory amounts) = _pair(100e18, 200e18);
         AquaGuardVault.Mandate memory m = _mandate(tokens, 1_000e18, 0);
         bytes memory sig = _sign(m, ledgerPK);
 
         vm.prank(agent);
         vault.ship(app, "strategy", tokens, amounts, m, sig);
+        vm.prank(agent);
+        vault.ship(app, "strategy2", tokens, amounts, m, sig);
+
+        assertEq(vault.committed(address(tokenA)), 200e18);
+        assertEq(tokenA.allowance(address(vault), address(aqua)), 200e18);
+    }
+
+    /// Reusable is only safe because the cap binds what is live at once. Without that, a delegate
+    /// could ship the cap over and over and commit a multiple of what the guardian signed for.
+    function test_theCapBindsWhatIsLiveAtOnceNotEachShip() public {
+        (address[] memory tokens, uint256[] memory amounts) = _pair(100e18, 100e18);
+        AquaGuardVault.Mandate memory m = _mandate(tokens, 150e18, 0);
+        bytes memory sig = _sign(m, ledgerPK);
 
         vm.prank(agent);
-        vm.expectRevert(abi.encodeWithSelector(AquaGuardVault.MandateAlreadyUsed.selector, uint256(0)));
+        vault.ship(app, "strategy", tokens, amounts, m, sig);
+
+        vm.prank(agent);
+        vm.expectRevert(abi.encodeWithSelector(AquaGuardVault.AmountAboveMandate.selector, address(tokenA), uint256(200e18), uint256(150e18)));
         vault.ship(app, "strategy2", tokens, amounts, m, sig);
+    }
+
+    /// A re-quote under the same mandate fits, because the old book's commitment is released before
+    /// the new one is counted. This is what lets one signature carry a re-centring agent for days.
+    function test_aReQuoteUnderTheSameMandateReleasesTheOldBookFirst() public {
+        (address[] memory tokens, uint256[] memory amounts) = _pair(100e18, 100e18);
+        AquaGuardVault.Mandate memory m = _mandate(tokens, 150e18, 0);
+        bytes memory sig = _sign(m, ledgerPK);
+
+        vm.prank(agent);
+        bytes32 first = vault.ship(app, "strategy", tokens, amounts, m, sig);
+        vm.prank(agent);
+        vault.updateQuote(app, first, tokens, "strategy2", amounts, m, sig);
+
+        assertEq(vault.committed(address(tokenA)), 100e18);
+    }
+
+    function test_aRevokedMandateShipsNothing() public {
+        (address[] memory tokens, uint256[] memory amounts) = _pair(100e18, 200e18);
+        AquaGuardVault.Mandate memory m = _mandate(tokens, 1_000e18, 0);
+        bytes memory sig = _sign(m, ledgerPK);
+
+        vm.prank(owner);
+        vault.revokeMandate(0);
+
+        vm.prank(agent);
+        vm.expectRevert(abi.encodeWithSelector(AquaGuardVault.MandateWasRevoked.selector, uint256(0)));
+        vault.ship(app, "strategy", tokens, amounts, m, sig);
+    }
+
+    function test_theGuardianCanRevokeAsWellAsTheOwner() public {
+        vm.prank(ledger);
+        vault.revokeMandate(7);
+        assertTrue(vault.mandateRevoked(7));
+    }
+
+    function test_theDelegateCannotRevoke() public {
+        vm.prank(agent);
+        vm.expectRevert(abi.encodeWithSelector(AquaGuardVault.NotRevokeAuthorised.selector, agent));
+        vault.revokeMandate(0);
     }
 
     function test_tokenOutsideTheMandateFails() public {

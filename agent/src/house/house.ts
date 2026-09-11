@@ -39,8 +39,11 @@ export interface HouseConfig {
 }
 
 export interface VaultChain {
-  used(vault: Address, nonce: bigint): Promise<boolean>;
+  /// A mandate the owner or the guardian withdrew. Use does not spend a mandate; only this, or expiry.
+  revoked(vault: Address, nonce: bigint): Promise<boolean>;
   balances(vault: Address, tokens: Address[]): Promise<bigint[]>;
+  /// What the vault already has live, per token. The mandate's cap binds this plus the new ship.
+  committed(vault: Address, tokens: Address[]): Promise<bigint[]>;
 }
 
 export type Step =
@@ -56,14 +59,14 @@ export function midOf(index: IndexView): bigint | null {
   return index.reference ? (index.reference.answer * 10n ** 6n) / 10n ** 8n : null;
 }
 
-/// The lowest-nonce mandate that is unexpired and unspent, asking the chain rather than counting:
-/// a local counter drifts the moment a ship lands and the process restarts.
+/// The mandate to ship under: the lowest nonce that is unexpired and not revoked, asking the chain.
+/// A mandate is not spent by use, so this is normally the same one every re-centre until it expires.
 async function nextMandate(list: StoredMandate[], chain: VaultChain, now: number): Promise<StoredMandate | null> {
   const live = list
     .filter((m) => BigInt(m.message.expiry) > BigInt(now))
     .sort((a, b) => (BigInt(a.message.nonce) < BigInt(b.message.nonce) ? -1 : 1));
   for (const m of live) {
-    if (!(await chain.used(m.vault, BigInt(m.message.nonce)))) return m;
+    if (!(await chain.revoked(m.vault, BigInt(m.message.nonce)))) return m;
   }
   return null;
 }
@@ -169,9 +172,15 @@ export async function plan(
     const referencePrice = action.kind === "recenter" ? action.referencePrice : (mid as bigint);
     const mandate = mandateOf(next);
     const held = await chain.balances(vault, tokens);
+    // The cap binds everything live at once. A re-quote docks the old book and releases it inside
+    // the same call, so only a first ship has to leave room for what is already committed.
+    const committedNow = book ? tokens.map(() => 0n) : await chain.committed(vault, tokens);
     const amounts = tokens.map((_, i) => {
-      const cap = mandate.maxAmounts[i];
-      const available = held[i] < cap ? held[i] : cap;
+      const cap = mandate.maxAmounts[i] ?? 0n;
+      const already = committedNow[i] ?? 0n;
+      const balance = held[i] ?? 0n;
+      const room = cap > already ? cap - already : 0n;
+      const available = balance < room ? balance : room;
       return (available * BigInt(cfg.shipPercent)) / 100n;
     });
     if (amounts.every((a) => a === 0n)) {

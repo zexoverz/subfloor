@@ -172,7 +172,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
             ),
           ),
           // Nonce 0 is the usual answer and the loop below only looks further if it is taken.
-          publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'mandateUsed', args: [0n] }),
+          publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'mandateRevoked', args: [0n] }),
         ]);
         if (!live) return;
         setOwner(o as Address);
@@ -204,13 +204,12 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
         );
 
         /*
-         * The first nonce nobody has spent.
+         * The first nonce nobody has revoked.
          *
-         * `_consumeMandate` marks `mandateUsed[nonce]`, so one mandate is one ship and a re-quoting
-         * agent burns one per re-centre. This used to be `zeroSpent ? null : 0n`, which offered
-         * nonce 0 and then nothing — an interface that could authorise an agent once and never keep
-         * it running. The comment above the read already promised this loop; it had not been
-         * written.
+         * Since #253 a mandate is not spent by use: one signature covers every ship and re-quote
+         * until it expires, so nonce 0 is the answer unless the owner or the guardian revoked it.
+         * The scan only matters after a revocation, when a fresh mandate needs a nonce the vault
+         * will still accept.
          *
          * Nonces need not be contiguous, so the scan is a convenience rather than a rule, and it is
          * bounded: past the window the honest answer is that this vault needs its nonces managed
@@ -224,7 +223,7 @@ export function useCeremony(address: Address | null, vault: Address | null): Cer
             const spent = await publicClient.readContract({
               address: vault,
               abi: vaultAbi,
-              functionName: 'mandateUsed',
+              functionName: 'mandateRevoked',
               args: [n],
             });
             if (!(spent as boolean)) {
