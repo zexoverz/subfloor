@@ -28,10 +28,11 @@ const ERC20_ABI = [
 
 const MAX_BACKOFF_MS = 600_000;
 
-export async function runHouse(): Promise<void> {
-  const key = process.env.SUBFLOOR_DELEGATE_KEY;
-  if (!key) throw new Error("SUBFLOOR_DELEGATE_KEY is not set; the house agent has no key and will not start");
-  const account = privateKeyToAccount(key as Hex);
+/// `key` arrives from `house/key.ts` when the policy loop starts this, and may have been opened from
+/// the Key Ring. Run directly, this file reads the plain variable as it always has.
+export async function runHouse(key: Hex | undefined = process.env.SUBFLOOR_DELEGATE_KEY as Hex | undefined): Promise<void> {
+  if (!key) throw new Error("no delegate key; the house agent will not start without one");
+  const account = privateKeyToAccount(key);
   const policy = configFromEnv();
   const api = (process.env.SUBFLOOR_API ?? "https://web-production-37798.up.railway.app").replace(/\/$/, "");
   const dryRun = process.env.SUBFLOOR_DRY_RUN === "1";

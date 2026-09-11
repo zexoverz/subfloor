@@ -4,6 +4,7 @@ import { readIndex, IndexUnavailable, IndexRateLimited, type IndexView } from ".
 import { decide, type Action, type PolicyInputs } from "./decide.ts";
 import { composeBook } from "../compose/book.ts";
 import { configFromEnv, type LoopConfig } from "./config.ts";
+import { delegateKeyFromEnv } from "../house/key.ts";
 
 /// The policy loop.
 ///
@@ -141,11 +142,12 @@ const MAX_BACKOFF_MS = 600_000;
 
 export async function run(): Promise<void> {
   // With a delegate key this service is the house agent and trades; without one it watches and
-  // reports, as it always has. One secret is the whole difference, so the Railway service does not
-  // need a second start command to become the agent a first-run user is offered.
-  if (process.env.SUBFLOOR_DELEGATE_KEY) {
+  // reports, as it always has. The key comes sealed from the Key Ring when the ring is configured and
+  // in the clear only when it is not (`house/key.ts`); a ring that will not open means watching.
+  const found = await delegateKeyFromEnv();
+  if (found) {
     const { runHouse } = await import("../house/run.ts");
-    return runHouse();
+    return runHouse(found.key);
   }
 
   const cfg = configFromEnv();

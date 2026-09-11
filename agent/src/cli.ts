@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import { SoftwareDevice } from "./keyring/lkrp.ts";
 import { initMemberCredentials, toKeyPair } from "./keyring/credentials.ts";
-import { Ring, SUBFLOOR_APPLICATION_ID } from "./keyring/ring.ts";
+import { Permissions, Ring, SUBFLOOR_APPLICATION_ID } from "./keyring/ring.ts";
 import { openSecretAsString, resealSecret, sealSecret } from "./keyring/secret.ts";
 import {
   FileRingStore,
@@ -28,6 +28,8 @@ const USAGE = `subfloor keyring — Ledger Key Ring for a host with no USB port
   enroll-host   --member <file> --ring <file> --relay <url>
                                                        no device
   enroll        --member <file> --ring <file> --url <url> [--name <n>] [--digits <d>]
+                                                       no device
+  add-member    --member <file> --ring <file> --id <pubkey> [--name <n>]
                                                        no device
   members       --ring <file>                          no device
   seal          --member <file> --ring <file> --key <name> [--in <file>] --out <file>
@@ -118,6 +120,21 @@ async function main(argv: string[]): Promise<number> {
         member: credentials.pubkey,
         device_used: "none",
       });
+      return 0;
+    }
+
+    // A host that cannot run the relay handshake, such as a hosted agent that only prints its member
+    // id to a log: the owner adds it by public id. No device, because adding a member never needs
+    // one; the host's private half never leaves it, because only the public id is asked for here.
+    case "add-member": {
+      const credentials = await readMemberCredentials(required(flags, "member"));
+      const store = new FileRingStore(required(flags, "ring"));
+      const id = required(flags, "id");
+      if (!/^[0-9a-fA-F]{66}$/.test(id)) throw new Error("--id is not a 33-byte compressed public key in hex");
+      const ring = await Ring.load(store);
+      const after = await ring.addMember(credentials, { id, name: flags.name ?? "agent-host", permissions: Permissions.OWNER });
+      await after.save(store);
+      print({ added: id, ring: after.descriptor(), members: await after.members(), device_used: "none" });
       return 0;
     }
 
