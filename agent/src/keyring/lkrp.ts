@@ -30,4 +30,7 @@ export {
 
 export type { Device } from "@ledgerhq/hw-ledger-key-ring-protocol/lib/Device";
 
-export { makeCipher } from "@ledgerhq/ledger-key-ring-protocol/lib/qrcode/cipher";
+// Deliberately nothing from `@ledgerhq/ledger-key-ring-protocol` here. Every module in this package
+// loads this file, including the ones the house agent needs to open a sealed key, and that package
+// depends on a Speculos transport that cannot install from a clean registry. The one thing taken
+// from it, the enrollment session cipher, is imported where it is used, in `enroll/cipher.ts`.
