@@ -528,6 +528,39 @@ lowering and door one or remove them.
 
 ---
 
+## 9a. 12 Sep, the video day, in order
+
+One laptop, the builder's, with the Ledger plugged in; Zikri and the builder are in one place, so
+nothing has to move between machines. Everything that signs is theirs to run.
+
+1. **Key Ring, about fifteen minutes.** `git pull`, then
+   `bash scripts/key-ring-setup.sh ring 028f05cc85f57d4d6e8822b77d434ae6476ebd77c535a19dde8394c5a90cbccf67`
+   (the agent host's member id, from its Railway log; approve ring creation on the device; this laptop
+   is a member as the ring's creator), then `bash scripts/key-ring-setup.sh rotate`. The rotation
+   exists because the current delegate key was printed in a terminal on 11 Sep (`#287`). It pauses at
+   3/6 printing `SUBFLOOR_HOUSE_AGENT=<new>`, which an agent session sets on `web`. At the end an agent
+   session sets `SUBFLOOR_RING_BLOCKS` and `SUBFLOOR_DELEGATE_SEALED` on `agent` from `~/.subfloor/`,
+   empties `SUBFLOOR_DELEGATE_KEY`, and checks the log for `[ring] opened the delegate key from the Key
+   Ring`. Ring creation on a real Ledger has never been run: if the device refuses, stop and read the
+   error. `--software-owner` would get past it and make the claim untrue.
+2. **A vault with the Ledger as guardian**, made in the app: the Ledger's address as guardian, the
+   house agent's new address as delegate. The mandate signed on the device is moment one. `#232` is
+   still open, so if the app only shows the signed mandate, it goes to `/api/mandates` by hand.
+3. **Moment two on that vault:** `SUBFLOOR_VAULT=<it> DELEGATE_ACCOUNT=subfloor-delegate-2 bash
+   scripts/demo-lower-floor.sh attack`, then `SUBFLOOR_VAULT=<it> GUARDIAN=ledger bash
+   scripts/demo-lower-floor.sh guardian`, then raise the floor back in the app. The attack appears in
+   `/api/refusals` under `weakenings` since `#286`; the tape does not render those rows yet.
+4. **The settlement refusal:** `DELEGATE_ACCOUNT=subfloor-delegate-2 bash scripts/demo-refusal.sh`.
+5. **Ring revocation, last,** because it stops the house agent: `revoke` per `docs/key-ring.md`, the new
+   ring into the two variables, and the log refusing to trade. Restoring it is `ring <agent id>` then
+   `seal` or `rotate` again.
+6. Record. Then the three submissions, criterion by criterion (`#61`), a README pass, and rotating
+   the keystore password and the Graph API key, both of which were typed into an agent chat.
+
+The deadline is 13 Sep 16:00 UTC; the builder aims to submit on the 12th.
+
+---
+
 ## 9. What to do next, in order
 
 **1. Confirm check-in 2 went in.** Its deadline was 11 Sep 03:59 UTC and nothing in the repo records
