@@ -3,6 +3,7 @@ import { baseSepolia } from "viem/chains";
 import { readIndex, IndexUnavailable, IndexRateLimited, type IndexView } from "../market/index-reads.ts";
 import { decide, type Action, type PolicyInputs } from "./decide.ts";
 import { composeBook } from "../compose/book.ts";
+import { configFromEnv, type LoopConfig } from "./config.ts";
 
 /// The policy loop.
 ///
@@ -25,41 +26,8 @@ import { composeBook } from "../compose/book.ts";
 /// One read per cycle. The mid is derived from the same view the decision rests on; it used to be a
 /// second query, which doubled the load on a rate-limited endpoint for a number it already had.
 
-export interface LoopConfig {
-  subgraph: string;
-  rpc: string;
-  maxReferenceAgeSeconds: number;
-  maxIndexLagBlocks: number;
-  /// Seconds a rate-limited index may stay unread before the loop treats it as gone and docks.
-  maxIndexSilenceSeconds: number;
-  recenterBps: number;
-  spreadBps: number;
-  feeBps: number;
-  decayPeriodSeconds: number;
-  intervalMs: number;
-}
-
-export function configFromEnv(): LoopConfig {
-  const need = (k: string) => {
-    const v = process.env[k];
-    if (!v) throw new Error(`${k} is not set`);
-    return v;
-  };
-  return {
-    subgraph: need("SUBFLOOR_SUBGRAPH"),
-    rpc: process.env.SUBFLOOR_RPC ?? "https://sepolia.base.org",
-    maxReferenceAgeSeconds: Number(process.env.POLICY_MAX_REF_AGE ?? 3600),
-    maxIndexLagBlocks: Number(process.env.POLICY_MAX_INDEX_LAG ?? 200),
-    maxIndexSilenceSeconds: Number(process.env.POLICY_MAX_INDEX_SILENCE ?? 600),
-    recenterBps: Number(process.env.POLICY_RECENTER_BPS ?? 50),
-    spreadBps: Number(process.env.POLICY_SPREAD_BPS ?? 50),
-    feeBps: Number(process.env.POLICY_FEE_BPS ?? 3000),
-    decayPeriodSeconds: Number(process.env.POLICY_DECAY_SECONDS ?? 600),
-    // Two minutes. The reference updates every few minutes (p50 660s on Base, docs/chainlink-gap.md)
-    // and a re-centre is a band of 50 bps, so polling faster buys nothing but 429s.
-    intervalMs: Number(process.env.POLICY_INTERVAL_MS ?? 120_000),
-  };
-}
+// In its own module so `house/run.ts` can read it without importing this file back (#269).
+export { configFromEnv, type LoopConfig } from "./config.ts";
 
 /// The reference, in the raw-unit convention the curve uses: an eight-decimal USD answer becomes raw
 /// quote units per raw base unit. WETH is 18 decimals and tUSDC is 6, so the scale is
