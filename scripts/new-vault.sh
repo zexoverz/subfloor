@@ -114,8 +114,11 @@ fi
 if [ -z "${FACTORY:-}" ]; then
   if sending; then
     say "deploying VaultFactory from $(git rev-parse --short HEAD); a cold via_ir build takes up to ten minutes"
+    # forge create refuses --account with --password-file and demands --keystore, unlike cast, so it
+    # gets the keystore's path. The constructor args go last, because that flag takes every value after it.
     out="$(cd contracts && forge create src/subfloor/VaultFactory.sol:VaultFactory \
-      --constructor-args "$AQUA" "${TX[@]}" --broadcast)"
+      --rpc-url "$RPC" --keystore "$KEYSTORES/$OWNER_ACCOUNT" --password-file "$PWFILE" --broadcast \
+      --constructor-args "$AQUA")"
     FACTORY="$(printf '%s\n' "$out" | awk '/Deployed to:/ {print $3}')"
     [ -n "$FACTORY" ] || stop "forge create printed no address:
 $out"
