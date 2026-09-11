@@ -45,7 +45,7 @@ export const vaultAbi = [
   { type: 'function', name: 'setDelegate', stateMutability: 'nonpayable', inputs: [{ name: 'newDelegate', type: 'address' }], outputs: [] },
   { type: 'function', name: 'setGuardian', stateMutability: 'nonpayable', inputs: [{ name: 'newGuardian', type: 'address' }], outputs: [] },
   /** A mandate is single-use; this says whether a nonce has already been spent. */
-  { type: 'function', name: 'mandateUsed', stateMutability: 'view', inputs: [{ name: 'nonce', type: 'uint256' }], outputs: [{ type: 'bool' }] },
+  { type: 'function', name: 'mandateRevoked', stateMutability: 'view', inputs: [{ name: 'nonce', type: 'uint256' }], outputs: [{ type: 'bool' }] },
   { type: 'function', name: 'dock', stateMutability: 'nonpayable', inputs: [{ name: 'app', type: 'address' }, { name: 'strategyHash', type: 'bytes32' }, { name: 'tokens', type: 'address[]' }], outputs: [] },
 ] as const;
 

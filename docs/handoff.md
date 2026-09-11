@@ -413,6 +413,48 @@ ten-minute `via_ir` build.
 
 ---
 
+## 8c. What changed on 11 Sep
+
+Merged: `#237` (one index read per window, a 429 holds), `#238` (`/api/mandates`), `#239` (house
+agent), `#242` (this handoff), `#245` (MCP tools read the live index), `#246` (calibration takes the
+adverse tail; the floor default went from 50 to 100 bps), `#249` (`switch-on` script), `#253`
+(mandates last until they expire).
+
+**A mandate lasts until it expires (`#253`).** SPEC §10 promised one signature for fourteen days; the
+vault marked a nonce used on every ship and `updateQuote`, so a re-centring agent needed a signature
+per re-centre. Now one mandate covers every ship until expiry, the per-token cap binds what is live at
+once (`committed + amount <= cap`), and `revokeMandate(nonce)` lets the owner or the guardian withdraw
+one. The view is `mandateRevoked`, not `mandateUsed`. **The live vault `0xaf6b` keeps the old
+single-use bytecode**: taking this needs a new `VaultFactory` and a vault from it (§9 step 4).
+
+**The live testnet run on 11 Sep.** The guardian lowered `0xaf6b`'s backstop to 0 (`0xad4f4247…`), so
+its floor is the 100 bps relative one and follows the market. Eight single-use mandates (nonces 9 to
+16) sit in `/api/mandates` for `0xaf6b`. The taker ran out of WETH (`SafeTransferFromFailed` on every
+WETH-in cycle) and was refilled with 0.02 WETH. **The taker's key is `0x02538e43…`, not the
+`0x8960…` in `agent/.secrets/taker.address`**: check balances against a fill's `from`, not that file.
+
+**The delegate key is not on Railway.** `subfloor-dev` is the owner and guardian `0x9ebd…`.
+`subfloor-testnet` answered `Mac Mismatch` to the password the owner typed, so either its password
+differs or it is not `0x28Fb…`. If it cannot be opened, the owner sets a new delegate (§9 step 4).
+
+**Filed, not fixed:** `#250` (the vault's Aqua allowance drifts below what its live books can pull:
+pulls do not reduce `committed`, pushes do not raise the allowance) and `#247` (the daily report's
+worst day is the snapshot's best tail; needs a subgraph redeploy).
+
+**The production audit on 11 Sep**, from a Playwright walk and a read of `frontend/src` by an audit
+agent; the points below are its findings, not each re-verified. A stranger gets the thesis and not the
+product. The connected journey is about eight prompts and still never reaches the agent: nothing in
+`frontend/src` POSTs to `/api/mandates`, and the agent address field is empty with the house agent
+never offered (`#232`). Also on screen: "Base mainnet" in the eyebrow and on the refusal card, fixture
+values on the LIVE tiles (notional, markout, worst fill, reference 2,470.10) and on the agent lines,
+`STOP AGENT` docking `(aqua, 0x0)` which reverts while the copy claims a revocation that does not
+exist, lowering a floor sending nothing on chain, `/app/device` showing a TODO skeleton, and no door
+one. Its ranked fixes: deliver the mandate to the agent with the house agent as the default; a real
+first-run screen; remove fixture leakage; make STOP AGENT stop (now possible: `revokeMandate`); wire
+lowering and door one or remove them.
+
+---
+
 ## 9. What to do next, in order
 
 **1. File check-in 2. Deadline 11 Sep 03:59 UTC.** Draft is `docs/check-in-2.md`, already audited
@@ -442,16 +484,23 @@ cd indexer/substreams
 SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams registry publish ./subfloor-refusals-v0.1.0.spkg
 ```
 
-**4. Switch the house agent on, which also unsticks the live book (`#233`).** The code is merged and
-deployed. Three things are left, and none of them can be done from an agent session:
+**4. Move to a vault on `#253`'s bytecode and switch the house agent on (`#233`).** Everything that
+signs runs from the owner's terminal; an agent session cannot open the keystores and must not be
+handed a password or a key. Set the password once there so nothing prompts repeatedly:
+`read -s P && export ETH_PASSWORD="$P" CAST_UNSAFE_PASSWORD="$P" && unset P`.
 
-- set `SUBFLOOR_DELEGATE_KEY` on the Railway `agent` service to the key for `0x28Fb6255…`
-- sign a mandate batch for vault `0xaf6b…` as its guardian `0x9ebdC8AC…`, naming that delegate, and
-  POST it to `/api/mandates`, from the interface once `#232` lands or from the keystore
-- decide the backstop: the vault's WETH→tUSDC absolute is 2,460.46, above the market on 10 Sep, so
-  even a recentred book cannot sell WETH until it is lowered with a guardian signature
+1. deploy a `VaultFactory` with `forge create` and verify it on Sourcify (a small contract; only the
+   router needs verifier-produced bytes)
+2. `createVault(setup)` from the owner: the delegate, guardian `0x9ebd…`, the registry, both pairs at
+   100 bps and absolute 0 (an absolute backstop is what froze the old vault's selling side)
+3. as owner, dock `0xaf6b`'s three books and `withdraw` its inventory into the new vault
+4. from `agent/`: `SUBFLOOR_VAULT=<new vault> node --experimental-strip-types src/house/switch-on.ts`,
+   one mandate for fourteen days
+5. the delegate key into Railway with `railway variables -s agent --set-from-stdin
+   SUBFLOOR_DELEGATE_KEY`; then an agent session with the Railway MCP sets `SUBFLOOR_HOUSE_AGENT`,
+   `VITE_VAULT`, `VITE_VAULT_FACTORY` and the taker's `SUBFLOOR_VAULT` to the new addresses
 
-After that the agent retires the vault's two older books and recentres the newest one.
+After that the agent ships one book for the new vault and keeps it centred on the one mandate.
 
 **5. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
 

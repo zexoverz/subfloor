@@ -42,7 +42,7 @@ const VAULT_ABI = [
   { type: "function", name: "guardian", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
   {
     type: "function",
-    name: "mandateUsed",
+    name: "mandateRevoked",
     stateMutability: "view",
     inputs: [{ type: "uint256" }],
     outputs: [{ type: "bool" }],
@@ -85,8 +85,8 @@ export async function run(): Promise<void> {
   if (!valid) throw new Error(`the signature does not recover to the vault's guardian ${guardian}`);
   console.log(`[mandate] valid, signed by the guardian ${guardian}, nonce ${mandate.nonce}`);
 
-  if (await client.readContract({ address: vault, abi: VAULT_ABI, functionName: "mandateUsed", args: [mandate.nonce] })) {
-    throw new Error(`mandate nonce ${mandate.nonce} is already used; one mandate is one ship`);
+  if (await client.readContract({ address: vault, abi: VAULT_ABI, functionName: "mandateRevoked", args: [mandate.nonce] })) {
+    throw new Error(`mandate nonce ${mandate.nonce} was revoked by the owner or the guardian`);
   }
 
   /*

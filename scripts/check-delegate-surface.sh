@@ -15,7 +15,9 @@ DELEGATE_REACHABLE="ship dock updateQuote rescueApproval"
 # transferOwnership is OpenZeppelin's and is owner-gated. renounceOwnership is overridden to
 # revert: renouncing would permanently remove the rescue path, and a vault holding inventory with
 # no owner is bricked rather than decentralised.
-OWNER_GATED="setDelegate setGuardian setDockOperator withdraw execute transferOwnership renounceOwnership"
+# revokeMandate is the owner's or the guardian's, never the delegate's: it withdraws authority, and a
+# delegate that wants to stop can already dock.
+OWNER_GATED="setDelegate setGuardian setDockOperator withdraw execute transferOwnership renounceOwnership revokeMandate"
 
 # bash 3.2 on macOS has no mapfile, so keep it portable.
 MUTATING=$(jq -r '.abi[] | select(.type=="function") | select(.stateMutability!="view" and .stateMutability!="pure") | .name' "$ARTIFACT" | sort -u)

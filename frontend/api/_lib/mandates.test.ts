@@ -40,11 +40,11 @@ async function signed(
   return { vault, signature, message };
 }
 
-function reader(over: { delegate?: Address; spent?: bigint[] } = {}): MandateReader {
+function reader(over: { delegate?: Address; revoked?: bigint[] } = {}): MandateReader {
   return {
     guardian: async () => guardian.address,
     delegate: async () => over.delegate ?? HOUSE,
-    used: async (_v, n) => (over.spent ?? []).includes(n),
+    revoked: async (_v, n) => (over.revoked ?? []).includes(n),
   };
 }
 
@@ -96,7 +96,7 @@ const refusals: Array<[string, () => Promise<{ raw: string; d: ReturnType<typeof
     /does not recover/,
   ],
   ["a vault that delegated to somebody else", async () => ({ raw: JSON.stringify(await signed()), d: deps({ reader: reader({ delegate: stranger.address }) }) }), /could not spend/],
-  ["a nonce already spent", async () => ({ raw: JSON.stringify(await signed({ nonce: "7" })), d: deps({ reader: reader({ spent: [7n] }) }) }), /already spent/],
+  ["a revoked mandate", async () => ({ raw: JSON.stringify(await signed({ nonce: "7" })), d: deps({ reader: reader({ revoked: [7n] }) }) }), /was revoked/],
 ];
 
 for (const [name, make, reason] of refusals) {

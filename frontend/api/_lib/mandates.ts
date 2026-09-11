@@ -45,7 +45,8 @@ export interface StoredMandate {
 export interface MandateReader {
   guardian(vault: Address): Promise<Address>;
   delegate(vault: Address): Promise<Address>;
-  used(vault: Address, nonce: bigint): Promise<boolean>;
+  /// Withdrawn by the owner or the guardian. Use does not spend a mandate; only this, or expiry.
+  revoked(vault: Address, nonce: bigint): Promise<boolean>;
 }
 
 export interface MandateStore {
@@ -137,7 +138,7 @@ export async function check(x: unknown, ctx: CheckContext): Promise<StoredMandat
   }).catch(() => false);
   if (!valid) throw new MandateRejected(`the signature does not recover to the vault's guardian ${guardian}`);
 
-  if (await ctx.reader.used(m.vault, BigInt(msg.nonce))) throw new MandateRejected(`nonce ${msg.nonce} is already spent`);
+  if (await ctx.reader.revoked(m.vault, BigInt(msg.nonce))) throw new MandateRejected(`nonce ${msg.nonce} was revoked`);
   return m;
 }
 
@@ -153,7 +154,7 @@ function memo(reader: MandateReader): MandateReader {
   return {
     guardian: (v) => once(guardians, v.toLowerCase(), () => reader.guardian(v)),
     delegate: (v) => once(delegates, v.toLowerCase(), () => reader.delegate(v)),
-    used: (v, n) => reader.used(v, n),
+    revoked: (v, n) => reader.revoked(v, n),
   };
 }
 
@@ -271,7 +272,7 @@ export function fileStore(path: string): MandateStore {
 const VAULT_ABI = [
   { type: "function", name: "guardian", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
   { type: "function", name: "delegate", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
-  { type: "function", name: "mandateUsed", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "mandateRevoked", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
 ] as const;
 
 /// Current state over `eth_call`, which is fine: this is about what the vault says now, not history.
@@ -280,6 +281,6 @@ export function chainReader(rpc: string): MandateReader {
   return {
     guardian: (vault) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "guardian" }),
     delegate: (vault) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "delegate" }),
-    used: (vault, nonce) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "mandateUsed", args: [nonce] }),
+    revoked: (vault, nonce) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "mandateRevoked", args: [nonce] }),
   };
 }
