@@ -1,69 +1,102 @@
 #!/usr/bin/env bash
 # Put the house agent's delegate key in the Ledger Key Ring (#274).
 #
-# Run on the owner's laptop, with the Ledger plugged in and unlocked, after the agent has printed its
-# ring member id:
+# Split across whoever holds the two things it needs, the Ledger and the delegate keystore, so
+# neither hands the other anything secret. Only public member ids and the ring blocks move between
+# them, and the ring blocks carry no key material.
 #
-#     bash scripts/key-ring-setup.sh <agent member id>
+#   1. owner's laptop, the one with the delegate keystore:
+#        bash scripts/key-ring-setup.sh id
+#      prints this laptop's ring member id
 #
-# The id is in the agent's Railway log, on the line "[ring] this host is ring member <id>". What this
-# makes lives in ~/.subfloor, mode 0600, and nothing leaves this machine except what then goes into
-# Railway: the ring blocks, which carry no key material, and the sealed envelope, which only the
-# agent host's own member credential can open.
+#   2. the machine with the Ledger, plugged in and unlocked:
+#        bash scripts/key-ring-setup.sh ring <agent id> <laptop id>
+#      creates the ring on the device if there is none (approve on it), and adds both ids with no
+#      device. The agent's id is in its Railway log: "[ring] this host is ring member <id>". Then
+#      send ~/.subfloor/ring.json to the owner.
 #
-#   1. this laptop's ring member identity                      no device
-#   2. the ring, rooted in the Ledger; approve on the device   DEVICE, skipped if the ring exists
-#   3. the agent host added to the ring by its public id       no device
-#   4. the delegate key sealed on the ring, piped from the keystore and never printed
+#   3. owner's laptop again:
+#        bash scripts/key-ring-setup.sh seal <ring.json>
+#      seals the delegate key on that ring, piped from the keystore and never printed
+#
+# One person holding both can run all three on one machine: `ring` takes this laptop's own id, and
+# `seal` with no argument uses the ring `ring` just wrote.
 set -euo pipefail
 unset ETH_PASSWORD CAST_UNSAFE_PASSWORD ETH_KEYSTORE_ACCOUNT
 export PATH="$HOME/.foundry/bin:$PATH"
 export NODE_NO_WARNINGS=1
 cd "$(git rev-parse --show-toplevel)/agent"
 
-AGENT_ID="${1:-}"
+CMD="${1:-}"
+[ $# -gt 0 ] && shift
 DIR="${SUBFLOOR_RING_DIR:-$HOME/.subfloor}"
 DELEGATE_ACCOUNT="${DELEGATE_ACCOUNT:-subfloor-delegate}"
-MEMBER="$DIR/owner-member.json"
+MEMBER="$DIR/member.json"
 RING="$DIR/ring.json"
 SEALED="$DIR/delegate.sealed.json"
 
 say()     { printf '\n[key-ring] %s\n' "$*"; }
 stop()    { printf '\n[key-ring] stopped: %s\n' "$*" >&2; exit 1; }
 keyring() { node --experimental-strip-types src/cli.ts "$@"; }
+is_id()   { [[ "$1" =~ ^[0-9a-fA-F]{66}$ ]]; }
 
-[[ "$AGENT_ID" =~ ^[0-9a-fA-F]{66}$ ]] \
-  || stop "give the agent's ring member id: the 66 hex characters after 'this host is ring member' in its Railway log"
-command -v cast >/dev/null || stop "foundry is not on PATH"
 mkdir -p "$DIR"
 chmod 700 "$DIR"
 
-if [ ! -f "$MEMBER" ]; then
-  say "1/4 this laptop's ring member identity (no device)"
-  keyring keygen --member "$MEMBER" --name owner-laptop >/dev/null
-else
-  say "1/4 this laptop is already a member identity at $MEMBER"
-fi
+# This machine's member identity, made once and kept. The private half never leaves the file.
+member_id() {
+  [ -f "$MEMBER" ] || keyring keygen --member "$MEMBER" --name "$(hostname -s)" >/dev/null
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["pubkey"])' "$MEMBER"
+}
 
-if [ ! -f "$RING" ]; then
-  say "2/4 creating the ring, rooted in the Ledger. Unlock it, and approve on the device when it asks"
-  keyring create-ring --member "$MEMBER" --ring "$RING" --name owner-laptop >/dev/null
-else
-  say "2/4 the ring already exists at $RING"
-fi
+case "$CMD" in
+  id)
+    ID="$(member_id)"
+    say "this machine's ring member id. It is public; send it to whoever holds the Ledger:"
+    printf '%s\n' "$ID"
+    ;;
 
-say "3/4 adding the agent host ${AGENT_ID:0:10}… to the ring (no device)"
-keyring add-member --member "$MEMBER" --ring "$RING" --id "$AGENT_ID" --name railway-agent >/dev/null
+  ring)
+    [ $# -gt 0 ] || stop "give the member ids to add: the agent host's and the owner laptop's"
+    for id in "$@"; do is_id "$id" || stop "$id is not a member id (66 hex characters)"; done
+    member_id >/dev/null
+    if [ ! -f "$RING" ]; then
+      say "creating the ring, rooted in the Ledger. Unlock it, and approve on the device when it asks"
+      keyring create-ring --member "$MEMBER" --ring "$RING" --name "$(hostname -s)" >/dev/null
+    else
+      say "the ring already exists at $RING"
+    fi
+    for id in "$@"; do
+      say "adding ${id:0:10}… to the ring (no device)"
+      keyring add-member --member "$MEMBER" --ring "$RING" --id "$id" --name "member-${id:0:8}" >/dev/null
+    done
+    chmod 600 "$MEMBER" "$RING"
+    say "the ring now holds:"
+    keyring members --ring "$RING"
+    say "done. Send $RING to whoever seals the delegate key. It holds no key material.
+  Keep $MEMBER and this Ledger: revoking a member later needs both."
+    ;;
 
-say "4/4 sealing the delegate key. cast asks for the $DELEGATE_ACCOUNT password once; the key goes straight into the seal"
-KEY="$(cast wallet decrypt-keystore "$DELEGATE_ACCOUNT" | awk '{print $NF}')"
-[[ "$KEY" =~ ^0x[0-9a-fA-F]{64}$ ]] || { unset KEY; stop "$DELEGATE_ACCOUNT did not open to a private key"; }
-printf %s "$KEY" | keyring seal --member "$MEMBER" --ring "$RING" --key subfloor-delegate --out "$SEALED" >/dev/null
-unset KEY
-chmod 600 "$MEMBER" "$RING" "$SEALED"
+  seal)
+    SRC="${1:-$RING}"
+    [ -f "$SRC" ] || stop "no ring at $SRC; pass the ring.json the Ledger holder sent"
+    command -v cast >/dev/null || stop "foundry is not on PATH"
+    ID="$(member_id)"
+    [ "$SRC" -ef "$RING" ] || cp "$SRC" "$RING"
+    keyring members --ring "$RING" | grep -q "$ID" \
+      || stop "this machine ($ID) is not in that ring. The Ledger holder adds it with: bash scripts/key-ring-setup.sh ring $ID"
+    say "sealing the delegate key. cast asks for the $DELEGATE_ACCOUNT password once; the key goes straight into the seal"
+    KEY="$(cast wallet decrypt-keystore "$DELEGATE_ACCOUNT" | awk '{print $NF}')"
+    [[ "$KEY" =~ ^0x[0-9a-fA-F]{64}$ ]] || { unset KEY; stop "$DELEGATE_ACCOUNT did not open to a private key"; }
+    printf %s "$KEY" | keyring seal --member "$MEMBER" --ring "$RING" --key subfloor-delegate --out "$SEALED" >/dev/null
+    unset KEY
+    chmod 600 "$MEMBER" "$RING" "$SEALED"
+    say "done. Tell Claude \"ring ready\". It puts $RING into SUBFLOOR_RING_BLOCKS and $SEALED into
+  SUBFLOOR_DELEGATE_SEALED on the agent service, and SUBFLOOR_DELEGATE_KEY comes out."
+    ;;
 
-say "the ring now holds:"
-keyring members --ring "$RING"
-say "done. Tell Claude \"ring ready\". It puts $RING into SUBFLOOR_RING_BLOCKS and $SEALED into
-  SUBFLOOR_DELEGATE_SEALED on the agent service; then SUBFLOOR_DELEGATE_KEY can be deleted there.
-  Keep $DIR: revoking the agent later needs this laptop's member file, the ring and the Ledger."
+  *)
+    sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
+    exit 1
+    ;;
+esac
