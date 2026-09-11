@@ -46,6 +46,15 @@ agent: the delegate ships a book 500 bps under the reference under the live mand
 ordinary taker asks it for a fill, settlement reverts `SettledBelowFloor`, and the delegate docks the
 book again so the house agent keeps its own.
 
+**The floor cannot be weakened from the trading side: `scripts/demo-lower-floor.sh`.** One
+`FloorLowering` message, checked against the registry's domain before anything is signed. `attack`
+signs it with the house agent's key and sends it; the registry reverts `BadGuardianSignature`, and
+because it reverted the nonce is untouched. `guardian` signs the same message as the vault's guardian
+and the floor moves; `GUARDIAN=ledger` takes that signature off a Ledger as typed data, so the device
+shows the recipient, the pair and the new tolerance. Signing that typed data was checked to produce
+the same signature as signing the registry's digest. The two legs can run on two machines, each for
+the vault `SUBFLOOR_VAULT` names.
+
 **The product gap is the frontend, not the contracts.** A stranger reaches the thesis and not the
 product: the interface signs a mandate and never delivers it to the agent (`#232`). The audit and
 its ranked fixes are in §8c; they are Zikri's, and they are what decides whether a judge sees an
