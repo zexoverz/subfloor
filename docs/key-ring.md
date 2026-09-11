@@ -28,8 +28,10 @@ asymmetry as the floor: strengthening is cheap, weakening needs the hardware.
    - the Ledger machine, device plugged in and unlocked: `bash scripts/key-ring-setup.sh ring
      <agent id> <laptop id>` creates the ring on the device if there is none and adds both ids; send
      the resulting `~/.subfloor/ring.json` to the owner
-   - owner's laptop: `bash scripts/key-ring-setup.sh seal <ring.json>` seals the delegate key
-     straight from the keystore without printing it
+   - owner's laptop: `bash scripts/key-ring-setup.sh rotate <ring.json>` makes a new delegate whose
+     key has never been printed, sets it on the vault, signs a fresh mandate for it, revokes the old
+     ones and seals the new key into the ring. `seal <ring.json>` seals the current key as it is, and
+     is only for a key that never left its keystore; ours was printed in a terminal on 11 Sep (#287)
 3. On `agent`: `SUBFLOOR_RING_BLOCKS` from `~/.subfloor/ring.json` and `SUBFLOOR_DELEGATE_SEALED` from
    `~/.subfloor/delegate.sealed.json`, then delete `SUBFLOOR_DELEGATE_KEY`. The log says
    `[ring] opened the delegate key from the Key Ring`.
