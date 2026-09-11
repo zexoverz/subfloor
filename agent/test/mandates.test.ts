@@ -26,8 +26,8 @@ function book(count: number, first = 10n) {
   return new MandateBook(issueBatch(TEMPLATE, first, count).map((mandate) => ({ mandate, signature: sig })));
 }
 
-describe("a batch is what lets an agent re-quote without a device present", () => {
-  test("one mandate is one ship, so a re-quoting agent needs several", () => {
+describe("a book hands out the lowest mandate the chain still allows", () => {
+  test("it holds every mandate it was given", () => {
     const b = book(3);
     assert.equal(b.size, 3);
     assert.equal(b.remaining(() => false, NOW), 3);
@@ -36,13 +36,13 @@ describe("a batch is what lets an agent re-quote without a device present", () =
   test("it spends them in the order they were approved", () => {
     const b = book(3, 10n);
     assert.equal(b.next(() => false, NOW).mandate.nonce, 10n);
-    // Once the chain says 10 is burned, 11 is next.
+    // Once the chain says 10 is revoked, 11 is next.
     assert.equal(b.next((n) => n === 10n, NOW).mandate.nonce, 11n);
   });
 
-  test("used is read from the chain, not remembered", () => {
-    // A local counter drifts the moment a ship lands and the process restarts, and the failure is a
-    // revert on a nonce that was already burned.
+  test("revocation is read from the chain, not remembered", () => {
+    // The owner or the guardian can revoke at any moment, and an agent that trusted its own record
+    // would find out as a revert.
     const b = book(3, 10n);
     assert.equal(b.next((n) => n === 10n || n === 11n, NOW).mandate.nonce, 12n);
   });

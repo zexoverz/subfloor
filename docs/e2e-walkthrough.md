@@ -80,8 +80,14 @@ below, and every time a floor is lowered for the life of the vault.
 
 ## Part C — authority, and where the device earns its place
 
-Shipping consumes a mandate signed by the guardian. `_consumeMandate` marks `mandateUsed[nonce]`, so
-**one mandate is one ship** — an agent that re-quotes needs a batch signed once.
+Shipping needs a mandate signed by the guardian. Since #253 it is **one signature for as long as it
+lasts**: the vault checks the mandate on every ship and re-quote until its expiry, the per-token cap
+binds what is live at once rather than each call, and `revokeMandate(nonce)` (you or the guardian,
+never the agent) withdraws it early. An agent that re-centres every few minutes runs for the whole
+fourteen days on the one signature below.
+
+A vault from a factory deployed before #253 still spends one mandate per ship. Check with
+`cast call $VAULT "mandateRevoked(uint256)(bool)" 0`: #253's vault answers, an older one reverts.
 
 ```bash
 export SUBFLOOR_VAULT=$VAULT SUBFLOOR_REGISTRY=$REGISTRY SUBFLOOR_TUSDC=$TUSDC
