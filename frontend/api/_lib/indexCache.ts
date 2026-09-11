@@ -28,11 +28,13 @@ interface Entry {
 
 const entries = new Map<string, Entry>();
 
-function isClean(a: IndexAnswer): boolean {
+/// Clean means data and no errors. A 200 alone proves nothing: GraphQL errors arrive with one, and so
+/// does Studio's `{"message":"Not found"}` for an unpublished version, which carries no `data` at all.
+export function isClean(a: IndexAnswer): boolean {
   if (a.status !== 200) return false;
   try {
-    const parsed = JSON.parse(a.body) as { errors?: unknown[] };
-    return !parsed.errors?.length;
+    const parsed = JSON.parse(a.body) as { data?: unknown; errors?: unknown[] };
+    return !parsed.errors?.length && parsed.data != null;
   } catch {
     return false;
   }
@@ -44,6 +46,7 @@ export async function cachedPost(
   fetchImpl: typeof fetch = fetch,
   ttlMs: number = DEFAULT_TTL_MS,
   now: () => number = Date.now,
+  headers: Record<string, string> = {},
 ): Promise<IndexAnswer> {
   const key = `${endpoint}\n${body}`;
   const hit = entries.get(key);
@@ -52,7 +55,7 @@ export async function cachedPost(
   const answer = (async (): Promise<IndexAnswer> => {
     const res = await fetchImpl(endpoint, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...headers },
       body,
     });
     return { status: res.status, body: await res.text(), retryAfter: res.headers.get("retry-after") };
@@ -72,6 +75,37 @@ export async function cachedPost(
   answer.then((a) => (isClean(a) ? undefined : drop()), drop);
 
   return answer;
+}
+
+/// The first clean answer from a list of endpoints serving the same deployment, asked in order.
+///
+/// The paid gateway goes first and Studio's development URL behind it. The gateway fails in ways
+/// Studio does not (an unfunded plan answers 402, a bad key answers an auth error) and Studio fails
+/// in one the gateway does not (3,000 queries a day, whatever the billing plan). Either alone takes
+/// the interface down with it; the pair only does when both are down at once.
+///
+/// Fail closed stays the rule: when nothing answers cleanly, the last answer is what the caller
+/// gets, status and `retry-after` included, and it is never kept.
+export async function firstClean(
+  endpoints: readonly string[],
+  body: string,
+  headersFor: (endpoint: string) => Record<string, string> = () => ({}),
+  fetchImpl: typeof fetch = fetch,
+  ttlMs: number = DEFAULT_TTL_MS,
+  now: () => number = Date.now,
+): Promise<IndexAnswer> {
+  if (endpoints.length === 0) throw new Error("no index endpoint configured");
+  let last: IndexAnswer | null = null;
+  for (const endpoint of endpoints) {
+    try {
+      last = await cachedPost(endpoint, body, fetchImpl, ttlMs, now, headersFor(endpoint));
+    } catch {
+      // A network failure on one endpoint is a reason to ask the next, not to stop.
+      last = { status: 502, body: '{"errors":[{"message":"index unreachable"}]}', retryAfter: null };
+    }
+    if (isClean(last)) return last;
+  }
+  return last as IndexAnswer;
 }
 
 export function clearIndexCache(): void {

@@ -214,6 +214,14 @@ uses real USDC and this contract does not exist there.
 The vault holds inventory, its floors are set **keyed to the vault** in both directions, and one
 two-sided book is shipped and live under a mandate signed EIP-712 by the guardian.
 
+**One signature covers fourteen days, not one ship** ([#253](https://github.com/zexoverz/subfloor/issues/253)).
+A mandate names the delegate, the app, the tokens, a cap per token and an expiry, and the vault now
+honours it for every ship and re-quote until it expires. The cap binds what is live at once rather
+than each call, so re-centring a book cannot add up past what the guardian signed, and
+`revokeMandate(nonce)` lets the owner or the guardian withdraw one early. The delegate cannot. The
+vault in the table above predates this and still spends one mandate per ship; the change reaches the
+chain through a new factory, and the table will say so when it does.
+
 **The three keys are three.** Owner `0x9ebdC8AC…`, delegate `0x28Fb6255…`, guardian `0x9ebdC8AC…`.
 Strategy `0x2bb7b6de…` was shipped by the delegate under a mandate the guardian signed — a different
 key, off-chain, before the fact — which is the separation working rather than described. The
@@ -265,6 +273,11 @@ query rather than our claim about our own execution.
 ```
 https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0
 ```
+
+That URL is free to query and capped at 3,000 queries a day. The app does not lean on it alone:
+`/api/subgraph` asks the network gateway first when one is configured, falls back to Studio on a
+402, a 429, an auth error or an empty answer, and fails closed when neither answers cleanly. Both
+serve the same deployment, so a number on screen reads the same whichever one answered.
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
 implementations. SUBFLOOR-specific facts (`Floor`, `FloorChange`, `FillQuality`, `Refusal`) hang off

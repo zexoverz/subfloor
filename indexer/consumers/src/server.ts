@@ -4,10 +4,11 @@ import { extname, join, normalize, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { calibrate } from "./calibration.ts";
 import { generate, renderMarkdown } from "./report.ts";
-import { DEFAULT_ENDPOINT, SubgraphError } from "./subgraph.ts";
+import { SubgraphError } from "./subgraph.ts";
+import { INDEX_ENDPOINTS, headersFor, publicEndpoint } from "../../../frontend/api/_lib/subgraph.ts";
 import { refusals } from "./refusals.ts";
 import { recentFills } from "../../../frontend/api/_lib/chain.ts";
-import { cachedPost } from "../../../frontend/api/_lib/indexCache.ts";
+import { firstClean } from "../../../frontend/api/_lib/indexCache.ts";
 import { chainReader, fileStore, forVault, postMandates } from "../../../frontend/api/_lib/mandates.ts";
 import { CHAIN } from "../../../frontend/api/_lib/chain.ts";
 
@@ -162,7 +163,7 @@ const server = createServer(async (req, res) => {
         res.end(JSON.stringify({ error: `query larger than ${MAX_QUERY_BYTES} bytes` }));
         return;
       }
-      const answer = await cachedPost(DEFAULT_ENDPOINT, body);
+      const answer = await firstClean(INDEX_ENDPOINTS, body, (e) => headersFor(e));
       const headers: Record<string, string> = { "content-type": "application/json", "cache-control": "no-store" };
       if (answer.retryAfter) headers["retry-after"] = answer.retryAfter;
       res.writeHead(answer.status, headers);
@@ -195,7 +196,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname === "/api/health") {
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: true, index: DEFAULT_ENDPOINT }));
+      res.end(JSON.stringify({ ok: true, index: INDEX_ENDPOINTS.map(publicEndpoint) }));
       return;
     }
 
@@ -224,5 +225,5 @@ const server = createServer(async (req, res) => {
 /// Only when this file is the thing being run. Importing it — which is how the failure path above
 /// is tested — must not bind a port, or the test run holds the event loop open and never exits.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  server.listen(PORT, () => console.log(`subfloor on :${PORT}, index ${DEFAULT_ENDPOINT}, static ${STATIC_ROOT}`));
+  server.listen(PORT, () => console.log(`subfloor on :${PORT}, index ${INDEX_ENDPOINTS.map(publicEndpoint).join(" then ")}, static ${STATIC_ROOT}`));
 }
