@@ -199,6 +199,7 @@ export const copy = {
      */
     createVaultHint: 'One transaction, and it comes out configured. Funding it is the separate part.',
     deployAgentLabel: 'the agent’s address',
+    agentsLink: 'what an agent can reach, and the one running here →',
     deployAgentHint: 'the key that may compose and ship, and nothing else. Empty means no agent can trade yet.',
     deployDeviceLabel: 'your device address',
     deviceAsk: 'Do you have a hardware wallet?',
@@ -330,6 +331,35 @@ export const copy = {
       title: 'The worst price is the one you set',
       body: 'Connect a wallet to set your own and you are protected on every fill through this venue. No vault, no agent, nothing to deploy — one transaction, and the number is yours.',
     },
+  },
+
+  /*
+   * The agents page. The register matters more here than anywhere except the landing: this is the
+   * page that could most easily read as 'we supply the agent', and the whole design says otherwise.
+   * The vault takes an address, any address, and the guarantee does not move.
+   */
+  agents: {
+    title: 'Agents',
+    lede: 'A vault names an address that may trade it. Whose address is not this venue\'s business — the worst price is arithmetic in settlement, and it binds a careless agent, a compromised one and a careful one identically. What follows is what any of them can reach, and what the one running here has done.',
+    boundsTitle: 'What an agent can reach',
+    boundsBody: 'The same four calls whoever wrote it. This is not configuration and there is no setting that widens it; it is the vault\'s entire surface to a delegate.',
+    canLabel: 'it may call',
+    cannotLabel: 'it cannot',
+    cannotBody: 'Move a token out of the vault. There is no transfer, no approve and no arbitrary call it can reach — and a fill it composes still cannot settle below the floor you signed.',
+    oneHereTitle: 'The one running here',
+    oneHereTag: 'ours',
+    oneHereBody: 'Offered because a first vault needs some address and most people do not have one yet. Point a vault at it, or at anything else, and change it whenever you like.',
+    noneHere: 'This deployment runs no agent of its own. Name your own address when you create a vault.',
+    serving: (n: number) => `Trading ${n} vault${n === 1 ? '' : 's'} that handed it a mandate.`,
+    servingNone: 'No vault has handed it a mandate, so it is trading nothing.',
+    reading: 'Reading the index…',
+    logTitle: 'What it has shipped',
+    logTag: 'from the index',
+    logEmpty: 'Nothing shipped yet.',
+    logFailed: 'The index did not answer, so this is unknown rather than empty.',
+    live: 'live',
+    docked: 'docked',
+    own: 'Running your own is the ordinary case, not the exception — docs/bring-your-own-agent.md is written for it.',
   },
 
   landing: {

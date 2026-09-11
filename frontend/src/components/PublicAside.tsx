@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, Info, Loader2, Sparkles, Usb, Wallet as WalletIcon } from 'lucide-react';
+import { ExternalLink, Info, Loader2, Usb, Wallet as WalletIcon } from 'lucide-react';
 import { isAddress } from 'viem';
+import type { Screen } from '../types.ts';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
@@ -8,7 +9,6 @@ import { AddressField } from './StepForms.tsx';
 import { Tooltip } from './Tooltip.tsx';
 import type { InitialSetup } from '../lib/vault.ts';
 import { Card, CardHead } from './Card.tsx';
-import { useHouseAgent } from '../lib/houseAgent.ts';
 import { RollingNumber } from './RollingNumber.tsx';
 import { addresses } from '../lib/contracts.ts';
 import { addressUrl } from '../lib/chain.ts';
@@ -27,6 +27,7 @@ export function PublicAside({
   connecting,
   creatingStep,
   onConnect,
+  onNavigate,
   onCreateVault,
   creatingVault,
   canCreateVault,
@@ -40,6 +41,7 @@ export function PublicAside({
   connected: boolean;
   connecting: boolean;
   onConnect: () => void;
+  onNavigate: (s: Screen) => void;
   onCreateVault: (setup: InitialSetup) => void;
   creatingVault: boolean;
   /** What the deploy is doing. One call sets six things and it is slower than it looks. */
@@ -66,11 +68,6 @@ export function PublicAside({
    * guardian — fails silently when it is skipped.
    */
   const [bps, setBps] = useState(state.calibration.houseDefaultBps);
-  /*
-   * Only the address, and asked for even with no vault yet — the whole point is to have something
-   * to offer before one exists.
-   */
-  const house = useHouseAgent(null);
   const [agent, setAgent] = useState('');
   const [device, setDevice] = useState('');
   /**
@@ -335,29 +332,21 @@ export function PublicAside({
                       onChange={setAgent}
                       icon="wallet"
                     />
-
                     {/*
-                      * The one moment this offer is actually needed.
-                      *
-                      * §10: a first-run owner has no agent, and this field is the first thing a
-                      * vault asks them for — forty-two characters they have no way to obtain. The
-                      * agent card offers the same thing, but only to somebody who already has a
-                      * vault, which is the wrong side of the question.
+                      * A way to the page, not a control that answers for them. Filling the field
+                      * from a button teaches that ours is the answer; a link lets somebody read
+                      * what an agent can reach before pasting one into their own vault.
                       */}
-                    {house.address && house.address.toLowerCase() !== agent.toLowerCase() && (
-                      <button
-                        onClick={() => setAgent(house.address as string)}
-                        className="flex w-full cursor-pointer items-start gap-2 rounded-xl border border-rule bg-sunken px-3 py-2.5 text-left transition-colors hover:border-floor"
-                      >
-                        <Sparkles size={13} strokeWidth={1.8} className="mt-0.5 shrink-0 text-floor" />
-                        <span className="min-w-0">
-                          <span className="block text-[12.5px] font-semibold text-floor">{copy.wallet.houseUse}</span>
-                          <span className="mt-0.5 block text-[11.5px] leading-relaxed text-faint">
-                            {copy.wallet.houseHint}
-                          </span>
-                        </span>
-                      </button>
-                    )}
+                    <a
+                      href="/agents"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onNavigate('agents');
+                      }}
+                      className="-mt-1 text-[11.5px] text-floor transition-colors hover:text-ink"
+                    >
+                      {copy.wallet.agentsLink}
+                    </a>
                   </div>
 
                   <div className="flex items-end gap-1">

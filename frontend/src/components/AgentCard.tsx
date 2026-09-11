@@ -1,12 +1,11 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Activity, Bot, Cog, Pencil, Sparkles, X } from 'lucide-react';
+import { Activity, Bot, Cog, Pencil, X } from 'lucide-react';
 import { isAddress, type Address } from 'viem';
 import { copy } from '../copy.ts';
 import { Act, Ghost } from './Button.tsx';
 import { Card, CardBody, CardHead } from './Card.tsx';
 import { Tide } from './Tide.tsx';
 import { AddressField } from './StepForms.tsx';
-import { useHouseAgent } from '../lib/houseAgent.ts';
 import { AddressChip } from './AddressChip.tsx';
 
 /**
@@ -49,11 +48,6 @@ export function AgentCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [next, setNext] = useState('');
-  /*
-   * Only the address is wanted here — whether it can trade *this* vault is the mandate strip's
-   * question, and it is asked there, where the vault is already in hand.
-   */
-  const house = useHouseAgent(null);
 
   // Every opening starts from what is there now, so the field is a correction rather than a blank.
   useEffect(() => {
@@ -134,26 +128,6 @@ export function AgentCard({
                 onChange={setNext}
                 icon="wallet"
               />
-              {/*
-                * §10: do not ask them to choose a delegate. A first-run owner has no agent, and a
-                * 42-character field is a question they cannot answer — so the one this deployment
-                * runs is offered by name rather than left to be found and typed. It fills the field
-                * rather than bypassing it: what gets saved is still an address they can see, and
-                * changing it later is the same control.
-                */}
-              {house.address && house.address.toLowerCase() !== next.toLowerCase() && (
-                <button
-                  onClick={() => setNext(house.address as string)}
-                  className="mt-2 flex w-full cursor-pointer items-start gap-2 rounded-xl border border-rule bg-sunken px-3 py-2.5 text-left transition-colors hover:border-floor"
-                >
-                  <Sparkles size={13} strokeWidth={1.8} className="mt-0.5 shrink-0 text-floor" />
-                  <span className="min-w-0">
-                    <span className="block text-[12.5px] font-semibold text-floor">{copy.wallet.houseUse}</span>
-                    <span className="mt-0.5 block text-[11.5px] leading-relaxed text-faint">{copy.wallet.houseHint}</span>
-                  </span>
-                </button>
-              )}
-
               <div className="mt-2.5">
                 <Act
                   wide

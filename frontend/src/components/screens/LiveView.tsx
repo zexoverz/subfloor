@@ -435,6 +435,7 @@ export function LiveView({
             connected={connected}
             connecting={connecting}
             onConnect={onConnect}
+            onNavigate={onNavigate}
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
             creatingStep={creatingStep}

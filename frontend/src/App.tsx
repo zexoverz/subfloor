@@ -10,6 +10,7 @@ import { addresses } from './lib/contracts.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
+import { Agents } from './components/screens/Agents.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { MandateStrip } from './components/MandateStrip.tsx';
 import { GuardianStrip } from './components/GuardianStrip.tsx';
@@ -187,6 +188,13 @@ export default function App() {
         <StoppedState state={state} onWithdraw={() => void panic.withdraw().then(reread)} />
       ) : (
         <>
+      {/*
+        * Where an agent is found. Outside the owner's board on purpose: somebody deciding whose
+        * address to trust has not created a vault yet, and a page behind the connect wall is a page
+        * they cannot read.
+        */}
+      {screen === 'agents' && <Agents />}
+
       {screen === 'live' && (
         <LiveView
           state={state}
