@@ -27,10 +27,13 @@ If you only have budget for one, read the spec. This file goes stale; the spec d
 default (`#246`), the `switch-on` script (`#249`), and **mandates that last until they expire**
 (`#254`, closing `#253`). Details in §8c.
 
-**Built but not running, and why.** The house agent is deployed on the `agent` service and idles in
-observe-only mode because `SUBFLOOR_DELEGATE_KEY` is not set. The live vault `0xaf6b…` is on the
-single-use bytecode, so even with the key it would spend one mandate per re-centre. Both are cleared
-by §9 step 3, and every part of it that signs is the owner's to run.
+**The vault moved on 12 Sep.** `scripts/new-vault.sh` deployed factory `0x5c43…` and vault
+`0x1168…` (both Sourcify `match`), docked `0xaf6b…`'s three books, moved its 0.0438 WETH and 49,923
+tUSDC across, and posted one fourteen-day mandate (nonce 0, expiry 1790361860). The new delegate is
+`0xFfCc8ee26a9aA8c3b4DddBf4a5aE957CBd509242`, keystore `subfloor-delegate`, funded with 0.02 ETH;
+`subfloor-testnet` and `0x28Fb…` are retired. Railway points at all of it (`SUBFLOOR_HOUSE_AGENT`,
+`VITE_VAULT` and `VITE_VAULT_FACTORY` on `web`, `SUBFLOOR_VAULT` on `taker`). What is left is the
+delegate key on `agent`, which the owner pastes in from the dashboard.
 
 **The product gap is the frontend, not the contracts.** A stranger reaches the thesis and not the
 product: the interface signs a mandate and never delivers it to the agent (`#232`). The audit and
@@ -97,8 +100,8 @@ delegate is a separate address from the owner, proven on chain.
 cap binds what is live at once (`committed + amount <= cap`), and `revokeMandate(nonce)` (owner or
 guardian, never the delegate) withdraws one early; the view is `mandateRevoked(nonce)`. The agent
 and the frontend pick the lowest unexpired, unrevoked nonce by reading the chain, never by counting
-locally. **Only vaults from a factory deployed after `#254` behave this way.** `0xaf6b…` still
-marks every nonce used.
+locally. **Only vaults from a factory deployed after `#254` behave this way**: ours, `0x1168…`, since
+12 Sep. The previous vault `0xaf6b…` marks every nonce used and has been emptied.
 
 **Ledger's role is a role, not a login.** Raising a floor is free and device-free, because it can
 only help you. Lowering it is the one dangerous action, so it is the one the device owns, enforced on
@@ -141,8 +144,9 @@ L2 testnet, so this deploys its own from the same source.
 |---|---|
 | FloorRegistry | `0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123` |
 | FloorRouter | `0x03189D102286fa8cDd0fBF3578B492e67e665A27` |
-| VaultFactory | `0xbfF56689e5fC80055766E5E75ce0Fcbc42e1A7C5` |
-| AquaGuardVault (ours) | `0xaf6b337440FFEa63c47f077eee2663987aEEc33f` |
+| VaultFactory (since 12 Sep, #253's vault) | `0x5c434a6C212F5A58FE1c78F63f10c5cf36ACcFb3` |
+| AquaGuardVault (ours, since 12 Sep) | `0x1168C48a74055486BC4D1E7036d3b1aC4bb75586` |
+| Previous factory and vault (single-use mandates; the vault is emptied) | `0xbfF5…A7C5`, `0xaf6b…c33f` |
 | Aqua (ours, not canonical) | `0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB` |
 | tUSDC | `0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD` |
 | TestnetFaucet | `0x044BB6a857A875e30f8933aDf652905d02EB65D2` |
@@ -326,6 +330,12 @@ EIP-170 margin; `RouterSize.t.sol` guards it.
 
 **Do not create a burst of branches.** Five pushes in half an hour exhausted a hosting build quota
 and made every PR show a red check that had nothing to do with the code.
+
+**`ETH_PASSWORD` in the shell breaks every `cast` call.** Foundry reads it as the password *file*
+path and then demands `--keystore`, so even a plain `cast call` fails with a usage error. This
+handoff used to recommend exporting it; that line is gone, and `scripts/new-vault.sh` now unsets it.
+`unset ETH_PASSWORD CAST_UNSAFE_PASSWORD` before anything that signs. And `forge create` will not
+take `--account` with `--password-file` the way `cast` does: give it `--keystore <path>`.
 
 ---
 
@@ -534,7 +544,7 @@ Cost, roughly: Studio counted about 450 queries in the first eleven hours of 11 
 the order of 1,000 a day with the agent idle. That is inside the plan's 100,000 free a month; the
 house agent and a demo day add to it, at $2 per 100,000 past the free tier.
 
-**3. Move to a vault on `#253`'s bytecode and switch the house agent on (`#233`).** Everything that
+**3. ~~Move to a vault on `#253`'s bytecode~~ done 12 Sep (§0b); switch the house agent on (`#233`).** Everything that
 signs runs from the owner's terminal; an agent session cannot open the keystores and must not be
 handed a password or a key.
 
