@@ -43,7 +43,10 @@ lower()   { printf %s "$1" | tr '[:upper:]' '[:lower:]'; }
 same()    { [ "$(lower "$1")" = "$(lower "$2")" ]; }
 field()   { python3 -c "import json,sys; v=json.load(sys.stdin)$1; print(json.dumps(v) if isinstance(v,(list,dict)) else v)"; }
 usage()   { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
-floor_bps() { cast call "$REGISTRY" 'floor(address,address,address)(bool,uint16,uint232)' "$VAULT" "$BASE" "$QUOTE" --rpc-url "$RPC" | sed -n 2p; }
+# Read at the block a transaction landed in when given one. A read at the head can come from a node
+# that has not seen that block yet, which is how "put back to 200 bps" once reached the screen.
+floor_bps() { cast call "$REGISTRY" 'floor(address,address,address)(bool,uint16,uint232)' "$VAULT" "$BASE" "$QUOTE" ${1:+--block "$1"} --rpc-url "$RPC" | sed -n 2p; }
+landed()    { cast receipt "$1" --rpc-url "$RPC" --json | python3 -c 'import json,sys; r=json.load(sys.stdin); print(r["status"], int(r["blockNumber"],16))'; }
 
 case "$LEG" in
   attack|guardian) ;;
@@ -157,9 +160,9 @@ data="$(verdict "$GUARD" "$SIG" || true)"
 [ -z "$data" ] || stop "the registry would refuse the guardian's signature: $data"
 say "the registry accepts the guardian's signature on the same message. Sending"
 TX="$(cast send "$REGISTRY" "$LOWER" "${ARGS[@]}" "$SIG" --rpc-url "$RPC" "${FROM[@]}" --async)"
-status="$(cast receipt "$TX" --rpc-url "$RPC" --json | field '["status"]')"
+read -r status blk <<< "$(landed "$TX")"
 [ "$status" = "0x1" ] || stop "the lowering reverted: $EXPLORER/$TX"
-say "lowered: the floor now tolerates $(floor_bps) bps. $EXPLORER/$TX"
+say "lowered: the floor now tolerates $(floor_bps "$blk") bps. $EXPLORER/$TX"
 
 # Putting it back is a raise, and a raise is one transaction from the recipient that needs no device.
 # The recipient is the vault, so its owner sends it through execute.
@@ -168,8 +171,9 @@ if [ "$GUARDIAN" != "ledger" ] && same "$(cast wallet address --account "$OWNER_
   RAISE="$(cast calldata 'raiseFloor(address,address,uint16,uint256)' "$BASE" "$QUOTE" "$CUR" "$ABS")"
   TX2="$(cast send "$VAULT" 'execute(address,uint256,bytes)' "$REGISTRY" 0 "$RAISE" --rpc-url "$RPC" \
     --account "$OWNER_ACCOUNT" --password-file "$PWFILE" --async)"
-  [ "$(cast receipt "$TX2" --rpc-url "$RPC" --json | field '["status"]')" = "0x1" ] || stop "putting the floor back reverted: $EXPLORER/$TX2"
-  say "put back by the owner, no device: the floor tolerates $(floor_bps) bps again. $EXPLORER/$TX2"
+  read -r status blk <<< "$(landed "$TX2")"
+  [ "$status" = "0x1" ] || stop "putting the floor back reverted: $EXPLORER/$TX2"
+  say "put back by the owner, no device: the floor tolerates $(floor_bps "$blk") bps again. $EXPLORER/$TX2"
 else
   say "put it back from the app: raising a floor is one transaction from the vault's owner, $OWNER, and needs no device"
 fi
