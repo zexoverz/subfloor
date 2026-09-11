@@ -40,9 +40,10 @@ agent working for a user or a demo of signatures.
 **The index hit Studio's daily cap today.** The builder moved Studio to the billing plan, and that
 does **not** lift the development URL's 3,000 queries a day (measured, §4). The paid path is the
 network gateway, which needs the subgraph published to The Graph Network. `/api/subgraph` now tries
-the gateway first and Studio second (`#255`), so it is ready the moment both exist. The API key the
-builder supplied answered `auth error: API key not found` on 11 Sep, for our deployment and for a
-public subgraph alike, so the key itself is the first thing to check (§9 step 2).
+the gateway first and Studio second (`#255`), so it is ready the moment both exist. The API key works
+(a public subgraph answered through the gateway on 11 Sep, after a first attempt minutes after it was
+created returned `API key not found`); our deployment answers `subgraph not found` there, so the
+network publish is the one step left (§9 step 2).
 
 ---
 
@@ -506,9 +507,9 @@ elimination by technicality, so ask the builder before anything else.
 **2. Put the index on the paid gateway (`#255`).** The code is ready; the rest needs the builder's
 Studio account and wallet, so it is theirs to run.
 
-1. In Studio → API Keys, check the key is a **query** API key, not the deploy key, and that no
-   subgraph or domain allow-list excludes ours. The key supplied on 11 Sep was refused for every
-   subgraph, a public one included, so it is not a key the gateway knows yet.
+1. The query key exists: `subfloor` in Studio → API Keys, active, $5 spending limit. Checked on
+   11 Sep against a public subgraph through the gateway. A key minutes old answered
+   `API key not found`, so allow a few minutes after creating one before concluding it is wrong.
 2. Publish `subfloor-base-sepolia` to The Graph Network from Studio. It goes to Arbitrum One and
    costs a little ETH there for gas; curation is optional because `base-sepolia` has issuance rewards
    and the upgrade indexer indexes every published subgraph. Note the subgraph id.
