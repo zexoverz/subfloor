@@ -40,20 +40,35 @@ export async function delegateKeyFromEnv(
   }
 
   // Loaded only on this path, so an agent that never uses the ring never loads the Ledger packages.
-  const { initMemberCredentials } = await import("../keyring/credentials.ts");
-  const { readMemberCredentials, writeMemberCredentials } = await import("../keyring/store.ts");
+  // A host that cannot load them says so rather than crashing, which is what the first deploy of
+  // this did on an image built without them. With nothing sealed yet that is still the setup
+  // window, so a plain key carries on; once a sealed key is configured it is not a fallback.
+  let credentialsModule: typeof import("../keyring/credentials.ts");
+  let store: typeof import("../keyring/store.ts");
+  try {
+    credentialsModule = await import("../keyring/credentials.ts");
+    store = await import("../keyring/store.ts");
+  } catch (e) {
+    log(`[ring] the Key Ring packages will not load on this host: ${(e as Error).message.split("\n")[0]}`);
+    if (!sealedRaw && plain) {
+      log("[key] nothing is sealed yet, so SUBFLOOR_DELEGATE_KEY carries on: the delegate key in the clear");
+      return checked(plain, "plain", log);
+    }
+    log("[ring] not trading.");
+    return null;
+  }
 
   const path = memberPath || DEFAULT_MEMBER_PATH;
-  let credentials: Awaited<ReturnType<typeof readMemberCredentials>>;
+  let credentials: Awaited<ReturnType<typeof store.readMemberCredentials>>;
   try {
-    credentials = await readMemberCredentials(path);
+    credentials = await store.readMemberCredentials(path);
   } catch (e) {
     if (!/no member credentials/.test((e as Error).message)) {
       log(`[ring] the member credential at ${path} is unreadable: ${(e as Error).message}. Not trading.`);
       return null;
     }
-    credentials = initMemberCredentials();
-    await writeMemberCredentials(path, credentials);
+    credentials = credentialsModule.initMemberCredentials();
+    await store.writeMemberCredentials(path, credentials);
     log(`[ring] generated this host's ring member identity at ${path}; the private half stays there`);
   }
   log(`[ring] this host is ring member ${credentials.pubkey}`);

@@ -1,4 +1,7 @@
-import { makeCipher } from "../lkrp.ts";
+// Straight from the SDK rather than through `../lkrp.ts`, so only the relay enrollment loads the SDK
+// wrapper. The agent host opening a sealed key never reaches this file, and its image does not
+// install that package (see the note in `../lkrp.ts`).
+import { makeCipher } from "@ledgerhq/ledger-key-ring-protocol/lib/qrcode/cipher";
 import type { Encrypted, EnrollmentMessage } from "./protocol.ts";
 
 /**

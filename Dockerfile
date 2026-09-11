@@ -51,6 +51,11 @@ ENV NODE_ENV=production
 # At /app both entry points resolve.
 COPY indexer/consumers/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
+# The house agent's Key Ring path, and only the protocol package. The SDK wrapper beside it depends
+# on a Speculos transport whose own dependency Ledger never published, so it cannot install from a
+# clean registry (docs/ledger-dx.md, item 2), and opening a sealed key needs none of it. Without this
+# line the agent crashed the moment the ring was configured.
+RUN npm install --omit=dev --no-audit --no-fund @ledgerhq/hw-ledger-key-ring-protocol@0.10.7
 COPY indexer/consumers/src ./indexer/consumers/src
 COPY frontend/api/_lib ./frontend/api/_lib
 # The policy loop and the program builder it composes through. Source only, and it shares the
