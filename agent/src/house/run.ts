@@ -2,7 +2,9 @@ import { createPublicClient, createWalletClient, http, type Address, type Hex } 
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { readIndex, IndexRateLimited, type IndexView } from "../market/index-reads.ts";
-import { configFromEnv } from "../policy/loop.ts";
+// From config.ts, never loop.ts: loop.ts imports this file while its own top-level await is pending,
+// and importing it back deadlocked the service on start (#269).
+import { configFromEnv } from "../policy/config.ts";
 import { dockCalldata } from "../vault/ship.ts";
 import { plan, type HouseConfig, type StoredMandate, type VaultChain } from "./house.ts";
 
