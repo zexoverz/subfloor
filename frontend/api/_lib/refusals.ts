@@ -39,21 +39,32 @@ export interface Refusal {
   /// Whose floor was hit. A refusal belongs to the recipient, not to the sender that was turned
   /// away — without it a board cannot tell its own refusals from another vault's.
   recipient?: Address;
+  /// Present for `BadGuardianSignature`: the guardian the registry wanted a lowering signed by.
+  guardian?: Address;
 }
 
 /// Decode a revert return payload into a reason and, for `SettledBelowFloor`, its arguments.
 ///
 /// Pure and offline so it can be tested against payloads captured from the chain rather than only
 /// exercised by a live query.
-export function decodeRevert(data: Hex | null | undefined): Pick<Refusal, "reason" | "selector" | "executionRate" | "floorRate" | "tokenIn" | "tokenOut" | "recipient"> {
+export function decodeRevert(
+  data: Hex | null | undefined,
+): Pick<Refusal, "reason" | "selector" | "executionRate" | "floorRate" | "tokenIn" | "tokenOut" | "recipient" | "guardian"> {
   if (!data || data.length < 10) return { reason: null, selector: null };
   const selector = data.slice(0, 10).toLowerCase() as Hex;
   const reason = REVERT_REASONS[selector] ?? null;
+  const word = (i: number) => data.slice(10 + i * 64, 10 + (i + 1) * 64);
+
+  // BadGuardianSignature(address recipient, address guardian, bytes32 digest): a floor lowering
+  // signed by someone other than the guardian. Whose floor it was, and whose signature was wanted.
+  if (reason === "BadGuardianSignature") {
+    if (word(1).length < 64) return { reason, selector };
+    return { reason, selector, recipient: `0x${word(0).slice(24)}` as Address, guardian: `0x${word(1).slice(24)}` as Address };
+  }
   if (reason !== "SettledBelowFloor") return { reason, selector };
 
   // SettledBelowFloor(address recipient, address tokenIn, address tokenOut, uint256 executionRate,
   // uint256 floorRate) — five 32-byte words after the selector, none of them dynamic.
-  const word = (i: number) => data.slice(10 + i * 64, 10 + (i + 1) * 64);
   if (word(4).length < 64) return { reason, selector };
   return {
     reason,
@@ -71,7 +82,7 @@ export function decodeRevert(data: Hex | null | undefined): Pick<Refusal, "reaso
   };
 }
 
-interface RawTx {
+export interface RawTx {
   block_number: number;
   hash: Hex;
   status: number;
@@ -82,12 +93,12 @@ interface RawTx {
   gas?: Hex;
 }
 
-/// Every transaction sent to the router, with its status, through HyperSync.
+/// Every transaction sent to the router or the registry, with its status, through HyperSync.
 ///
 /// Transactions rather than logs, because a reverted transaction has no logs and is invisible to
 /// every log-shaped query. `eth_getLogs` would not merely be against the rules here, it would return
-/// nothing at all.
-async function routerTransactions(): Promise<RawTx[]> {
+/// nothing at all. One query for both addresses; `buildReport` splits them by destination.
+async function transactions(): Promise<RawTx[]> {
   if (!HYPERSYNC.token) {
     throw new Error("SUBFLOOR_HYPERSYNC_TOKEN is not set; refusals are read from transaction history, which needs HyperSync");
   }
@@ -101,7 +112,7 @@ async function routerTransactions(): Promise<RawTx[]> {
       headers: { "content-type": "application/json", authorization: `Bearer ${HYPERSYNC.token}` },
       body: JSON.stringify({
         from_block: from,
-        transactions: [{ to: [CHAIN.router.toLowerCase()] }],
+        transactions: [{ to: [CHAIN.router.toLowerCase(), CHAIN.registry.toLowerCase()] }],
         field_selection: { transaction: ["block_number", "hash", "status", "from", "to", "input", "value", "gas"] },
       }),
     });
@@ -154,18 +165,37 @@ export interface RefusalReport {
   fills: number;
   byReason: Record<string, number>;
   recent: Refusal[];
+  /// Attempts to weaken a floor that the registry refused because the guardian did not sign them.
+  /// Kept apart from `recent`, which is fills the floor turned away and whose rows carry rates these
+  /// do not; the headline and the fill count are the router's alone.
+  weakeningRefusals: number;
+  weakenings: Refusal[];
   note: string;
 }
 
-export async function refusals(limit = 25): Promise<RefusalReport> {
-  const txs = await routerTransactions();
-  const reverted = txs.filter((t) => t.status === 0);
+/// The report from the transactions and a way to recover a revert. Pure apart from `revertOf`, so the
+/// split between router and registry is testable without HyperSync or an RPC.
+export async function buildReport(
+  txs: RawTx[],
+  revertOf: (tx: RawTx) => Promise<Hex | null>,
+  limit = 25,
+): Promise<RefusalReport> {
+  const router = CHAIN.router.toLowerCase();
+  const registry = CHAIN.registry.toLowerCase();
+  const toRouter = txs.filter((t) => t.to?.toLowerCase() === router);
+  const toRegistry = txs.filter((t) => t.to?.toLowerCase() === registry);
 
-  const decoded: Refusal[] = [];
-  for (const t of reverted) {
-    const d = decodeRevert(await revertDataOf(t));
-    decoded.push({ hash: t.hash, blockNumber: String(t.block_number), from: t.from, ...d });
-  }
+  const decodeReverted = async (list: RawTx[]): Promise<Refusal[]> => {
+    const out: Refusal[] = [];
+    for (const t of list.filter((x) => x.status === 0)) {
+      out.push({ hash: t.hash, blockNumber: String(t.block_number), from: t.from, ...decodeRevert(await revertOf(t)) });
+    }
+    return out.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+  };
+  const decoded = await decodeReverted(toRouter);
+  // Only the wrong signer is an attempt to weaken. A guardian's own lowering that failed on a stale
+  // nonce or a lapsed deadline is a mistake, not an attack, and is not reported as one.
+  const weakenings = (await decodeReverted(toRegistry)).filter((r) => r.reason === "BadGuardianSignature");
 
   const byReason: Record<string, number> = {};
   for (const r of decoded) byReason[r.reason ?? "unknown"] = (byReason[r.reason ?? "unknown"] ?? 0) + 1;
@@ -173,9 +203,17 @@ export async function refusals(limit = 25): Promise<RefusalReport> {
   return {
     floorRefusals: decoded.filter((r) => r.reason && FLOOR_REASONS.has(r.reason)).length,
     otherFailures: decoded.filter((r) => !r.reason || !FLOOR_REASONS.has(r.reason)).length,
-    fills: txs.filter((t) => t.status === 1).length,
+    fills: toRouter.filter((t) => t.status === 1).length,
     byReason,
-    recent: decoded.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber)).slice(0, limit),
-    note: "Refusals are reverted transactions, so they carry no logs and cannot come from the index at all. Counted from transaction status via HyperSync, with each revert payload recovered by replaying the call one block earlier.",
+    recent: decoded.slice(0, limit),
+    weakeningRefusals: weakenings.length,
+    weakenings: weakenings.slice(0, limit),
+    note:
+      "Refusals are reverted transactions, so they carry no logs and cannot come from the index at all. Counted from transaction status via HyperSync, with each revert payload recovered by replaying the call one block earlier. " +
+      "Weakenings are transactions to the registry that tried to lower a floor without the guardian's signature, recovered the same way.",
   };
+}
+
+export async function refusals(limit = 25): Promise<RefusalReport> {
+  return buildReport(await transactions(), revertDataOf, limit);
 }
