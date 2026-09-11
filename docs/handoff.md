@@ -1,10 +1,10 @@
 # Handoff
 
-Written 10 Sep 2026, end of session `07fe383f-8343-418d-a0ca-58851e185406`, and extended the same
-evening from session `136b9b22-a62a-47ed-bea4-91695b1601ed`, which walked the end-to-end from the
-interface — see §8b. Submission is **13 Sep 2026, 16:00 UTC**.
+Written 11 Sep 2026, 13:30 UTC, end of session `4b501d9e-ac35-4e51-a3af-60b26459555c`, on top of
+the 10 Sep handoff from sessions `07fe383f…` and `136b9b22…`. **§0b is the recap since that one**;
+§8, §8b and §8c are the history. Submission is **13 Sep 2026, 16:00 UTC**, about 50 hours from now.
 
-Everything here was verified against the running system on 10 Sep rather than recalled. Where a
+Everything here was verified against the running system on 11 Sep rather than recalled. Where a
 number appears, the way to re-check it appears next to it. Where something is unfinished, it says so.
 
 ---
@@ -17,6 +17,32 @@ number appears, the way to re-check it appears next to it. Where something is un
 3. This file, for what is true *now* — the spec records intent and design, this records state.
 
 If you only have budget for one, read the spec. This file goes stale; the spec does not.
+
+---
+
+## 0b. Since the last handoff, in one screen
+
+**Shipped to `main`:** the house agent (`#239`), `/api/mandates` (`#238`), one index read per window
+(`#237`), the MCP tools on the live index (`#245`), calibration from the adverse tail with a 100 bps
+default (`#246`), the `switch-on` script (`#249`), and **mandates that last until they expire**
+(`#254`, closing `#253`). Details in §8c.
+
+**Built but not running, and why.** The house agent is deployed on the `agent` service and idles in
+observe-only mode because `SUBFLOOR_DELEGATE_KEY` is not set. The live vault `0xaf6b…` is on the
+single-use bytecode, so even with the key it would spend one mandate per re-centre. Both are cleared
+by §9 step 3, and every part of it that signs is the owner's to run.
+
+**The product gap is the frontend, not the contracts.** A stranger reaches the thesis and not the
+product: the interface signs a mandate and never delivers it to the agent (`#232`). The audit and
+its ranked fixes are in §8c; they are Zikri's, and they are what decides whether a judge sees an
+agent working for a user or a demo of signatures.
+
+**The index hit Studio's daily cap today.** The builder moved Studio to the billing plan, and that
+does **not** lift the development URL's 3,000 queries a day (measured, §4). The paid path is the
+network gateway, which needs the subgraph published to The Graph Network. `/api/subgraph` now tries
+the gateway first and Studio second (`#255`), so it is ready the moment both exist. The API key the
+builder supplied answered `auth error: API key not found` on 11 Sep, for our deployment and for a
+public subgraph alike, so the key itself is the first thing to check (§9 step 2).
 
 ---
 
@@ -66,10 +92,12 @@ story, not a requirement for the protection. `#174` is the open issue about lead
 **Delegate surface is exactly four calls:** `ship`, `dock`, `updateQuote`, `rescueApproval`. The
 delegate is a separate address from the owner, proven on chain.
 
-**One mandate authorises exactly one ship** (`mandateUsed[nonce]`), which is why re-quoting needs a
-pre-signed batch. Both the agent (`agent/src/vault/mandates.ts`) and the frontend
-(`frontend/src/lib/mandateStore.ts`) issue batches and pick the next unused nonce by reading the
-chain, never by counting locally.
+**One mandate covers every ship until it expires** (`#253`, on `main` since 11 Sep). The per-token
+cap binds what is live at once (`committed + amount <= cap`), and `revokeMandate(nonce)` (owner or
+guardian, never the delegate) withdraws one early; the view is `mandateRevoked(nonce)`. The agent
+and the frontend pick the lowest unexpired, unrevoked nonce by reading the chain, never by counting
+locally. **Only vaults from a factory deployed after `#254` behave this way.** `0xaf6b…` still
+marks every nonce used.
 
 **Ledger's role is a role, not a login.** Raising a floor is free and device-free, because it can
 only help you. Lowering it is the one dangerous action, so it is the one the device owns, enforced on
@@ -138,7 +166,14 @@ Both routers are Sourcify `exact_match`. Re-check:
 |---|---|
 | App and API | `https://subfloor.xyz` (custom domain on the Railway `web` service, port 8080) |
 | Same, direct | `https://web-production-37798.up.railway.app` |
-| Subgraph | `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0` |
+| Subgraph, Studio | `https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0` (free, 3,000 queries a day) |
+| Subgraph, gateway | not yet: needs the network publish and a working API key (§9 step 2) |
+
+**The index, measured 11 Sep 13:20 UTC.** Deployment `QmfYvtWkyPkNEwG5QVt83dcXG8D6YVDJjcTnN8VedZtEkn`,
+3 blocks behind the chain head, `hasIndexingErrors: false`. Studio answered
+`x-ratelimit-limit: 3000`, `x-ratelimit-remaining: 2548`, with and without an API key, after the
+billing upgrade. Re-check: `curl -sD - -o /dev/null -X POST <studio url> -H 'content-type:
+application/json' -d '{"query":"{_meta{block{number}}}"}' | grep ratelimit`.
 
 Three Railway services in project `subfloor`, all in `production`:
 
@@ -172,6 +207,12 @@ frontend's half is `frontend/api/_lib/indexCache.ts` from the same PR.
 being answered 429 by Studio directly after `#237` deployed, and through the proxy it read cleanly on
 the first cycle. A 429 is passed through and never cached.
 
+Since `#255` that one origin reads a list: `SUBFLOOR_SUBGRAPH` first, `SUBFLOOR_SUBGRAPH_FALLBACK`
+(Studio by default) second, first clean answer wins, and when neither is clean the last failure goes
+back uncached. With only Studio configured the list is one entry and nothing changes. The gateway
+key is `SUBFLOOR_GRAPH_API_KEY` on `web`, sent as a header to `gateway.thegraph.com` only, and
+`/api/health` lists the endpoints with any path key masked.
+
 **`/api/mandates` holds the signed batches the house agent spends** (`#235`), on the `web-mandates`
 volume at `/data` (`SUBFLOOR_MANDATES_PATH=/data/mandates.json`). It refuses anything the house agent
 could not spend, with the reason. `SUBFLOOR_HOUSE_AGENT` names the agent it serves; unset, it answers
@@ -193,11 +234,11 @@ Endpoints, all same-origin: `/api/health`, `/api/calibration`, `/api/refusals`, 
 
 | Claim | Value | How to re-check |
 |---|---|---|
-| Contract tests | **962 pass, 0 fail** | `cd contracts && forge test` |
-| Programs fuzzed | **980,000** over 13 campaigns; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
-| Scored fills | **265** (read 10 Sep, 16:54 UTC) | `curl .../api/fills` |
-| Refusals on chain | **6** (read 10 Sep, 16:54 UTC) | `curl .../api/refusals` |
-| Index health | `hasIndexingErrors: false` | `{ _meta { hasIndexingErrors block { number } } }` |
+| Contract tests | **967 pass, 0 fail** (after `#254`) | `cd contracts && forge test` |
+| Programs fuzzed | **1,292,000** over 16 campaigns, last 11 Sep 08:06 UTC; two of the four counted suites are hostile, so do not call the whole number hostile | `docs/fuzz-counter.json`, written only by CI |
+| Fills through the router | **310** (read 11 Sep, 13:22 UTC) | `curl .../api/refusals`, field `fills` |
+| Refusals on chain | **6** (read 11 Sep, 13:22 UTC) | `curl .../api/refusals`, field `floorRefusals` |
+| Index health | `hasIndexingErrors: false`, 3 blocks behind head | `{ _meta { hasIndexingErrors block { number } } }` |
 | Upstream suite | 797 → **803** | `1inch/swap-vm#197` |
 
 The fuzz counter **cannot be backfilled** — it scales with wall-clock time, not with a number anyone
@@ -416,9 +457,10 @@ ten-minute `via_ir` build.
 ## 8c. What changed on 11 Sep
 
 Merged: `#237` (one index read per window, a 429 holds), `#238` (`/api/mandates`), `#239` (house
-agent), `#242` (this handoff), `#245` (MCP tools read the live index), `#246` (calibration takes the
-adverse tail; the floor default went from 50 to 100 bps), `#249` (`switch-on` script), `#253`
-(mandates last until they expire).
+agent), `#242` (the previous handoff), `#245` (MCP tools read the live index), `#246` (calibration
+takes the adverse tail; the floor default went from 50 to 100 bps), `#249` (`switch-on` script),
+`#254` (mandates last until they expire, closing `#253`). In review: `#255`'s PR (the gateway with
+Studio behind it) and `#256` (this handoff, the spec and the README).
 
 **A mandate lasts until it expires (`#253`).** SPEC §10 promised one signature for fourteen days; the
 vault marked a nonce used on every ship and `updateQuote`, so a re-centring agent needed a signature
@@ -457,11 +499,55 @@ lowering and door one or remove them.
 
 ## 9. What to do next, in order
 
-**1. File check-in 2. Deadline 11 Sep 03:59 UTC.** Draft is `docs/check-in-2.md`, already audited
-against the deployment. `docs/SPEC.md` records a missed check-in as elimination by technicality. This
-outranks everything below it.
+**1. Confirm check-in 2 went in.** Its deadline was 11 Sep 03:59 UTC and nothing in the repo records
+that it was filed. Draft: `docs/check-in-2.md`. `docs/SPEC.md` records a missed check-in as
+elimination by technicality, so ask the builder before anything else.
 
-**2. Ask the Ledger question in the sponsor Discord.** Issue `#4`, a `spike`, and it was due before
+**2. Put the index on the paid gateway (`#255`).** The code is ready; the rest needs the builder's
+Studio account and wallet, so it is theirs to run.
+
+1. In Studio → API Keys, check the key is a **query** API key, not the deploy key, and that no
+   subgraph or domain allow-list excludes ours. The key supplied on 11 Sep was refused for every
+   subgraph, a public one included, so it is not a key the gateway knows yet.
+2. Publish `subfloor-base-sepolia` to The Graph Network from Studio. It goes to Arbitrum One and
+   costs a little ETH there for gas; curation is optional because `base-sepolia` has issuance rewards
+   and the upgrade indexer indexes every published subgraph. Note the subgraph id.
+3. Wait until the gateway answers for it:
+   `curl -s -X POST https://gateway.thegraph.com/api/subgraphs/id/<id> -H "authorization: Bearer <key>" -H 'content-type: application/json' -d '{"query":"{_meta{block{number} hasIndexingErrors}}"}'`
+4. In the Railway dashboard, on `web` only: `SUBFLOOR_SUBGRAPH` =
+   `https://gateway.thegraph.com/api/subgraphs/id/<id>` and `SUBFLOOR_GRAPH_API_KEY` = the key. Keys go
+   in from the dashboard, never through an agent session.
+5. `/api/health` should list the gateway first and Studio second.
+
+Cost, roughly: Studio counted about 450 queries in the first eleven hours of 11 Sep's window, so on
+the order of 1,000 a day with the agent idle. That is inside the plan's 100,000 free a month; the
+house agent and a demo day add to it, at $2 per 100,000 past the free tier.
+
+**3. Move to a vault on `#253`'s bytecode and switch the house agent on (`#233`).** Everything that
+signs runs from the owner's terminal; an agent session cannot open the keystores and must not be
+handed a password or a key. Set the password once there so nothing prompts repeatedly:
+`read -s P && export ETH_PASSWORD="$P" CAST_UNSAFE_PASSWORD="$P" && unset P`.
+
+1. deploy a `VaultFactory` with `forge create` and verify it on Sourcify (a small contract; only the
+   router needs verifier-produced bytes)
+2. `createVault(setup)` from the owner: the delegate, guardian `0x9ebd…`, the registry, both pairs at
+   100 bps and absolute 0 (an absolute backstop is what froze the old vault's selling side)
+3. as owner, dock `0xaf6b`'s three books and `withdraw` its inventory into the new vault
+4. from `agent/`: `SUBFLOOR_VAULT=<new vault> node --experimental-strip-types src/house/switch-on.ts`,
+   one mandate for fourteen days
+5. the delegate key into Railway from the dashboard (`agent` → Variables →
+   `SUBFLOOR_DELEGATE_KEY`); then an agent session with the Railway MCP sets `SUBFLOOR_HOUSE_AGENT`,
+   `VITE_VAULT`, `VITE_VAULT_FACTORY` and the taker's `SUBFLOOR_VAULT` to the new addresses, and
+   updates the README and spec deployment tables
+
+After that the agent ships one book for the new vault and keeps it centred on the one mandate.
+
+**4. The frontend's first run (Zikri, `#232`).** In the audit's order (§8c): the signed mandate
+POSTed to `/api/mandates` with the house agent as the default delegate; a first-run screen; no
+fixture values on LIVE tiles; `STOP AGENT` calling `revokeMandate` instead of a `dock` that reverts;
+floor lowering and door one wired or removed. This is what a judge clicks through.
+
+**5. Ask the Ledger question in the sponsor Discord.** Issue `#4`, a `spike`, and it was due before
 4 Sep. `ring init` is USB-only in the source we read, so enrolling a headless agent host into a Key
 Ring has no path we can find; the track page says "headless by design", which suggests one exists.
 It cannot be resolved locally. It blocks `#44`, `#55` and `#35`.
@@ -471,7 +557,7 @@ hardware-owned path. "Even a hacked agent cannot go below your floor" is circula
 floor-setting key sits on the machine the agent runs on. The asymmetry is enforced on chain; what is
 unproven is that the key lives on the device.
 
-**3. ~~Publish the Substreams package~~ — done 10 Sep.** `subfloor-refusals` v0.1.0 is on
+**6. ~~Publish the Substreams package~~ — done 10 Sep.** `subfloor-refusals` v0.1.0 is on
 [substreams.dev](https://substreams.dev/packages/subfloor-refusals/v0.1.0), linked from the README.
 The manifest said `network: base` from block 35,000,000, where nothing of ours is deployed, so it was
 changed to `base-sepolia` from 46,513,825 before publishing. **Not yet streamed end to end** — there
@@ -484,25 +570,7 @@ cd indexer/substreams
 SUBSTREAMS_REGISTRY_TOKEN=<token from https://substreams.dev/me> substreams registry publish ./subfloor-refusals-v0.1.0.spkg
 ```
 
-**4. Move to a vault on `#253`'s bytecode and switch the house agent on (`#233`).** Everything that
-signs runs from the owner's terminal; an agent session cannot open the keystores and must not be
-handed a password or a key. Set the password once there so nothing prompts repeatedly:
-`read -s P && export ETH_PASSWORD="$P" CAST_UNSAFE_PASSWORD="$P" && unset P`.
-
-1. deploy a `VaultFactory` with `forge create` and verify it on Sourcify (a small contract; only the
-   router needs verifier-produced bytes)
-2. `createVault(setup)` from the owner: the delegate, guardian `0x9ebd…`, the registry, both pairs at
-   100 bps and absolute 0 (an absolute backstop is what froze the old vault's selling side)
-3. as owner, dock `0xaf6b`'s three books and `withdraw` its inventory into the new vault
-4. from `agent/`: `SUBFLOOR_VAULT=<new vault> node --experimental-strip-types src/house/switch-on.ts`,
-   one mandate for fourteen days
-5. the delegate key into Railway with `railway variables -s agent --set-from-stdin
-   SUBFLOOR_DELEGATE_KEY`; then an agent session with the Railway MCP sets `SUBFLOOR_HOUSE_AGENT`,
-   `VITE_VAULT`, `VITE_VAULT_FACTORY` and the taker's `SUBFLOOR_VAULT` to the new addresses
-
-After that the agent ships one book for the new vault and keeps it centred on the one mandate.
-
-**5. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
+**7. Base mainnet** (`#38`), then the injection reverts on mainnet (`#50`).
 
 **Open from the 10 Sep e2e, both small, both `frontend` except the first:**
 
@@ -528,7 +596,14 @@ committed shape.
   `frontend/.env.example` as of 10 Sep; it was undocumented before that, and a deployment missing it
   fails at the first request rather than at build.
 - `SUBSTREAMS_REGISTRY_TOKEN` — publishing only.
+- `SUBFLOOR_GRAPH_API_KEY` — the network gateway's query key, on `web` only (§9 step 2).
+- `SUBFLOOR_DELEGATE_KEY` — the house agent's key, on `agent` only, set from the dashboard.
 - Deploy keys and the Railway environment live outside the repo.
+
+**Rotate before submission.** On 11 Sep the keystore password and a Graph API key were both pasted
+into an agent chat. Neither was used by the agent or written anywhere, but a secret typed into a chat
+is a secret that left the machine: change the keystore password (`cast wallet change-password`) and
+regenerate the Graph key once a working one is in place.
 
 This repository is private now and **public at submission, with its whole history**. Never commit a
 key.
