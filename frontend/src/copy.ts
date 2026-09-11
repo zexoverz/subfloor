@@ -34,6 +34,8 @@ export const copy = {
     worstSub: 'closest approach, never through',
     /** The old draft said "Blocked" here, which is the register this project stays out of. */
     refused: 'Refused',
+    weakenings: 'floor moves refused',
+    weakeningsSub: 'tried to lower a floor without the device',
     refusedSub: 'reverts below the floor',
     tape: 'Fill tape',
     vault: 'What is in the vault',
@@ -609,6 +611,7 @@ export const copy = {
      */
     mandateHeld: 'signed. It covers every ship until it expires, or until you revoke it',
     mandateStale: 'signed for a different agent — it authorises nobody now',
+    mandateNeedsFunds: 'Fund the vault first. A mandate is bounded by what the vault holds, so one signed now would authorise nothing — and would say signed for fourteen days.',
     mandateNone: 'not signed. The agent cannot ship without it',
     handoverHanded: 'Handed to the agent running here — it can ship now.',
     handoverRefused: 'The agent would not keep it:',

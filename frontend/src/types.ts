@@ -55,6 +55,13 @@ export type Stats = {
   worstFillAboveFloorBps: number;
   /** from Substreams. A refused fill emits nothing, so this can never come from an event handler. */
   refused: number;
+  /**
+   * Floor-weakenings the registry refused, for want of the guardian's signature.
+   *
+   * Undefined where the deployment does not report it, which is not the same as none — the tile is
+   * absent rather than showing a zero nobody measured.
+   */
+  weakeningsRefused?: number;
   since: string;
   live: boolean;
 };

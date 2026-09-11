@@ -64,6 +64,21 @@ export function buildMandate({
   });
 
   /*
+   * A mandate whose every cap is zero authorises nothing, and is worse than not signing at all.
+   *
+   * The ceiling is the vault's inventory, and the board's own order is create, sign, fund — so a
+   * mandate signed at the natural moment bounds the agent at nothing and keeps doing so until it
+   * expires. Every surface then reports success: the strip says signed, `/api/mandates` keeps it
+   * (a zero cap is not one of the things it checks), and the agent holds and says the vault holds
+   * nothing it may commit, which reads as an empty vault rather than an empty authorisation.
+   *
+   * Refused here rather than warned about, because a warning leaves the same signature in the same
+   * place. Null is the same answer this function already gives for a mandate with no delegate: not
+   * an error, simply nothing to sign yet. See #285.
+   */
+  if (held.every((amount) => amount === 0n)) return null;
+
+  /*
    * Decimal strings, not bigints.
    *
    * The device kit serialises the payload on its way to the hardware, and `JSON.stringify` throws

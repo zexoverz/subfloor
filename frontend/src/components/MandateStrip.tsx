@@ -127,6 +127,11 @@ export function MandateStrip({
         * Only when the vault names it. An owner running their own agent is told nothing, because
         * this deployment knows nothing about theirs.
         */}
+      {/* Why the button is dark, said where the button is. */}
+      {vault && !typed && state.delegate && (
+        <p className="m-0 mt-2 text-[11.5px] leading-relaxed text-faint">{copy.live.mandateNeedsFunds}</p>
+      )}
+
       {house.known && house.address && state.delegate?.toLowerCase() === house.address.toLowerCase() && (
         <p className={`m-0 mt-2 text-[11.5px] leading-relaxed ${house.holds ? 'text-floor' : 'text-faint'}`}>
           {house.holds ? copy.live.houseReady : copy.live.houseWaiting}
@@ -136,7 +141,12 @@ export function MandateStrip({
       {/* Halves rather than content-width: they are the two ends of one decision and neither is
           the default, so sizing them by their labels would make the longer one the bigger target. */}
       <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-        <Act wide primary={!current} onClick={() => setOpen(true)} disabled={!vault}>
+        {/*
+          * Nothing to sign until there is something to bound. `buildMandate` returns null when
+          * every cap would be zero, and offering the ceremony anyway would produce a signature that
+          * authorises nothing and says "signed" for a fortnight (#285).
+          */}
+        <Act wide primary={!current} onClick={() => setOpen(true)} disabled={!vault || !typed}>
           {current ? copy.live.mandateAgain : copy.live.mandateSign}
         </Act>
         <button

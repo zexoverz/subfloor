@@ -174,6 +174,23 @@ export function LiveView({
           tone="refuse"
           tour="refused"
         />
+        {/*
+          * The second refusal, and the one nothing had evidence for until now.
+          *
+          * A refused fill shows the agent cannot settle below the floor. This shows it cannot move
+          * the floor either — §5.1's asymmetry, which is why the guardian is a key the trading
+          * machine never holds. Rendered only where the deployment reports it: absent is not zero,
+          * and a zero nobody measured is worth less on this board than no tile at all.
+          */}
+        {stats.weakeningsRefused !== undefined && (
+          <Tile
+            label={copy.desk.weakenings}
+            art="/tiles/refused.webp"
+            value={stats.weakeningsRefused}
+            sub={copy.desk.weakeningsSub}
+            tone="refuse"
+          />
+        )}
       </Tiles>
 
       <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-4.5 max-[1000px]:grid-cols-1">

@@ -155,11 +155,29 @@ ${STRATEGIES}
 ${SNAPSHOT}  }
 `;
 
-/** Everything that settled here, whoever made it. */
+/**
+ * Everything that settled here, whoever made it — and the owner's own books beside it.
+ *
+ * The scope switch is about the *tape*: "this vault's fills" or "every fill on the venue". It was
+ * never about the agent card, which is always about the owner's own vault. Selecting the strategies
+ * only in the vault-scoped query meant that switching the tape to the venue stopped asking what the
+ * owner's agent had shipped — and the card, given nothing, said "no book is live" about a vault
+ * with one live. Not asking and finding nothing are different answers and must not render alike.
+ *
+ * A stranger has no vault, so there is nothing to select and this collapses to the plain form.
+ */
 const EVERY = `
   query Fills {
     fillQualities(first: ${HISTORY}, orderBy: timestamp, orderDirection: desc) {
 ${FILL_FIELDS}    }
+${SNAPSHOT}  }
+`;
+
+const EVERY_WITH_MINE = `
+  query Fills($maker: Bytes!) {
+    fillQualities(first: ${HISTORY}, orderBy: timestamp, orderDirection: desc) {
+${FILL_FIELDS}    }
+${STRATEGIES}
 ${SNAPSHOT}  }
 `;
 
@@ -210,6 +228,16 @@ type RefusalRow = {
 type RefusalsBody = {
   floorRefusals: number;
   fills: number;
+  /**
+   * Attempts to lower a floor without the guardian's signature, refused on chain.
+   *
+   * The other half of the claim, and the half nothing had evidence for. A refused fill shows the
+   * agent cannot settle below the floor; a refused weakening shows it cannot move the floor either
+   * — §5.1's asymmetry, which is the whole reason the guardian is a key the trading machine never
+   * holds. Optional because an older deployment does not send it, and a missing field must not read
+   * as a zero.
+   */
+  weakeningRefusals?: number;
   recent: {
     hash: string;
     blockNumber: string;
@@ -243,7 +271,7 @@ async function blockTime(blockNumber: string): Promise<number> {
  */
 async function askRefusals(
   vault: Address | null,
-): Promise<{ fills: number; recent: RefusalRow[] } | null> {
+): Promise<{ fills: number; weakeningRefusals?: number; recent: RefusalRow[] } | null> {
   try {
     // No query string: the endpoint's own default returns more rows than this tape shows.
     const response = await fetch('/api/refusals');
@@ -251,6 +279,9 @@ async function askRefusals(
     const body = (await response.json()) as RefusalsBody;
     return {
       fills: body.fills ?? 0,
+      // Venue-wide and not filtered by vault, because a weakening is refused at the registry rather
+      // than at a fill — passing it through undefined keeps "not reported" distinct from "none".
+      weakeningRefusals: body.weakeningRefusals,
       // Only the floor's own refusal belongs on this tape. Another revert is a different story.
       recent: await Promise.all(
         (body.recent ?? [])
@@ -415,7 +446,11 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
         }>(
           scope === 'mine'
             ? { query: MINE, variables: { maker: vault?.toLowerCase() } }
-            : { query: EVERY },
+            : vault
+              // The venue's tape, and still this vault's books: the switch moves the tape, not the
+              // question the agent card asks.
+              ? { query: EVERY_WITH_MINE, variables: { maker: vault.toLowerCase() } }
+              : { query: EVERY },
         ),
         askRefusals(scope === 'mine' ? vault : null),
       ]);
@@ -558,6 +593,12 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
            * refusals another vault's floor performed.
            */
           refused: refusals.length,
+          /*
+           * From the endpoint's own count rather than from `weakenings.length`: the array is the
+           * recent window and the number is the total, and publishing a window as a total is how a
+           * headline stat quietly shrinks.
+           */
+          weakeningsRefused: refused?.weakeningRefusals,
           ...(snapshot ? { medianVsMidBps: snapshot.adverseDeviationP50Bps } : {}),
         },
       }));
