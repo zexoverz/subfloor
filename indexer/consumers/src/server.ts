@@ -16,9 +16,10 @@ import { CHAIN } from "../../../frontend/api/_lib/chain.ts";
 /// disk they last as long as the deploy does, and an owner would have to sign again after every one.
 const MANDATES = fileStore(process.env.SUBFLOOR_MANDATES_PATH ?? "data/mandates.json");
 const MAX_MANDATE_BYTES = 65_536;
-/// Base Sepolia. The mandate's EIP-712 domain carries the chain, so a signature from anywhere else
-/// does not recover here.
-const CHAIN_ID = 84532;
+/// The chain the mandate's EIP-712 domain was signed on — 84532 Base Sepolia, 8453 Base mainnet. A
+/// signature made anywhere else does not recover here, so this must match what the interface signed
+/// with (`VITE_CHAIN`). Set `SUBFLOOR_CHAIN_ID` on mainnet; the default stays testnet.
+const CHAIN_ID = Number(process.env.SUBFLOOR_CHAIN_ID ?? 84532);
 
 /// One service: the built frontend and the two consumers it calls, on one origin.
 ///
