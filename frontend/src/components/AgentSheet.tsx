@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, X } from 'lucide-react';
+import { Check, Copy, Info, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { CardBody, CardHead } from './Card.tsx';
 import { AddressChip } from './AddressChip.tsx';
+import { Tooltip } from './Tooltip.tsx';
 import { identicon } from '../lib/identicon.ts';
 import { useHouseAgent } from '../lib/houseAgent.ts';
 import { useAgentLog } from '../lib/agentLog.ts';
@@ -42,8 +43,17 @@ function CopyAddress({ address }: { address: string }) {
   );
 }
 
-const when = (t: number) =>
-  new Date(t * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+/*
+ * Short and fixed-width. `toLocaleString`'s comma and meridiem cost a column's worth of characters
+ * and pushed every cell in the row onto two lines — on a table whose whole job is to be scanned.
+ * Twenty-four hour, no comma, same shape for every row.
+ */
+const when = (t: number) => {
+  const d = new Date(t * 1000);
+  const day = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return `${day} ${time}`;
+};
 
 export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -65,7 +75,7 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
        * sheet: clipping here would cut him in half, and scrolling here would carry him up the page
        * as the log is read, which is the one thing a fixed corner ornament must not do.
        */
-      className="sheet relative max-h-[86vh] w-[min(560px,calc(100vw-32px))] overflow-visible"
+      className="sheet relative max-h-[86vh] w-[min(600px,calc(100vw-32px))] overflow-visible"
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
@@ -119,25 +129,26 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
       <div className="max-h-[calc(86vh-152px)] overflow-x-hidden overflow-y-auto px-5 pt-8 pb-5">
         {house.address ? (
           <>
-            <span className="block text-[11px] tracking-[0.11em] text-faint uppercase">{copy.agents.oneHereTag}</span>
+            {/*
+              * The premise, and the bound, behind one mark.
+              *
+              * Both were paragraphs on the sheet and both are read once. Standing open they pushed
+              * the record — the part somebody actually came to look at — below the fold every time
+              * the sheet was opened, including the tenth time. Behind a mark they are still one
+              * gesture away and no longer charge rent.
+              */}
+            <span className="mb-1 flex items-center gap-1.5 text-[11px] tracking-[0.11em] text-faint uppercase">
+              {copy.agents.oneHereTag}
+              <Tooltip text={`${copy.agents.lede} ${copy.agents.cannotBody}`}>
+                <Info size={11} strokeWidth={1.8} />
+              </Tooltip>
+            </span>
             <CopyAddress address={house.address} />
-            <p className="serif mt-2.5 mb-0 text-[13px] leading-relaxed text-muted">{copy.agents.lede}</p>
           </>
         ) : (
           /* No agent here is a legitimate deployment, and it is not an error. */
           <p className="serif m-0 text-[13px] leading-relaxed text-muted">{copy.agents.noneHere}</p>
         )}
-
-        {/*
-          * The bound, kept and kept small. Anyone about to paste a stranger's address into their
-          * own vault should read it, and it is four words and a sentence — a panel of its own gave
-          * it more room than it needs and pushed the record it exists to qualify off the screen.
-          */}
-        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl border border-rule bg-sunken px-3.5 py-2.5 text-[12px]">
-          <span className="text-[11px] tracking-[0.11em] text-faint uppercase">{copy.agents.canLabel}</span>
-          <span className="font-mono text-ink">compose · ship · dock · update-quote</span>
-          <span className="w-full text-[11.5px] leading-relaxed text-faint">{copy.agents.cannotBody}</span>
-        </div>
 
         {/*
           * The record, from the index rather than from the agent. A panel printing what the agent
@@ -155,24 +166,48 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
             ) : log.books.length === 0 ? (
               <p className="serif m-0 text-[13px] leading-relaxed text-faint">{copy.agents.logEmpty}</p>
             ) : (
-              <ul className="m-0 max-h-[280px] list-none overflow-y-auto p-0">
-                {log.books.map((b) => (
-                  <li
-                    key={b.strategyHash}
-                    className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-rule/50 py-2.5 text-[12px] last:border-0"
-                  >
-                    <span className={`shrink-0 font-mono ${b.active ? 'text-floor' : 'text-faint'}`}>
-                      {b.active ? copy.agents.live : copy.agents.docked}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="text-ink">{b.classification.toLowerCase()}</span>
-                      <span className="text-faint"> · {b.stepCount} steps · </span>
-                      <AddressChip address={b.vault} size={13} />
-                    </span>
-                    <span className="t-num shrink-0 text-faint">{when(b.shippedTimestamp)}</span>
-                  </li>
-                ))}
-              </ul>
+              /*
+                * The same table the tape is, because it is the same kind of thing: a list of what
+                * happened, newest first, with a state and a time. A bespoke list beside the desk's
+                * own tape would be a second visual grammar for one idea.
+                */
+              <div className="tape-scroll max-h-[280px] overflow-y-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {[copy.agents.colState, copy.agents.colBook, copy.agents.colVault, copy.agents.colWhen].map(
+                        (h, k) => (
+                          <th
+                            key={h}
+                            className={`sticky top-0 z-10 border-b border-rule bg-sunken t-label px-3 py-2.5 text-faint ${
+                              k === 3 ? 'text-right' : 'text-left'
+                            }`}
+                          >
+                            {h}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {log.books.map((b) => (
+                      <tr key={b.strategyHash} className="[&>td]:border-b [&>td]:border-rule/50">
+                        <td className={`px-3 py-2.5 font-mono text-[12px] ${b.active ? 'text-floor' : 'text-faint'}`}>
+                          {b.active ? copy.agents.live : copy.agents.docked}
+                        </td>
+                        <td className="px-3 py-2.5 text-[12px] whitespace-nowrap text-ink">
+                          {b.classification.toLowerCase()}
+                          <span className="text-faint"> · {b.stepCount} steps</span>
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          <AddressChip address={b.vault} size={13} />
+                        </td>
+                        <td className="t-num px-3 py-2.5 text-right whitespace-nowrap text-faint">{when(b.shippedTimestamp)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardBody>
         </div>
