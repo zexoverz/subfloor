@@ -1334,6 +1334,19 @@ vault's owner watched a book nobody filled. It takes every maker on the venue no
 one maker is not a taker, and on a venue whose whole argument is that it serves strangers, it made
 the product look dead to everyone but us.
 
+**And corrected again the same day (#297), on the maker's side.** The second vault still had no fill
+after that, and reading its book off the chain said why: its owner had floored one direction at
+25 bps, the house agent composed every vault's book at the house's own ±50 bps with a 50 bps re-centre
+band, so that side quoted below the vault's own floor from the moment it shipped and `quote()` refused
+it — the floor doing its job against a book that should never have been written that wide. The other
+side quoted 80 bps under the reference, past the taker's −50 bps edge, so nothing took it either. Now
+the house reads each vault's floor from the registry and sizes both the half-width and the re-centre
+band at half the tightest configured tolerance, capped by its defaults; a 25 bps vault gets a ±12 bps
+book that re-centres at 12. The taker's edge is `TAKER_EDGE_BPS`, set to −100 on the service so it
+takes the house's fresh quotes rather than only decayed ones; each maker's floor is what protects the
+maker, not the taker's threshold. And a pass now logs every book it tried, not the last one, which is
+the line that would have shown this a day earlier.
+
 This also satisfies the 1inch qualification directly: **on-chain execution of token transfers
 presented during the final demo** — at least one SUCCESSFUL fill with visible token transfers
 must be in the video, not only reverts.

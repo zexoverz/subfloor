@@ -200,11 +200,16 @@ export async function reference(c: Clients, cfg: Config) {
   return { answer: round[1] as bigint, decimals: Number(decimals), updatedAt: round[3] as bigint };
 }
 
-/// One pass: quote, decide, and take if the quote is good enough.
+/// One pass: quote every live book, newest first, and take the first one that is good enough.
+///
+/// Every book's outcome comes back, not only the last. With several makers on the venue a pass that
+/// fills nothing used to report one line, for whichever book happened to be oldest, and a maker
+/// whose book was skipped or refused on quote was invisible in the log — which is how a vault sat at
+/// zero fills for a day with nobody able to say why (#297).
 ///
 /// A revert is not a failure of the bot. `SettledBelowFloor` is the mechanism working, and it is
 /// returned as an outcome so the caller can count it — refusals are the product's proudest number.
-export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise<Outcome> {
+export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise<Outcome[]> {
   const tokenIn = spendWeth ? cfg.tokens.weth : cfg.tokens.quote;
   const amountIn = spendWeth ? cfg.sizes.weth : cfg.sizes.quote;
 
@@ -215,36 +220,35 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
     address: tokenIn, abi: ERC20_ABI, functionName: "balanceOf", args: [c.account.address],
   })) as bigint;
   if (held < amountIn) {
-    return { kind: "skipped", tokenIn, amountIn, reason: `the taker holds ${held} of this token, less than the ${amountIn} it would spend` };
+    return [{ kind: "skipped", tokenIn, amountIn, reason: `the taker holds ${held} of this token, less than the ${amountIn} it would spend` }];
   }
 
   // Newest book first, every maker unless the config narrows it. The pass stops at the first book
-  // that fills or is refused; the others were quotes not worth taking, and the last of those is what
-  // gets reported, so the log still says why nothing happened.
+  // that fills or is refused.
   const orders = (await liveOrders(cfg)).reverse();
-  if (orders.length === 0) return { kind: "skipped", tokenIn, amountIn, reason: "no live strategy shipped by any maker" };
+  if (orders.length === 0) return [{ kind: "skipped", tokenIn, amountIn, reason: "no live strategy shipped by any maker" }];
 
-  let last: Outcome | null = null;
+  const outcomes: Outcome[] = [];
   for (const order of orders) {
     try {
       const outcome = await attempt(c, cfg, spendWeth, order);
-      if (outcome.kind === "filled" || outcome.kind === "refused") return outcome;
-      last = outcome;
+      outcomes.push(outcome);
+      if (outcome.kind === "filled" || outcome.kind === "refused") break;
     } catch (err) {
       // One book that reverts for a reason this bot does not recognise is that maker's problem. It
       // used to end the pass, which on a venue with several makers means one broken book stops
       // everyone else from being taken.
       const data = findRevertData(err);
-      last = {
+      outcomes.push({
         kind: "no-quote",
         maker: order.maker,
         tokenIn,
         amountIn,
         reason: data ? `reverted, unknown selector ${data.slice(0, 10)}` : (err as Error).message.split("\n")[0],
-      };
+      });
     }
   }
-  return last as Outcome;
+  return outcomes;
 }
 
 /// One book, one side, one decision.

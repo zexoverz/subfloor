@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { toFunctionSelector, type Address, type Hex } from "viem";
-import { plan, type HouseConfig, type StoredMandate, type VaultChain } from "../src/house/house.ts";
+import { plan, widthsFor, type HouseConfig, type StoredMandate, type VaultChain } from "../src/house/house.ts";
 import { centreFromXycArgs, type IndexView, type OpenStrategy } from "../src/market/index-reads.ts";
 import { bounds, composeBook } from "../src/compose/book.ts";
 import { shipCalldata } from "../src/vault/ship.ts";
@@ -20,6 +20,7 @@ const SIG = `0x${"11".repeat(65)}` as Hex;
 const CFG: HouseConfig = {
   delegate: HOUSE,
   router: ROUTER,
+  registry: "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123" as Address,
   maxReferenceAgeSeconds: 3600,
   maxIndexLagBlocks: 200,
   recenterBps: 50,
@@ -75,8 +76,8 @@ function index(strategies: OpenStrategy[] = [], over: Partial<IndexView> = {}): 
   };
 }
 
-function chain(revoked: number[] = [], held: bigint[] = [10n ** 18n, 50_000_000_000n], live: bigint[] = [0n, 0n]): VaultChain {
-  return { revoked: async (_v, n) => revoked.includes(Number(n)), balances: async () => held, committed: async () => live };
+function chain(revoked: number[] = [], held: bigint[] = [10n ** 18n, 50_000_000_000n], live: bigint[] = [0n, 0n], floors: (number | null)[] = [100, 100]): VaultChain {
+  return { revoked: async (_v, n) => revoked.includes(Number(n)), balances: async () => held, committed: async () => live, floorBps: async () => floors };
 }
 
 const run = (idx: IndexView, mandates: StoredMandate[], ch: VaultChain = chain(), pending = new Map<string, bigint>()) =>
@@ -193,6 +194,34 @@ describe("the house agent gives every vault that names it one book", () => {
 
   test("mandates naming another delegate are not this agent's to spend", async () => {
     assert.deepEqual(await run(index(), [mandate(0, { delegate: OTHER })]), []);
+  });
+});
+
+describe("a vault's book is composed inside that vault's floor", () => {
+  test("a 25 bps floor gets a 12 bps book, not the house's 50", async () => {
+    const [s] = await run(index(), [mandate(0)], chain([], undefined, undefined, [150, 25]));
+    assert.equal(s.kind, "ship");
+    if (s.kind !== "ship") return;
+    const { lo, hi } = bounds(MID, 12);
+    assert.ok(s.data.includes(lo.toString(16).padStart(64, "0")) && s.data.includes(hi.toString(16).padStart(64, "0")), "the curve's range is ±12 bps");
+    const wide = bounds(MID, 50);
+    assert.ok(!s.data.includes(wide.lo.toString(16).padStart(64, "0")), "and not ±50");
+  });
+
+  test("its re-centre band narrows with it, so a drift the house would sit through is re-centred", async () => {
+    // 26 bps off centre: inside the house's 50 bps band, outside a 25 bps floor's 12.
+    const drifted = book({ centre: (MID * 10_026n) / 10_000n });
+    const [tight] = await run(index([drifted]), [mandate(0)], chain([], undefined, undefined, [25, 25]));
+    assert.equal(tight.kind, "recenter");
+    const [loose] = await run(index([drifted]), [mandate(0)], chain([], undefined, undefined, [100, 100]));
+    assert.equal(loose.kind, "hold");
+  });
+
+  test("a vault with no relative floor configured gets the house's defaults", () => {
+    assert.deepEqual(widthsFor(CFG, [null, null]), { spreadBps: 50, recenterBps: 50 });
+    assert.deepEqual(widthsFor(CFG, [null, 0]), { spreadBps: 50, recenterBps: 50 });
+    assert.deepEqual(widthsFor(CFG, [150, 25]), { spreadBps: 12, recenterBps: 12 });
+    assert.deepEqual(widthsFor(CFG, [1, 1]), { spreadBps: 1, recenterBps: 1 });
   });
 });
 
