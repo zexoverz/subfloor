@@ -234,7 +234,14 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
       // One book that reverts for a reason this bot does not recognise is that maker's problem. It
       // used to end the pass, which on a venue with several makers means one broken book stops
       // everyone else from being taken.
-      last = { kind: "no-quote", maker: order.maker, tokenIn, amountIn, reason: (err as Error).message.split("\n")[0] };
+      const data = findRevertData(err);
+      last = {
+        kind: "no-quote",
+        maker: order.maker,
+        tokenIn,
+        amountIn,
+        reason: data ? `reverted, unknown selector ${data.slice(0, 10)}` : (err as Error).message.split("\n")[0],
+      };
     }
   }
   return last as Outcome;
