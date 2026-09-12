@@ -194,7 +194,13 @@ export type VaultState = {
   calibration: Calibration;
   stats: Stats;
   tape: TapeEntry[];
-  agent: string[];
+  /**
+   * What the vault's live books are, in words — or null when nobody has been able to ask.
+   *
+   * Null and empty are different answers and the card renders them differently. Collapsing them is
+   * how a 429 became the sentence "no book is live" on a vault with one live (#285 follow-on).
+   */
+  agent: string[] | null;
   mandate: Mandate;
   /** vault.delegate(). Shown in full, never as a nickname — see copy.wallet.agentAddressHint. */
   delegate: `0x${string}` | null;

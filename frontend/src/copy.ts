@@ -618,6 +618,7 @@ export const copy = {
     handoverNotHanded: 'Could not reach the agent running here, so it has not been handed over. The file above is still everything an agent needs.',
     houseReady: 'the agent running here holds a mandate for this vault',
     houseWaiting: 'named, but it holds no mandate for this vault yet — sign one below',
+    agentUnknown: 'the index has not answered, so what is live here is unknown rather than nothing',
     agentQuiet: 'no book is live. The index shows nothing shipped for this vault.',
     tourAgain: 'what am I looking at?',
     mandateSign: 'SIGN MANDATE',

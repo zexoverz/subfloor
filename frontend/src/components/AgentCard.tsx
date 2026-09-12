@@ -31,8 +31,8 @@ export function AgentCard({
   mandate,
 }: {
   delegate: Address | null;
-  /** What it is doing right now, as the index reports it. */
-  behaviour: string[];
+  /** What it is doing right now, as the index reports it. Null when it could not be asked. */
+  behaviour: string[] | null;
   /** Only the owner may edit or stop; everyone else reads. */
   owner: boolean;
   onSetAgent: (next: Address) => Promise<void>;
@@ -191,12 +191,20 @@ export function AgentCard({
             * to fill this space on every board, so an empty state was never reachable and never
             * drawn; a vault with no live book now says so instead of describing one (#252).
             */}
-          {behaviour.length === 0 && (
+          {/*
+            * Three states, and the third is the one that was missing. An index that has not
+            * answered is not a vault with no book — saying so put "no book is live" on a board
+            * whose book the index could see, and a rate limit is enough to trigger it.
+            */}
+          {behaviour === null && (
+            <p className="serif relative m-0 text-[12.5px] leading-relaxed text-faint">{copy.live.agentUnknown}</p>
+          )}
+          {behaviour?.length === 0 && (
             <p className="serif relative m-0 text-[12.5px] leading-relaxed text-faint">{copy.live.agentQuiet}</p>
           )}
 
           <ul className="relative m-0 list-none space-y-1.5 p-0 text-[12.5px]">
-            {behaviour.map((line, i) => {
+            {(behaviour ?? []).map((line, i) => {
               /*
                * ponytail: reads the word out of the line, because the line is all there is. These
                * strings are prose and nothing beside them carries a running/stopped flag. A cog

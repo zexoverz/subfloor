@@ -113,7 +113,12 @@ export default function App() {
      * about strategies this vault has never run (#252). An empty list is the honest answer when the
      * index has not said: the zone renders nothing rather than something invented.
      */
-    agent: index.agent ?? (feedSource === 'simulated' ? fed.agent : []),
+    /*
+     * Null passes through. `?? []` here was the whole bug: a rate-limited or failed index read left
+     * `index.agent` null, this turned it into an empty list, and the card stated as fact that no
+     * book was live — on a vault whose book the index could see perfectly well a second later.
+     */
+    agent: index.agent ?? (feedSource === 'simulated' ? fed.agent : null),
   };
   /*
    * "What is in the vault" has to be the vault's balance. This used to render the owner's wallet
