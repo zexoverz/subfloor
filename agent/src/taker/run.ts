@@ -21,9 +21,9 @@ function line(o: Outcome): string {
     case "refused":
       return `${at}  REFUSED  ${o.maker?.slice(0, 10)}… in=${o.amountIn} rate=${o.floor?.executionRate} floor=${o.floor?.floorRate}  the floor held`;
     case "no-quote":
-      return `${at}  no quote ${side} ${o.reason ?? ""}`;
+      return `${at}  no quote ${o.maker?.slice(0, 10) ?? "—"}… ${side} ${o.reason ?? ""}`;
     default:
-      return `${at}  skipped  ${side} ${o.reason ?? ""}`;
+      return `${at}  skipped  ${o.maker?.slice(0, 10) ?? "—"}… ${side} ${o.reason ?? ""}`;
   }
 }
 
