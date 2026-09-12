@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { Address } from 'viem';
 import { chain } from './chain.ts';
-import { raiseFloorAsVault } from './contracts.ts';
+import { addresses, raiseFloorAsVault, registryAbi } from './contracts.ts';
+import { publicClient } from './client.ts';
 import { USDC, WETH } from './tokens.ts';
 
 /**
@@ -42,18 +43,36 @@ export function useFloor(vault: Address | null): FloorWrite {
         const config = startAppKit().config;
 
         /*
-         * No absolute backstop from this control. The screen sets one number — a tolerance against
-         * the reference — and inventing a second bound the owner never chose would be a floor they
-         * did not set. `raiseFloor` requires the new absolute to be no weaker than the old, and
-         * zero against zero satisfies that.
+         * The backstop is carried through, not set from here and not sent as zero.
+         *
+         * This control changes one number: the tolerance against the reference. The absolute
+         * backstop is a second bound the owner did not touch, so it goes back exactly as it stands.
+         *
+         * It used to send zero, with a note reasoning that "zero against zero satisfies" the
+         * contract's no-weaker rule. True only while the backstop *was* zero. `raiseFloor` requires
+         * both components to be no weaker, and a vault created with a backstop — which the factory
+         * now does — has one: tightening 400 bps to 25 while dropping 2371296000 to nothing is a
+         * strengthening and a weakening in one call, and the registry refuses the pair. The raise
+         * button was dead for every such vault, with nothing on screen to say why.
          */
         for (const [base, quote, label] of [
           [WETH, USDC, 'selling WETH'],
           [USDC, WETH, 'selling USDC'],
         ] as const) {
           setStep(label);
+          /*
+           * Read per direction, because the two are separate entries and need not agree — a vault
+           * can carry a backstop on one side and none on the other.
+           */
+          const [, , absolute] = (await publicClient.readContract({
+            address: addresses.registry as Address,
+            abi: registryAbi,
+            functionName: 'floor',
+            args: [vault, base, quote],
+          })) as [boolean, number, bigint];
+
           const hash = await core.writeContract(config, {
-            ...raiseFloorAsVault(vault, base, quote, maxAdverseBps, 0n),
+            ...raiseFloorAsVault(vault, base, quote, maxAdverseBps, absolute),
             chainId: chain.id,
           });
           const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
