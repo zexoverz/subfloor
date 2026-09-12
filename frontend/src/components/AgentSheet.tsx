@@ -30,7 +30,7 @@ function CopyAddress({ address }: { address: string }) {
           setTimeout(() => setDone(false), 1600);
         });
       }}
-      className="well inline-flex w-full cursor-pointer items-center gap-2 rounded-xl bg-sunken px-3.5 py-2.5 font-mono text-[12px] break-all text-ink transition-colors hover:text-floor"
+      className="inline-flex w-full cursor-pointer items-center gap-2 rounded-xl border border-rule bg-sunken px-3.5 py-2.5 font-mono text-[12px] break-all text-ink transition-colors hover:border-floor"
     >
       {done ? (
         <Check size={13} strokeWidth={2.2} className="shrink-0 text-floor" />
