@@ -98,30 +98,44 @@ export async function openSpeculosDevice(options: SpeculosOptions): Promise<Spec
     coinapps: options.coinapps,
   });
 
-  // Speculos has no buttons to press by itself. app-ledger-sync 1.2.x renders the
-  // consent as an NBGL two-button choice ("Turn On sync" / "Don't sync") with the
-  // confirm option focused first. Page the review screens with a right press; the
-  // moment the confirm label first appears, stop reacting and fire one delayed
-  // press-both so focus has settled on confirm — reacting to every streamed line
-  // over-navigates onto "Don't sync" and the device returns 0x6985 (user denied).
-  let armed = true;
+  // Speculos has no buttons to press by itself, so we drive the NBGL consent flow
+  // over the automation event stream. The approach is screen-state driven, not
+  // event-reactive, because reacting to every streamed line races the device onto
+  // the reject option and returns 0x6985 (user denied):
+  //   - A single pager presses right on a FIXED cadence, one page per tick. An info
+  //     page emits several text events; pressing right once per event over-pages
+  //     straight onto the reject option. The cadence decouples navigation from the
+  //     event count and also dismisses the "any button to continue" info screens.
+  //   - Confirm fires ONLY on an exact-case button label. The wrapped titles read
+  //     "Turn on sync .." / "Remove from .." while the confirm buttons are exactly
+  //     "Turn On sync" / "Remove" — a case-insensitive match would fire on the title
+  //     before the choice page exists. On a confirm label the pager pauses so it
+  //     cannot advance onto reject, focus settles, one press-both fires, then paging
+  //     resumes to reach the next prompt (revoke = branch close + re-share issues
+  //     two sequential approvals: "Remove" then "Turn On sync").
+  let pageTimer: ReturnType<typeof setInterval> | null = null;
+  let paused = false;
+  const startPaging = () => {
+    if (pageTimer) return;
+    pageTimer = setInterval(() => { if (!paused) void created.transport.button("Rr"); }, CONSENT_PAGE_MS);
+  };
   const subscription = created.transport.automationEvents.subscribe((event: { text?: unknown }) => {
     const text = String(event.text ?? "").trim();
-    if (!armed || !text) return;
-    if (CONFIRM.test(text)) {
-      armed = false;
+    if (!text) return;
+    startPaging(); // the pager runs continuously once the app is drawing
+    if (CONFIRM_LABELS.has(text) && !paused) {
+      paused = true;
       setTimeout(() => {
         void created.transport.button("LRlr");
-        setTimeout(() => { armed = true; }, 1500); // re-arm for the next approval prompt in the flow
-      }, 700);
-    } else if (!REJECT.test(text)) {
-      void created.transport.button("Rr");
+        setTimeout(() => { paused = false; }, CONSENT_REARM_MS);
+      }, CONSENT_SETTLE_MS);
     }
   });
 
   return {
     device: deviceFactories.apdu(created.transport as never) as Device,
     async close() {
+      if (pageTimer) clearInterval(pageTimer);
       subscription.unsubscribe();
       await speculos.releaseSpeculosDevice(created.id);
     },
@@ -133,5 +147,9 @@ type SpeculosTransport = {
   button(code: string): Promise<void> | void;
 };
 
-const CONFIRM = /^(Turn On sync|Approve|Confirm|Log ?in|Allow|Yes|Sign)$/i;
-const REJECT = /^(Don't sync|Cancel|Reject|Deny)$/i;
+// Exact-case confirm button labels app-ledger-sync 1.2.x renders on Nano. These are
+// the button captions, not the wrapped titles ("Turn on sync .." / "Remove from ..").
+const CONFIRM_LABELS = new Set(["Turn On sync", "Remove"]);
+const CONSENT_PAGE_MS = 700; // one right-press per tick: pages review screens, dismisses info screens
+const CONSENT_SETTLE_MS = 350; // let focus settle on the confirm page before pressing both
+const CONSENT_REARM_MS = 900; // after a confirm, resume paging to reach the next prompt
