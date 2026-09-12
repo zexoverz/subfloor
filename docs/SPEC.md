@@ -1359,6 +1359,9 @@ This also satisfies the 1inch qualification directly: **on-chain execution of to
 presented during the final demo** — at least one SUCCESSFUL fill with visible token transfers
 must be in the video, not only reverts.
 
+The published key was benchmarked against the live deployment before the offer was made: with that
+exact delegate key, every path to move funds out or weaken the floor reverts — `docs/adversarial-benchmark.md`.
+
 ### The standing adversarial bounty (~half a day)
 
 A public page, live for the whole hackathon: submit any SwapVM program against the live Base
