@@ -79,54 +79,61 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
-      <div className="flex items-center justify-between border-b border-rule bg-sunken px-5 py-3">
-        <h2 className="m-0 text-[11.5px] tracking-[0.11em] text-faint uppercase">{copy.agents.title}</h2>
-        <button
-          onClick={onClose}
-          aria-label={copy.panic.cancel}
-          className="-mr-1 cursor-pointer p-1 text-faint transition-colors hover:text-ink"
-        >
-          <X size={14} strokeWidth={1.8} />
-        </button>
-      </div>
-
       {/*
-        * The agent leads, and it leads as a face rather than as a heading.
+        * The header sits *on* the banner rather than above it.
         *
-        * The identity is the thing being decided about — whose address may trade a vault — so it is
-        * the first thing on the sheet: the banner, a blockie half out of it, and the address under
-        * both, ready to copy. Everything else is evidence for or against that address.
-        *
-        * The blockie is not decoration. Forty hex characters are unreadable and unmemorable, and a
-        * shape is what makes the same agent recognisable across the tape, the vault card and here.
+        * A filled bar across the top cut the picture off at a straight line and squared the sheet's
+        * own corner — the dialog has `overflow: visible` so the mascot can hang off it, so nothing
+        * clips a child's corners for it any more. One rounded block holds both, the image runs the
+        * full height of it, and the title floats with the scrim carrying its legibility instead of
+        * a slab.
         */}
-      <div className="relative">
-        <div className="h-[104px] overflow-hidden">
-          <img
-            src="/agent-banner.webp"
-            alt=""
-            aria-hidden
-            draggable={false}
-            className="h-full w-full object-cover object-center opacity-[0.55] select-none"
-            style={{
-              maskImage: 'linear-gradient(to bottom, black 0%, black 55%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 55%, transparent 100%)',
-            }}
-          />
+      <div className="relative overflow-hidden rounded-t-2xl">
+        <img
+          src="/agent-banner.webp"
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover object-center select-none"
+        />
+        {/*
+          * Dark at the top, gone by the middle. It is what the title is read against — `.on-art`
+          * alone is a shadow on every letter, which at this size reads as smudge rather than
+          * contrast — and it fades to nothing so the picture below it is a picture.
+          */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(to bottom, rgba(1,10,26,0.82) 0%, rgba(1,10,26,0.35) 46%, transparent 100%)' }}
+        />
+
+        <div className="relative flex items-center justify-between px-5 py-3">
+          <h2 className="on-art m-0 text-[11.5px] tracking-[0.11em] text-ink uppercase">{copy.agents.title}</h2>
+          <button
+            onClick={onClose}
+            aria-label={copy.panic.cancel}
+            className="on-art -mr-1 cursor-pointer p-1 text-ink transition-colors hover:text-floor"
+          >
+            <X size={14} strokeWidth={1.8} />
+          </button>
         </div>
 
-        {house.address && (
-          <img
-            src={identicon(house.address)}
-            alt=""
-            aria-hidden
-            draggable={false}
-            className="absolute bottom-0 left-5 size-[72px] translate-y-1/3 rounded-full border-2 border-rule bg-sunken shadow-card select-none"
-          />
-        )}
+        {/* The picture's own room, under the title. */}
+        <div className="h-[86px]" />
       </div>
 
-      <div className="max-h-[calc(86vh-152px)] overflow-x-hidden overflow-y-auto px-5 pt-8 pb-5">
+      {house.address && (
+        /* Outside the clipped block, so it can hang below the banner's edge. */
+        <img
+          src={identicon(house.address)}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="absolute top-[94px] left-5 size-[72px] rounded-full border-2 border-rule bg-sunken shadow-card select-none"
+        />
+      )}
+
+      <div className="max-h-[calc(86vh-152px)] overflow-x-hidden overflow-y-auto px-5 pt-12 pb-5">
         {house.address ? (
           <>
             {/*
