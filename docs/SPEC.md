@@ -1559,6 +1559,24 @@ for.
 
 This is the leg most likely to move in either direction and the one furthest from done.
 
+**Updated 12 Sep — the flagship ask landed, on the emulator.** The "not one line of Key Ring code"
+basis above is stale: the Key Ring integration ships (`agent/src/keyring/*`, `scripts/key-ring-setup.sh`),
+the software legs — addMember with no device, seal, revoke, the revocation kill-switch — pass their
+tests, and **the one device-rooted step now runs with no USB on Speculos**: the Ledger Sync app was
+built from public source, driven by SUBFLOOR's own `Ring.create`, and raised genuine on-device
+consent, with four transport bugs in `speculos.ts` fixed to get there (`docs/key-ring.md`). That is
+the "bring the Key Ring to a host with no USB port" flagship ask, answered and judge-runnable — plus
+the physical device still clear-signs the mandate and floor-lowering (the Ethereum app path works).
+The physical Ledger cannot reach the LKRP app outside Ledger Live's hosted Sync feature, and that
+gap is written up as DX feedback, which the track judges as much as code. So the "no-USB enrollment
+lands" branch above is substantially the state we are in — honestly, via the emulator with the
+hardware limitation disclosed. Ledger ceiling revised UP toward that branch [odds redacted]; the
+residual is the NBGL confirm-timing polish and whether a judge weighs emulator-rooted against
+hardware-rooted. The one thing still gating the top of the range is the live-money mainnet run and a
+video delivered to the §12 script — ship both and the published-key move is real, which is the
+finalist lever (§14): combined ceiling with mainnet + video delivered [odds redacted], never stated
+as certainty.
+
 ### The Graph — one filing (composable/standardized), corrected by the third research round, re-aimed by the fourth
 
 **Major correction: Aqua is already partially indexed. The "first Aqua index" claim is false,
