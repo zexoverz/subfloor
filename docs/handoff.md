@@ -205,7 +205,7 @@ Three Railway services in project `subfloor`, all in `production`:
 | Service | What it runs | Holds a key? |
 |---|---|---|
 | `web` | the app and every `/api/*` endpoint | no |
-| `taker` | the taker bot | yes, the taker's |
+| `taker` | the taker bot, taking every maker's book since `#290` | yes, the taker's |
 | `agent` | the policy loop; the house agent once `SUBFLOOR_DELEGATE_KEY` is set (`#236`) | **not yet** |
 
 The `agent` service builds from `main` (it deployed from a side branch until the evening of 10 Sep)
