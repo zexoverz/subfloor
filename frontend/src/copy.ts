@@ -343,6 +343,7 @@ export const copy = {
   agents: {
     title: 'Agents',
     dock: 'who may trade your vault',
+    offer: 'the agent is here if you need one',
     lede: 'A vault names an address that may trade it. Whose address is not this venue\'s business — the worst price is arithmetic in settlement, and it binds a careless agent, a compromised one and a careful one identically. What follows is what any of them can reach, and what the one running here has done.',
     boundsTitle: 'What an agent can reach',
     boundsBody: 'The same four calls whoever wrote it. This is not configuration and there is no setting that widens it; it is the vault\'s entire surface to a delegate.',

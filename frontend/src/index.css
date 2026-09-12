@@ -1466,3 +1466,37 @@ body:has(dialog[open]) {
     animation: none;
   }
 }
+
+/*
+ * The offer, wearing the drawing's own speech bubble.
+ *
+ * Stretched to the words rather than sliced: the pill is a uniform extrusion between its two caps,
+ * so widening it is invisible in the middle and only softens the caps, and the neon is soft to
+ * begin with. Horizontal padding in percent so the inset keeps pace with the caps; vertical in
+ * pixels, because CSS resolves a percentage padding against *width* on every side and a percentage
+ * top would grow with the sentence until the bubble swallowed the corner.
+ *
+ * The lower padding is the larger because the tail hangs below the body, and text over the tail
+ * reads as text outside the bubble.
+ */
+.agent-bubble {
+  width: 196px;
+  margin-bottom: 26px;
+  filter: drop-shadow(0 6px 14px rgba(0, 10, 28, 0.55));
+}
+/*
+ * The art, mirrored, on a layer of its own.
+ *
+ * The drawing's tail hangs bottom-left and the figure it belongs to stands on the right, so unflipped
+ * the bubble pointed away from whoever was speaking. Flipping the whole element would flip the words
+ * with it, so the picture goes on a pseudo-element and the sentence stays the right way round.
+ */
+.agent-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/agent-bubble.webp');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform: scaleX(-1);
+}
