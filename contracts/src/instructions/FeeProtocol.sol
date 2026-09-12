@@ -160,6 +160,15 @@ library FeeProtocol {
         estimated = args.at(shift).asU216();
     }
 
+    /// @dev Kept out of `exec`'s loop body on purpose — see the call site. Semantically identical to
+    ///      `receivers[i] = FeeReceiverLib.encode(...)`; only the stack framing differs.
+    function _storeReceiver(FeeReceiver[] memory receivers, uint256 i, address receiver, uint24 feeBps, uint24 surplusBps)
+        private
+        pure
+    {
+        receivers[i] = FeeReceiverLib.encode(receiver, feeBps, surplusBps);
+    }
+
     function exec(Context memory ctx, bytes calldata args) internal {
         (bool isTokenIn, uint8 count) = parseHeader(args);
         uint256 shift = 1;
@@ -205,8 +214,10 @@ library FeeProtocol {
             if (receiver == address(0) || (feeBps == 0 && surplusBps == 0)) {
                 unchecked { count--; }
             } else {
-                receivers[i] = FeeReceiverLib.encode(receiver, feeBps, surplusBps);
-                unchecked { 
+                // Extracted so the encode's temporaries get their own stack frame: with the loop's
+                // locals all live, doing this inline overflows via_ir by one slot at FeeProtocol.sol.
+                _storeReceiver(receivers, i, receiver, feeBps, surplusBps);
+                unchecked {
                     totalFeeBps += feeBps;
                     totalSurplusBps += surplusBps;
                     i++;
