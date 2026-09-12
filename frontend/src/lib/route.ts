@@ -17,7 +17,6 @@ const PATHS: Record<Screen, string> = {
   landing: '/',
   live: '/app',
   ceremony: '/app/device',
-  agents: '/agents',
 };
 
 export function screenFromPath(pathname: string): Screen {

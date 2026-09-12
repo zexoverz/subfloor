@@ -10,7 +10,8 @@ import { addresses } from './lib/contracts.ts';
 import { AppShell } from './components/AppShell.tsx';
 import { Landing } from './components/screens/Landing.tsx';
 import { LiveView } from './components/screens/LiveView.tsx';
-import { Agents } from './components/screens/Agents.tsx';
+import { AgentSheet } from './components/AgentSheet.tsx';
+import { AgentDock } from './components/AgentDock.tsx';
 import { Ceremony } from './components/screens/Ceremony.tsx';
 import { MandateStrip } from './components/MandateStrip.tsx';
 import { GuardianStrip } from './components/GuardianStrip.tsx';
@@ -167,6 +168,12 @@ export default function App() {
 
   // Lowering is answered in the sheet on the board now; this only records what was signed.
   const lower = (bps: number) => setDraftBps(bps);
+  /*
+   * The agent sheet, and the dock that opens it. Held here rather than inside the board because it
+   * is not the board's — it answers "whose address may trade a vault", which is a question somebody
+   * asks before they have one.
+   */
+  const [agentsOpen, setAgentsOpen] = useState(false);
 
   if (screen === 'landing')
     return (
@@ -193,13 +200,6 @@ export default function App() {
         <StoppedState state={state} onWithdraw={() => void panic.withdraw().then(reread)} />
       ) : (
         <>
-      {/*
-        * Where an agent is found. Outside the owner's board on purpose: somebody deciding whose
-        * address to trust has not created a vault yet, and a page behind the connect wall is a page
-        * they cannot read.
-        */}
-      {screen === 'agents' && <Agents />}
-
       {screen === 'live' && (
         <LiveView
           state={state}
@@ -222,6 +222,7 @@ export default function App() {
           // everyone else sees the proof counter and the contracts in that column.
           owner={ceremony.isOwner === true}
           onNavigate={setScreen}
+          onAgents={() => setAgentsOpen(true)}
           onConnect={wallet.connect}
           onWithdraw={() => void panic.withdraw().then(reread)}
           onMoved={reread}
@@ -305,6 +306,8 @@ export default function App() {
       )}
         </>
       )}
+      <AgentDock onOpen={() => setAgentsOpen(true)} />
+      <AgentSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} />
       {/* One container, in the top layer — see Toasts. It no longer has to be hidden for a
           sheet to be able to raise one. */}
       <Toasts />

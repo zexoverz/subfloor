@@ -44,6 +44,7 @@ export function LiveView({
   tapeStatus,
   owner,
   onNavigate,
+  onAgents,
   onLower,
   onRaise,
   onConnect,
@@ -88,6 +89,8 @@ export function LiveView({
   /** True when the connected wallet owns the vault. False is what a stranger sees. */
   owner: boolean;
   onNavigate: (s: Screen) => void;
+  /** Opens the agent sheet from the deploy form's own field. */
+  onAgents: () => void;
   onLower: (bps: number) => void;
   onRaise: (bps: number) => void;
   onConnect: () => void;
@@ -452,7 +455,7 @@ export function LiveView({
             connected={connected}
             connecting={connecting}
             onConnect={onConnect}
-            onNavigate={onNavigate}
+            onAgents={onAgents}
             onCreateVault={onCreateVault}
             creatingVault={creatingVault}
             creatingStep={creatingStep}

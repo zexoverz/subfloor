@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Info, Loader2, Usb, Wallet as WalletIcon } from 'lucide-react';
 import { isAddress } from 'viem';
-import type { Screen } from '../types.ts';
 import { copy } from '../copy.ts';
 import { Act } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
@@ -27,7 +26,7 @@ export function PublicAside({
   connecting,
   creatingStep,
   onConnect,
-  onNavigate,
+  onAgents,
   onCreateVault,
   creatingVault,
   canCreateVault,
@@ -41,7 +40,8 @@ export function PublicAside({
   connected: boolean;
   connecting: boolean;
   onConnect: () => void;
-  onNavigate: (s: Screen) => void;
+  /** Opens the agent sheet, which is where the address in that field comes from. */
+  onAgents: () => void;
   onCreateVault: (setup: InitialSetup) => void;
   creatingVault: boolean;
   /** What the deploy is doing. One call sets six things and it is slower than it looks. */
@@ -333,20 +333,16 @@ export function PublicAside({
                       icon="wallet"
                     />
                     {/*
-                      * A way to the page, not a control that answers for them. Filling the field
-                      * from a button teaches that ours is the answer; a link lets somebody read
-                      * what an agent can reach before pasting one into their own vault.
+                      * A way to the sheet, not a control that answers for them. Filling the field
+                      * from a button teaches that ours is the answer; this lets somebody read what
+                      * an agent can reach before pasting one into their own vault.
                       */}
-                    <a
-                      href="/agents"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onNavigate('agents');
-                      }}
-                      className="-mt-1 text-[11.5px] text-floor transition-colors hover:text-ink"
+                    <button
+                      onClick={onAgents}
+                      className="-mt-1 cursor-pointer text-left text-[11.5px] text-floor transition-colors hover:text-ink"
                     >
                       {copy.wallet.agentsLink}
-                    </a>
+                    </button>
                   </div>
 
                   <div className="flex items-end gap-1">

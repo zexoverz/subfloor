@@ -1370,3 +1370,82 @@ body:has(dialog[open]) {
     display: none;
   }
 }
+
+/*
+ * The agent dock: adrift when nobody is looking, startled when they are.
+ *
+ * Two separate animations rather than one, because they mean different things. The drift is what
+ * the thing *is* — weightless, hovering, never quite still — so it is long, small and infinite. The
+ * shake is what it *does* when addressed: short, fast, and once. A single animation trying to be
+ * both reads as a nervous tic.
+ *
+ * The shake runs on the image and the drift on the button, so hovering does not restart the drift
+ * — one transform on one element cannot do two things, and interrupting a slow loop to play a fast
+ * one makes the pause visible.
+ */
+@keyframes agent-drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(2deg);
+  }
+}
+
+@keyframes agent-shake {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-9deg);
+  }
+  40% {
+    transform: rotate(7deg);
+  }
+  60% {
+    transform: rotate(-5deg);
+  }
+  80% {
+    transform: rotate(3deg);
+  }
+}
+
+.agent-dock {
+  animation: agent-drift 5.5s ease-in-out infinite;
+  /* Its own light, so it sits in the water rather than on top of the page. */
+  filter: drop-shadow(0 8px 18px rgba(0, 10, 28, 0.6)) drop-shadow(0 0 22px rgba(74, 163, 232, 0.28));
+  transition: filter 200ms ease;
+}
+
+.agent-dock:hover,
+.agent-dock:focus-visible {
+  filter: drop-shadow(0 8px 18px rgba(0, 10, 28, 0.6)) drop-shadow(0 0 30px rgba(74, 163, 232, 0.5));
+}
+
+/*
+ * The drift stops when it is reached for, and the shake takes over.
+ *
+ * Paused rather than removed, so it holds where it was instead of snapping back to centre — the
+ * thing settles under your hand rather than flinching away from it. It also makes the button a
+ * fixed target: a control that never stops moving is one a pointer has to chase, and automation
+ * refuses to click it at all on the grounds that it is never stable.
+ */
+.agent-dock:hover,
+.agent-dock:focus-visible {
+  animation-play-state: paused;
+}
+
+.agent-dock:hover .agent-dock-bot,
+.agent-dock:focus-visible .agent-dock-bot {
+  animation: agent-shake 460ms ease-in-out;
+}
+
+/* Still there, still reachable, no longer moving. */
+@media (prefers-reduced-motion: reduce) {
+  .agent-dock,
+  .agent-dock:hover .agent-dock-bot {
+    animation: none;
+  }
+}
