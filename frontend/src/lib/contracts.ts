@@ -30,6 +30,21 @@ export const registryAbi = [
   { type: 'function', name: 'guardian', stateMutability: 'view', inputs: [{ name: 'recipient', type: 'address' }], outputs: [{ type: 'address' }] },
   { type: 'function', name: 'referenceFeed', stateMutability: 'view', inputs: [{ name: 'base', type: 'address' }, { name: 'quote', type: 'address' }], outputs: [{ name: 'feed', type: 'address' }, { name: 'inverted', type: 'bool' }, { name: 'stalenessBound', type: 'uint32' }, { name: 'feedDecimals', type: 'uint8' }, { name: 'scale', type: 'uint256' }] },
   { type: 'function', name: 'nonces', stateMutability: 'view', inputs: [{ name: 'recipient', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  /*
+   * Permissionless, and that is the design rather than an oversight: it takes `recipient` as an
+   * argument and recovers the guardian from the signature, so whoever holds a valid one may submit
+   * it. The owner's wallet pays the gas; the device's signature is the authority.
+   */
+  { type: 'function', name: 'lowerFloor', stateMutability: 'nonpayable', inputs: [
+    { name: 'recipient', type: 'address' },
+    { name: 'base', type: 'address' },
+    { name: 'quote', type: 'address' },
+    { name: 'newMaxAdverseBps', type: 'uint16' },
+    { name: 'newAbsoluteRate', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+    { name: 'signature', type: 'bytes' },
+  ], outputs: [] },
   { type: 'function', name: 'raiseFloor', stateMutability: 'nonpayable', inputs: [{ name: 'base', type: 'address' }, { name: 'quote', type: 'address' }, { name: 'newMaxAdverseBps', type: 'uint16' }, { name: 'newAbsoluteRate', type: 'uint256' }], outputs: [] },
   { type: 'function', name: 'setGuardian', stateMutability: 'nonpayable', inputs: [{ name: 'newGuardian', type: 'address' }], outputs: [] },
 ] as const;

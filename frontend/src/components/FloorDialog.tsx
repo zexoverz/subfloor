@@ -122,10 +122,20 @@ export function FloorDialog({
               ['New floor', `−${bps} bps`],
               ['Binds at', `${formatPrice(price)} ${state.pair.quote}`],
             ]}
-            onDone={() => {
-              onLower(bps);
-              onClose();
+            /*
+             * The signature becomes a transaction here, and only here. It used to be dropped:
+             * `onDone` recorded the number in local state and closed the sheet, so a device that
+             * had approved a lowering changed nothing and a refresh showed the old floor. The
+             * registry is what moves a floor; a signature nobody sends is a signature nobody made.
+             */
+            onSigned={(signature) => {
+              void lowering.send(signature).then((ok) => {
+                if (!ok) return;
+                onLower(bps);
+                onClose();
+              });
             }}
+            onDone={onClose}
           />
         ) : (
         <>

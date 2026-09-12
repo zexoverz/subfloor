@@ -87,6 +87,14 @@ export function Ceremony({
         typedData={lowering.typedData}
         standing={standing}
         scheduledAt={state.pendingLowering?.effectiveAt ?? null}
+        /*
+         * Same as the sheet on the board: the signature is only worth having if something sends it.
+         * This route dropped it too, which is the half of #295 that survives fixing the payload.
+         */
+        onSigned={(signature) => {
+          if (purpose !== 'lower') return;
+          void lowering.send(signature).then((ok) => ok && onDone());
+        }}
         onDone={onDone}
         onBack={onBack}
       />
