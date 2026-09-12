@@ -153,7 +153,30 @@ export type Refusal = {
   };
 };
 
-export type TapeEntry = Fill | Refusal;
+/**
+ * A floor-weakening the registry refused, for want of the guardian's signature.
+ *
+ * It belongs on the tape because the tape is what this venue did, and refusing is the thing it
+ * does — but it is not a fill and has none of a fill's parts: no tokens moved, no price, no taker.
+ * So it takes the whole row rather than being pressed into columns it cannot fill. A refused *fill*
+ * still has an attempted rate and a floor to compare it with; a refused *weakening* has neither.
+ */
+export type Weakening = {
+  kind: 'weakening';
+  time: string;
+  ts: number;
+  tx: string;
+  hash?: string;
+  /** Who tried. On a weakening this is the delegate, which is the point of the row. */
+  from?: string;
+  /** Whose floor they tried to move. */
+  recipient?: string;
+  /** The key that would have had to sign it, and did not. */
+  guardian?: string;
+  reason: string;
+};
+
+export type TapeEntry = Fill | Refusal | Weakening;
 
 export type Mandate = { delegateLabel: string; expiresInDays: number };
 

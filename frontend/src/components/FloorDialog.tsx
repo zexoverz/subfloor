@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { copy } from '../copy.ts';
+import { useLowering } from '../lib/lowering.ts';
 import { X } from 'lucide-react';
 import { Act, Back, Locked } from './Button.tsx';
 import { FloorControl } from './FloorControl.tsx';
@@ -22,6 +23,7 @@ import type { VaultState } from '../types.ts';
 export function FloorDialog({
   state,
   wallet,
+  vault,
   open,
   onClose,
   onLower,
@@ -31,6 +33,8 @@ export function FloorDialog({
   state: VaultState;
   /** Offered as the alternative key when the registered guardian is a soft wallet. */
   wallet: import('../lib/wallet.ts').Wallet;
+  /** Whose floor is being lowered. The signature is keyed to it, so it cannot be inferred here. */
+  vault: import('viem').Address | null;
   open: boolean;
   onClose: () => void;
   onLower: (bps: number) => void;
@@ -59,6 +63,12 @@ export function FloorDialog({
   // A smaller tolerance is a stronger floor, so tightening is dragging toward the reference.
   const tightening = bps <= current;
   const price = floorPriceFromBps(state.reference.price, bps);
+  /*
+   * Built from the contract's own typehash and the registry's nonce, read on chain. The rows below
+   * are what the screen promises the device will show; this is what it actually signs, and §10 is
+   * explicit that those two must describe the same thing without being the same thing.
+   */
+  const lowering = useLowering(vault, bps, price);
   const worstEver = Math.max(...state.calibration.fillsBps.map(Math.abs));
   /*
    * Nothing registered means there is nothing to tighten or loosen: the first entry is the whole
@@ -101,6 +111,11 @@ export function FloorDialog({
           <DeviceCeremony
             expect={state.registryGuardian ?? null}
             wallet={wallet}
+            /*
+             * The struct the registry recovers a guardian from. Without it the device was asked to
+             * sign the rows below — which is not EIP-712, so the Ledger was never prompted at all.
+             */
+            typedData={lowering.typedData}
             rows={[
               ['Action', 'Lower price floor'],
               ['Pair', `${state.pair.base} / ${state.pair.quote}`],

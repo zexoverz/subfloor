@@ -30,6 +30,8 @@ export function DeviceCeremony({
   expect,
   wallet,
   onDone,
+  typedData,
+  onSigned,
 }: {
   /** Exactly what the device will render, in its order. */
   rows: [string, string][];
@@ -50,6 +52,14 @@ export function DeviceCeremony({
    */
   wallet?: Wallet;
   onDone: () => void;
+  /**
+   * The struct the device signs. Null means there is nothing to sign yet — a nonce still being
+   * read, or a floor that is not actually being lowered — and the ceremony declines to ask rather
+   * than asking for a signature over nothing.
+   */
+  typedData?: object | null;
+  /** The signature, when one is given. The caller is what sends it on chain. */
+  onSigned?: (signature: string) => void;
 }) {
   const ledger = useLedger();
   // 'absent' is about the device, and it is only a dead end when there is no other key either.
@@ -62,6 +72,8 @@ export function DeviceCeremony({
    * and treating it as a match would defeat the check entirely.
    */
   const [attached, setAttached] = useState<`0x${string}` | null>(null);
+  /** What the signer is doing, so a slow device reads as progress rather than as a hang. */
+  const [step, setStep] = useState<string | null>(null);
   const mismatch = expect && attached ? attached.toLowerCase() !== expect.toLowerCase() : false;
   /**
    * Which thing is asked, decided from the registry rather than from a preference.
@@ -139,7 +151,14 @@ export function DeviceCeremony({
                 wide
                 primary
                 busy={stage === 'waiting'}
-                busyLabel={isWallet ? 'waiting for your wallet' : 'awaiting approval on device'}
+                /* The signer's own step when it reports one: a slow device should read as busy. */
+                busyLabel={
+                  step
+                    ? step.replace('signer.eth.steps.', '')
+                    : isWallet
+                      ? 'waiting for your wallet'
+                      : 'awaiting approval on device'
+                }
                 disabled={!signer.ready}
                 onClick={async () => {
                   // Also the way back from a decline: this is what sends the answer on the screen
@@ -156,7 +175,21 @@ export function DeviceCeremony({
                     setStage('pre');
                     return;
                   }
-                  const signature = await signer.signTypedData({ rows });
+                  /*
+                   * The payload, not the picture of it.
+                   *
+                   * This used to hand `{ rows }` to the signer — the strings drawn on screen. The
+                   * device is asked for a signature over a struct the contract will recover a
+                   * guardian from, and a faithful rendering of the same numbers is not that struct.
+                   * The rows stay what they always were: what the screen promises the device will
+                   * show, so the owner can compare. They were never the thing to sign.
+                   */
+                  if (!typedData) {
+                    setStage('pre');
+                    return;
+                  }
+                  const signature = await signer.signTypedData(typedData, setStep);
+                  if (signature) onSigned?.(signature);
                   setStage(signature ? 'signed' : 'declined');
                 }}
               >

@@ -469,6 +469,7 @@ export function LiveView({
         <FloorDialog
           state={state}
           wallet={wallet}
+          vault={(vault as `0x${string}` | null) ?? null}
           open={adjusting}
           // Opened from the card's handle, so it starts where that handle was left rather than
           // making the owner find the same number a second time.

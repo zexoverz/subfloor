@@ -225,6 +225,16 @@ type RefusalRow = {
   quote: { id: string };
 };
 
+/** A refused weakening, as the endpoint reports it. No amounts: nothing was going to move. */
+type WeakeningRow = {
+  hash: string;
+  from?: string;
+  recipient?: string;
+  guardian?: string;
+  reason: string;
+  ts: number;
+};
+
 type RefusalsBody = {
   floorRefusals: number;
   fills: number;
@@ -238,6 +248,16 @@ type RefusalsBody = {
    * as a zero.
    */
   weakeningRefusals?: number;
+  /** The recent ones, with the key that would have had to sign each and did not. */
+  weakenings?: {
+    hash: string;
+    blockNumber: string;
+    reason: string;
+    from?: string;
+    recipient?: string;
+    guardian?: string;
+    timestamp?: number;
+  }[];
   recent: {
     hash: string;
     blockNumber: string;
@@ -271,7 +291,12 @@ async function blockTime(blockNumber: string): Promise<number> {
  */
 async function askRefusals(
   vault: Address | null,
-): Promise<{ fills: number; weakeningRefusals?: number; recent: RefusalRow[] } | null> {
+): Promise<{
+  fills: number;
+  weakeningRefusals?: number;
+  recent: RefusalRow[];
+  weakenings: WeakeningRow[];
+} | null> {
   try {
     // No query string: the endpoint's own default returns more rows than this tape shows.
     const response = await fetch('/api/refusals');
@@ -282,6 +307,23 @@ async function askRefusals(
       // Venue-wide and not filtered by vault, because a weakening is refused at the registry rather
       // than at a fill — passing it through undefined keeps "not reported" distinct from "none".
       weakeningRefusals: body.weakeningRefusals,
+      /*
+       * Filtered by whose floor was targeted, not by who tried. On this tape the row answers "what
+       * happened to my floor", and the sender is the answer to a different question — the same
+       * reasoning the refusals above are filtered by `recipient`.
+       */
+      weakenings: await Promise.all(
+        (body.weakenings ?? [])
+          .filter((w) => !vault || w.recipient?.toLowerCase() === vault.toLowerCase())
+          .map(async (w) => ({
+            hash: w.hash,
+            from: w.from,
+            recipient: w.recipient,
+            guardian: w.guardian,
+            reason: w.reason,
+            ts: w.timestamp ?? (await blockTime(w.blockNumber)),
+          })),
+      ),
       // Only the floor's own refusal belongs on this tape. Another revert is a different story.
       recent: await Promise.all(
         (body.recent ?? [])
@@ -561,6 +603,22 @@ export function useIndex(vault: Address | null, scope: 'mine' | 'public' = 'mine
             gaveSymbol: TOKENS[refusal.base.id.toLowerCase()]?.symbol ?? '?',
             gotSymbol: TOKENS[refusal.quote.id.toLowerCase()]?.symbol ?? '?',
           },
+        })),
+        /*
+         * Refused weakenings on the same tape, in the same order, because the tape is what this
+         * venue did and both of these are it refusing. They are not fills and do not pretend to be:
+         * the row takes the whole width rather than leaving six columns dashed.
+         */
+        ...(refused?.weakenings ?? []).map((w: WeakeningRow) => ({
+          kind: 'weakening' as const,
+          ts: w.ts,
+          time: w.ts ? clock(String(w.ts)) : '—',
+          tx: w.hash.slice(0, 6),
+          hash: w.hash,
+          from: w.from,
+          recipient: w.recipient,
+          guardian: w.guardian,
+          reason: w.reason,
         })),
       ].sort((a, b) => b.ts - a.ts);
 

@@ -1,4 +1,5 @@
 import { DeviceSign } from '../DeviceSign.tsx';
+import { useLowering } from '../../lib/lowering.ts';
 import { useLedger } from '../../lib/ledger.ts';
 import type { Wallet } from '../../lib/wallet.ts';
 import { Todo } from '../Card.tsx';
@@ -17,6 +18,7 @@ export function Ceremony({
   wallet,
   draftBps,
   purpose,
+  vault,
   onDone,
   onBack,
 }: {
@@ -26,6 +28,8 @@ export function Ceremony({
   draftBps: number;
   /** Which of the two hardware moments this is. They sign different things and must say so. */
   purpose: 'mandate' | 'lower';
+  /** Whose floor. The lowering signature is keyed to the recipient, so it cannot be inferred. */
+  vault: `0x${string}` | null;
   onDone: () => void;
   onBack: () => void;
 }) {
@@ -39,6 +43,14 @@ export function Ceremony({
   // What the device will render. In the shipped app both sides come from one ERC-7730 descriptor:
   // a screen that disagrees with the device is a stop-everything bug, and this correspondence is
   // the only reason clear-signing means anything at all.
+  /*
+   * What the device actually signs, beside `rows`, which is what the screen promises it will show.
+   * §10 makes that correspondence the point of clear-signing: the two must describe the same thing
+   * without being the same thing, and handing the rows to the signer — which is what happened
+   * before — makes them the same thing and signs nothing the contract will accept.
+   */
+  const lowering = useLowering(vault, draftBps, bindsAt);
+
   const rows: [string, string][] =
     purpose === 'lower'
       ? [
@@ -66,8 +78,13 @@ export function Ceremony({
         purpose={purpose}
         ledger={ledger}
         wallet={wallet}
-        // The lowering payload is not built yet; the panel refuses to sign rather than send noise.
-        typedData={null}
+        /*
+         * Built now, from the registry's typehash and its nonce. It used to be null with a note
+         * saying the payload did not exist — which was honest, and meant the device was never
+         * prompted on this route at all. The mandate is signed in the sheet on the board, so
+         * lowering is the only thing this route can be about.
+         */
+        typedData={lowering.typedData}
         standing={standing}
         scheduledAt={state.pendingLowering?.effectiveAt ?? null}
         onDone={onDone}

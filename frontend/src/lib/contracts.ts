@@ -97,6 +97,34 @@ export const mandateTypes = {
   ],
 } as const;
 
+/**
+ * EIP-712 for lowering a floor, matching `_FLOOR_LOWERING_TYPEHASH` field for field.
+ *
+ * The registry hashes `FloorLowering(address recipient,address base,address quote,uint16
+ * maxAdverseBps,uint256 absoluteRate,uint256 nonce,uint256 deadline)` and recovers the guardian
+ * from it. A signature over anything else is refused — which is the whole asymmetry §5.1 is built
+ * on, and the reason this cannot be approximated from what the screen happens to display.
+ */
+export const loweringTypes = {
+  FloorLowering: [
+    { name: 'recipient', type: 'address' },
+    { name: 'base', type: 'address' },
+    { name: 'quote', type: 'address' },
+    { name: 'maxAdverseBps', type: 'uint16' },
+    { name: 'absoluteRate', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ],
+} as const;
+
+/** `EIP712("SUBFLOOR FloorRegistry", "1")`, and the verifying contract is the registry itself. */
+export const loweringDomain = (chainId: number, registry: Address) => ({
+  name: 'SUBFLOOR FloorRegistry',
+  version: '1',
+  chainId,
+  verifyingContract: registry,
+});
+
 export const mandateDomain = (chainId: number, vault: Address) => ({
   name: 'SUBFLOOR AquaGuardVault',
   version: '1',

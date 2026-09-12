@@ -645,6 +645,8 @@ export const copy = {
   },
 
   refusal: {
+    weakeningHeading: 'THE FLOOR DID NOT MOVE',
+    weakeningBody: 'tried to lower a floor without the guardian\'s signature, and the registry refused —',
     /** §10 of the 7 Sep spec renames this. Contract names (FloorRegistry, SettledBelowFloor) do not change. */
     heading: 'THE SUBFLOOR HELD',
     attempted: 'attempted',

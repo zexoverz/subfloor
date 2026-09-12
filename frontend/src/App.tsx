@@ -298,6 +298,7 @@ export default function App() {
           wallet={wallet}
           draftBps={draftBps}
           purpose={purpose}
+          vault={vault}
           onDone={() => setScreen('live')}
           onBack={() => setScreen('live')}
         />

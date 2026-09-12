@@ -8,6 +8,7 @@ import {
   Crosshair,
   ExternalLink,
   Filter,
+  KeyRound,
   ShieldCheck,
   TrendingUp,
   UserRound,
@@ -17,7 +18,7 @@ import { copy } from '../copy.ts';
 import { formatBps, formatPrice } from '../lib/rate.ts';
 import { decodeRefusal } from '../lib/refusal.ts';
 import { RefusalDetail } from './RefusalCard.tsx';
-import type { Fill, Pair, Refusal, TapeEntry } from '../types.ts';
+import type { Fill, Pair, Refusal, TapeEntry, Weakening } from '../types.ts';
 import { txUrl } from '../lib/chain.ts';
 import { AddressChip } from './AddressChip.tsx';
 import { RowHint, type Hint } from './RowHint.tsx';
@@ -235,6 +236,8 @@ export function Tape({
           {status !== 'loading' && shown.map((entry) =>
             entry.kind === 'fill' ? (
               <FillRows key={entry.tx} entry={entry} pair={pair} onHint={onHint} />
+            ) : entry.kind === 'weakening' ? (
+              <WeakeningRow key={entry.tx} entry={entry} />
             ) : (
               <RefusalRows key={entry.tx} entry={entry} onHint={onHint} />
             ),
@@ -309,6 +312,48 @@ function TakerFilter({
           ))}
       </div>
     </details>
+  );
+}
+
+/**
+ * A refused floor-weakening, taking the whole row.
+ *
+ * It is on this tape because the tape is what the venue did, and refusing is the thing it does —
+ * but it is not a fill and none of a fill's columns apply: nothing moved, so there is no amount, no
+ * price and no counterparty who received anything. Pressed into those columns it would render as a
+ * row of dashes and a zero, which is how the refusal rows came to say `$0.00` (#230).
+ *
+ * So: one span, one sentence, and the transaction. The sentence is the whole content because the
+ * whole content is one fact — somebody tried to move a floor and did not have the key.
+ */
+function WeakeningRow({ entry }: { entry: Weakening }) {
+  return (
+    <tr className="bg-refuse-wash [&>td]:border-b [&>td]:border-rule">
+      <td colSpan={8} className="px-4 py-3 text-[12px]">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <KeyRound size={13} strokeWidth={1.9} aria-hidden className="shrink-0 text-refuse" />
+          <b className="font-semibold text-refuse">{copy.refusal.weakeningHeading}</b>
+          <span className="text-muted">{copy.refusal.weakeningBody}</span>
+          {entry.from && <AddressChip address={entry.from} size={13} />}
+          <span className="ml-auto flex items-center gap-3">
+            <span className="t-num text-faint">{entry.time}</span>
+            {entry.hash ? (
+              <a
+                href={txUrl(entry.hash)}
+                target="_blank"
+                rel="noreferrer"
+                className="t-num inline-flex items-center gap-1 text-floor hover:text-ink"
+              >
+                {entry.tx}…
+                <ExternalLink size={11} strokeWidth={1.9} />
+              </a>
+            ) : (
+              <span className="t-num text-faint">{entry.tx}…</span>
+            )}
+          </span>
+        </span>
+      </td>
+    </tr>
   );
 }
 
