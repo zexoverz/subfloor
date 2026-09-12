@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Info, X } from 'lucide-react';
 import { copy } from '../copy.ts';
-import { CardBody, CardHead } from './Card.tsx';
 import { AddressChip } from './AddressChip.tsx';
 import { Tooltip } from './Tooltip.tsx';
 import { identicon } from '../lib/identicon.ts';
@@ -31,7 +30,7 @@ function CopyAddress({ address }: { address: string }) {
           setTimeout(() => setDone(false), 1600);
         });
       }}
-      className="inline-flex w-full cursor-pointer items-center gap-2 rounded-xl border border-rule bg-sunken px-3 py-2 font-mono text-[12px] break-all text-ink transition-colors hover:border-floor"
+      className="well inline-flex w-full cursor-pointer items-center gap-2 rounded-xl bg-sunken px-3.5 py-2.5 font-mono text-[12px] break-all text-ink transition-colors hover:text-floor"
     >
       {done ? (
         <Check size={13} strokeWidth={2.2} className="shrink-0 text-floor" />
@@ -156,9 +155,17 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
           * prevent — so there is nothing here about what it is thinking, only books the chain
           * accepted. A decision is a claim; a shipped book is a fact.
           */}
-        <div className="mt-4 rounded-xl border border-rule">
-          <CardHead left={copy.agents.logTitle} right={copy.agents.logTag} />
-          <CardBody>
+        {/*
+          * A well, not a bordered card — the same recess the floor control sits in. A panel that
+          * holds a reading belongs *in* the sheet rather than on it, and the inset edge is what
+          * says so; an outline would make this a second card floating on a card.
+          */}
+        <div className="well mt-4 overflow-hidden rounded-xl bg-sunken">
+          <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2 t-label text-faint">
+            <span>{copy.agents.logTitle}</span>
+            <span>{copy.agents.logTag}</span>
+          </div>
+          <div className="px-4 pb-3.5">
             {log.status === 'failed' ? (
               <p className="serif m-0 text-[13px] leading-relaxed text-faint">{copy.agents.logFailed}</p>
             ) : log.status === 'loading' ? (
@@ -179,7 +186,12 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
                         (h, k) => (
                           <th
                             key={h}
-                            className={`sticky top-0 z-10 border-b border-rule bg-sunken t-label px-3 py-2.5 text-faint ${
+                            /*
+                              * No background of its own: it is already inside the well, and
+                              * `bg-sunken` on `bg-sunken` is an invisible header that still costs
+                              * a rule. The line under it is what separates it.
+                              */
+                            className={`sticky top-0 z-10 border-b border-rule/70 bg-sunken t-label px-3 py-2 text-faint ${
                               k === 3 ? 'text-right' : 'text-left'
                             }`}
                           >
@@ -209,7 +221,7 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
                 </table>
               </div>
             )}
-          </CardBody>
+          </div>
         </div>
 
         <p className="m-0 mt-2.5 text-[12px] leading-relaxed text-faint">
