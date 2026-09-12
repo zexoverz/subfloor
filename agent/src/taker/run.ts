@@ -17,9 +17,9 @@ function line(o: Outcome): string {
   const side = `${o.tokenIn.slice(0, 8)}…`;
   switch (o.kind) {
     case "filled":
-      return `${at}  filled   in=${o.amountIn} out=${o.amountOut} edge=${o.edgeBps}bps  ${o.hash}`;
+      return `${at}  filled   ${o.maker?.slice(0, 10)}… in=${o.amountIn} out=${o.amountOut} edge=${o.edgeBps}bps  ${o.hash}`;
     case "refused":
-      return `${at}  REFUSED  in=${o.amountIn} rate=${o.floor?.executionRate} floor=${o.floor?.floorRate}  the floor held`;
+      return `${at}  REFUSED  ${o.maker?.slice(0, 10)}… in=${o.amountIn} rate=${o.floor?.executionRate} floor=${o.floor?.floorRate}  the floor held`;
     case "no-quote":
       return `${at}  no quote ${side} ${o.reason ?? ""}`;
     default:
@@ -32,7 +32,10 @@ async function main() {
   const clients = clientsFromEnv(cfg);
 
   console.log(`taker ${clients.account.address}`);
-  console.log(`router ${cfg.router}  vault ${cfg.vault}  every ${cfg.intervalMs}ms  edge >= ${cfg.edgeBps}bps`);
+  console.log(
+    `router ${cfg.router}  makers ${cfg.vaults.length ? cfg.vaults.join(",") : "every one on the venue"}` +
+      `  every ${cfg.intervalMs}ms  edge >= ${cfg.edgeBps}bps`,
+  );
 
   const once = process.argv.includes("--once");
   let spendWeth = false;

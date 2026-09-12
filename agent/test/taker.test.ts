@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decodeFloorRevert, edgeBpsOf, rateOf, referenceRateFor } from "../src/taker/bot.ts";
+import {
+  configFromEnv,
+  decodeFloorRevert,
+  DOCKED_TOPIC0,
+  edgeBpsOf,
+  liveFrom,
+  rateOf,
+  referenceRateFor,
+  SHIPPED_TOPIC0,
+} from "../src/taker/bot.ts";
 import { decodeShipped, isAToB, pairOf } from "../src/taker/order.ts";
 
 /// The blob below is a real `Shipped` payload, from
@@ -76,4 +85,51 @@ test("a SettledBelowFloor revert is decoded into the two rates it carries", () =
 test("an unrelated revert is not mistaken for a refusal", () => {
   assert.equal(decodeFloorRevert({ cause: { data: "0xdeadbeef" } }), null);
   assert.equal(decodeFloorRevert(new Error("connection reset")), null);
+});
+
+/// Which books a taker can see at all. It watched one address, so the house agent could ship for a
+/// stranger's vault and nothing ever took it — the owner watched a book nobody filled.
+const MAKER_A = ("0x" + "a1".repeat(20)) as `0x${string}`;
+const MAKER_B = ("0x" + "b2".repeat(20)) as `0x${string}`;
+const word = (v: string | number) => (typeof v === "number" ? v.toString(16) : v.replace(/^0x/, "")).padStart(64, "0");
+
+/// `Shipped(maker, app, strategyHash, bytes strategy)` as Aqua emits it: four words, then the blob's
+/// length and the blob. `Docked` is the same three addresses and hash with nothing after them.
+function shippedLog(maker: string, hash: string, strategy: string) {
+  const body = strategy.replace(/^0x/, "");
+  return {
+    topic0: SHIPPED_TOPIC0,
+    data: ("0x" + word(maker) + word(MAKER_A) + word(hash) + word(128) + word(body.length / 2) + body) as `0x${string}`,
+  };
+}
+const dockedLog = (hash: string) => ({
+  topic0: DOCKED_TOPIC0,
+  data: ("0x" + word(MAKER_A) + word(MAKER_A) + word(hash)) as `0x${string}`,
+});
+
+test("every maker's book is on offer, and only the named ones when the taker is narrowed", () => {
+  const logs = [shippedLog(MAKER_A, "0x" + "11".repeat(32), SHIPPED), shippedLog(MAKER_B, "0x" + "22".repeat(32), SHIPPED)];
+  assert.equal(liveFrom(logs, []).length, 2, "an empty list means the whole venue");
+  assert.deepEqual(
+    liveFrom(logs, [MAKER_B]).map((o) => o.strategyHash),
+    ["0x" + "22".repeat(32)],
+  );
+});
+
+test("a docked book is not on offer", () => {
+  const hash = "0x" + "33".repeat(32);
+  assert.deepEqual(liveFrom([shippedLog(MAKER_A, hash, SHIPPED), dockedLog(hash)], []), []);
+});
+
+test("SUBFLOOR_VAULT is a list of makers, and empty is every maker", () => {
+  const before = process.env.SUBFLOOR_VAULT;
+  try {
+    process.env.SUBFLOOR_VAULT = ` ${MAKER_A}, ${MAKER_B} `;
+    assert.deepEqual(configFromEnv().vaults, [MAKER_A, MAKER_B]);
+    process.env.SUBFLOOR_VAULT = "";
+    assert.deepEqual(configFromEnv().vaults, []);
+  } finally {
+    if (before === undefined) delete process.env.SUBFLOOR_VAULT;
+    else process.env.SUBFLOOR_VAULT = before;
+  }
 });

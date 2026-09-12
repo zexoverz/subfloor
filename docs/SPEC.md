@@ -1321,11 +1321,18 @@ Broadcast the **two injection reverts** (§7) on mainnet during the run window.
 ### Fill-flow honesty — must be disclosed in the submission
 
 Organic takers will not find a nine-day-old Aqua app. Run a **self-operated taker bot from a
-separate funded EOA** that takes the vault's quotes when they cross CEX mid. The fills are real
+separate funded EOA** that takes **any maker's** quotes when they cross CEX mid. The fills are real
 on-chain transfers with real gas and real adverse selection. **State plainly that the taker is
 ours**, and frame the measurement as execution quality, not organic demand. Prior art that makes
 this framing credible: the builder ran a 72-hour on-chain execution-quality harness on Monad —
 11,050 swaps, median 20.8 bps CEX-DEX gap — cite it.
+
+**Corrected 12 Sep (#290).** The bot read one vault address and filtered Aqua's `Shipped` events by
+it, so the house agent could ship a book for a stranger's vault and nothing ever took it: the second
+vault's owner watched a book nobody filled. It takes every maker on the venue now, and
+`SUBFLOOR_VAULT` narrows that to a list when an operator wants it narrow. A taker that trades with
+one maker is not a taker, and on a venue whose whole argument is that it serves strangers, it made
+the product look dead to everyone but us.
 
 This also satisfies the 1inch qualification directly: **on-chain execution of token transfers
 presented during the final demo** — at least one SUCCESSFUL fill with visible token transfers
