@@ -208,6 +208,16 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
   const tokenIn = spendWeth ? cfg.tokens.weth : cfg.tokens.quote;
   const amountIn = spendWeth ? cfg.sizes.weth : cfg.sizes.quote;
 
+  // A taker with nothing to spend on this side is not a venue problem, and it should say so rather
+  // than reverting `SafeTransferFromFailed` once per book: that is what the WETH side did for hours
+  // on 11 Sep, reading as a broken venue when the bot had simply run out.
+  const held = (await c.pub.readContract({
+    address: tokenIn, abi: ERC20_ABI, functionName: "balanceOf", args: [c.account.address],
+  })) as bigint;
+  if (held < amountIn) {
+    return { kind: "skipped", tokenIn, amountIn, reason: `the taker holds ${held} of this token, less than the ${amountIn} it would spend` };
+  }
+
   // Newest book first, every maker unless the config narrows it. The pass stops at the first book
   // that fills or is refused; the others were quotes not worth taking, and the last of those is what
   // gets reported, so the log still says why nothing happened.
@@ -216,9 +226,16 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
 
   let last: Outcome | null = null;
   for (const order of orders) {
-    const outcome = await attempt(c, cfg, spendWeth, order);
-    if (outcome.kind === "filled" || outcome.kind === "refused") return outcome;
-    last = outcome;
+    try {
+      const outcome = await attempt(c, cfg, spendWeth, order);
+      if (outcome.kind === "filled" || outcome.kind === "refused") return outcome;
+      last = outcome;
+    } catch (err) {
+      // One book that reverts for a reason this bot does not recognise is that maker's problem. It
+      // used to end the pass, which on a venue with several makers means one broken book stops
+      // everyone else from being taken.
+      last = { kind: "no-quote", maker: order.maker, tokenIn, amountIn, reason: (err as Error).message.split("\n")[0] };
+    }
   }
   return last as Outcome;
 }
