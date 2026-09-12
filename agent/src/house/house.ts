@@ -131,6 +131,10 @@ export async function plan(
   const byVault = new Map<string, StoredMandate[]>();
   for (const m of mandates) {
     if (!same(m.message.delegate, cfg.delegate)) continue;
+    // Only mandates for this house's router. One store outlives a redeploy, so a mandate signed for
+    // the old (e.g. testnet) router survives a switch — and reading its vault on the new chain, where
+    // that address has no code, throws and takes the whole cycle down before any live vault is served.
+    if (!same(m.message.app, cfg.router)) continue;
     const k = m.vault.toLowerCase();
     byVault.set(k, [...(byVault.get(k) ?? []), m]);
   }
