@@ -1,7 +1,7 @@
 import type { Address, Hex } from "viem";
 import { decide, type Action } from "../policy/decide.ts";
 import { composeBook } from "../compose/book.ts";
-import { dockCalldata, shipCalldata, updateQuoteCalldata, type Mandate } from "../vault/ship.ts";
+import { dockCalldata, rescueApprovalCalldata, shipCalldata, updateQuoteCalldata, type Mandate } from "../vault/ship.ts";
 import type { IndexView, OpenStrategy } from "../market/index-reads.ts";
 
 /// The house agent: one delegate for every vault that names it.
@@ -29,6 +29,8 @@ export interface HouseConfig {
   router: Address;
   /// Where each vault's floor is read from, so its book is composed inside it.
   registry: Address;
+  /// The venue the vault approves, so the agent can see when a book can no longer deliver.
+  aqua: Address;
   maxReferenceAgeSeconds: number;
   maxIndexLagBlocks: number;
   recenterBps: number;
@@ -49,6 +51,16 @@ export interface VaultChain {
   /// The vault's own tolerance in bps, one per direction (`tokens[0]` given, then `tokens[1]` given).
   /// `null` where no relative floor is configured for that direction.
   floorBps(vault: Address, tokens: Address[]): Promise<(number | null)[]>;
+  /// What the vault currently lets Aqua pull, per token.
+  allowances(vault: Address, tokens: Address[]): Promise<bigint[]>;
+}
+
+/// A book is starved when the vault lets Aqua pull less than a quarter of what it committed in some
+/// token. Pulls spend the allowance and pushes never refill it (#250), so a side that has been
+/// taken through stops delivering while the book still quotes it, and the taker reads
+/// `SafeTransferFromFailed` off a venue that looks alive. Below a quarter, the book is put back.
+export function starved(committed: bigint[], allowances: bigint[]): number {
+  return committed.findIndex((c, i) => c > 0n && (allowances[i] ?? 0n) * 4n < c);
 }
 
 /// How wide a book may be on a vault whose floor is `toleranceBps`.
@@ -68,6 +80,7 @@ export function widthsFor(cfg: Pick<HouseConfig, "spreadBps" | "recenterBps">, f
 export type Step =
   | { vault: Address; kind: "ship" | "recenter"; data: Hex; nonce: bigint; referencePrice: bigint; why: string }
   | { vault: Address; kind: "dock"; data: Hex; strategyHash: string; why: string }
+  | { vault: Address; kind: "rescue"; data: Hex; token: Address; why: string }
   | { vault: Address; kind: "hold" | "unauthorised" | "waiting"; why: string };
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
@@ -178,7 +191,23 @@ export async function plan(
       steps.push({ vault, kind: "dock", strategyHash: book.strategyHash, data: dockCalldata(cfg.router, book.strategyHash as Hex, tokens), why: action.why });
       continue;
     }
-    if (action.kind === "hold" || action.kind === "unauthorised") {
+    // A book that can no longer deliver is put back before drift is even considered: dock it, zero
+    // both approvals and the commitment record they track, then ship fresh below. `updateQuote`
+    // would not do: it releases only the old book's outstanding balance, so what was already pulled
+    // stays counted as committed and every re-quote ships less until the cap is spent on nothing.
+    let refreshing = false;
+    if (book) {
+      const [live, allowed] = await Promise.all([chain.committed(vault, tokens), chain.allowances(vault, tokens)]);
+      const i = starved(live, allowed);
+      if (i !== -1) {
+        refreshing = true;
+        const why = `the book can deliver ${allowed[i]} of the ${live[i]} it committed in ${tokens[i]}; putting it back`;
+        steps.push({ vault, kind: "dock", strategyHash: book.strategyHash, data: dockCalldata(cfg.router, book.strategyHash as Hex, tokens), why });
+        for (const token of tokens) steps.push({ vault, kind: "rescue", token, data: rescueApprovalCalldata(token), why });
+      }
+    }
+
+    if (!refreshing && (action.kind === "hold" || action.kind === "unauthorised")) {
       steps.push({ vault, kind: action.kind, why: action.why });
       continue;
     }
@@ -195,7 +224,8 @@ export async function plan(
     const mandate = mandateOf(next);
     const held = await chain.balances(vault, tokens);
     // The cap binds everything live at once. A re-quote docks the old book and releases it inside
-    // the same call, so only a first ship has to leave room for what is already committed.
+    // the same call, and a refresh has just zeroed the record, so only a first ship has to leave
+    // room for what is already committed.
     const committedNow = book ? tokens.map(() => 0n) : await chain.committed(vault, tokens);
     const amounts = tokens.map((_, i) => {
       const cap = mandate.maxAmounts[i] ?? 0n;
@@ -229,7 +259,7 @@ export async function plan(
       useAquaInsteadOfSignature: true,
     };
 
-    if (book) {
+    if (book && !refreshing) {
       steps.push({
         vault,
         kind: "recenter",

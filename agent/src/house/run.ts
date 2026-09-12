@@ -24,6 +24,7 @@ const VAULT_ABI = [
 ] as const;
 const ERC20_ABI = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "allowance", stateMutability: "view", inputs: [{ type: "address" }, { type: "address" }], outputs: [{ type: "uint256" }] },
 ] as const;
 const REGISTRY_ABI = [
   { type: "function", name: "floor", stateMutability: "view", inputs: [{ type: "address" }, { type: "address" }, { type: "address" }],
@@ -45,6 +46,7 @@ export async function runHouse(key: Hex | undefined = process.env.SUBFLOOR_DELEG
     delegate: account.address,
     router: (process.env.SUBFLOOR_ROUTER ?? "0x03189D102286fa8cDd0fBF3578B492e67e665A27") as Address,
     registry: (process.env.SUBFLOOR_REGISTRY ?? "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123") as Address,
+    aqua: (process.env.SUBFLOOR_AQUA ?? "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB") as Address,
     maxReferenceAgeSeconds: policy.maxReferenceAgeSeconds,
     maxIndexLagBlocks: policy.maxIndexLagBlocks,
     recenterBps: policy.recenterBps,
@@ -62,6 +64,8 @@ export async function runHouse(key: Hex | undefined = process.env.SUBFLOOR_DELEG
       Promise.all(tokens.map((t) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "committed", args: [t] }))),
     balances: (vault, tokens) =>
       Promise.all(tokens.map((t) => client.readContract({ address: t, abi: ERC20_ABI, functionName: "balanceOf", args: [vault] }))),
+    allowances: (vault, tokens) =>
+      Promise.all(tokens.map((t) => client.readContract({ address: t, abi: ERC20_ABI, functionName: "allowance", args: [vault, cfg.aqua] }))),
     // floor[recipient][given][received]: the first entry is the vault giving tokens[0].
     floorBps: async (vault, [a, b]) =>
       Promise.all([[a, b], [b, a]].map(async ([given, received]) => {
@@ -123,7 +127,7 @@ export async function runHouse(key: Hex | undefined = process.env.SUBFLOOR_DELEG
         const steps = await plan(cfg, index, head, lastMandates, chain, pending, now);
         if (steps.length === 0) console.log("[house] no vault has handed this agent a mandate yet");
         for (const s of steps) {
-          if (s.kind === "ship" || s.kind === "recenter" || s.kind === "dock") {
+          if (s.kind === "ship" || s.kind === "recenter" || s.kind === "dock" || s.kind === "rescue") {
             console.log(`[house] ${s.vault} ${s.kind} — ${s.why}`);
             await send(s.vault, s.data, s.kind).catch((e) => console.log(`[house] ${s.vault} ${s.kind} failed: ${(e as Error).message}`));
           } else {

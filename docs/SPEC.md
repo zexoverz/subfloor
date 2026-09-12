@@ -1347,6 +1347,14 @@ takes the house's fresh quotes rather than only decayed ones; each maker's floor
 maker, not the taker's threshold. And a pass now logs every book it tried, not the last one, which is
 the line that would have shown this a day earlier.
 
+**The next thing that line showed, ten minutes later, was `#250`.** Aqua's pulls spend the vault's
+ERC20 allowance and its pushes never refill it, so a side that has been taken through stops
+delivering while the book still quotes it: `SafeTransferFromFailed` on a venue that looks alive. The
+house agent now reads the allowance beside `committed` and, under a quarter, puts the book back —
+dock, `rescueApproval` on each token, ship fresh — rather than `updateQuote`, whose release counts
+what was already pulled as still committed and ships less each time. The vault's accounting is
+unchanged and `#250` stays open as a contract fix; on this deployment the agent carries it.
+
 This also satisfies the 1inch qualification directly: **on-chain execution of token transfers
 presented during the final demo** — at least one SUCCESSFUL fill with visible token transfers
 must be in the video, not only reverts.
