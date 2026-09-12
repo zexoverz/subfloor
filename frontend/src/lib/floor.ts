@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { Address } from 'viem';
 import { chain } from './chain.ts';
-import { addresses, raiseFloorAsVault, registryAbi } from './contracts.ts';
+import { encodeFunctionData } from 'viem';
+import { addresses, raiseFloorAsVault, registryAbi, vaultAbi } from './contracts.ts';
 import { publicClient } from './client.ts';
 import { USDC, WETH } from './tokens.ts';
 
@@ -55,28 +56,74 @@ export function useFloor(vault: Address | null): FloorWrite {
          * strengthening and a weakening in one call, and the registry refuses the pair. The raise
          * button was dead for every such vault, with nothing on screen to say why.
          */
-        for (const [base, quote, label] of [
+        const directions = [
           [WETH, USDC, 'selling WETH'],
           [USDC, WETH, 'selling USDC'],
-        ] as const) {
-          setStep(label);
-          /*
-           * Read per direction, because the two are separate entries and need not agree — a vault
-           * can carry a backstop on one side and none on the other.
-           */
-          const [, , absolute] = (await publicClient.readContract({
-            address: addresses.registry as Address,
-            abi: registryAbi,
-            functionName: 'floor',
-            args: [vault, base, quote],
-          })) as [boolean, number, bigint];
+        ] as const;
 
-          const hash = await core.writeContract(config, {
-            ...raiseFloorAsVault(vault, base, quote, maxAdverseBps, absolute),
+        /*
+         * Read per direction, because the two are separate entries and need not agree — a vault can
+         * carry a backstop on one side and none on the other, and this one does.
+         */
+        setStep('reading the floors');
+        const calls = await Promise.all(
+          directions.map(async ([base, quote]) => {
+            const [, , absolute] = (await publicClient.readContract({
+              address: addresses.registry as Address,
+              abi: registryAbi,
+              functionName: 'floor',
+              args: [vault, base, quote],
+            })) as [boolean, number, bigint];
+            /*
+             * Encoded here rather than handed over as a wagmi config: `sendCalls` wants bytes, and
+             * `raiseFloorAsVault` describes the call for `writeContract`. Same call either way —
+             * the sequential path below reuses the same args, so the two cannot drift.
+             */
+            const call = raiseFloorAsVault(vault, base, quote, maxAdverseBps, absolute);
+            return {
+              to: call.address,
+              data: encodeFunctionData({ abi: call.abi, functionName: call.functionName, args: call.args }),
+              args: call.args,
+            };
+          }),
+        );
+
+        /*
+         * One press for both directions, where the wallet can do it.
+         *
+         * A floor is two entries and setting one without the other is not a partial guarantee but
+         * the absence of one — so the owner was asked to approve twice for a single decision, and a
+         * wallet dismissed between the two left a vault protected one way. EIP-5792 lets the two go
+         * as one batch, which makes the pair atomic in the only place the owner can see.
+         *
+         * Fallen back from rather than detected: `getCapabilities` is itself unevenly implemented,
+         * so asking whether a wallet can do this is about as reliable as trying. The sequential
+         * path stays exactly as it was, and a wallet without 5792 notices nothing.
+         */
+        try {
+          setStep('both directions');
+          const { id } = await core.sendCalls(config, {
+            // Only `to` and `data`: the union also accepts an abi form, and passing extra keys
+            // beside `data` makes it ambiguous which member is meant.
+            calls: calls.map(({ to, data }) => ({ to, data })),
             chainId: chain.id,
           });
-          const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
-          if (receipt.status !== 'success') throw new Error(`the floor for ${label} was not set`);
+          const status = await core.waitForCallsStatus(config, { id });
+          if (status.status !== 'success') throw new Error('the batch did not complete');
+        } catch {
+          for (const [i, [, , label]] of directions.entries()) {
+            setStep(label);
+            const call = calls[i]!;
+            const hash = await core.writeContract(config, {
+              address: call.to,
+              abi: vaultAbi,
+              functionName: 'execute',
+              args: call.args,
+              chainId: chain.id,
+            });
+            const receipt = await core.waitForTransactionReceipt(config, { hash, chainId: chain.id });
+            if (receipt.status !== 'success') throw new Error(`the floor for ${label} was not set`);
+          }
         }
         // Deliberately says what was asked for, not what now holds. What holds is read back from
         // the registry by the ceremony, and that read is what the screen goes on to show.
