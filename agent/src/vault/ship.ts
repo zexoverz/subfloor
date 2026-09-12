@@ -106,6 +106,13 @@ const VAULT_SHIP_ABI = [
     ],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "rescueApproval",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [],
+  },
 ] as const;
 
 export interface ShipArgs extends OrderArgs {
@@ -176,4 +183,11 @@ export function updateQuoteCalldata(args: ShipArgs & { oldStrategyHash: Hex }): 
 /// only stop trading and never worsen a price — the fail-safe direction, so software may hold it.
 export function dockCalldata(app: Address, strategyHash: Hex, tokens: Address[]): Hex {
   return encodeFunctionData({ abi: VAULT_SHIP_ABI, functionName: "dock", args: [app, strategyHash, tokens] });
+}
+
+/// `vault.rescueApproval(token)`: the approval and the vault's commitment record for one token both
+/// go to zero. It can only reduce exposure, which is why the delegate may call it, and it is how a
+/// book whose allowance drifted under what it committed (#250) is put back: dock, rescue, ship.
+export function rescueApprovalCalldata(token: Address): Hex {
+  return encodeFunctionData({ abi: VAULT_SHIP_ABI, functionName: "rescueApproval", args: [token] });
 }

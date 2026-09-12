@@ -29,7 +29,16 @@ floor on `quote()` and the other sat past the taker's edge. The house now sizes 
 band from each vault's registry floor (`widthsFor`), `TAKER_EDGE_BPS=-100` is set on `taker`, and a
 pass logs every book. **The taker holds 0.000035 WETH against a 0.0003 size: the WETH side is skipped
 until `0x02538e43…` is refilled.** Re-check: `effectiveFloor` on the registry for the vault both
-ways, and the taker log's one line per book.
+ways, and the taker log's one line per book. Refilled with 0.3 WETH at 06:08 UTC; Zikri's first fill
+is `0x8d70ab0b…`, and the house re-centred his book to ±12 bps (`0x0e228805…`).
+
+**Then `#250` bit both vaults within ten minutes**, as `no quote … 0xf4059071` on the sell-WETH side:
+Zikri's vault held 0.0031 WETH with 0.0033 committed and an allowance of 0.00034. The house now puts
+a starved book back (`starved`, under a quarter of what it committed): dock, `rescueApproval` on both
+tokens, ship fresh — four transactions in one cycle. `updateQuote` cannot do it, because
+`_dockAndRelease` releases only the old book's outstanding balance and what was already pulled stays
+counted as committed. The contract's accounting is still what `#250` describes; this is the agent
+living with it.
 
 **Shipped to `main`:** the house agent (`#239`), `/api/mandates` (`#238`), one index read per window
 (`#237`), the MCP tools on the live index (`#245`), calibration from the adverse tail with a 100 bps

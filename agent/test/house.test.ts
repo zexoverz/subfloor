@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { toFunctionSelector, type Address, type Hex } from "viem";
-import { plan, widthsFor, type HouseConfig, type StoredMandate, type VaultChain } from "../src/house/house.ts";
+import { plan, starved, widthsFor, type HouseConfig, type StoredMandate, type VaultChain } from "../src/house/house.ts";
 import { centreFromXycArgs, type IndexView, type OpenStrategy } from "../src/market/index-reads.ts";
 import { bounds, composeBook } from "../src/compose/book.ts";
 import { shipCalldata } from "../src/vault/ship.ts";
@@ -21,6 +21,7 @@ const CFG: HouseConfig = {
   delegate: HOUSE,
   router: ROUTER,
   registry: "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123" as Address,
+  aqua: "0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB" as Address,
   maxReferenceAgeSeconds: 3600,
   maxIndexLagBlocks: 200,
   recenterBps: 50,
@@ -76,8 +77,20 @@ function index(strategies: OpenStrategy[] = [], over: Partial<IndexView> = {}): 
   };
 }
 
-function chain(revoked: number[] = [], held: bigint[] = [10n ** 18n, 50_000_000_000n], live: bigint[] = [0n, 0n], floors: (number | null)[] = [100, 100]): VaultChain {
-  return { revoked: async (_v, n) => revoked.includes(Number(n)), balances: async () => held, committed: async () => live, floorBps: async () => floors };
+function chain(
+  revoked: number[] = [],
+  held: bigint[] = [10n ** 18n, 50_000_000_000n],
+  live: bigint[] = [0n, 0n],
+  floors: (number | null)[] = [100, 100],
+  allowed: bigint[] = live,
+): VaultChain {
+  return {
+    revoked: async (_v, n) => revoked.includes(Number(n)),
+    balances: async () => held,
+    committed: async () => live,
+    floorBps: async () => floors,
+    allowances: async () => allowed,
+  };
 }
 
 const run = (idx: IndexView, mandates: StoredMandate[], ch: VaultChain = chain(), pending = new Map<string, bigint>()) =>
@@ -194,6 +207,41 @@ describe("the house agent gives every vault that names it one book", () => {
 
   test("mandates naming another delegate are not this agent's to spend", async () => {
     assert.deepEqual(await run(index(), [mandate(0, { delegate: OTHER })]), []);
+  });
+});
+
+describe("a book that can no longer deliver is put back", () => {
+  const RESCUE = toFunctionSelector("rescueApproval(address)");
+  // Zikri's vault on 12 Sep: 0.0033 WETH committed, 0.00034 left for Aqua to pull, holding 0.0031.
+  const live = [3_318_495_350_840_469n, 28_000_000_000n];
+  const held = [3_125_673_848_230_873n, 35_002_212_992n];
+
+  test("below a quarter of what it committed, in one cycle: dock, rescue both tokens, ship fresh", async () => {
+    const steps = await run(index([book()]), [mandate(0)], chain([], held, live, [100, 100], [336_645_953_273_691n, 27_993_212_992n]));
+    assert.deepEqual(steps.map((s) => s.kind), ["dock", "rescue", "rescue", "ship"]);
+    const [dock, r1, r2, ship] = steps;
+    assert.ok(dock.kind === "dock" && dock.data.includes("ab".repeat(32)), "the live book is what gets docked");
+    assert.ok(r1.kind === "rescue" && r1.data.startsWith(RESCUE) && r1.token === WETH);
+    assert.ok(r2.kind === "rescue" && r2.token === TUSDC);
+    assert.ok(ship.kind === "ship" && ship.data.startsWith(SHIP));
+    if (ship.kind !== "ship") return;
+    // Shipped as if nothing were committed: 80% of the balance, the mandate cap 4e15 not binding.
+    assert.ok(ship.data.includes((2_500_539_078_584_698n).toString(16).padStart(64, "0")), "80% of the WETH held");
+  });
+
+  test("a book whose allowance still covers it is left alone, and a stale reference still docks it", async () => {
+    const [ok] = await run(index([book()]), [mandate(0)], chain([], held, live, [100, 100], live));
+    assert.equal(ok.kind, "hold");
+    const stale = index([book()], { reference: { answer: MID * 100n, updatedAt: NOW - 7200 } });
+    const steps = await run(stale, [mandate(0)], chain([], held, live, [100, 100], [1n, 1n]));
+    assert.deepEqual(steps.map((s) => s.kind), ["dock"]);
+  });
+
+  test("starved is the first token under a quarter, and a token with nothing committed never counts", () => {
+    assert.equal(starved([100n, 100n], [25n, 100n]), -1, "exactly a quarter still delivers");
+    assert.equal(starved([100n, 100n], [24n, 100n]), 0);
+    assert.equal(starved([100n, 100n], [100n, 24n]), 1);
+    assert.equal(starved([0n, 100n], [0n, 100n]), -1);
   });
 });
 
