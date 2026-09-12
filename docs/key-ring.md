@@ -67,3 +67,68 @@ Say these on any surface that makes the claim.
 - **The member credential is on the host.** Anyone who owns the host owns that file, and with it the
   envelope, until the ring revokes it. What the ring adds is that revocation is one action on the
   owner's device, and that the key is never in the dashboard, the logs or the deploy config.
+
+## Rooting the ring with no hardware — Speculos
+
+The one device-gated step (`create-ring`, and `revoke`) can run against an emulated Ledger, so a
+headless host — the exact "bring the Key Ring to a host with no USB port" the Ledger track asks for —
+can do it. `agent/src/keyring/speculos.ts` drives this; `cli.ts` `ownerDevice()` picks Speculos when
+`SUBFLOOR_SPECULOS_COINAPPS` is set and no USB device is attached.
+
+The emulator needs the Ledger Sync application ELF, which ships in no public artifact but builds from
+public source in one command:
+
+```bash
+git clone --depth 1 https://github.com/LedgerHQ/app-ledger-sync.git
+docker pull ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest
+docker run --rm -v "$PWD/app-ledger-sync":/app \
+  ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-lite:latest \
+  bash -c 'make -j BOLOS_SDK=$NANOSP_SDK'
+# => app-ledger-sync/build/nanos2/bin/app.elf
+```
+
+Place it where `createSpeculosDevice`'s `conventionalAppSubpath` looks, and point the env at it:
+
+```bash
+mkdir -p coinapps/nanos+/1.1.2/LedgerSync
+cp app-ledger-sync/build/nanos2/bin/app.elf coinapps/nanos+/1.1.2/LedgerSync/app_1.2.2.elf
+export SUBFLOOR_SPECULOS_COINAPPS=$PWD/coinapps
+export SUBFLOOR_SPECULOS_FIRMWARE=1.1.2         # a value inferSDK ignores, so no bad --sdk flag
+export SUBFLOOR_SPECULOS_APP_VERSION=1.2.2
+export SPECULOS_IMAGE_TAG=ghcr.io/ledgerhq/speculos:latest   # the pinned sha-e262a0c is too old for api-level 26
+```
+
+Then the ring ceremony (`bash scripts/key-ring-setup.sh ring …`, or `cli.ts create-ring`) runs
+against the emulator: the app raises its genuine on-device consent ("Turn on sync for Ledger
+Wallet?") and the automation in `speculos.ts` confirms it. `addMember`, `seal`, `open`, and the
+`revoke` re-seal are software (no device) and are covered by `test/*.test.ts` (19 pass).
+
+Host arch note: on arm64 the amd64 Speculos image runs under emulation (~2 min/boot).
+
+**Known-flaky:** the NBGL two-button confirm is timed, not screen-synced — the automation pages the
+review with a right press and fires one delayed press-both on the confirm label. It usually lands;
+if a run denies with `0x6985`, re-run. Deterministic per-screen sync (Ledger's own e2e records the
+automation rather than reacting live) is the remaining polish.
+
+## DX feedback — Ledger Sync / LKRP for a headless, no-USB agent
+
+Rooting a trustchain in an emulated device is achievable but underdocumented, and the tooling fights
+it at three turns, each a dead end before it worked:
+
+- `@ledgerhq/speculos-transport`'s default (`SPECULOS_USE_WEBSOCKET` unset) routes to
+  `@ledgerhq/live-dmk-speculos`, which is not published to npm — so the out-of-the-box path
+  dead-ends. The websocket path works, but the flag only responds to `@ledgerhq/live-env`'s `setEnv`,
+  not the `SPECULOS_USE_WEBSOCKET` environment variable the code and docs imply, and it is snapshotted
+  at module load.
+- the package's `import` condition resolves to `lib-es/`, whose files (and `@ledgerhq/live-env`) use
+  extensionless relative imports that Node's native ESM rejects; the CommonJS `lib/` build has to be
+  required explicitly.
+- `createSpeculosDevice`'s coinapps convention expects a Ledger Sync ELF that is in no public
+  artifact; it builds fine from `app-ledger-sync`, but that is stated nowhere.
+
+On real hardware the trustchain APDUs (CLA `0xE0`, INS `0x04–0x09`) return `0x6d00` unless the Ledger
+Sync app is the *open* app, and there is no documented way to reach that app on a Nano outside Ledger
+Live's hosted Ledger Sync feature. That is exactly the blocker for a headless, no-USB hosted-agent
+enrollment: `wallet-cli ring init` is USB-only, and there is no CLI or remote route to the one
+device-rooted step. A supported hosted-agent enrollment needs either a device-free attestation for
+the seed block, or a documented remote-signing handoff for `getOrCreateTrustchain`.
