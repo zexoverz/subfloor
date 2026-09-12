@@ -76,7 +76,7 @@ export function AgentDock({ onOpen }: { onOpen: () => void }) {
         */}
       <span
         aria-hidden={!speaking}
-        className={`agent-bubble relative grid place-items-center px-[9%] pt-2.5 pb-3.5 text-center text-[11.5px] leading-tight text-ink transition-opacity duration-500 max-[720px]:hidden ${
+        className={`agent-bubble relative grid place-items-center px-[9%] pt-4 pb-5 text-center text-[11.5px] leading-tight text-ink transition-opacity duration-500 max-[720px]:hidden ${
           speaking ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
