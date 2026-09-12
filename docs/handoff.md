@@ -88,6 +88,88 @@ behind it (§4).
 
 ---
 
+## 0c. 13 Sep — Base mainnet is live, and the onboarding take
+
+**SUBFLOOR is deployed on Base mainnet (chain 8453), 13 Sep.** Total deploy gas ~$0.15. The stack is
+fresh-deployed and Sourcify `match`; the pair is **real WETH/USDC**, not testnet tUSDC.
+
+| Contract | Mainnet address | Note |
+|---|---|---|
+| FloorRegistry | `0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171` | Sourcify match; owner `0x9ebd…`; WETH/USDC feeds set both ways, staleness 2464s |
+| FloorRouter | `0x441EE52d939E46A33919C4295e88d32458797503` | Sourcify match; ~24KB; `FLOOR_REGISTRY()`→ registry. Deployed via `forge create` (verified clean — no §7 divergence this time) |
+| VaultFactory | `0x653363d9EfE33898DB7948FB78EB30c43e0B8498` | Sourcify match |
+| Canonical Aqua | `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` | 1inch's, live on Base mainnet |
+| Chainlink ETH/USD | `0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70` | proxy; aggregator behind it `0x05c84a58FE042275b37db038bAAcD15F410c7bB0` (subgraph uses the aggregator, §7 trap 12) |
+| WETH / USDC(6) | `0x4200…0006` / `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | real |
+
+Deploy block **51220877**. **Ignore** the throwaway router `0x2329BdFb…` and vault `0xE4C81a57…` that
+`DeploySubfloor.s.sol` prints (its router is unverifiable; we deploy the real one separately). **Also
+ignore** the orphan vault `0x2a2434577b5e7ac96801aed47b88d9dd9bc44919` — created via `cast` (owned by
+`0x9ebd`, unfunded) before we decided the canonical vault must be created on camera. It cost only gas.
+
+**Wallets / keys (mainnet):**
+- **`0x9ebdC8AC…` — dev/funder + owner of registry/router/factory** (`subfloor-dev` keystore). Holds
+  the money (started $120 ETH + 52 USDC); leftover ~$15–21 USDC is the bounty pot.
+- **`0x720633667161625FC1d7fd86DE6eC06d814a3492` — the demo vault OWNER** for the onboarding take, a
+  hot **MetaMask** wallet the builder controls. Funded from `0x9ebd`.
+- **`0x40198630b82E19981F09777a10FeCFE84868506D` — the delegate (house agent), PUBLISHED for the
+  bounty.** Its private key was printed in a terminal (public by design); not in a keystore; never
+  reuse it for anything else.
+- **`0x1e0344df59a94D387bb051215AadC5DED63396e6` — guardian, the Ledger** (Ethereum app, WebHID).
+  Signs the mandate and any floor-lowering. Same device Zikri rehearsed with. Needs **no gas** (the
+  mandate is an off-chain signature). It is NOT the owner wallet.
+- **`0x02538e43d6A099a7E407b8Bdba9Ac7BA9F38Ef72` — taker EOA** (key already on the `taker` service;
+  reused on mainnet). Funded from `0x9ebd`.
+
+**The `web` Railway service is flipped to mainnet** (`612ccb1f…`): `VITE_CHAIN=base`, the mainnet
+registry/router/factory/aqua/RPC in `VITE_*`, `VITE_VAULT=""` (so onboarding shows the create flow),
+`VITE_FAUCET=""`; `/api` reads mainnet (`SUBFLOOR_ROUTER`/`AGGREGATOR`/`RPC`/`FROM_BLOCK=51220877`,
+`SUBFLOOR_HYPERSYNC_URL=https://base.hypersync.xyz/query`), and `SUBFLOOR_HOUSE_AGENT` = the mainnet
+delegate `0x40198630`. **`SUBFLOOR_SUBGRAPH` still points at the base-sepolia subgraph** — so the
+onboarding "your worst price" dot-cloud is calibration from the testnet index and a brand-new mainnet
+vault reads as cold-start ("house default 100 bps"), which is honest. Repoint it once the mainnet
+subgraph is published.
+
+### The onboarding take (records the "app works on mainnet" proof)
+One canonical vault, created on camera via the app, is used for everything (fills, attacks, bounty) so
+a judge clicking any tx sees the same address. Flow, rehearsed on testnet (no bug), owner + separate
+Ledger guardian:
+1. Fund `0x7206` from `0x9ebd`: **0.006 ETH gas + 0.005 WETH + 11 USDC** (wrap ETH→WETH first). Fund
+   the taker `0x02538e43…`: **0.015 WETH + 20 USDC + 0.005 ETH**. (Commands are the six `cast send`
+   in this session; **as of this handoff, not yet confirmed run** — verify balances before filming.)
+2. On camera: connect `0x7206` (MetaMask, owner) → set worst price → **Deploy your own vault**
+   (`createVault`: delegate defaults to `0x40198630`, guardian = the Ledger) → **fund** (deposit
+   ~0.004 WETH + 10 USDC from `0x7206`) → **sign the mandate on the Ledger**. These create+fund+mandate
+   mainnet tx are what goes in the README as proof.
+3. **The canonical vault address is not known until step 2 runs on camera.** After it exists: set
+   `VITE_VAULT` on `web` and `SUBFLOOR_VAULT` on `agent`+`taker` to it, set `SUBFLOOR_DELEGATE_KEY` on
+   `agent` (the published delegate key, from the dashboard), then the house agent ships a book, the
+   taker fills, and the three attacks run against it: `scripts/demo-refusal.sh` (`SettledBelowFloor`),
+   `injection/run.ts escalation` (guard-free program, same revert), `scripts/demo-lower-floor.sh attack`
+   (`BadGuardianSignature`). Record those screens for the hacker-scene composite; publish the hashes.
+
+### Also landed 12–13 Sep
+- **FeeProtocol cold-build fix (`#307`)** — a clean `forge build` failed via_ir stack-too-deep at
+  `FeeProtocol.sol:208`; CI only stayed green via its restore-keys cache. Extracting the encode into a
+  private helper fixed it (967 tests pass). **Do not `forge clean` casually** — it forces the cold
+  rebuild; and `DeploySubfloor` needs `--sender $SUBFLOOR_OWNER` or the default sender owns the
+  registry and `setReferenceFeed` reverts `OwnableUnauthorizedAccount`.
+- **Key Ring runs no-USB on Speculos (`#304`, `#306`)** — the ring ceremony (create/addMember/seal/
+  revoke) roots in an emulated Ledger Sync app (built from `app-ledger-sync` source), completing
+  reliably; the physical device can't reach LKRP via `wallet-cli` (0x6d00), written up as DX feedback
+  in `docs/key-ring.md`. Turnkey run + recording note in the session scratchpad.
+- **Mainnet subgraph manifest (`#308`)** — `indexer/subgraph/subgraph.base.yaml`, codegen+build pass.
+  Deploy+publish is the builder's (Studio deploy key + Arbitrum gas); runbook in the PR. Until then the
+  Graph story stays on the live testnet subgraph (disclosed split, `docs/mainnet-plan.md`).
+- **Video shoot script** `docs/video-script.md` (3:48; hacker live-action already shot, attack screens
+  composited from recordings). Cafe shot list + shoot script are also artifacts on claude.ai.
+
+### Still pending on the mainnet run
+Run the six funding tx → record onboarding → wire `VITE_VAULT`/`SUBFLOOR_VAULT`/`SUBFLOOR_DELEGATE_KEY`
+→ ship + fills + three attacks → publish all tx hashes + the mainnet addresses in README and SPEC §3
+→ (optional, stronger Graph) publish the mainnet subgraph → rotate the keystore password and Graph API
+key that were pasted into chat (§10).
+
 ## 1. What SUBFLOOR is, mechanically
 
 An agent trades your portfolio. You set one number. Your money cannot settle below it.
