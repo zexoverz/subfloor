@@ -22,6 +22,15 @@ If you only have budget for one, read the spec. This file goes stale; the spec d
 
 ## 0b. Since the last handoff, in one screen
 
+**12 Sep, morning: why the second vault had no fills (`#290`, `#297`).** The taker filtered by one
+vault (fixed in `#291`), and then the house agent composed every vault's book at its own ±50 bps
+while Zikri's vault `0x2cf9…` is floored at 25 bps on one side, so that side was refused by its own
+floor on `quote()` and the other sat past the taker's edge. The house now sizes spread and re-centre
+band from each vault's registry floor (`widthsFor`), `TAKER_EDGE_BPS=-100` is set on `taker`, and a
+pass logs every book. **The taker holds 0.000035 WETH against a 0.0003 size: the WETH side is skipped
+until `0x02538e43…` is refilled.** Re-check: `effectiveFloor` on the registry for the vault both
+ways, and the taker log's one line per book.
+
 **Shipped to `main`:** the house agent (`#239`), `/api/mandates` (`#238`), one index read per window
 (`#237`), the MCP tools on the live index (`#245`), calibration from the adverse tail with a 100 bps
 default (`#246`), the `switch-on` script (`#249`), and **mandates that last until they expire**

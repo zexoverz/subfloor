@@ -27,6 +27,8 @@ export interface StoredMandate {
 export interface HouseConfig {
   delegate: Address;
   router: Address;
+  /// Where each vault's floor is read from, so its book is composed inside it.
+  registry: Address;
   maxReferenceAgeSeconds: number;
   maxIndexLagBlocks: number;
   recenterBps: number;
@@ -44,6 +46,23 @@ export interface VaultChain {
   balances(vault: Address, tokens: Address[]): Promise<bigint[]>;
   /// What the vault already has live, per token. The mandate's cap binds this plus the new ship.
   committed(vault: Address, tokens: Address[]): Promise<bigint[]>;
+  /// The vault's own tolerance in bps, one per direction (`tokens[0]` given, then `tokens[1]` given).
+  /// `null` where no relative floor is configured for that direction.
+  floorBps(vault: Address, tokens: Address[]): Promise<(number | null)[]>;
+}
+
+/// How wide a book may be on a vault whose floor is `toleranceBps`.
+///
+/// The curve sits at one edge of its range once it has been taken through, so the vault's worst
+/// quote is the half-width plus whatever the reference drifted before a re-centre. Half the floor
+/// each keeps that inside it; the fee on `tokenIn` is margin on top. Without this every vault got the
+/// house's own 50 and 50, and a vault floored at 25 bps had one side of its book refused by its own
+/// floor from the moment it shipped (#297).
+export function widthsFor(cfg: Pick<HouseConfig, "spreadBps" | "recenterBps">, floors: (number | null)[]): { spreadBps: number; recenterBps: number } {
+  const set = floors.filter((f): f is number => f !== null && f > 0);
+  if (set.length === 0) return { spreadBps: cfg.spreadBps, recenterBps: cfg.recenterBps };
+  const half = Math.max(1, Math.floor(Math.min(...set) / 2));
+  return { spreadBps: Math.min(cfg.spreadBps, half), recenterBps: Math.min(cfg.recenterBps, half) };
 }
 
 export type Step =
@@ -137,6 +156,9 @@ export async function plan(
       continue;
     }
 
+    // This vault's floor decides how wide its book is, not the house's defaults.
+    const widths = widthsFor(cfg, await chain.floorBps(vault, tokens));
+
     const action: Action = decide({
       index: { ...index, strategies: book ? [book] : [] },
       chainHead,
@@ -145,7 +167,7 @@ export async function plan(
       now,
       venueMid: mid,
       centredOn: book?.centre ?? null,
-      recenterBps: cfg.recenterBps,
+      recenterBps: widths.recenterBps,
     });
 
     if (action.kind === "dock") {
@@ -199,7 +221,7 @@ export async function plan(
       tokenB: tokens[1],
       program: composeBook({
         referencePrice,
-        spreadBps: cfg.spreadBps,
+        spreadBps: widths.spreadBps,
         feeBps: cfg.feeBps,
         decayPeriodSeconds: cfg.decayPeriodSeconds,
         salt: BigInt(now),
@@ -214,10 +236,10 @@ export async function plan(
         nonce: mandate.nonce,
         referencePrice,
         data: updateQuoteCalldata({ ...args, oldStrategyHash: book.strategyHash as Hex }),
-        why: action.why,
+        why: `${action.why}; ±${widths.spreadBps} bps inside the vault's floor`,
       });
     } else {
-      steps.push({ vault, kind: "ship", nonce: mandate.nonce, referencePrice, data: shipCalldata(args), why: action.why });
+      steps.push({ vault, kind: "ship", nonce: mandate.nonce, referencePrice, data: shipCalldata(args), why: `${action.why}; ±${widths.spreadBps} bps inside the vault's floor` });
     }
   }
 

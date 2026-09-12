@@ -25,6 +25,10 @@ const VAULT_ABI = [
 const ERC20_ABI = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ] as const;
+const REGISTRY_ABI = [
+  { type: "function", name: "floor", stateMutability: "view", inputs: [{ type: "address" }, { type: "address" }, { type: "address" }],
+    outputs: [{ name: "configured", type: "bool" }, { name: "maxAdverseBps", type: "uint16" }, { name: "absoluteRate", type: "uint232" }] },
+] as const;
 
 const MAX_BACKOFF_MS = 600_000;
 
@@ -40,6 +44,7 @@ export async function runHouse(key: Hex | undefined = process.env.SUBFLOOR_DELEG
   const cfg: HouseConfig = {
     delegate: account.address,
     router: (process.env.SUBFLOOR_ROUTER ?? "0x03189D102286fa8cDd0fBF3578B492e67e665A27") as Address,
+    registry: (process.env.SUBFLOOR_REGISTRY ?? "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123") as Address,
     maxReferenceAgeSeconds: policy.maxReferenceAgeSeconds,
     maxIndexLagBlocks: policy.maxIndexLagBlocks,
     recenterBps: policy.recenterBps,
@@ -57,6 +62,12 @@ export async function runHouse(key: Hex | undefined = process.env.SUBFLOOR_DELEG
       Promise.all(tokens.map((t) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "committed", args: [t] }))),
     balances: (vault, tokens) =>
       Promise.all(tokens.map((t) => client.readContract({ address: t, abi: ERC20_ABI, functionName: "balanceOf", args: [vault] }))),
+    // floor[recipient][given][received]: the first entry is the vault giving tokens[0].
+    floorBps: async (vault, [a, b]) =>
+      Promise.all([[a, b], [b, a]].map(async ([given, received]) => {
+        const [configured, bps] = await client.readContract({ address: cfg.registry, abi: REGISTRY_ABI, functionName: "floor", args: [vault, given, received] });
+        return configured && bps > 0 ? bps : null;
+      })),
   };
 
   console.log(`[house] delegate ${account.address}, router ${cfg.router}, mandates from ${api}${dryRun ? ", DRY RUN" : ""}`);

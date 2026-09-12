@@ -43,11 +43,13 @@ async function main() {
 
   for (;;) {
     try {
-      const outcome = await pass(clients, cfg, spendWeth);
-      console.log(line(outcome));
-      if (outcome.kind === "filled") tally.filled++;
-      else if (outcome.kind === "refused") tally.refused++;
-      else tally.other++;
+      // One line per book tried, so every maker's book is accounted for in the log.
+      for (const outcome of await pass(clients, cfg, spendWeth)) {
+        console.log(line(outcome));
+        if (outcome.kind === "filled") tally.filled++;
+        else if (outcome.kind === "refused") tally.refused++;
+        else tally.other++;
+      }
     } catch (err) {
       // Keep going. A dropped RPC or a nonce clash is not a reason to stop taking, and stopping
       // silently would look exactly like a venue nobody wants to trade with.
