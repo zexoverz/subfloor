@@ -1,6 +1,6 @@
-import { createPublicClient, createWalletClient, decodeErrorResult, http, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, decodeErrorResult, http, type Address, type Chain, type Hex } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { base, baseSepolia } from "viem/chains";
 import { AGGREGATOR_ABI, AQUA_ABI, ERC20_ABI, ROUTER_ABI } from "./abi.ts";
 import { decodeShipped, isAToB } from "./order.ts";
 import { hyperSyncFromEnv, logsSince } from "./hypersync.ts";
@@ -20,6 +20,9 @@ import { buildTakerData } from "./takerTraits.ts";
 
 export interface Config {
   rpcUrl: string;
+  /// The chain the taker signs and sends on. Its id goes into every tx, so a mismatch with rpcUrl is
+  /// rejected by the node — base mainnet (8453) or base-sepolia (84532), never one client on both.
+  chain: Chain;
   router: Address;
   aqua: Address;
   /// Which makers to take from. Empty means every maker on the venue, which is what a taker actually
@@ -95,8 +98,8 @@ export function referenceRateFor(
 function makeClients(cfg: Config, account: PrivateKeyAccount) {
   const transport = http(cfg.rpcUrl);
   return {
-    pub: createPublicClient({ chain: baseSepolia, transport }),
-    wallet: createWalletClient({ account, chain: baseSepolia, transport }),
+    pub: createPublicClient({ chain: cfg.chain, transport }),
+    wallet: createWalletClient({ account, chain: cfg.chain, transport }),
     account,
   };
 }
@@ -116,7 +119,8 @@ export function clientsFromEnv(cfg: Config): Clients {
 
 export function configFromEnv(): Config {
   return {
-    rpcUrl: process.env.RPC_URL ?? "https://sepolia.base.org",
+    rpcUrl: process.env.RPC_URL ?? process.env.SUBFLOOR_RPC ?? "https://sepolia.base.org",
+    chain: Number(process.env.SUBFLOOR_CHAIN_ID ?? 84532) === 8453 ? base : baseSepolia,
     router: process.env.SUBFLOOR_ROUTER as Address,
     aqua: process.env.SUBFLOOR_AQUA as Address,
     vaults: (process.env.SUBFLOOR_VAULT ?? "")
@@ -297,7 +301,7 @@ async function attempt(
   if ((allowance as bigint) < amountIn) {
     const h = await c.wallet.writeContract({
       address: tokenIn, abi: ERC20_ABI, functionName: "approve", args: [cfg.router, amountIn * 1000n],
-      account: c.account, chain: baseSepolia,
+      account: c.account, chain: cfg.chain,
     } as never);
     await c.pub.waitForTransactionReceipt({ hash: h });
   }
@@ -307,7 +311,7 @@ async function attempt(
     // this client is constructed generically. The ABI and args above are the checked part.
     const hash = await c.wallet.writeContract({
       address: cfg.router, abi: ROUTER_ABI, functionName: "swap",
-      args: [tuple, amountIn, takerData], account: c.account, chain: baseSepolia,
+      args: [tuple, amountIn, takerData], account: c.account, chain: cfg.chain,
     } as never);
     await c.pub.waitForTransactionReceipt({ hash });
     return { kind: "filled", maker: order.maker, tokenIn, amountIn, amountOut, rate, referenceRate, edgeBps: edge, hash };
