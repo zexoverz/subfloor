@@ -1,0 +1,150 @@
+# Deploying a new version RETIRES the previous one on Studio, and a fresh version takes roughly ten
+# minutes before it processes its first block — it sits at `startBlock - 1` with
+# `hasIndexingErrors: false` the whole time, which is indistinguishable from being broken.
+#
+# So: deploy once and wait. Deploying again to "check" kills the version that was about to start,
+# which is how 7 Sep lost two hours to a bug that did not exist.
+#
+# Base mainnet (chain 8453). Same schema and handlers as the Base Sepolia manifest; the only
+# differences are the network, the mainnet addresses, and the startBlock. Our sources start at the
+# deploy block 51220877 so the subgraph indexes activity from our deployment onward rather than
+# months of unrelated canonical Aqua volume.
+specVersion: 1.2.0
+description: >-
+  Execution quality across Base venues on the Messari DEX Aggregator standardized schema, with the
+  recipient-keyed price floor each fill was scored against. Base mainnet, indexing canonical Aqua.
+repository: https://github.com/zexoverz/subfloor
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  # Canonical Aqua. Note that not one parameter on any of these four events is indexed, so nothing
+  # here can be filtered by maker at the log level: every Shipped/Pulled/Pushed/Docked on the venue
+  # arrives and is narrowed after decoding. See docs/event-map.md.
+  - kind: ethereum
+    name: Aqua
+    network: base
+    source:
+      # Canonical Aqua on Base mainnet. startBlock is our deploy block, not Aqua's creation, so we
+      # skip months of pre-deployment mainnet volume unrelated to Subfloor.
+      address: "0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a"
+      abi: Aqua
+      startBlock: 51220877
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/aqua.ts
+      entities:
+        - DexAggProtocol
+        - VirtualPool
+        - Token
+      abis:
+        - name: Aqua
+          file: ./abis/Aqua.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Shipped(address,address,bytes32,bytes)
+          handler: handleShipped
+        - event: Docked(address,address,bytes32)
+          handler: handleDocked
+        - event: Pulled(address,address,bytes32,address,uint256)
+          handler: handlePulled
+        - event: Pushed(address,address,bytes32,address,uint256)
+          handler: handlePushed
+
+  # Our router. `Swapped` is likewise fully non-indexed.
+  - kind: ethereum
+    name: FloorRouter
+    network: base
+    source:
+      address: "0x441EE52d939E46A33919C4295e88d32458797503"
+      abi: FloorRouter
+      startBlock: 51220877
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/router.ts
+      entities:
+        - Swap
+        - FillQuality
+        - Account
+        - ReferenceFeed
+      abis:
+        - name: FloorRouter
+          file: ./abis/FloorRouter.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+        # `handleSwapped` asks the registry which way round this pair's reference runs, and
+        # graph-node resolves a contract call against the ABIs listed on the *data source running
+        # the handler* rather than the TypeScript import. Without this line the call is a
+        # deterministic failure and the subgraph stops at the first fill.
+        - name: FloorRegistry
+          file: ./abis/FloorRegistry.json
+      eventHandlers:
+        - event: Swapped(bytes32,address,address,address,address,uint256,uint256)
+          handler: handleSwapped
+          # `router.ts` reads `event.receipt.gasUsed`, and graph-node only populates `receipt` when
+          # the handler asks for it. Without this line the field access traps, graph-node retries the
+          # block forever, and the subgraph stops at the first fill with `hasIndexingErrors: false` —
+          # which is indistinguishable from a slow sync. Cost most of 7 Sep.
+          receipt: true
+
+  # The registry's events are the one place upstream indexing gets easy: recipient, base and quote
+  # are all indexed, so floor history for one recipient is a topic filter rather than a scan.
+  - kind: ethereum
+    name: FloorRegistry
+    network: base
+    source:
+      address: "0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171"
+      abi: FloorRegistry
+      startBlock: 51220877
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/registry.ts
+      entities:
+        - Floor
+        - FloorChange
+      abis:
+        - name: FloorRegistry
+          file: ./abis/FloorRegistry.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: FloorRaised(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleFloorRaised
+        - event: FloorLowered(indexed address,indexed address,indexed address,uint256,uint256,address)
+          handler: handleFloorLowered
+        - event: ToleranceTightened(indexed address,indexed address,indexed address,uint16,uint16)
+          handler: handleToleranceTightened
+        - event: ToleranceWidened(indexed address,indexed address,indexed address,uint16,uint16,address)
+          handler: handleToleranceWidened
+
+  # The Chainlink aggregator, not the proxy. The proxy (0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70)
+  # emits nothing; the aggregator behind it does. Read off the proxy with `aggregator()` on 13 Sep.
+  - kind: ethereum
+    name: ChainlinkEthUsd
+    network: base
+    source:
+      address: "0x05c84a58FE042275b37db038bAAcD15F410c7bB0"
+      abi: ChainlinkAggregator
+      startBlock: 51220877
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/reference.ts
+      entities:
+        - ReferenceAnswer
+      abis:
+        - name: ChainlinkAggregator
+          file: ./abis/ChainlinkAggregator.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
