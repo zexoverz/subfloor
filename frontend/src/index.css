@@ -1449,3 +1449,20 @@ body:has(dialog[open]) {
     animation: none;
   }
 }
+
+/*
+ * The mascot on the sheet's corner: the same drift as the dock, slower.
+ *
+ * Slower because this one is not asking to be noticed — it opened already. A corner ornament moving
+ * at the pace of a control reads as a control, and there is nothing here to press.
+ */
+.agent-sheet-bot {
+  animation: agent-drift 8s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(0, 10, 28, 0.55));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-sheet-bot {
+    animation: none;
+  }
+}

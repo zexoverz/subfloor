@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Dot, X } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { CardBody, CardHead } from './Card.tsx';
 import { AddressChip } from './AddressChip.tsx';
+import { identicon } from '../lib/identicon.ts';
 import { useHouseAgent } from '../lib/houseAgent.ts';
 import { useAgentLog } from '../lib/agentLog.ts';
 
@@ -59,7 +60,12 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <dialog
       ref={ref}
-      className="sheet max-h-[86vh] w-[min(560px,calc(100vw-32px))] overflow-x-hidden overflow-y-auto"
+      /*
+       * Visible overflow, so the mascot can hang off the corner. The body scrolls instead of the
+       * sheet: clipping here would cut him in half, and scrolling here would carry him up the page
+       * as the log is read, which is the one thing a fixed corner ornament must not do.
+       */
+      className="sheet relative max-h-[86vh] w-[min(560px,calc(100vw-32px))] overflow-visible"
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
     >
@@ -74,58 +80,63 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
         </button>
       </div>
 
-      <div className="p-5">
-        <p className="serif mt-0 mb-4 text-[13.5px] leading-relaxed text-muted">{copy.agents.lede}</p>
-
-        {/*
-          * The bound comes before the address, deliberately. Anyone about to paste a stranger's
-          * address into their own vault should read what that stranger can and cannot do first.
-          */}
-        <div className="mb-4 rounded-xl border border-rule">
-          <CardHead left={copy.agents.boundsTitle} />
-          <CardBody>
-            <div className="grid grid-cols-2 gap-2.5 max-[520px]:grid-cols-1">
-              <div className="rounded-xl border border-rule bg-sunken px-3.5 py-3">
-                <span className="block text-[11px] tracking-[0.11em] text-faint uppercase">{copy.agents.canLabel}</span>
-                <ul className="m-0 mt-1.5 list-none p-0 text-[12.5px] text-ink">
-                  {['compose', 'ship', 'dock', 'update-quote'].map((c) => (
-                    <li key={c} className="flex items-center gap-1 font-mono">
-                      <Dot size={14} strokeWidth={3} className="shrink-0 text-floor" />
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-xl border border-rule bg-sunken px-3.5 py-3">
-                <span className="block text-[11px] tracking-[0.11em] text-faint uppercase">
-                  {copy.agents.cannotLabel}
-                </span>
-                <p className="serif m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">{copy.agents.cannotBody}</p>
-              </div>
-            </div>
-          </CardBody>
+      {/*
+        * The agent leads, and it leads as a face rather than as a heading.
+        *
+        * The identity is the thing being decided about — whose address may trade a vault — so it is
+        * the first thing on the sheet: the banner, a blockie half out of it, and the address under
+        * both, ready to copy. Everything else is evidence for or against that address.
+        *
+        * The blockie is not decoration. Forty hex characters are unreadable and unmemorable, and a
+        * shape is what makes the same agent recognisable across the tape, the vault card and here.
+        */}
+      <div className="relative">
+        <div className="h-[104px] overflow-hidden">
+          <img
+            src="/agent-banner.webp"
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="h-full w-full object-cover object-center opacity-[0.55] select-none"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black 0%, black 55%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 55%, transparent 100%)',
+            }}
+          />
         </div>
 
-        <div className="mb-4 rounded-xl border border-rule">
-          <CardHead left={copy.agents.oneHereTitle} right={house.address ? copy.agents.oneHereTag : ''} />
-          <CardBody>
-            {house.address ? (
-              <>
-                <p className="serif mt-0 mb-3 text-[13px] leading-relaxed text-muted">{copy.agents.oneHereBody}</p>
-                <CopyAddress address={house.address} />
-                <p className="m-0 mt-2.5 text-[12px] leading-relaxed text-faint">
-                  {log.status === 'ready' && log.vaults.length > 0
-                    ? copy.agents.serving(log.vaults.length)
-                    : log.status === 'ready'
-                      ? copy.agents.servingNone
-                      : copy.agents.reading}
-                </p>
-              </>
-            ) : (
-              /* No agent here is a legitimate deployment, and it is not an error. */
-              <p className="serif m-0 text-[13px] leading-relaxed text-muted">{copy.agents.noneHere}</p>
-            )}
-          </CardBody>
+        {house.address && (
+          <img
+            src={identicon(house.address)}
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="absolute bottom-0 left-5 size-[72px] translate-y-1/3 rounded-full border-2 border-rule bg-sunken shadow-card select-none"
+          />
+        )}
+      </div>
+
+      <div className="max-h-[calc(86vh-152px)] overflow-x-hidden overflow-y-auto px-5 pt-8 pb-5">
+        {house.address ? (
+          <>
+            <span className="block text-[11px] tracking-[0.11em] text-faint uppercase">{copy.agents.oneHereTag}</span>
+            <CopyAddress address={house.address} />
+            <p className="serif mt-2.5 mb-0 text-[13px] leading-relaxed text-muted">{copy.agents.lede}</p>
+          </>
+        ) : (
+          /* No agent here is a legitimate deployment, and it is not an error. */
+          <p className="serif m-0 text-[13px] leading-relaxed text-muted">{copy.agents.noneHere}</p>
+        )}
+
+        {/*
+          * The bound, kept and kept small. Anyone about to paste a stranger's address into their
+          * own vault should read it, and it is four words and a sentence — a panel of its own gave
+          * it more room than it needs and pushed the record it exists to qualify off the screen.
+          */}
+        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl border border-rule bg-sunken px-3.5 py-2.5 text-[12px]">
+          <span className="text-[11px] tracking-[0.11em] text-faint uppercase">{copy.agents.canLabel}</span>
+          <span className="font-mono text-ink">compose · ship · dock · update-quote</span>
+          <span className="w-full text-[11.5px] leading-relaxed text-faint">{copy.agents.cannotBody}</span>
         </div>
 
         {/*
@@ -134,7 +145,7 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
           * prevent — so there is nothing here about what it is thinking, only books the chain
           * accepted. A decision is a claim; a shipped book is a fact.
           */}
-        <div className="rounded-xl border border-rule">
+        <div className="mt-4 rounded-xl border border-rule">
           <CardHead left={copy.agents.logTitle} right={copy.agents.logTag} />
           <CardBody>
             {log.status === 'failed' ? (
@@ -144,7 +155,7 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
             ) : log.books.length === 0 ? (
               <p className="serif m-0 text-[13px] leading-relaxed text-faint">{copy.agents.logEmpty}</p>
             ) : (
-              <ul className="m-0 list-none p-0">
+              <ul className="m-0 max-h-[280px] list-none overflow-y-auto p-0">
                 {log.books.map((b) => (
                   <li
                     key={b.strategyHash}
@@ -166,8 +177,32 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
           </CardBody>
         </div>
 
+        <p className="m-0 mt-2.5 text-[12px] leading-relaxed text-faint">
+          {log.status === 'ready' && log.vaults.length > 0
+            ? copy.agents.serving(log.vaults.length)
+            : log.status === 'ready'
+              ? copy.agents.servingNone
+              : copy.agents.reading}
+        </p>
+
         <p className="serif m-0 mt-4 text-[12.5px] leading-relaxed text-faint">{copy.agents.own}</p>
       </div>
+
+      {/*
+        * The same figure that opened this, holding the corner of what it opened.
+        *
+        * Half outside the sheet on purpose: clipped inside it would read as a picture printed on a
+        * panel, and breaking the edge reads as something present at it — the same reasoning as the
+        * guide on the tour popover. Dropped on narrow screens, where there is no margin for him to
+        * hang into and the words are what have to survive.
+        */}
+      <img
+        src="/agent-bot.webp"
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="agent-sheet-bot pointer-events-none absolute -right-7 -bottom-8 w-[110px] select-none max-[620px]:hidden"
+      />
     </dialog>
   );
 }
