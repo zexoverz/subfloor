@@ -260,6 +260,11 @@ load-bearing — kalibrasi floor, laporan harian, dan agent baca indeks ini live
 
 ## 3:30–3:48 — the bounty
 
+- **VISUAL:** montase kilat semua hash transaksi yang tadi muncul di video, lalu README GitHub dengan
+  daftar link tx. Teks di layar: *every tx in this demo →  github.com/…/README.md*
+  **SPOKEN — Faisal:** *And everything you just saw — every fill, every refusal, every reverted attack
+  — is a live mainnet transaction. We publish all of them in the README on GitHub. Click any hash,
+  check it yourself.*
 - **VISUAL:** Faisal dekat ke kamera. Layar belakang: kunci privat agent terpampang di README publik,
   kursor nyorotin. Lalu halaman sayembara — hadiah, alamat vault, penghitung "cracked: 0".
   **SPOKEN — Faisal (challenging, easy):** *So here's the deal. This is our agent's private key. It's
