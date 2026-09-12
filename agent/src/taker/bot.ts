@@ -22,7 +22,9 @@ export interface Config {
   rpcUrl: string;
   router: Address;
   aqua: Address;
-  vault: Address;
+  /// Which makers to take from. Empty means every maker on the venue, which is what a taker actually
+  /// is: this was one address, and a second vault's book sat unfilled while its owner watched.
+  vaults: Address[];
   aggregator: Address;
   /// Which token the bot spends on each pass. It alternates, so the book gets taken on both sides.
   tokens: { weth: Address; quote: Address };
@@ -37,6 +39,8 @@ export interface Config {
 
 export interface Outcome {
   kind: "filled" | "refused" | "no-quote" | "skipped";
+  /// Whose book this pass was about, so the log says which vault was filled rather than only that one was.
+  maker?: Address;
   tokenIn: Address;
   amountIn: bigint;
   amountOut?: bigint;
@@ -115,7 +119,10 @@ export function configFromEnv(): Config {
     rpcUrl: process.env.RPC_URL ?? "https://sepolia.base.org",
     router: process.env.SUBFLOOR_ROUTER as Address,
     aqua: process.env.SUBFLOOR_AQUA as Address,
-    vault: process.env.SUBFLOOR_VAULT as Address,
+    vaults: (process.env.SUBFLOOR_VAULT ?? "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean) as Address[],
     aggregator: process.env.SUBFLOOR_AGGREGATOR as Address,
     tokens: {
       weth: (process.env.SUBFLOOR_WETH ?? "0x4200000000000000000000000000000000000006") as Address,
@@ -138,8 +145,8 @@ export function configFromEnv(): Config {
 /// of mistake, and a rebuild that differs quotes zero — which looks like an empty book rather than
 /// like a bug, and cost an hour finding out.
 /// Topic hashes from `docs/event-map.md`, computed with `cast keccak` rather than copied.
-const SHIPPED_TOPIC0 = "0xdc3622e06fb145651f567d421c9ef261d71d43e3778b761907bc0d70d42e52b0" as Hex;
-const DOCKED_TOPIC0 = "0xd173a1d140c154eb1ce9298d251d5eb8c4089cc2d16e70f1067bdc810c6fe004" as Hex;
+export const SHIPPED_TOPIC0 = "0xdc3622e06fb145651f567d421c9ef261d71d43e3778b761907bc0d70d42e52b0" as Hex;
+export const DOCKED_TOPIC0 = "0xd173a1d140c154eb1ce9298d251d5eb8c4089cc2d16e70f1067bdc810c6fe004" as Hex;
 
 /// The live order, read off the chain rather than rebuilt.
 ///
@@ -150,10 +157,14 @@ const DOCKED_TOPIC0 = "0xd173a1d140c154eb1ce9298d251d5eb8c4089cc2d16e70f1067bdc8
 ///
 /// Through HyperSync, never `eth_getLogs`: the vault ships rarely, so the live strategy sits
 /// thousands of blocks back, and a span that wide is exactly what the public RPC refuses.
-export async function liveOrder(c: Clients, cfg: Config) {
+export async function liveOrders(cfg: Config) {
   const hs = hyperSyncFromEnv();
-  const logs = await logsSince(hs, cfg.fromBlock, [cfg.aqua], [SHIPPED_TOPIC0, DOCKED_TOPIC0]);
+  return liveFrom(await logsSince(hs, cfg.fromBlock, [cfg.aqua], [SHIPPED_TOPIC0, DOCKED_TOPIC0]), cfg.vaults);
+}
 
+/// Every live book in a window of Aqua's own events, oldest first, narrowed to `vaults` when it is
+/// not empty. Pure, so which books a taker can see is testable without HyperSync.
+export function liveFrom(logs: { topic0: Hex; data: Hex }[], vaults: Address[]) {
   const docked = new Set<string>();
   const shipped: { strategy: Hex; strategyHash: Hex; maker: Address }[] = [];
 
@@ -174,12 +185,11 @@ export async function liveOrder(c: Clients, cfg: Config) {
     shipped.push({ strategy, strategyHash, maker });
   }
 
-  const mine = shipped
-    .filter((s) => s.maker.toLowerCase() === cfg.vault.toLowerCase() && !docked.has(s.strategyHash.toLowerCase()))
-    .at(-1);
-
-  if (!mine) return null;
-  return { ...decodeShipped(mine.strategy), strategyHash: mine.strategyHash };
+  const wanted = vaults.map((v) => v.toLowerCase());
+  return shipped
+    .filter((s) => !docked.has(s.strategyHash.toLowerCase()))
+    .filter((s) => wanted.length === 0 || wanted.includes(s.maker.toLowerCase()))
+    .map((s) => ({ ...decodeShipped(s.strategy), strategyHash: s.strategyHash }));
 }
 
 export async function reference(c: Clients, cfg: Config) {
@@ -198,8 +208,30 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
   const tokenIn = spendWeth ? cfg.tokens.weth : cfg.tokens.quote;
   const amountIn = spendWeth ? cfg.sizes.weth : cfg.sizes.quote;
 
-  const order = await liveOrder(c, cfg);
-  if (!order) return { kind: "skipped", tokenIn, amountIn, reason: "no live strategy shipped by the vault" };
+  // Newest book first, every maker unless the config narrows it. The pass stops at the first book
+  // that fills or is refused; the others were quotes not worth taking, and the last of those is what
+  // gets reported, so the log still says why nothing happened.
+  const orders = (await liveOrders(cfg)).reverse();
+  if (orders.length === 0) return { kind: "skipped", tokenIn, amountIn, reason: "no live strategy shipped by any maker" };
+
+  let last: Outcome | null = null;
+  for (const order of orders) {
+    const outcome = await attempt(c, cfg, spendWeth, order);
+    if (outcome.kind === "filled" || outcome.kind === "refused") return outcome;
+    last = outcome;
+  }
+  return last as Outcome;
+}
+
+/// One book, one side, one decision.
+async function attempt(
+  c: Clients,
+  cfg: Config,
+  spendWeth: boolean,
+  order: Awaited<ReturnType<typeof liveOrders>>[number],
+): Promise<Outcome> {
+  const tokenIn = spendWeth ? cfg.tokens.weth : cfg.tokens.quote;
+  const amountIn = spendWeth ? cfg.sizes.weth : cfg.sizes.quote;
 
   const aToB = isAToB(order.data, tokenIn);
   const takerData = buildTakerData({ isAToB: aToB });
@@ -213,9 +245,9 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
     });
     amountOut = (q as readonly [bigint, bigint, Hex])[1];
   } catch (err) {
-    return { kind: "no-quote", tokenIn, amountIn, reason: (err as Error).message.split("\n")[0] };
+    return { kind: "no-quote", maker: order.maker, tokenIn, amountIn, reason: (err as Error).message.split("\n")[0] };
   }
-  if (amountOut === 0n) return { kind: "no-quote", tokenIn, amountIn, reason: "quote returned zero" };
+  if (amountOut === 0n) return { kind: "no-quote", maker: order.maker, tokenIn, amountIn, reason: "quote returned zero" };
 
   const ref = await reference(c, cfg);
   const wethDecimals = 18;
@@ -227,7 +259,7 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
   const edge = edgeBpsOf(rate, referenceRate);
 
   if (edge < cfg.edgeBps) {
-    return { kind: "skipped", tokenIn, amountIn, amountOut, rate, referenceRate, edgeBps: edge,
+    return { kind: "skipped", maker: order.maker, tokenIn, amountIn, amountOut, rate, referenceRate, edgeBps: edge,
       reason: `edge ${edge} bps below threshold ${cfg.edgeBps}` };
   }
 
@@ -250,10 +282,10 @@ export async function pass(c: Clients, cfg: Config, spendWeth: boolean): Promise
       args: [tuple, amountIn, takerData], account: c.account, chain: baseSepolia,
     } as never);
     await c.pub.waitForTransactionReceipt({ hash });
-    return { kind: "filled", tokenIn, amountIn, amountOut, rate, referenceRate, edgeBps: edge, hash };
+    return { kind: "filled", maker: order.maker, tokenIn, amountIn, amountOut, rate, referenceRate, edgeBps: edge, hash };
   } catch (err) {
     const floor = decodeFloorRevert(err);
-    if (floor) return { kind: "refused", tokenIn, amountIn, rate, referenceRate, edgeBps: edge, floor };
+    if (floor) return { kind: "refused", maker: order.maker, tokenIn, amountIn, rate, referenceRate, edgeBps: edge, floor };
     throw err;
   }
 }
