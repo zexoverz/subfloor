@@ -25,24 +25,36 @@ import { chain } from './chain.ts';
  *
  * All six were verified on 7 Sep 2026 at 60 concurrent reads: every one returned 60/60.
  */
-const PUBLIC_NODES = [
-  /*
-   * publicnode first, deliberately. Base's own endpoint answers 403 to some clients — not 429,
-   * a flat refusal — and being first in the list meant every read started with a rejection and
-   * only reached a working node on the retry. It stays in the list; it is just not the opener.
-   */
+/*
+ * The fallback list MUST match `chain`. It used to be base-sepolia only, so once the app pointed at
+ * base mainnet every read that the dedicated node did not catch hit a sepolia node — where the
+ * mainnet addresses have no code, so `vaultsOfOwner` (and every other read) came back "reverted".
+ * Select by chain id: 8453 is base mainnet, everything else is the sepolia set.
+ *
+ * publicnode first, deliberately. Base's own endpoint answers 403 to some clients — not 429, a flat
+ * refusal — and being first meant every read started with a rejection and only reached a working
+ * node on the retry. The canonical `*.base.org` stays in each list, just not as the opener.
+ */
+const SEPOLIA_NODES = [
   'https://base-sepolia-rpc.publicnode.com',
   'https://base-sepolia.gateway.tenderly.co',
   'https://base-sepolia-public.nodies.app',
   'https://base-sepolia.drpc.org',
   'https://base-sepolia.api.onfinality.io/public',
-  /*
-   * Last. Base's own endpoint answers 403 to some clients — a flat refusal, not a rate limit — and
-   * every read that starts here spends a round trip being rejected before the fallback moves on.
-   * It stays in the list because it is the canonical one and the refusal is not universal.
-   */
   'https://sepolia.base.org',
 ];
+
+// Mainnet mirror of the same providers. Base has the canonical Multicall3, so each answers the
+// batched read the same way; not yet load-tested at the 60-concurrent bar the sepolia list was.
+const MAINNET_NODES = [
+  'https://base-rpc.publicnode.com',
+  'https://base.gateway.tenderly.co',
+  'https://base.drpc.org',
+  'https://base.api.onfinality.io/public',
+  'https://mainnet.base.org',
+];
+
+const PUBLIC_NODES = chain.id === 8453 ? MAINNET_NODES : SEPOLIA_NODES;
 
 const dedicated = import.meta.env?.VITE_RPC_URL;
 
