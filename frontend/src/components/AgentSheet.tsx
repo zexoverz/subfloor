@@ -3,6 +3,7 @@ import { Check, Copy, Info, X } from 'lucide-react';
 import { copy } from '../copy.ts';
 import { AddressChip } from './AddressChip.tsx';
 import { Tooltip } from './Tooltip.tsx';
+import { Tide } from './Tide.tsx';
 import { identicon } from '../lib/identicon.ts';
 import { useHouseAgent } from '../lib/houseAgent.ts';
 import { useAgentLog } from '../lib/agentLog.ts';
@@ -160,12 +161,20 @@ export function AgentSheet({ open, onClose }: { open: boolean; onClose: () => vo
           * holds a reading belongs *in* the sheet rather than on it, and the inset edge is what
           * says so; an outline would make this a second card floating on a card.
           */}
-        <div className="well mt-4 overflow-hidden rounded-xl bg-sunken">
-          <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2 t-label text-faint">
+        <div className="well relative mt-4 overflow-hidden rounded-xl bg-sunken">
+          {/*
+            * The same water as the floor control's well, and there for the same reason: this is a
+            * floor, in a product whose whole argument is that there is a bottom. It sits at the
+            * foot, behind the rows, and is out of the accessibility tree — it says nothing the
+            * table does not.
+            */}
+          <Tide />
+
+          <div className="relative flex items-center justify-between gap-3 px-4 pt-3.5 pb-2 t-label text-faint">
             <span>{copy.agents.logTitle}</span>
             <span>{copy.agents.logTag}</span>
           </div>
-          <div className="px-4 pb-3.5">
+          <div className="relative px-4 pb-3.5">
             {log.status === 'failed' ? (
               <p className="serif m-0 text-[13px] leading-relaxed text-faint">{copy.agents.logFailed}</p>
             ) : log.status === 'loading' ? (
