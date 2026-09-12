@@ -34,6 +34,10 @@ Per-fill gas on mainnet ~$0.003, so $3 of buffer plus the taker's own balance la
 Pair is **real WETH/USDC**, not the testnet tUSDC. USDC has 6 decimals — the rate convention
 (`received*1e18/given`, raw units) is unchanged from the testnet WETH/tUSDC pair.
 
+The copy-pasteable command-level version of everything below — with the verified addresses filled in,
+the `DeploySubfloor` gaps worked around, and the exact router-from-verifier-bytes sequence — is
+`docs/mainnet-runbook.md`. This file is the why; the runbook is the how.
+
 ## Order of work
 
 ### 0. Rotate the delegate key first (Key Ring)
