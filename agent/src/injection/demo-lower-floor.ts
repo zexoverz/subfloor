@@ -22,7 +22,7 @@ const TUSDC = env("SUBFLOOR_TUSDC", "0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD"
 // How much to widen the tolerance by, in bps. A weakening the guardian is allowed to make and the
 // agent is not, small enough that the script can put it back in the next block.
 const WEAKEN_BY_BPS = Number(env("DEMO_WEAKEN_BY_BPS", "100"));
-const CHAIN_ID = baseSepolia.id;
+const CHAIN_ID = Number(process.env.SUBFLOOR_CHAIN_ID ?? baseSepolia.id);
 
 const FLOOR_LOWERING_TYPEHASH = keccak256(
   toHex("FloorLowering(address recipient,address base,address quote,uint16 maxAdverseBps,uint256 absoluteRate,uint256 nonce,uint256 deadline)"),

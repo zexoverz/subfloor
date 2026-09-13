@@ -30,7 +30,7 @@ WEB="${SUBFLOOR_API:-https://web-production-37798.up.railway.app}"
 VAULT="${SUBFLOOR_VAULT:-0x1168C48a74055486BC4D1E7036d3b1aC4bb75586}"
 OWNER_ACCOUNT="${OWNER_ACCOUNT:-subfloor-dev}"
 DELEGATE_ACCOUNT="${DELEGATE_ACCOUNT:-subfloor-delegate}"
-EXPLORER=https://sepolia.basescan.org/tx
+EXPLORER="${EXPLORER:-$([ "${SUBFLOOR_CHAIN_ID:-84532}" = "8453" ] && echo https://basescan.org/tx || echo https://sepolia.basescan.org/tx)}"
 
 say()     { printf '\n[demo] %s\n' "$*"; }
 stop()    { printf '\n[demo] stopped: %s\n' "$*" >&2; exit 1; }
@@ -39,6 +39,22 @@ same()    { [ "$(lower "$1")" = "$(lower "$2")" ]; }
 sending() { [ "$DRY_RUN" != "1" ]; }
 field()   { python3 -c "import json,sys; v=json.load(sys.stdin)$1; print(json.dumps(v) if isinstance(v,(list,dict)) else v)"; }
 atleast() { python3 -c "import sys; sys.exit(0 if int('$1') >= int('$2') else 1)"; }
+# A sent tx's receipt, once it has a status — `--async` returns before the node has one, and reading
+# it too early yields JSON with no `status` key. Polls, prints the receipt JSON, empty on timeout.
+# Some public nodes lag on receipts even after the block is final; read them from a node that does
+# not, independent of where the tx was sent. Override with RECEIPT_RPC.
+RECEIPT_RPC="${RECEIPT_RPC:-https://mainnet.base.org}"
+wait_receipt() {
+  local r
+  for _ in $(seq 1 40); do
+    r="$(cast receipt "$1" --rpc-url "$RECEIPT_RPC" --json 2>/dev/null)"
+    if printf %s "$r" | python3 -c 'import json,sys
+try: sys.exit(0 if json.load(sys.stdin).get("status") is not None else 1)
+except Exception: sys.exit(1)'; then printf %s "$r"; return 0; fi
+    sleep 2
+  done
+  return 1
+}
 
 command -v cast >/dev/null || stop "foundry is not on PATH"
 command -v node >/dev/null || stop "node is needed to plan the book"
@@ -46,22 +62,27 @@ command -v python3 >/dev/null || stop "python3 is needed to read the plan"
 
 DELEGATE="$(cast call "$VAULT" 'delegate()(address)' --rpc-url "$RPC")"
 OWNER="$(cast call "$VAULT" 'owner()(address)' --rpc-url "$RPC")"
+# The taker that asks the hostile book for a fill. It need not be the owner — any account holding the
+# quote token stands in — so a vault whose owner is a hardware wallet can still be demoed from a hot
+# keystore. TAKER is its address, resolved once the keystore opens; it falls back to the owner.
+TAKER_ACCOUNT="${TAKER_ACCOUNT:-$OWNER_ACCOUNT}"
+TAKER="$OWNER"
 
 PWFILE="$(mktemp)"
 chmod 600 "$PWFILE"
 trap 'rm -f "$PWFILE"' EXIT
 AS_DELEGATE=(--rpc-url "$RPC" --account "$DELEGATE_ACCOUNT" --password-file "$PWFILE")
-AS_TAKER=(--rpc-url "$RPC" --account "$OWNER_ACCOUNT" --password-file "$PWFILE")
+AS_TAKER=(--rpc-url "$RPC" --account "$TAKER_ACCOUNT" --password-file "$PWFILE")
 
 if sending; then
-  read -r -s -p "Keystore password (for $DELEGATE_ACCOUNT and $OWNER_ACCOUNT): " PW
+  read -r -s -p "Keystore password (for $DELEGATE_ACCOUNT and $TAKER_ACCOUNT): " PW
   echo
   printf %s "$PW" > "$PWFILE"
   unset PW
   same "$(cast wallet address --account "$DELEGATE_ACCOUNT" --password-file "$PWFILE" 2>/dev/null)" "$DELEGATE" \
     || stop "$DELEGATE_ACCOUNT does not open to the vault's delegate $DELEGATE"
-  same "$(cast wallet address --account "$OWNER_ACCOUNT" --password-file "$PWFILE" 2>/dev/null)" "$OWNER" \
-    || stop "$OWNER_ACCOUNT does not open to the vault's owner $OWNER"
+  TAKER="$(cast wallet address --account "$TAKER_ACCOUNT" --password-file "$PWFILE" 2>/dev/null)" \
+    || stop "$TAKER_ACCOUNT keystore did not open with that password"
 fi
 
 # --- the plan: the compromised agent's book, from the live mandate and the index ------------------------
@@ -83,8 +104,8 @@ cast call --from "$DELEGATE" "$VAULT" "$SHIP" --rpc-url "$RPC" >/dev/null \
   || stop "the vault would refuse this ship; the simulation reverted"
 say "simulated from the delegate: the vault accepts the ship. The mandate allows it, because a mandate bounds tokens and amounts, not price"
 
-held="$(cast call "$TUSDC" 'balanceOf(address)(uint256)' "$OWNER" --rpc-url "$RPC" | awk '{print $1}')"
-atleast "$held" "$AMOUNT_IN" || stop "the taker holds $held tUSDC, less than the $AMOUNT_IN it would spend; draw from the faucet first"
+held="$(cast call "$TUSDC" 'balanceOf(address)(uint256)' "$TAKER" --rpc-url "$RPC" | awk '{print $1}')"
+atleast "$held" "$AMOUNT_IN" || stop "the taker $TAKER holds $held of the quote token, less than the $AMOUNT_IN it would spend; fund it first"
 
 if ! sending; then
   say "dry run: planned and simulated, nothing sent"
@@ -94,7 +115,7 @@ fi
 # --- 1. the compromised agent ships ------------------------------------------------------------------------
 say "1/3 the compromised agent ships the book"
 SHIP_TX="$(cast send "$VAULT" "$SHIP" "${AS_DELEGATE[@]}" --async)"
-receipt="$(cast receipt "$SHIP_TX" --rpc-url "$RPC" --json)"
+receipt="$(wait_receipt "$SHIP_TX")" || stop "no receipt for the ship yet: $EXPLORER/$SHIP_TX"
 [ "$(printf %s "$receipt" | field '["status"]')" = "0x1" ] || stop "the ship reverted: $EXPLORER/$SHIP_TX"
 TOPIC="$(lower "$(cast keccak 'Shipped(address,bytes32,uint256)')")"
 BOOK="$(printf %s "$receipt" | python3 -c "import json,sys
@@ -103,14 +124,14 @@ print(next(l['topics'][2] for l in logs if l['address'].lower()=='$(lower "$VAUL
 say "shipped book ${BOOK:0:10}: $EXPLORER/$SHIP_TX"
 
 # --- 2. a taker asks it for a fill --------------------------------------------------------------------------
-allowed="$(cast call "$TUSDC" 'allowance(address,address)(uint256)' "$OWNER" "$ROUTER" --rpc-url "$RPC" | awk '{print $1}')"
+allowed="$(cast call "$TUSDC" 'allowance(address,address)(uint256)' "$TAKER" "$ROUTER" --rpc-url "$RPC" | awk '{print $1}')"
 if ! atleast "$allowed" "$AMOUNT_IN"; then
   say "the taker approves the router to spend tUSDC"
   cast send "$TUSDC" 'approve(address,uint256)' "$ROUTER" "$((AMOUNT_IN * 1000))" "${AS_TAKER[@]}" >/dev/null
 fi
 say "2/3 a taker asks the book for a fill, with an explicit gas limit: estimation reverts, and an unsent transaction is not evidence"
 SWAP_TX="$(cast send "$ROUTER" "$SWAP" --gas-limit 900000 "${AS_TAKER[@]}" --async)"
-status="$(cast receipt "$SWAP_TX" --rpc-url "$RPC" --json | field '["status"]')"
+status="$(wait_receipt "$SWAP_TX" | field '["status"]')"
 if [ "$status" = "0x0" ]; then
   say "refused on chain, status 0: $EXPLORER/$SWAP_TX"
 else

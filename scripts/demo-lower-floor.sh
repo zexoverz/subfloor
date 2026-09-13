@@ -33,7 +33,7 @@ DELEGATE_ACCOUNT="${DELEGATE_ACCOUNT:-subfloor-delegate}"
 GUARDIAN_ACCOUNT="${GUARDIAN_ACCOUNT:-subfloor-dev}"
 OWNER_ACCOUNT="${OWNER_ACCOUNT:-subfloor-dev}"
 LEDGER_HD_PATH="${LEDGER_HD_PATH:-}"
-EXPLORER=https://sepolia.basescan.org/tx
+EXPLORER="${EXPLORER:-$([ "${SUBFLOOR_CHAIN_ID:-84532}" = "8453" ] && echo https://basescan.org/tx || echo https://sepolia.basescan.org/tx)}"
 LOWER='lowerFloor(address,address,address,uint16,uint256,uint256,uint256,bytes)'
 BAD_GUARDIAN=0x5760fd80
 
@@ -134,8 +134,17 @@ if [ "$LEG" = "attack" ]; then
   say "sending it anyway, with an explicit gas limit, so the refusal is a mined transaction and not a view call"
   TX="$(cast send "$REGISTRY" "$LOWER" "${ARGS[@]}" "$SIG" --gas-limit 200000 --rpc-url "$RPC" \
     --account "$DELEGATE_ACCOUNT" --password-file "$PWFILE" --async)"
-  status="$(cast receipt "$TX" --rpc-url "$RPC" --json | field '["status"]')"
-  [ "$status" = "0x0" ] || stop "the lowering went through: $EXPLORER/$TX"
+  say "broadcast: $EXPLORER/$TX
+  waiting for it to mine…"
+  status=""
+  for _ in $(seq 1 40); do
+    status="$(cast receipt "$TX" --rpc-url "$RPC" --json 2>/dev/null | python3 -c 'import json,sys
+try: print(json.load(sys.stdin).get("status") or "")
+except Exception: print("")')"
+    [ -n "$status" ] && break
+    sleep 2
+  done
+  [ "$status" = "0x0" ] || stop "receipt not status 0 yet (check it on the explorer): $EXPLORER/$TX"
   say "reverted on chain, status 0: $EXPLORER/$TX
   the floor still tolerates $(floor_bps) bps, and the nonce is still $NONCE, so the guardian can sign this same message"
   exit 0
