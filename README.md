@@ -249,7 +249,7 @@ that trades it — the agent's delegate — is published right here, in the open
 
 ```text
 delegate address       0xFfCc8ee26a9aA8c3b4DddBf4a5aE957CBd509242
-delegate private key   0x____________________________________________________________________
+delegate private key   0xbab55b2a08a11ddea01e178b75181698f243b7ffc6fc63a853f411c58a0ed953
 ```
 
 Take it, write any program you like, and try to move one token below the floor the guardian set.
