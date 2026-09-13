@@ -384,7 +384,35 @@ export PATH="$HOME/.foundry/bin:$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.bun/bin
 - The test suite runs clean: `forge test --match-contract MinRate` → MinRateTest 8 passed,
   MinRateInvariants 7 passed, 0 failed.
 
-### Base Sepolia deployment — the live generation, for frontend integration
+### Base mainnet deployment — the live run, delivered (13 Sep)
+
+Live on Base mainnet (chain 8453) on **canonical Aqua**, against **real WETH/USDC**. Every contract is
+Sourcify `match`; the router went out through `forge create`, so the on-chain bytes are the ones the
+verifier reproduces from this repo.
+
+| Contract | Address |
+|---|---|
+| FloorRegistry | `0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171` |
+| FloorRouter | `0x441EE52d939E46A33919C4295e88d32458797503` |
+| VaultFactory | `0x653363d9EfE33898DB7948FB78EB30c43e0B8498` |
+| AquaGuardVault (bounty, ~$15) | `0xf50E5b4f6DD1e70181dB9Da544127AFEc5a334CE` |
+| AquaGuardVault (second maker) | `0xb613D32b819FB8b47AA219B8c6040Bd3BfB58E1c` |
+| Aqua (canonical) | `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` |
+| Chainlink ETH/USD aggregator | `0x05c84a58FE042275b37db038bAAcD15F410c7bB0` |
+
+Delegate `0xFfCc8ee2…` is published for the bounty — four calls (ship / dock / re-quote / rescue), no
+transfer and no floor change. Guardian is the Ledger `0x1e0344df…`. Refusals are on chain both ways:
+`SettledBelowFloor` `0xa43eda4d…` and `BadGuardianSignature` `0x7f9acec9…`, both status 0. Mainnet
+subgraph at `https://api.studio.thegraph.com/query/1758825/subfloor-mainnet/v1.0.0`, published to The
+Graph Network as `ANp4ZK8i3NJxndoxydoQ8Lrw8CzUKB61boJfaNQdtcAR`. The refusals endpoint decodes reverts
+by replaying the call, so it needs an archive RPC — `SUBFLOOR_RPC` points at one on the web service.
+
+**The finalist lever (§14): mainnet and video are both delivered.** The combined ceiling was stated
+contingent on exactly this — real money on mainnet, the video cut, all three sponsor integrations live
+with on-chain artifacts, and the bounty standing. The odds stay `[odds redacted]` per the rule; what
+is no longer conditional is the condition.
+
+### Base Sepolia deployment — the integration environment
 
 Not canonical Aqua: it is not deployed on Sepolia, so the script deploys ours. Nothing here
 transfers to mainnet except the confidence that the sequence works.
