@@ -4,6 +4,9 @@
 
 ### Let an AI agent trade your portfolio. Set one number. Your money can never go below it.
 
+<img width="1886" height="944" alt="image" src="https://github.com/user-attachments/assets/820705dc-1ebb-4c89-a468-65302215fd18" />
+
+
 [![Base Mainnet](https://img.shields.io/badge/Live%20on-Base%20Mainnet-0052FF?style=for-the-badge)](https://basescan.org/address/0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171)
 [![1inch swap-vm#197](https://img.shields.io/badge/1inch-swap--vm%20%23197-1B314F?style=for-the-badge)](https://github.com/1inch/swap-vm/pull/197)
 [![Ledger](https://img.shields.io/badge/Ledger-Key%20Ring-000000?style=for-the-badge)](https://developers.ledger.com)
