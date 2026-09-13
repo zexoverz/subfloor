@@ -117,6 +117,12 @@
    * the first step down that carries white at an 11.5px size, 4.94.
    */
   --c-live: #238046;
+  /*
+   * Base's own blue, unaltered — the point of the mark is that it is recognised, and a tuned
+   * approximation of a chain's brand colour reads as a mistake to anyone who knows it. It only
+   * ever appears as a filled sub-pill carrying white at 11.5px, which measures 8.06.
+   */
+  --c-base-chain: #0052ff;
   --c-settle-wash: rgba(64, 182, 107, 0.16);
   /*
    * Lightened from #ff6b73, which did not clear AA on the row it is most often read on.
@@ -235,6 +241,7 @@
   --color-action-ink: var(--c-action-ink);
   --color-settle: var(--c-settle);
   --color-live: var(--c-live);
+  --color-base-chain: var(--c-base-chain);
   --color-settle-wash: var(--c-settle-wash);
   --color-refuse: var(--c-refuse);
   --color-refuse-wash: var(--c-refuse-wash);

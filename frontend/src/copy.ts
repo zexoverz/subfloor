@@ -641,7 +641,9 @@ export const copy = {
     inventory: 'inventory',
     floor: 'floor',
     /** The chain is named because the badge is the one place the page says where it is. */
-    live: 'live on base',
+    live: 'live on',
+    /** Sits in its own Base-blue pill beside the mark. */
+    baseName: 'base',
     /** Shown instead of "live" whenever the tape is the dev feed rather than the chain. */
     simulated: 'simulated feed',
     /** And this whenever the page is standing on fixtures — a deployed skeleton says so. */

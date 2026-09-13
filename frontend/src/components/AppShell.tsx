@@ -120,9 +120,17 @@ export function AppShell({
             </Chip>
           ) : source === 'chain' && !mocked ? (
             <Chip live>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-2">
                 {copy.live.live}
-                <BaseLogo />
+                {/*
+                  * Two pills, not one: "live" is our word about our own tape and Base is a fact
+                  * about where it is. Painting the whole badge Base blue would claim the chain
+                  * endorses the reading, and a white mark loses what a chain logo is for.
+                  */}
+                <span className="-mr-0.5 inline-flex items-center gap-1 rounded-lg bg-base-chain px-1.5 py-[1px] text-white">
+                  <BaseLogo />
+                  {copy.live.baseName}
+                </span>
               </span>
             </Chip>
           ) : (
