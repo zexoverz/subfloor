@@ -7,7 +7,7 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy:base": "graph deploy subfloor-base --version-label $npm_config_label",
-    "deploy:mainnet": "graph deploy subfloor-mainnet --version-label $npm_config_label",
+    "deploy:mainnet": "graph deploy subfloor-mainnet subgraph.base.yaml --version-label $npm_config_label",
     "test": "graph test",
     "gen:opcodes": "node scripts/gen-opcodes.mjs",
     "deploy:base-sepolia": "graph deploy subfloor-base-sepolia subgraph.base-sepolia.yaml --version-label $npm_config_label",
