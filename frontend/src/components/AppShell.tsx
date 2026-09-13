@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { copy } from '../copy.ts';
 import { Wordmark } from './Wordmark.tsx';
 import { Chip } from './Card.tsx';
+import { BaseLogo } from './BaseLogo.tsx';
 import { CircleHelp } from 'lucide-react';
 import { AccountMenu } from './AccountMenu.tsx';
 import { runTour } from '../lib/tour.ts';
@@ -118,7 +119,12 @@ export function AppShell({
               </span>
             </Chip>
           ) : source === 'chain' && !mocked ? (
-            <Chip live>{copy.live.live}</Chip>
+            <Chip live>
+              <span className="inline-flex items-center gap-1.5">
+                {copy.live.live}
+                <BaseLogo />
+              </span>
+            </Chip>
           ) : (
             <Chip>{mocked ? copy.live.mock : source === 'simulated' ? copy.live.simulated : copy.live.fixtures}</Chip>
           )}
