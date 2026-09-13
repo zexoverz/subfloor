@@ -1,5 +1,5 @@
 import { createPublicClient, http, isAddress, isHex, verifyTypedData, type Address, type Hex } from "viem";
-import { baseSepolia } from "viem/chains";
+import { base } from "viem/chains";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
@@ -277,7 +277,7 @@ const VAULT_ABI = [
 
 /// Current state over `eth_call`, which is fine: this is about what the vault says now, not history.
 export function chainReader(rpc: string): MandateReader {
-  const client = createPublicClient({ chain: baseSepolia, transport: http(rpc) });
+  const client = createPublicClient({ chain: base, transport: http(rpc) });
   return {
     guardian: (vault) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "guardian" }),
     delegate: (vault) => client.readContract({ address: vault, abi: VAULT_ABI, functionName: "delegate" }),

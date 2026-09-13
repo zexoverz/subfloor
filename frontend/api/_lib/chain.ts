@@ -1,5 +1,5 @@
 import { createPublicClient, http, type Address, type Hex } from "viem";
-import { baseSepolia } from "viem/chains";
+import { base } from "viem/chains";
 
 /// Reads fills straight off the chain, without the index.
 ///
@@ -29,12 +29,12 @@ const BPS = 10_000n;
 
 /// Log history goes through HyperSync, never `eth_getLogs`.
 ///
-/// The public Base Sepolia RPC caps the block range and rate-limits under a walk, and this endpoint
+/// The public Base RPC caps the block range and rate-limits under a walk, and this endpoint
 /// spans every block since the contracts were deployed — so it worked for an hour and then began
 /// returning `RPC Request failed` as the range grew. CLAUDE.md says this in as many words; this file
 /// ignored it and got exactly the failure described.
 export const HYPERSYNC = {
-  url: process.env.SUBFLOOR_HYPERSYNC_URL ?? "https://base-sepolia.hypersync.xyz/query",
+  url: process.env.SUBFLOOR_HYPERSYNC_URL ?? "https://base.hypersync.xyz/query",
   token: process.env.SUBFLOOR_HYPERSYNC_TOKEN ?? "",
 };
 
@@ -42,13 +42,13 @@ export const HYPERSYNC = {
 const SWAPPED_TOPIC0 = "0x54bc5c027d15d7aa8ae083f994ab4411d2f223291672ecd3a344f3d92dcaf8b2";
 
 export const CHAIN = {
-  rpc: process.env.SUBFLOOR_RPC ?? "https://sepolia.base.org",
-  router: (process.env.SUBFLOOR_ROUTER ?? "0x03189D102286fa8cDd0fBF3578B492e67e665A27") as Address,
-  registry: (process.env.SUBFLOOR_REGISTRY ?? "0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123") as Address,
-  aggregator: (process.env.SUBFLOOR_AGGREGATOR ?? "0xa24A68DD788e1D7eb4CA517765CFb2b7e217e7a3") as Address,
+  rpc: process.env.SUBFLOOR_RPC ?? "https://mainnet.base.org",
+  router: (process.env.SUBFLOOR_ROUTER ?? "0x441EE52d939E46A33919C4295e88d32458797503") as Address,
+  registry: (process.env.SUBFLOOR_REGISTRY ?? "0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171") as Address,
+  aggregator: (process.env.SUBFLOOR_AGGREGATOR ?? "0x05c84a58FE042275b37db038bAAcD15F410c7bB0") as Address,
   weth: (process.env.SUBFLOOR_WETH ?? "0x4200000000000000000000000000000000000006") as Address,
-  quote: (process.env.SUBFLOOR_QUOTE ?? "0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD") as Address,
-  fromBlock: BigInt(process.env.SUBFLOOR_FROM_BLOCK ?? "46513825"),
+  quote: (process.env.SUBFLOOR_QUOTE ?? "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") as Address,
+  fromBlock: BigInt(process.env.SUBFLOOR_FROM_BLOCK ?? "51220877"),
 };
 
 export interface Fill {
@@ -76,7 +76,7 @@ function referenceFor(spendingWeth: boolean, answer: bigint, feedDecimals: numbe
 }
 
 export async function recentFills(limit = 25): Promise<{ fills: Fill[]; head: string; note: string }> {
-  const client = createPublicClient({ chain: baseSepolia, transport: http(CHAIN.rpc) });
+  const client = createPublicClient({ chain: base, transport: http(CHAIN.rpc) });
 
   const [logs, round, head] = await Promise.all([
     swappedLogs(),

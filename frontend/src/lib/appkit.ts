@@ -37,7 +37,7 @@ export function startAppKit() {
 
   // One network, and it is the one the contracts are on. Offering a switcher here would invite an
   // owner to connect to a chain where their vault does not exist.
-  const network = import.meta.env.VITE_CHAIN === 'base' ? base : baseSepolia;
+  const network = import.meta.env.VITE_CHAIN === 'baseSepolia' ? baseSepolia : base;
   const adapter = new WagmiAdapter({ networks: [network], projectId, ssr: false });
 
   const modal = createAppKit({

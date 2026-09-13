@@ -10,7 +10,7 @@ import type { InitialSetup } from '../lib/vault.ts';
 import { Card, CardHead } from './Card.tsx';
 import { RollingNumber } from './RollingNumber.tsx';
 import { addresses } from '../lib/contracts.ts';
-import { addressUrl } from '../lib/chain.ts';
+import { addressUrl, chain } from '../lib/chain.ts';
 import type { VaultState } from '../types.ts';
 
 /**
@@ -116,7 +116,7 @@ export function PublicAside({
 
       {addresses.registry && (
         <Card>
-          <CardHead left="Contracts" right="Base Sepolia" />
+          <CardHead left="Contracts" right={chain.name} />
           <ul className="m-0 list-none p-4 text-[11.5px]">
             {(
               [

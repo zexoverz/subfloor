@@ -7,7 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_REOWN_PROJECT_ID?: string;
   /** 'mock' walks the whole owner flow with nothing deployed. Says so on screen. */
   readonly VITE_CHAIN_SOURCE?: 'mock' | 'chain';
-  /** 'base' for mainnet; anything else means Base Sepolia, where the integration deployment lives. */
+  /** Defaults to Base mainnet, where the stack is deployed. 'baseSepolia' opts into the testnet build. */
   readonly VITE_CHAIN?: 'base' | 'baseSepolia';
   /** A dedicated RPC. Absent, the chain's public endpoint is used, which rate-limits under a burst. */
   readonly VITE_RPC_URL?: string;

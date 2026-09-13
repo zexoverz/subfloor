@@ -3,13 +3,16 @@ import { base, baseSepolia } from 'viem/chains';
 /**
  * Which chain everything reads from.
  *
- * This exists because getting it wrong is silent: point the app at the Sepolia deployment while the
+ * This exists because getting it wrong is silent: point the app at a testnet deployment while the
  * client is still built on mainnet and every read returns nothing, with no error to notice. It
  * looks like the contracts are wrong when the network is.
+ *
+ * Base mainnet is the default now that the stack is deployed there; the testnet build is opt-in via
+ * an explicit `VITE_CHAIN=baseSepolia`.
  */
-export const chain = import.meta.env?.VITE_CHAIN === 'base' ? base : baseSepolia;
+export const chain = import.meta.env?.VITE_CHAIN === 'baseSepolia' ? baseSepolia : base;
 
-export const explorer = chain.blockExplorers?.default.url ?? 'https://sepolia.basescan.org';
+export const explorer = chain.blockExplorers?.default.url ?? 'https://basescan.org';
 
 export const txUrl = (hash: string) => `${explorer}/tx/${hash}`;
 export const addressUrl = (address: string) => `${explorer}/address/${address}`;

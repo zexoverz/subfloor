@@ -29,7 +29,7 @@ import { chain } from './chain.ts';
  * The fallback list MUST match `chain`. It used to be base-sepolia only, so once the app pointed at
  * base mainnet every read that the dedicated node did not catch hit a sepolia node — where the
  * mainnet addresses have no code, so `vaultsOfOwner` (and every other read) came back "reverted".
- * Select by chain id: 8453 is base mainnet, everything else is the sepolia set.
+ * Select by chain id: 8453 is Base mainnet (the default), everything else is the testnet set.
  *
  * publicnode first, deliberately. Base's own endpoint answers 403 to some clients — not 429, a flat
  * refusal — and being first meant every read started with a rejection and only reached a working

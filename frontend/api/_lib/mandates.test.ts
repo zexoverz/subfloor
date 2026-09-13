@@ -32,7 +32,7 @@ async function signed(
     ...over,
   };
   const signature = await (opts.signer ?? guardian).signTypedData({
-    domain: { name: "SUBFLOOR AquaGuardVault", version: "1", chainId: 84532, verifyingContract: opts.domainVault ?? vault },
+    domain: { name: "SUBFLOOR AquaGuardVault", version: "1", chainId: 8453, verifyingContract: opts.domainVault ?? vault },
     types: MANDATE_TYPES,
     primaryType: "Mandate",
     message: { ...message, maxAmounts: message.maxAmounts.map(BigInt), nonce: BigInt(message.nonce), expiry: BigInt(message.expiry) },
@@ -62,7 +62,7 @@ function memStore(): MandateStore & { all: StoredMandate[] } {
 const deps = (over: Partial<Parameters<typeof postMandates>[1]> = {}) => ({
   houseAgent: HOUSE,
   router: ROUTER,
-  chainId: 84532,
+  chainId: 8453,
   reader: reader(),
   store: memStore(),
   now: NOW,

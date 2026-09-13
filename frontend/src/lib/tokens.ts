@@ -24,10 +24,10 @@ const SEPOLIA_USDC = '0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD';
 const CIRCLE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
 export const WETH = '0x4200000000000000000000000000000000000006' as Address;
-export const USDC = (import.meta.env?.VITE_CHAIN === 'base' ? MAINNET_USDC : SEPOLIA_USDC) as Address;
+export const USDC = (import.meta.env?.VITE_CHAIN === 'baseSepolia' ? SEPOLIA_USDC : MAINNET_USDC) as Address;
 /** It is called tUSDC on the testnet, so the screen calls it that. Naming it USDC would be a
  *  small lie in the one place a reader checks a number against a block explorer. */
-export const USDC_SYMBOL = import.meta.env?.VITE_CHAIN === 'base' ? 'USDC' : 'tUSDC';
+export const USDC_SYMBOL = import.meta.env?.VITE_CHAIN === 'baseSepolia' ? 'tUSDC' : 'USDC';
 
 /**
  * Both USDC addresses, always. The decoder refuses to render a token it does not know, which is

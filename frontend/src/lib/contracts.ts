@@ -3,7 +3,7 @@ import { encodeFunctionData, type Address } from 'viem';
 /**
  * Addresses and the call shapes the owner screens need.
  *
- * Empty until a deployment exists (#38, and the Base Sepolia script that has not been broadcast).
+ * Empty until a deployment exists. Base mainnet is the deployment these default to.
  * Every screen must render with these unset rather than pretend — an address the UI invents is a
  * floor set on nothing.
  */
@@ -13,7 +13,7 @@ export const addresses = {
   vault: (import.meta.env?.VITE_VAULT ?? '') as Address | '',
   factory: (import.meta.env?.VITE_VAULT_FACTORY ?? '') as Address | '',
   aqua: (import.meta.env?.VITE_AQUA ?? '') as Address | '',
-  /// Testnet only. Absent on a mainnet build, and the button that uses it is absent with it.
+  /// Testnet only. Absent on a Base mainnet build, and the button that uses it is absent with it.
   faucet: (import.meta.env?.VITE_FAUCET ?? '') as Address | '',
 };
 
@@ -63,7 +63,7 @@ export const vaultAbi = [
   { type: 'function', name: 'mandateRevoked', stateMutability: 'view', inputs: [{ name: 'nonce', type: 'uint256' }], outputs: [{ type: 'bool' }] },
   /*
    * The same mapping under the name it had before #253. Vaults deployed against the old bytecode —
-   * including the ones live on Base Sepolia today — answer this and revert on the one above, and
+   * including older testnet ones — answer this and revert on the one above, and
    * the interface has to read whichever the vault in front of it actually has.
    */
   { type: 'function', name: 'mandateUsed', stateMutability: 'view', inputs: [{ name: 'nonce', type: 'uint256' }], outputs: [{ type: 'bool' }] },
