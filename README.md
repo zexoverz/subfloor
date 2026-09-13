@@ -4,10 +4,16 @@
 
 ### Let an AI agent trade your portfolio. Set one number. Your money can never go below it.
 
-[![Base Sepolia](https://img.shields.io/badge/Live%20on-Base%20Sepolia-0052FF?style=for-the-badge)](https://sepolia.basescan.org/address/0x47c7AbB1FfbF37eD4bCFCB20f6648B5c0cC86123)
-[![1inch](https://img.shields.io/badge/1inch-Aqua-1B314F?style=for-the-badge)](https://github.com/1inch/swap-vm)
+[![Base Mainnet](https://img.shields.io/badge/Live%20on-Base%20Mainnet-0052FF?style=for-the-badge)](https://basescan.org/address/0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171)
+[![1inch swap-vm#197](https://img.shields.io/badge/1inch-swap--vm%20%23197-1B314F?style=for-the-badge)](https://github.com/1inch/swap-vm/pull/197)
 [![Ledger](https://img.shields.io/badge/Ledger-Key%20Ring-000000?style=for-the-badge)](https://developers.ledger.com)
 [![ERC-8377](https://img.shields.io/badge/ERC--8377-6E56CF?style=for-the-badge)](https://github.com/ethereum/ERCs/pull/1935)
+
+**Live on Base mainnet with real money.** Every fill, every refusal, every reverted attack below is a
+transaction you can open on [basescan.org](https://basescan.org/address/0x441EE52d939E46A33919C4295e88d32458797503).
+The agent's key is public and its vault holds real funds — [the bounty](#the-bounty) is standing:
+break the floor, keep what is inside. Upstream, we found and fixed a live giveaway in 1inch SwapVM,
+offered as [`1inch/swap-vm#197`](https://github.com/1inch/swap-vm/pull/197).
 
 </div>
 
@@ -153,6 +159,27 @@ them.
 
 ## Deployed
 
+**Base mainnet** — the live run, on **canonical Aqua** and never a fork of it, against **real
+WETH/USDC**. Every contract is fresh-deployed and Sourcify `match`; the router went out through
+`forge create` so the bytes on chain are the bytes the verifier reproduces from this repo.
+
+| Contract | Address | Verified |
+|---|---|---|
+| FloorRegistry | [`0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171`](https://basescan.org/address/0xE291ddE058a1Fb128B8baA3a7F80BB12Eca5b171) | Sourcify |
+| FloorRouter | [`0x441EE52d939E46A33919C4295e88d32458797503`](https://basescan.org/address/0x441EE52d939E46A33919C4295e88d32458797503) | Sourcify |
+| VaultFactory | [`0x653363d9EfE33898DB7948FB78EB30c43e0B8498`](https://basescan.org/address/0x653363d9EfE33898DB7948FB78EB30c43e0B8498) | Sourcify |
+| AquaGuardVault (bounty) | [`0xf50E5b4f6DD1e70181dB9Da544127AFEc5a334CE`](https://basescan.org/address/0xf50E5b4f6DD1e70181dB9Da544127AFEc5a334CE) | — |
+| AquaGuardVault (second maker) | [`0xb613D32b819FB8b47AA219B8c6040Bd3BfB58E1c`](https://basescan.org/address/0xb613D32b819FB8b47AA219B8c6040Bd3BfB58E1c) | — |
+| Aqua (canonical, not ours) | [`0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a`](https://basescan.org/address/0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a) | canonical |
+| Chainlink ETH/USD aggregator | [`0x05c84a58FE042275b37db038bAAcD15F410c7bB0`](https://basescan.org/address/0x05c84a58FE042275b37db038bAAcD15F410c7bB0) | — |
+| WETH / USDC | `0x4200…0006` / `0x8335…2913` | canonical |
+
+The agent's delegate is [`0xFfCc8ee2…`](https://basescan.org/address/0xFfCc8ee26a9aA8c3b4DddBf4a5aE957CBd509242)
+— its key is **published on purpose** for [the bounty](#the-bounty); it can ship, dock and re-quote,
+and it cannot lower a floor or move a token out. That containment is a mined transaction:
+[`0xbbd9151d…`](https://basescan.org/tx/0xbbd9151d9dcff513abfc85806a19955907b98ddaaabfe1c915b621d646ce87a8)
+is the delegate trying to widen the floor and the registry reverting `BadGuardianSignature`.
+
 **Base Sepolia** — integration environment. Canonical Aqua exists on Ethereum Sepolia but on no L2
 testnet, so this deploys its own from the same source. Byte-identical behaviour, different address;
 mainnet uses canonical Aqua and never forks it.
@@ -166,23 +193,6 @@ mainnet uses canonical Aqua and never forks it.
 | Aqua (ours, not canonical) | [`0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB`](https://sepolia.basescan.org/address/0xA86da73e0c1b4C70cB9a924F57BaE9699198bbDB) | — |
 | tUSDC (testnet stand-in) | [`0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD`](https://sepolia.basescan.org/address/0x90dceE47Dc225832B8BbD7Eb8EeAC60766D2D1aD) | — |
 | TestnetFaucet | [`0x044BB6a857A875e30f8933aDf652905d02EB65D2`](https://sepolia.basescan.org/address/0x044BB6a857A875e30f8933aDf652905d02EB65D2) | Sourcify |
-
-**Ethereum Sepolia** — portability, and nothing else. No vault, no funding, no taker, no live run.
-
-| Contract | Address | Verified |
-|---|---|---|
-| FloorRegistry | [`0x0af3d784d5Cd67f49DA8977A79edaC18fc594Da7`](https://sepolia.etherscan.io/address/0x0af3d784d5Cd67f49DA8977A79edaC18fc594Da7) | Sourcify |
-| FloorRouter | [`0x7A3cf5C71a6fc39a35a60159B1bC398262df1CDd`](https://sepolia.etherscan.io/address/0x7A3cf5C71a6fc39a35a60159B1bC398262df1CDd) | Sourcify, exact match |
-
-The router plugs into canonical Aqua by address and nothing else, so a verified deployment on a
-second chain is a checkable claim that the modification travels rather than an assertion that it
-would. Canonical Aqua answers at `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Base, Ethereum,
-Arbitrum, Optimism, Polygon, BSC and Sepolia — same address, same 5,619 bytes, checked with
-`eth_getCode` on each rather than read off a list.
-
-Not a second live run, deliberately. Money on two chains halves the size on each, and §14 puts the
-correlated risk in the deploy and the run: two live runs is two of everything that can fail during a
-demo, on the one axis where failure takes all three tracks down together.
 
 **Setting a vault up is one transaction.** `createVault(setup)` deploys it, names the delegate and
 the guardian, registers the guardian on the registry, and raises the floors on both directions —
@@ -223,49 +233,42 @@ factory and vault in the table above are on this bytecode since 11 Sep. The vaul
 `0xaf6b…`, had its books docked and its inventory moved across, and the factory before them,
 `0xbfF5…`, still deploys the single-use version.
 
-**The three keys are three.** Owner `0x9ebdC8AC…`, delegate `0xFfCc8ee2…` (the house agent),
-guardian `0x9ebdC8AC…`. On the previous vault, strategy `0x2bb7b6de…` was shipped by that vault's
-delegate under a mandate the guardian signed — a different key, off-chain, before the fact — which is
-the separation working rather than described. The
-guardian still being the owner's key is the remaining gap, and it is named here rather than hidden:
-until a device holds it, the key that can lower the floor is a key on a machine.
+**The three keys are three, and on mainnet the third is a device.** Owner, delegate (the agent — its
+key is published for [the bounty](#the-bounty)), and guardian, which here is the **Ledger**
+[`0x1e0344df…`](https://basescan.org/address/0x1e0344df59a94D387bb051215AadC5DED63396e6) that
+clear-signs the mandate and is the only key that can lower a floor. The delegate that trades cannot
+touch it — a separation the chain enforces, not one described.
 
 `docs/e2e-walkthrough.md` walks the whole thing from a cold wallet — vault, mandate, book, and the
 floor turning a fill away — in about ten minutes. `docs/bring-your-own-agent.md` is what it takes to
 be the delegate yourself.
 
-**The router was redeployed on 8 Sep, and the reason is worth stating.** The first one could not be
-built from any commit: its runtime was 23,983 bytes where every build of the source produced ~24,3xx,
-because `forge script` and `forge build` compile this contract differently and the deployment went
-out through the script. Nothing was wrong with it on chain — it settled 115 fills correctly — but a
-contract nobody can reproduce cannot be verified, and an unverified router turns the refusal card's
-`[view]` link into hex soup. The replacement was deployed from the bytecode the public verifier
-itself produces from this repo's sources, so `exact_match` is not just a pass, it is the statement
-that the chain and this repository hold the same contract. Tracked in
-[#167](https://github.com/zexoverz/subfloor/issues/167).
+**~$15 of real WETH and USDC** sits in the agent's vault on Base mainnet
+([`0xf50E…`](https://basescan.org/address/0xf50E5b4f6DD1e70181dB9Da544127AFEc5a334CE)), and the key
+that trades it — the agent's delegate — is published right here, in the open:
 
-**And since 10 Sep the deployed router no longer matches `main`, which is said here rather than left
-to be discovered.** Fixing [#175](https://github.com/zexoverz/subfloor/issues/175) changed
-`OraclePriceAdjuster`'s encoding, and that instruction compiles into the router. Measured with
-`cast code` against the local artifact: **24,323 bytes on chain, 23,988 at `main`.**
-
-The behavioural difference on chain is nothing, and that is measured rather than assumed. The changed
-opcode is `0xb2`. Every strategy ever shipped to this router is in the index, and querying all ten for
-their decoded opcodes returns `Salt`, `ValidateSeriesEpoch`, `Decay`, `FeeFlatIn` and
-`XYCConcentrateSwap` — `0xb2` appears in none of them, and neither does the `JumpIfDirection` that
-would gate it. Every fill and every refusal above went through code the two versions share.
-
-```graphql
-{ strategies(first: 1000) { strategyHash steps { opcode } } }
+```text
+delegate address       0xFfCc8ee26a9aA8c3b4DddBf4a5aE957CBd509242
+delegate private key   0x____________________________________________________________________
 ```
 
-It is not redeployed because the address is load-bearing three days from submission: the subgraph's
-data source, the taker, the frontend and every explorer link in this table point at it, and trading
-all of that for an oracle improvement the position never had is a bad exchange. Sourcify still holds
-an `exact_match` for the deployed bytes against the commit they were built from; what is no longer
-true is that a fresh `forge build` of `main` reproduces them.
+Take it, write any program you like, and try to move one token below the floor the guardian set.
+Whatever is in the vault is yours if you do.
 
-**Base mainnet** — _pending, see below._
+Nothing about that is brave, and that is the point. The key reaches four calls — ship, dock,
+re-quote, rescue an approval — and none of them is a transfer or a floor change. Settlement scores
+both recipients after fees and reverts anything under the floor, so a hacked agent, a naked program,
+and the published key itself all arrive at the same wall. A project that guards its agent by watching
+it could never post its watcher's key; it would be drained in a block. This one can, because there is
+nothing to fool.
+
+Both refusals are already on chain, from this key itself:
+
+- it tries to **sell below the floor** → [`0xa43eda4d…`](https://basescan.org/tx/0xa43eda4defd419908ebe2d01db70f3fe9c580a5afd3a3353e2f3e6d11a73b01c) reverts `SettledBelowFloor`, status 0
+- it tries to **lower the floor** → [`0x7f9acec9…`](https://basescan.org/tx/0x7f9acec9ce242a6233dfbb25acd8cb3f5ebc49f8fbf9cbcd144b4788b433a957) reverts `BadGuardianSignature`, status 0
+
+The counters on [subfloor.xyz](https://subfloor.xyz) read the chain: **fills** climb and **refused**
+counts the below-floor reverts.
 
 ## The index
 
@@ -273,17 +276,17 @@ Every fill is recomputed against every floor by an independent index, so the gua
 query rather than our claim about our own execution.
 
 ```
-https://api.studio.thegraph.com/query/1758825/subfloor-base-sepolia/v3.1.0
+https://api.studio.thegraph.com/query/1758825/subfloor-mainnet/v1.0.0
 ```
 
-That URL is free to query and capped at 3,000 queries a day. The app does not lean on it alone:
+That is the Base mainnet subgraph the app reads today, free to query and capped at 3,000 queries a
+day. The subgraph is **published to The Graph Network** on Arbitrum One as
+[`ANp4ZK8i3NJxndoxydoQ8Lrw8CzUKB61boJfaNQdtcAR`](https://thegraph.com/explorer/subgraphs/ANp4ZK8i3NJxndoxydoQ8Lrw8CzUKB61boJfaNQdtcAR?chain=arbitrum-one)
+— discoverable on the decentralized network, with the gateway serving it once an indexer allocates.
 `/api/subgraph` asks the network gateway first when one is configured, falls back to Studio on a
-402, a 429, an auth error or an empty answer, and fails closed when neither answers cleanly. Both
-serve the same deployment, so a number on screen reads the same whichever one answered.
-
-The subgraph is **published to The Graph Network** on Arbitrum One as
-[`vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5`](https://thegraph.com/explorer/subgraphs/vSC2ZsPqdQmRrmfnQPKeDRaLDYkJbewabiGa4i3hFs5?chain=arbitrum-one),
-and that is the endpoint the app reads first.
+402, a 429, an auth error or an empty answer, and fails closed when neither answers cleanly. The Base
+Sepolia subgraph (`subfloor-base-sepolia/v3.1.0`) carries the longer execution-quality history and is
+kept for that.
 
 Built on the Messari **DEX Aggregator standardized schema v1.0.2** — a listed schema with no prior
 implementations. SUBFLOOR-specific facts (`Floor`, `FloorChange`, `FillQuality`, `Refusal`) hang off
@@ -472,7 +475,8 @@ product's promise checkable by a stranger.
 
 ## Where this actually is, right now
 
-**[web-production-37798.up.railway.app](https://web-production-37798.up.railway.app)**
+**[subfloor.xyz](https://subfloor.xyz)** — the live app on Base mainnet
+(also at [web-production-37798.up.railway.app](https://web-production-37798.up.railway.app))
 
 One origin, one image: the built site and the two consumers ship together from `Dockerfile`, which
 is why a number on screen and the query behind it cannot drift apart, and why the server falls
@@ -487,17 +491,16 @@ it worth less.
 
 | | |
 |---|---|
-| Contracts, Base Sepolia | **live**, [addresses above](#deployed); every one marked Sourcify above is verified |
+| Contracts, Base mainnet | **live**, [addresses above](#deployed), Sourcify `match`; Base Sepolia is kept as the integration environment |
 | Floors, both directions | **set on chain**, keyed to the vault |
 | A concentrated two-sided book | **shipped and live** on Aqua under a device-shaped mandate |
 | The index | **live**, syncing, `hasIndexingErrors: false` |
-| Calibration and the daily report | **live** at `/api/calibration` and `/api/report`; calibrated from **261 fills**, not a default |
-| Refusals, which no index can serve | **4 refusals** at `/api/refusals`, decoded from reverted transactions |
+| Calibration and the daily report | **live** at `/api/calibration` and `/api/report`, calibrated from the mainnet fills rather than a default |
+| Refusals, which no index can serve | **live** at `/api/refusals`, decoded from reverted transactions; the below-floor refusal above is counted there |
 | Vault setup | **one transaction** — `createVault(setup)` leaves nothing unset |
-| Fills, and the execution-quality dataset | **261 fills**, both directions, scored against the same Chainlink answer settlement used |
-| Refusals | **on chain** — [`0xd8969d01…`](https://sepolia.basescan.org/tx/0xd8969d01cdce69b8d9dc258f07af56f9b1e84fc1f0fac17b7868c428b00827f0) reverts `SettledBelowFloor` at 2491787104 against a floor of 2495000000, and the floor was then lowered again under a guardian signature |
-| Base mainnet, with our own money | _pending_ |
-| A rogue agent, refused, on chain | _pending_ |
+| Fills, and the execution-quality dataset | both directions, scored against the same Chainlink answer settlement used |
+| **Base mainnet, with our own money** | **live** — [contracts above](#deployed), Sourcify `match`, real WETH/USDC on canonical Aqua; two vaults funded and quoting under device-signed mandates |
+| **A rogue agent, refused, on chain** | **on chain, both ways** — the published key tries to sell below the floor → [`0xa43eda4d…`](https://basescan.org/tx/0xa43eda4defd419908ebe2d01db70f3fe9c580a5afd3a3353e2f3e6d11a73b01c) `SettledBelowFloor`; tries to lower the floor → [`0x7f9acec9…`](https://basescan.org/tx/0x7f9acec9ce242a6233dfbb25acd8cb3f5ebc49f8fbf9cbcd144b4788b433a957) `BadGuardianSignature`; both status 0 |
 
 Nothing published here is invented. The fuzz counter is
 [a file in this repo](docs/fuzz-counter.json) written only by CI, and every increment maps to a run
